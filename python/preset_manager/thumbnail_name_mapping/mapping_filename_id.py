@@ -4,7 +4,7 @@ import os
 
 contentPath = unreal.Paths.project_content_dir()
 pythonPath = contentPath + "Python/"
-filename = "PresetManager/mapping/DT_CP.csv"
+filename = "preset_manager/thumbnail_name_mapping/DT_CP.csv"
 data = []
 
 print('Project Path:', pythonPath)
@@ -14,8 +14,8 @@ with open(filename, 'r') as file:
     next(csv_reader)  # Skip the header row
     for row in csv_reader:
         data.append(row)
-        from_folder = pythonPath + "PresetManager/mapping/from"
-        to_folder = pythonPath + "PresetManager/mapping/to"
+        from_folder = pythonPath + "preset_manager/thumbnail_name_mapping/from"
+        to_folder = pythonPath + "preset_manager/thumbnail_name_mapping/to"
         file_names = os.listdir(from_folder)
  
         for file_name in file_names:
