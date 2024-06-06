@@ -1,0 +1,1 @@
+return Tex.SampleGrad(TexSampler,UV1,DDX(UV2),DDY(UV2)).x;
