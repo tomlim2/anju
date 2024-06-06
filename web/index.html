@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Git Branch Switcher</title>
+    <style>
+        /* Add your CSS styles here */
+    </style>
+</head>
+<body>
+    <h1>Git Branch Switcher</h1>
+    
+    <select id="branchSelect">
+        <!-- Add options dynamically using JavaScript -->
+    </select>
+    
+    <button onclick="switchBranch()">Switch Branch</button>
+    
+    <script>
+        // Add your JavaScript code here
+        function switchBranch() {
+            var selectedBranch = document.getElementById("branchSelect").value;
+            var command = 'git checkout main';
+            exec(command, function(error, stdout, stderr) {
+                if (error) {
+                    console.error('Error:', error);
+                } else {
+                    console.log('Switched to main branch');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
