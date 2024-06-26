@@ -2,20 +2,19 @@ import unreal
 import csv
 import os
 
-contentPath = unreal.Paths.project_content_dir()
-pythonPath = contentPath + "Python/"
-filename = "preset_manager/thumbnail_name_mapping/DT_CP.csv"
+contentPath = 'D:/vs/anju/python/preset_manager/thumbnail_name_mapping/'
+filename = "python/preset_manager/thumbnail_name_mapping/DT_CP.csv"
 data = []
 
-print('Project Path:', pythonPath)
+print('Project Path:', contentPath)
 
 with open(filename, 'r') as file:
     csv_reader = csv.reader(file)
     next(csv_reader)  # Skip the header row
     for row in csv_reader:
         data.append(row)
-        from_folder = pythonPath + "preset_manager/thumbnail_name_mapping/from"
-        to_folder = pythonPath + "preset_manager/thumbnail_name_mapping/to"
+        from_folder = contentPath + "/from"
+        to_folder = contentPath + "/to"
         file_names = os.listdir(from_folder)
  
         for file_name in file_names:

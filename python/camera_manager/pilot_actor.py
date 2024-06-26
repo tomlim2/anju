@@ -1,0 +1,5 @@
+import unreal
+
+selected_camera_actor: unreal.CameraActor
+
+unreal.EditorLevelLibrary.pilot_level_actor(selected_camera_actor)

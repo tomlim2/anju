@@ -1,0 +1,31 @@
+scalar = 
+---casual
+FakeRimLightBrightness
+FakeRimLightFallOff
+FakeRimLightPower
+RimLightAngleMax
+RimLightAngleMin
+RimLightRotation
+DayEmisiveIntensity
+NightEmisiveIntensity
+SpecularPower
+SSS_EXP
+Diffuse_Brightness
+Diffuse_Hue
+Diffuse_Mul
+Diffuse_Saturation
+
+---outline
+Intensity
+OutlineThickness
+
+
+vector = 
+FakeRimLightTint
+AmbientColor
+DayTone
+DiffuseColor
+EmissiveColor
+NightTone
+SSS
+
