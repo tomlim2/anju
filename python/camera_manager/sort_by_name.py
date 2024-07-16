@@ -1,7 +1,7 @@
 import unreal
 
 cameras: list[unreal.CameraActor]
-sorted_cameras = sorted(cameras, key=lambda camera: (int( camera.get_actor_label().partition('Photospot')[2].partition('_')[0]), int( camera.get_actor_label().partition('_')[2]) if '_' in  camera.get_actor_label() else 0))
+sorted_cameras = sorted(cameras, key=lambda camera: (int( camera.get_actor_label().lower().partition('photospot')[2].partition('_')[0]), int( camera.get_actor_label().partition('_')[2]) if '_' in  camera.get_actor_label() else 0))
 
 # sorted_cameras = sorted(cameras, key=lambda camera: camera.get_actor_label())
 
