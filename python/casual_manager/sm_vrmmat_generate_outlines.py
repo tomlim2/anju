@@ -54,46 +54,4 @@ for asset in sm_materials :
 #reset
 target_outline_mic.set_editor_property('texture_parameter_values', original_txt_params)
 
-print('make outline materials done')
-
-
-
-# set outline materials from selected skeletal mesh
-outline_materials = []
-
-for material in sm_materials:
-    mic:unreal.MaterialInstanceConstant = material
-    mic_path_array = mic.get_path_name().split('/')
-    mic_path = '/'.join(mic_path_array[:-1])
-    mic_outline_name = mic.get_name() + '_Outline'
-    mic_outline_path = mic_path + '/' + mic_outline_name
-    loaded_mic = loaded_subsystem.load_asset(mic_outline_path)
-    outline_materials.append(loaded_mic)
-
-print('outline materials set done')
-
-## set data asset
-target_da_path = "/Game/RnD/Common/DataAsset/DA_Target"
-destination_path_array = selected_sm.get_path_name().split('/')
-new_da_path = '/'.join(destination_path_array[:-1]) + '/DA_' + selected_sm.get_name()
-
-## duplicate and save
-loaded_subsystem.duplicate_asset(target_da_path, new_da_path)
-loaded_subsystem.save_asset(new_da_path)
-
-
-## set variables to data asset
-blueprint_asset = unreal.EditorAssetLibrary.load_asset(new_da_path)
-
-
-### set materials to data asset
-property_info = {'Materials': sm_materials}
-blueprint_asset.set_editor_properties(property_info)
-loaded_subsystem.save_asset(new_da_path)
-
-### set outline materials to data asset
-property_info = {'Outline_Materials': outline_materials}
-blueprint_asset.set_editor_properties(property_info)
-loaded_subsystem.save_asset(new_da_path)
-
-print('data asset set done')
+print('outline materials generated!')
