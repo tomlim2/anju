@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Details</title>
+</head>
+<body bgcolor="#f0f0f0">
+    <table width="100%" cellpadding="20" cellspacing="0">
+        <tr>
+            <td align="center" bgcolor="#ffffff">
+                <h1>Project Details</h1>
+            </td>
+        </tr>
+        <tr>
+            <td align="center">
+                <div id="projectDetails">
+                    <!-- Project details will be inserted here by JavaScript -->
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td align="center" bgcolor="#ffffff">
+                <a href="index.html">Back to Portfolio</a>
+            </td>
+        </tr>
+    </table>
+
+    <script>
+        // Simple JavaScript to display project details based on URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const project = urlParams.get('project');
+        const projectDetailsDiv = document.getElementById('projectDetails');
+
+        const projectInfo = {
+            ecommerce: {
+                title: "E-commerce Website",
+                description: "A fully functional online store with product listings, shopping cart, and secure checkout.",
+                technologies: "HTML, CSS, JavaScript, Node.js, MongoDB",
+                duration: "3 months"
+            },
+            weather: {
+                title: "Weather App",
+                description: "A responsive web application that provides real-time weather information for any location.",
+                technologies: "HTML, CSS, JavaScript, OpenWeatherMap API",
+                duration: "1 month"
+            },
+            task: {
+                title: "Task Management System",
+                description: "A collaborative tool for teams to manage projects, assign tasks, and track progress.",
+                technologies: "HTML, CSS, JavaScript, React, Node.js, PostgreSQL",
+                duration: "2 months"
+            }
+        };
+
+        if (project && projectInfo[project]) {
+            const info = projectInfo[project];
+            projectDetailsDiv.innerHTML = `
+                <h2>${info.title}</h2>
+                <p><strong>Description:</strong> ${info.description}</p>
+                <p><strong>Technologies Used:</strong> ${info.technologies}</p>
+                <p><strong>Project Duration:</strong> ${info.duration}</p>
+            `;
+        } else {
+            projectDetailsDiv.innerHTML = '<p>Project details not found.</p>';
+        }
+    </script>
+</body>
+</html>

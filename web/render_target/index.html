@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Render Target Example</title>
+    <style>
+        body { margin: 0; display: flex; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <canvas id="mainCanvas"></canvas>
+    <canvas id="rtCanvas"></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Set up the main scene
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const mainCanvas = document.getElementById('mainCanvas');
+        const renderer = new THREE.WebGLRenderer({ canvas: mainCanvas });
+        renderer.setSize(window.innerWidth / 2, window.innerHeight);
+        
+        // Create a render target
+        const renderTarget = new THREE.WebGLRenderTarget(window.innerWidth / 2, window.innerHeight);
+        
+        // Set up a secondary scene to render to the render target
+        const rtScene = new THREE.Scene();
+        const rtCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        rtCamera.position.z = 5;
+        
+        // Add an object to the secondary scene
+        const rtGeometry = new THREE.BoxGeometry();
+        const rtMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        const rtCube = new THREE.Mesh(rtGeometry, rtMaterial);
+        rtScene.add(rtCube);
+        
+        // Create a plane in the main scene that uses the render target texture
+        const planeGeometry = new THREE.PlaneGeometry(5, 5);
+        const planeMaterial = new THREE.MeshBasicMaterial({ map: renderTarget.texture });
+        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        scene.add(plane);
+        
+        camera.position.z = 5;
+        
+        // Set up the second renderer for the render target
+        const rtCanvas = document.getElementById('rtCanvas');
+        const rtRenderer = new THREE.WebGLRenderer({ canvas: rtCanvas });
+        rtRenderer.setSize(window.innerWidth / 2, window.innerHeight);
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Rotate the cube in the render target scene
+            rtCube.rotation.x += 0.01;
+            rtCube.rotation.y += 0.01;
+            
+            // Render the secondary scene to the render target
+            renderer.setRenderTarget(renderTarget);
+            renderer.render(rtScene, rtCamera);
+            renderer.setRenderTarget(null);
+            
+            // Render the main scene to the main canvas
+            renderer.render(scene, camera);
+            
+            // Render the render target's texture to the second canvas
+            rtRenderer.render(rtScene, rtCamera);
+        }
+        animate();
+    </script>
+</body>
+</html>
