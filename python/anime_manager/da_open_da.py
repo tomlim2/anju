@@ -15,3 +15,5 @@ if(does_da_exist == False):
 
 loaded_subsystem = unreal.get_editor_subsystem(unreal.AssetEditorSubsystem)
 loaded_subsystem.open_editor_for_assets([blueprint_asset])
+
+# /Game/Content/RnD/ProjectVamBo/Enum_Vambo
