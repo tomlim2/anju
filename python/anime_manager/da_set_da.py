@@ -3,8 +3,6 @@ import unreal
 selected_assets: list[unreal.Object] = unreal.EditorUtilityLibrary.get_selected_assets()
 loaded_subsystem = unreal.get_editor_subsystem(unreal.EditorAssetSubsystem)
 
-## set sm materials
-sm_materials = []
 selected_sm:unreal.SkeletalMesh = selected_assets[0]
 
 ## set data asset
