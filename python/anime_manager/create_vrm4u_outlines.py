@@ -4,7 +4,7 @@ loaded_subsystem = unreal.get_editor_subsystem(unreal.EditorAssetSubsystem)
 selected_assets: list[unreal.Object] = unreal.EditorUtilityLibrary.get_selected_assets()
 selected_sm:unreal.SkeletalMesh = selected_assets[0]
 
-target_diffuse_name = 'gltf_tex_diffuse'
+target_diffuse_display_name: str
 
 sm_materials = selected_sm.materials
 sm_mats_length = len(selected_sm.materials)
@@ -31,7 +31,6 @@ for sm_material in sm_materials:
 
     outline_path_name = outline_folder_path + '/' + outline_mat_name
     check = loaded_subsystem.does_asset_exist(outline_path_name)
-    print(check)
     if check == False:
         ducplicated_outline = loaded_subsystem.duplicate_asset(duplicate_this_outline, outline_path_name)
         loaded_subsystem.save_asset(outline_path_name)
@@ -43,17 +42,26 @@ for sm_material in sm_materials:
     if parent_mat != loaded_be_duplicated:
         loaded_new_outline.set_editor_property('parent', loaded_be_duplicated)
     txts = loaded_sm_mat.get_editor_property('texture_parameter_values')
-    hi_jack_txt:str
+    
+    hi_jack_txt:unreal.Texture
     for txt in txts:
         txt:unreal.TextureParameterValue
-        if txt.parameter_info.name == target_diffuse_name:
+        if txt.parameter_info.name == target_diffuse_display_name:
             hi_jack_txt = txt.parameter_value
             break
-    new_txts = txts
-    for new_txt in new_txts:
-        new_txt:unreal.TextureParameterValue
-        if new_txt.parameter_info.name == 'gltf_tex_diffuse':
-            new_txt.parameter_value = hi_jack_txt
-            break
+    
+    txt_formats: list[unreal.TextureParameterValue] = loaded_new_outline.get_editor_property('texture_parameter_values')
+    new_txts: list[unreal.TextureParameterValue] = []
+
+    for txt_Format in txt_formats:
+        txt_Format:unreal.TextureParameterValue
+        if txt_Format.parameter_info.name == 'gltf_tex_diffuse':
+            txt_Format.set_editor_property('parameter_value', hi_jack_txt)
+            # new_txt.parameter_value = hi_jack_txt
+            # print(new_txt, 'hi-jacked')
+        new_txts.append(txt_Format)
+    
+    print(new_txts)
     loaded_new_outline.set_editor_property('texture_parameter_values', new_txts)
+    
     loaded_subsystem.save_asset(outline_path_name)
