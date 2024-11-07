@@ -1,0 +1,1 @@
+LogOutputDevice: Error: Ensure condition failed: InTransform.GetRotation().IsNormalized() [File:D:\build\++UE5\Sync\Engine\Plugins\Animation\ControlRig\Source\ControlRig\Public\Rigs\RigHierarchyElements.h] [Line: 257] 
