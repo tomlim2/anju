@@ -23,7 +23,7 @@ selected_data_asset: list[unreal.Object] = unreal.EditorUtilityLibrary.get_selec
 loaded_subsystem = unreal.get_editor_subsystem(unreal.EditorAssetSubsystem)
 
 if selected_data_asset.__class__ != unreal.PrimaryDataAsset:
-    print('data asset does not exist')
+    print('Please select a data asset')
     exit()
 
 #set variables
@@ -45,11 +45,10 @@ for material in da_materials:
     if material == None:
         new_outlines.append(None)
         continue
-    da_path_array = da_path.split('/')
-    material_path = '/'.join(da_path_array[:-1]) + '/materials'
+    outline_path_array = da_base_outline.get_path_name().split('/')
+    material_path = '/'.join(outline_path_array[:-1])
     part_name = material.get_name().split('_')[1]
 
-    # print(part_name)
     ## check clear list
     onClearList = False
     for clear in clear_list:
@@ -62,8 +61,8 @@ for material in da_materials:
         continue
 
     mic_outline_name = 'MI_' + da_cha_name + '_' + part_name + '_Outline'
-    print(mic_outline_name)
     mic_outline_path = material_path + '/' + mic_outline_name
+    print(mic_outline_path)
 
     does_outline_exist = loaded_subsystem.does_asset_exist(mic_outline_path)
     if(does_outline_exist == False):
