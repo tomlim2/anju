@@ -19,7 +19,6 @@ def get_sm_materials(selected_sm:unreal.SkeletalMesh) -> list[unreal.MaterialIns
         sm_materials.append(mic)
     return sm_materials
 
-
 selected_data_asset: list[unreal.Object] = unreal.EditorUtilityLibrary.get_selected_assets()[0]
 loaded_subsystem = unreal.get_editor_subsystem(unreal.EditorAssetSubsystem)
 
@@ -28,28 +27,43 @@ if selected_data_asset.__class__ != unreal.PrimaryDataAsset:
     exit()
 
 #set variables
+da_path = selected_data_asset.get_path_name()
 da_materials = get_da_list(selected_data_asset, "Materials")
 da_outlines = get_da_list(selected_data_asset, "OutlineMaterials")
 da_sm = get_da_item(selected_data_asset, "SkeletalMesh")
 da_base_outline = get_da_item(selected_data_asset, "BasicOutlineMaterial")
 da_clear = get_da_item(selected_data_asset, "ClearMaterial")
-da_character_name = str(get_da_item(selected_data_asset, "CharacterName"))
+da_cha_name = str(get_da_item(selected_data_asset, "CharacterName"))
+
+#####################
+#####################
 
 new_outlines = []
+clear_list = ['eye', 'oral', 'tooth', 'toungue', 'mouth', 'tongue']
+
 for material in da_materials:
     if material == None:
         new_outlines.append(None)
         continue
-    mic_path_array = material.get_path_name().split('/')
-    mic_path = '/'.join(mic_path_array[:-1])
+    da_path_array = da_path.split('/')
+    material_path = '/'.join(da_path_array[:-1]) + '/materials'
     part_name = material.get_name().split('_')[1]
 
-    ## check if eye and oral
-    if part_name == 'Eye' or part_name == 'Oral':
-        new_outlines.append(da_clear)
+    # print(part_name)
+    ## check clear list
+    onClearList = False
+    for clear in clear_list:
+        if clear in part_name.lower():
+            new_outlines.append(da_clear)
+            onClearList = True
+            continue
+    if onClearList:
+        print('set mi_clear')
         continue
-    mic_outline_name = 'MI_' + da_character_name + '_' + part_name + '_Outline'
-    mic_outline_path = mic_path + '/' + mic_outline_name
+
+    mic_outline_name = 'MI_' + da_cha_name + '_' + part_name + '_Outline'
+    print(mic_outline_name)
+    mic_outline_path = material_path + '/' + mic_outline_name
 
     does_outline_exist = loaded_subsystem.does_asset_exist(mic_outline_path)
     if(does_outline_exist == False):
