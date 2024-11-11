@@ -19,7 +19,6 @@ def get_sm_materials(selected_sm:unreal.SkeletalMesh) -> list[unreal.MaterialIns
         sm_materials.append(mic)
     return sm_materials
 
-
 selected_data_asset: list[unreal.Object] = unreal.EditorUtilityLibrary.get_selected_assets()[0]
 loaded_subsystem = unreal.get_editor_subsystem(unreal.EditorAssetSubsystem)
 
@@ -28,37 +27,35 @@ if selected_data_asset.__class__ != unreal.PrimaryDataAsset:
     exit()
 
 #set variables
+da_path = selected_data_asset.get_path_name()
 da_materials = get_da_list(selected_data_asset, "Materials")
 da_outlines = get_da_list(selected_data_asset, "OutlineMaterials")
 da_sm = get_da_item(selected_data_asset, "SkeletalMesh")
 da_base_outline = get_da_item(selected_data_asset, "BasicOutlineMaterial")
 da_clear = get_da_item(selected_data_asset, "ClearMaterial")
-da_character_name = str(get_da_item(selected_data_asset, "CharacterName"))
+da_cha_name = str(get_da_item(selected_data_asset, "CharacterName"))
+da_irochi_name = str(get_da_item(selected_data_asset, "Irochi"))
 
-new_outlines = []
-for material in da_materials:
-    if material == None:
-        new_outlines.append(None)
-        continue
-    mic_path_array = material.get_path_name().split('/')
-    mic_path = '/'.join(mic_path_array[:-1])
-    part_name = material.get_name().split('_')[1]
+#####################
+#####################
 
-    ## check if eye and oral
-    if part_name == 'Eye' or part_name == 'Oral':
-        new_outlines.append(da_clear)
-        continue
-    mic_outline_name = 'MI_' + da_character_name + '_' + part_name + '_Outline'
-    mic_outline_path = mic_path + '/' + mic_outline_name
+da_sm_materials = get_sm_materials(da_sm)
 
-    does_outline_exist = loaded_subsystem.does_asset_exist(mic_outline_path)
-    if(does_outline_exist == False):
-        new_outlines.append(da_base_outline)
-    else:
-        loaded_mic = loaded_subsystem.load_asset(mic_outline_path)
-        new_outlines.append(loaded_mic)
-    
-set_da_list(selected_data_asset, 'OutlineMaterials' ,new_outlines)
+# if da_irochi_name == 'Original':
+#     set_da_list(selected_data_asset, "Materials", da_sm_materials)
+#     exit()
 
-loaded_subsystem.save_asset(selected_data_asset.get_path_name())
-print('done')
+new_mats = []
+for material in da_sm_materials:
+    material_path_array = material.get_path_name().split('/')
+    mat_irochi_name = material.get_name() + '_' + da_irochi_name
+    mat_irochi_path = '/'.join(material_path_array[:-1]) + '/' + mat_irochi_name
+    print(mat_irochi_path)
+    does_exist = loaded_subsystem.does_asset_exist(mat_irochi_path)
+    if does_exist == True:
+        loaded_mic = loaded_subsystem.load_asset(mat_irochi_path)
+        new_mats.append(loaded_mic)
+    else: 
+        new_mats.append(material)
+
+set_da_list(selected_data_asset, "Materials", new_mats)
