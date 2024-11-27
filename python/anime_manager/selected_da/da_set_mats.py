@@ -50,10 +50,12 @@ if da_irochi_name == 'Original':
     exit()
 
 new_mats: list[unreal.Object] = []
+
 for material in da_sm_materials:
     material_path_array = material.get_path_name().split('/')
     mat_irochi_name = material.get_name() + '_' + da_irochi_name
     mat_irochi_path = '/'.join(material_path_array[:-1]) + '/' + mat_irochi_name
+
     does_exist = loaded_subsystem.does_asset_exist(mat_irochi_path)
     if does_exist == True:
         loaded_mic = loaded_subsystem.load_asset(mat_irochi_path)
