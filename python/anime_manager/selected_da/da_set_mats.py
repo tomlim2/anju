@@ -64,5 +64,4 @@ for material in da_sm_materials:
         loaded_mic = loaded_subsystem.load_asset(material.get_path_name())  
         new_mats.append(loaded_mic)
 
-
 set_da_list(selected_data_asset, "Materials", new_mats)
