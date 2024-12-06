@@ -1,0 +1,5 @@
+import unreal
+
+selected_asset_data_package_name:str
+
+unreal.EditorAssetLibrary.sync_browser_to_objects([selected_asset_data_package_name])
