@@ -25,4 +25,4 @@ for asset in selected_assets:
 if len(assets_without_tags) == 0:
     error_message = "모든 에셋에 태그가 입력 되어 있습니다"
 else:
-    error_message = f"{len(assets_without_tags)}개의 에셋들이 태그에 이슈가 있습니다"
+    error_message = f"{len(assets_without_tags)}개의 에셋들이 메타태그 이슈가 있습니다"
