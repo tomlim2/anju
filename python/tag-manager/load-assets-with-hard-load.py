@@ -12,9 +12,9 @@ def load_assets(folder_path, does_hard_load):
                 continue
             class_name = asset_data_class.get_name()
             is_static_mesh = class_name == 'StaticMesh'
-            if does_hard_load:
-                print(f"Found asset: {asset_data.package_name} - {class_name}")
             if is_static_mesh:
+                if does_hard_load:
+                    print(f"Found asset: {asset_data.package_name}")
                 static_meshes.append(asset_data)
         error_message = f"{folder_path}의 스태틱 매시 {len(static_meshes)}개"
         return error_message
