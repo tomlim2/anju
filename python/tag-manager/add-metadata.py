@@ -2,6 +2,7 @@ import unreal
 
 input_tags:str
 input_list = input_tags.strip('[]').split(',')
+
 output_list:list[list[str, str]] = [[]]
 selected_assets:list[unreal.Object] = unreal.EditorUtilityLibrary.get_selected_assets()
 error_message:str
@@ -9,6 +10,7 @@ key_target: str
 
 if len(selected_assets) == 0:
     error_message = 'No assets selected'
+
     quit()
 
 for asset in selected_assets:
