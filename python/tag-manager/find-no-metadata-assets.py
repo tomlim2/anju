@@ -16,9 +16,10 @@ assets_without_tags = []
 for asset in selected_assets:
     asset_tag_value = asset_subsystem.get_metadata_tag(asset, '#')
     asset_class = asset.get_class().get_name()
-    is_static_mesh = asset_class == 'StaticMesh'
+    print(asset_class);
+    b_check_asset_class = asset_class == 'StaticMesh' or asset_class == 'Texture2D'
     if not asset_tag_value:  # Check if metadata tags are empty
-        if is_static_mesh:
+        if b_check_asset_class:
             assets_without_tags.append(asset.get_path_name())
 
 # Print assets with no tags
