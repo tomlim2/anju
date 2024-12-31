@@ -14,14 +14,18 @@ if len(selected_assets) == 0:
 
 assets_without_tags = []
 for asset in selected_assets:
-    asset_tag_value = asset_subsystem.get_metadata_tag(asset, '#')
+    asset_tag_value_static_mesh = asset_subsystem.get_metadata_tag(asset, '#')
     asset_class = asset.get_class().get_name()
-    print(asset_class);
-    b_check_asset_class = asset_class == 'StaticMesh' or asset_class == 'Texture2D'
-    if not asset_tag_value:  # Check if metadata tags are empty
-        if b_check_asset_class:
+    is_static_mesh = asset_class == 'StaticMesh'
+    if not asset_tag_value_static_mesh:  # Check if metadata tags are empty
+        if is_static_mesh:
             assets_without_tags.append(asset.get_path_name())
-
+    asset_tag_value_texture2d = asset_subsystem.get_metadata_tag(asset, '@')
+    is_texture2d = asset_class == 'Texture2D'
+    if not asset_tag_value_texture2d:
+        if is_texture2d:
+            assets_without_tags.append(asset.get_path_name())
+    
 # Print assets with no tags
 if len(assets_without_tags) == 0:
     error_message = "모든 에셋에 태그가 입력 되어 있습니다"
