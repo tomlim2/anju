@@ -1,5 +1,4 @@
 import unreal
-import os
 
 asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
 loaded_subsystem = unreal.get_editor_subsystem(unreal.EditorAssetSubsystem)
@@ -13,8 +12,6 @@ if len(target_asset_path_list) == 0:
 	error_message = "삭제할 에셋 경로가 없습니다."
 else:
 	for asset_path in target_asset_path_list:
-		# Removed file permission modification as __file__ is not defined in Unreal's Python environment
-		pass
 		if(loaded_subsystem.delete_asset(asset_path) is False):
 			error_path_message += f"{asset_path} 삭제 실패\n"
 			failed_delete_asset_count += 1
