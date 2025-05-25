@@ -1,5 +1,5 @@
 # List of users
-$users = "clark", "chomi", "sitto", "gomryong", "yumi", "epo", "mone", "add", "baker", "yoojin"
+$users = "sky", "chomi", "add", "mone", "enki", "yoojin"
 
 # Get the list of locked files, their owners and IDs
 $lockedFiles = git lfs locks | ForEach-Object {
