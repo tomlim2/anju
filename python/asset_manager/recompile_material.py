@@ -10,3 +10,4 @@ for target in recompile_targets:
     loaded_material = editor_asset.load_asset(target)
     material_editor.recompile_material(loaded_material)
     
+unreal.EditorDialog.show_message("Recompile Material", "Successfully recompiled.", unreal.AppMsgType.OK)
