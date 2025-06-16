@@ -1,7 +1,7 @@
 import os
 from PIL import Image
 
-def generate_sprite_sheet(folder_path, output_filename, sheet_size=(1024, 1024), frame_size=90):
+def generate_sprite_sheet(folder_path, output_filename, sheet_size=(1024, 1024), frame_size=80):
 	"""
 	Generate a sprite sheet from PNG files in the specified folder.
 	
@@ -12,7 +12,7 @@ def generate_sprite_sheet(folder_path, output_filename, sheet_size=(1024, 1024),
 		frame_size: Size of each frame (both width and height) in pixels
 	"""
 	try:
-		png_files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.png', '.jpg'))]
+		png_files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.png', '.jpg', '.webp'))]
 	except FileNotFoundError:
 		print(f"Error: Folder '{folder_path}' not found")
 		return False
@@ -51,8 +51,8 @@ def main():
 	script_dir = os.path.dirname(os.path.abspath(__file__))
 	base_dir = os.path.join(script_dir, "input")
 	output_dir = os.path.join(script_dir, "output")
-	frame_size=90
-	sheet_width, sheet_height = 1024, 1024
+	frame_size=80
+	sheet_width_height = 960
 	
 	os.makedirs(output_dir, exist_ok=True)
 	
@@ -61,8 +61,8 @@ def main():
 	for folder in folders:
 		input_folder = os.path.join(base_dir, folder)
 		img_files = [f for f in os.listdir(input_folder) if f.lower().endswith(('.png', '.jpg'))]
-		max_cols = sheet_width // frame_size
-		max_rows = sheet_height // frame_size
+		max_cols = sheet_width_height // frame_size
+		max_rows = sheet_width_height // frame_size
 		max_frames = max_cols * max_rows
 		frame_count = min(len(img_files), max_frames)
 		output_file = os.path.join(output_dir, f"{folder}_{frame_count}.png")
@@ -71,7 +71,7 @@ def main():
 		generate_sprite_sheet(
 			folder_path=input_folder,
 			output_filename=output_file,
-			sheet_size=(1024, 1024),
+			sheet_size=(sheet_width_height, sheet_width_height),
 			frame_size=frame_size
 		)
 
