@@ -1,42 +1,91 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-BASE_BRANCH="origin/develop"
+set -e
+set -u
+set -o pipefail
 
-# 이전 릴리즈 브랜치
-PREV_ANIME_BRANCH="art/ani-r4"
-PREV_ENV_BRANCH="art/env-r4"
-
-# 새로운 릴리즈 브랜치
-NEW_ANIME_BRANCH="art/ani-r5"
-NEW_ENV_BRANCH="art/env-r5"
-
-CHERRYPICK_COMMITS=(
-  87e89de0fd2297358572a57565db951088d98327
-  f15d0ae4e23b1fe90cc356775bd95cf3348876c2
+readonly BASE_BRANCH="origin/develop"
+readonly ANIME_BRANCH_PREFIX="art/ani-"
+readonly ENV_BRANCH_PREFIX="art/env-"
+readonly CHERRYPICK_COMMITS=(
+  "f303b0d7798b92931444476f1e9c494a4baee663"
 )
 
-git checkout -b $NEW_ANIME_BRANCH $BASE_BRANCH
+log() {
+  echo "✅  $1"
+}
+send_slack_notification() {
+  local message="$1"
+  # Source the slack_notify.sh script for notification
+  if [[ -f "$(dirname "$0")/slack_notify.sh" ]]; then
+    source "$(dirname "$0")/slack_notify.sh"
+    slack_notify "$message"
+  else
+    log "slack_notify.sh not found. Skipping notification."
+  fi
+}
 
-git merge origin/$PREV_ANIME_BRANCH -X theirs --no-edit
-git merge origin/$PREV_ENV_BRANCH -X theirs --no-edit
+# --- Main Script Logic ---
 
-for commit in "${CHERRYPICK_COMMITS[@]}"; do
-  git cherry-pick $commit
-done
+main() {
+  # --- 1. Validate Input ---
+  if [[ $# -ne 2 ]]; then
+    echo "Usage: $0 <prev_release_version> <new_release_version>"
+    echo "Example: $0 4 5   or   $0 a b"
+    exit 1
+  fi
 
-git push --set-upstream origin $NEW_ANIME_BRANCH
+  local prev_release_num=$1
+  local new_release_num=$2
 
-git checkout -b $NEW_ENV_BRANCH $NEW_ANIME_BRANCH
-git push --set-upstream origin $NEW_ENV_BRANCH
+  # --- 2. Define Branch Names ---
+  log "Clean up"
+  git reset --hard
+  git clean -f -d
 
-# Slack Webhook URL (변경 필요)
-SLACK_WEBHOOK_URL="https://hooks.slack.com/services/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"
-SLACK_MESSAGE="아래 브렌치들은 개인용 테스트 브렌치입니다.
-	✅ \`$NEW_ANIME_BRANCH\`, \`$NEW_ENV_BRANCH\` 브랜치가 생성 및 푸시 완료되었습니다.
-- 기준 브랜치: \`$BASE_BRANCH\`
-- 병합된 브랜치: \`$PREV_ANIME_BRANCH\`, \`$PREV_ENV_BRANCH\`
-메세지 전송 테스트입니다."
+  local new_anime_branch="${ANIME_BRANCH_PREFIX}${new_release_num}"
+  local new_env_branch="${ENV_BRANCH_PREFIX}${new_release_num}"
+  local prev_anime_branch="${ANIME_BRANCH_PREFIX}${prev_release_num}"
+  local prev_env_branch="${ENV_BRANCH_PREFIX}${prev_release_num}"
 
-curl -X POST -H 'Content-type: application/json' --data "{"text":\"$SLACK_MESSAGE\"}" $SLACK_WEBHOOK_URL
+  log "Starting branch creation for release r${new_release_num}..."
+  log "  - New ANIME branch: ${new_anime_branch}"
+  log "  - New ENV branch:   ${new_env_branch}"
 
-echo "✅ 모든 작업 완료 및 Slack 공지 전송됨"
+  # --- 3. Create New Anime Branch ---
+  log "Creating new branch '$new_anime_branch' from '$BASE_BRANCH'."
+  git checkout "$BASE_BRANCH"
+  git branch "$new_anime_branch"
+  git switch "$new_anime_branch"
+
+  # --- 4. Merge Previous Release Branches ---
+  log "Merging previous anime branch 'origin/$prev_anime_branch'."
+  git merge "origin/$prev_anime_branch" -X theirs --no-edit
+  log "Merging previous environment branch 'origin/$prev_env_branch'."
+  git merge "origin/$prev_env_branch" -X theirs --no-edit
+
+  # --- 5. Cherry-Pick Commits ---
+  if [[ ${#CHERRYPICK_COMMITS[@]} -gt 0 ]]; then
+    log "Cherry-picking ${#CHERRYPICK_COMMITS[@]} commit(s)..."
+    for commit in "${CHERRYPICK_COMMITS[@]}"; do
+      log "  - Picking $commit"
+      git cherry-pick "$commit" -X theirs --no-edit
+    done
+  else
+    log "No commits to cherry-pick."
+  fi
+
+  # --- 6. Push New Anime Branch ---
+  log "Pushing '$new_anime_branch' to origin."
+  git push --set-upstream origin "$new_anime_branch"
+
+  # --- 7. Create and Push New Env Branch ---
+  log "Creating and pushing '$new_env_branch'."
+  git checkout -b "$new_env_branch" "$new_anime_branch"
+  git push --set-upstream origin "$new_env_branch"
+
+  log "All tasks completed successfully!"
+}
+
+# Run the main function with all script arguments
+main "$@"
