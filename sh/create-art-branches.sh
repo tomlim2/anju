@@ -30,13 +30,13 @@ git checkout -b $NEW_ENV_BRANCH $NEW_ANIME_BRANCH
 git push --set-upstream origin $NEW_ENV_BRANCH
 
 # Slack Webhook URL (변경 필요)
-SLACK_WEBHOOK_URL="https://hooks.slack.com/services/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"
+SLACK_WEBHOOK_URL="https://hooks.slack.com/services/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"
 SLACK_MESSAGE="아래 브렌치들은 개인용 테스트 브렌치입니다.
 	✅ \`$NEW_ANIME_BRANCH\`, \`$NEW_ENV_BRANCH\` 브랜치가 생성 및 푸시 완료되었습니다.
 - 기준 브랜치: \`$BASE_BRANCH\`
 - 병합된 브랜치: \`$PREV_ANIME_BRANCH\`, \`$PREV_ENV_BRANCH\`
 메세지 전송 테스트입니다."
 
-curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"$SLACK_MESSAGE\"}" $SLACK_WEBHOOK_URL
+curl -X POST -H 'Content-type: application/json' --data "{"text":\"$SLACK_MESSAGE\"}" $SLACK_WEBHOOK_URL
 
 echo "✅ 모든 작업 완료 및 Slack 공지 전송됨"
