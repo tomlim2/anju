@@ -38,8 +38,8 @@ slack_notify() {
 # --- Main Script Logic ---
 
 main() {
-  
 	# --- 1. Validate Input ---
+	log "Validating input parameters..."
 	if [[ $# -ne 2 ]]; then
 		echo "Usage: $0 <prev_release_version> <new_release_version>"
 		echo "Example: $0 4 5   or   $0 a b"
@@ -50,23 +50,44 @@ main() {
 	local new_release_num=$2
 
 	# --- 2. Define Branch Names ---
-	log "Clean up"
-	git reset --hard
-	git clean -f -d
-
 	local new_anime_branch="${ANIME_BRANCH_PREFIX}${new_release_num}"
 	local new_env_branch="${ENV_BRANCH_PREFIX}${new_release_num}"
 	local prev_anime_branch="${ANIME_BRANCH_PREFIX}${prev_release_num}"
 	local prev_env_branch="${ENV_BRANCH_PREFIX}${prev_release_num}"
 
-	log "Starting branch creation for release r${new_release_num}..."
+	log "Starting branch creation for release ${new_release_num}..."
 	log "  - New ANIME branch: ${new_anime_branch}"
 	log "  - New ENV branch:   ${new_env_branch}"
 
-	# Confirm current branch
+	# --- 2.5 Check if branches already exist ---
+	log "Checking if branches already exist..."
+	if git show-ref --verify --quiet "refs/heads/$new_anime_branch"; then
+		echo "Error: Branch '$new_anime_branch' already exists."
+		exit 1
+	fi
+	if git show-ref --verify --quiet "refs/heads/$new_env_branch"; then
+		echo "Error: Branch '$new_env_branch' already exists."
+		exit 1
+	fi
+	if ! git show-ref --verify --quiet "refs/heads/$prev_anime_branch"; then
+		echo "Error: Previous ANIME branch '$prev_anime_branch' does not exist."
+		exit 1
+	fi
+	if ! git show-ref --verify --quiet "refs/heads/$prev_env_branch"; then
+		echo "Error: Previous ENV branch '$prev_env_branch' does not exist."
+		exit 1
+	fi
+
+	# --- 2.75 Check if current branch is clean ---
+	log "Cleaning up working directory..."
+	git reset --hard
+	git clean -f -d
+
+	# --- 2.8 Confirm Current Branch ---
+	log "Checking current branch..."
 	local current_branch
 	current_branch=$(git branch --show-current)
-	echo "You are now on branch: $current_branch"
+	echo "New branches branch based on: $current_branch"
 	read -p "Continue? (Y/n): " confirm
 	if [[ "$confirm" =~ ^[Nn]$ ]]; then
 		echo "Aborted by user."
