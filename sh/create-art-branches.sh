@@ -14,15 +14,27 @@ readonly CHERRYPICK_COMMITS=(
 log() {
   echo "✅  $1"
 }
-send_slack_notification() {
-  local message="$1"
-  # Source the slack_notify.sh script for notification
-  if [[ -f "$(dirname "$0")/slack_notify.sh" ]]; then
-    source "$(dirname "$0")/slack_notify.sh"
-    slack_notify "$message"
-  else
-    log "slack_notify.sh not found. Skipping notification."
+
+slack_notify() {
+  local new_version=$1
+  local new_anime_branch="${ANIME_BRANCH_PREFIX}${new_version}"
+  local new_env_branch="${ENV_BRANCH_PREFIX}${new_version}"
+
+  if [[ -z "${SLACK_WEBHOOK_URL:-}" ]]; then
+    echo "SLACK_WEBHOOK_URL environment variable not set. Skipping notification."
+    return
   fi
+
+  local message=":yum::yum::yum::yum::yum::yum: <!here> 새로운 아트 브랜치가 생성되었습니다: \`$new_anime_branch\` (from \`$new_env_branch\`)"
+  local escaped_message
+  escaped_message=$(echo "$message" | sed 's/\"/\\\"/g' | sed 's/\\/\\\\/g')
+  local payload
+  payload="{\"text\":\"$escaped_message\"}"
+
+  echo "Sending Slack notification..."
+  curl --silent --show-error -X POST -H 'Content-type: application/json; charset=utf-8' \
+       --data "$payload" "$SLACK_WEBHOOK_URL"
+  echo # Add a newline for cleaner output
 }
 
 # --- Main Script Logic ---
@@ -83,6 +95,9 @@ main() {
   log "Creating and pushing '$new_env_branch'."
   git checkout -b "$new_env_branch" "$new_anime_branch"
   git push --set-upstream origin "$new_env_branch"
+
+  # --- 8. Send Slack Notification ---
+  slack_notify "$new_release_num"
 
   log "All tasks completed successfully!"
 }
