@@ -39,12 +39,12 @@ slack_notify() {
 
 main() {
   
-  # --- 1. Validate Input ---
+	# --- 1. Validate Input ---
 	if [[ $# -ne 2 ]]; then
 		echo "Usage: $0 <prev_release_version> <new_release_version>"
 		echo "Example: $0 4 5   or   $0 a b"
 	exit 1
-  fi
+	fi
 
 	local prev_release_num=$1
 	local new_release_num=$2
@@ -63,7 +63,7 @@ main() {
 	log "  - New ANIME branch: ${new_anime_branch}"
 	log "  - New ENV branch:   ${new_env_branch}"
 
-   # Confirm current branch
+	# Confirm current branch
 	local current_branch
 	current_branch=$(git branch --show-current)
 	echo "You are now on branch: $current_branch"
@@ -73,7 +73,7 @@ main() {
 		exit 1
 	fi
 
-  # --- 3. Create New Anime Branch ---
+	# --- 3. Create New Anime Branch ---
 	log "Creating new branch '$new_anime_branch'"
 	git switch -c "$new_anime_branch"
 
