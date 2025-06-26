@@ -87,7 +87,7 @@ main() {
 	log "Checking current branch..."
 	local current_branch
 	current_branch=$(git branch --show-current)
-	echo "New branches branch based on: $current_branch"
+	echo "New branches will be based on: $current_branch"
 	read -p "Continue? (Y/n): " confirm
 	if [[ "$confirm" =~ ^[Nn]$ ]]; then
 		echo "Aborted by user."
