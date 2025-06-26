@@ -13,7 +13,7 @@ slack_notify() {
     return
   fi
 
-  local message="새로운 아트 브랜치가 생성되었습니다: \`$new_anime_branch\` (from \`$new_env_branch\`)"
+  local message=":yum::yum::yum::yum::yum::yum: <!here> 새로운 아트 브랜치가 생성되었습니다: \`$new_anime_branch\` (from \`$new_env_branch\`)"
   local escaped_message
   escaped_message=$(echo "$message" | sed 's/\"/\\\\\"/g' | sed 's/\\\\/\\\\\\\\/g')
   local payload
