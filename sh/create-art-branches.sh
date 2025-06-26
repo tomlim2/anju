@@ -4,7 +4,7 @@ set -e
 set -u
 set -o pipefail
 
-readonly ANIME_BRANCH_PREFIX="art/ani-"
+readonly ANIME_BRANCH_PREFIX="art/anime-"
 readonly ENV_BRANCH_PREFIX="art/env-"
 readonly CHERRYPICK_COMMITS=(
 )
@@ -31,20 +31,16 @@ slack_notify() {
 
 	echo "Sending Slack notification..."
 	curl --silent --show-error -X POST -H 'Content-type: application/json; charset=utf-8' \
-			 --data "$payload" "$SLACK_WEBHOOK_URL"
+			--data "$payload" "$SLACK_WEBHOOK_URL"
 	echo # Add a newline for cleaner output
 }
-
-# --- Main Script Logic ---
-
 main() {
-  
-  # --- 1. Validate Input ---
+	# --- 1. Validate Input ---
 	if [[ $# -ne 2 ]]; then
 		echo "Usage: $0 <prev_release_version> <new_release_version>"
 		echo "Example: $0 4 5   or   $0 a b"
 	exit 1
-  fi
+	fi
 
 	local prev_release_num=$1
 	local new_release_num=$2
@@ -73,7 +69,7 @@ main() {
 		exit 1
 	fi
 
-  # --- 3. Create New Anime Branch ---
+	# --- 3. Create New Anime Branch ---
 	log "Creating new branch '$new_anime_branch'"
 	git switch -c "$new_anime_branch"
 
