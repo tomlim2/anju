@@ -23,7 +23,13 @@ slack_notify() {
 		return
 	fi
 
-	local message=":yum::yum::yum::yum::yum::yum: <!here> 새로운 아트 브랜치가 생성되었습니다: \`$new_anime_branch\` (from \`$new_env_branch\`)"
+	local message="<!here>
+	새 아트 브렌치 분기 완료하였습니다!
+	:bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo:
+	\`$new_anime_branch\`
+	\`$new_env_branch\`
+	:bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo:
+	이동 이후 다운로드 바이너리스 부탁드려요!"
 	local escaped_message
 	escaped_message=$(echo "$message" | sed 's/\"/\\\"/g' | sed 's/\\/\\\\/g')
 	local payload
@@ -38,6 +44,7 @@ slack_notify() {
 # --- Main Script Logic ---
 
 main() {
+	
 	# --- 1. Validate Input ---
 	log "Validating input parameters..."
 	if [[ $# -ne 2 ]]; then
@@ -69,14 +76,14 @@ main() {
 		echo "Error: Branch '$new_env_branch' already exists."
 		exit 1
 	fi
-	if ! git show-ref --verify --quiet "refs/heads/$prev_anime_branch"; then
-		echo "Error: Previous ANIME branch '$prev_anime_branch' does not exist."
-		exit 1
-	fi
-	if ! git show-ref --verify --quiet "refs/heads/$prev_env_branch"; then
-		echo "Error: Previous ENV branch '$prev_env_branch' does not exist."
-		exit 1
-	fi
+	# if ! git show-ref --verify --quiet "refs/heads/$prev_anime_branch"; then
+	# 	echo "Error: Previous ANIME branch '$prev_anime_branch' does not exist."
+	# 	exit 1
+	# fi
+	# if ! git show-ref --verify --quiet "refs/heads/$prev_env_branch"; then
+	# 	echo "Error: Previous ENV branch '$prev_env_branch' does not exist."
+	# 	exit 1
+	# fi
 
 	# --- 2.75 Check if current branch is clean ---
 	log "Cleaning up working directory..."
@@ -99,10 +106,10 @@ main() {
 	git switch -c "$new_anime_branch"
 
 	# --- 4. Merge Previous Release Branches ---
-	log "Merging previous anime branch 'origin/$prev_anime_branch'."
-	git merge "origin/$prev_anime_branch" -X theirs --no-edit
-	log "Merging previous environment branch 'origin/$prev_env_branch'."
-	git merge "origin/$prev_env_branch" -X theirs --no-edit
+	# log "Merging previous anime branch 'origin/$prev_anime_branch'."
+	# git merge "origin/$prev_anime_branch" -X theirs --no-edit
+	# log "Merging previous environment branch 'origin/$prev_env_branch'."
+	# git merge "origin/$prev_env_branch" -X theirs --no-edit
 
 	# --- 5. Cherry-Pick Commits ---
 	if [[ ${#CHERRYPICK_COMMITS[@]} -gt 0 ]]; then
