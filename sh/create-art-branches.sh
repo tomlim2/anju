@@ -24,12 +24,12 @@ slack_notify() {
 	fi
 
 	local message="<!here>
-	새 아트 브렌치 분기 완료하였습니다!
-	:bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo:
-	\`$new_anime_branch\`
-	\`$new_env_branch\`
-	:bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo:
-	이동 이후 다운로드 바이너리스 부탁드려요!"
+새 아트 브렌치 분기 완료하였습니다!
+:bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo:
+\`$new_anime_branch\`
+\`$new_env_branch\`
+:bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo:
+이동 이후 다운로드 바이너리스 부탁드려요!"
 	local escaped_message
 	escaped_message=$(echo "$message" | sed 's/\"/\\\"/g' | sed 's/\\/\\\\/g')
 	local payload
@@ -137,6 +137,17 @@ main() {
 		log "Skipping Slack notification."
 	else
 		slack_notify "$new_release_num"
+	fi
+
+	# --- 9. Delete Previous Release Branches ---
+	log "Deleting remote branches..."
+	if git show-ref --verify --quiet "refs/remotes/origin/$prev_anime_branch"; then
+		log "Deleting remote branch 'origin/$prev_anime_branch'"
+		git push origin --delete "$prev_anime_branch"
+	fi
+	if git show-ref --verify --quiet "refs/remotes/origin/$prev_env_branch"; then
+		log "Deleting remote branch 'origin/$prev_env_branch'"
+		git push origin --delete "$prev_env_branch"
 	fi
 
 	log "All tasks completed successfully!"
