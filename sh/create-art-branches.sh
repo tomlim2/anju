@@ -24,12 +24,16 @@ slack_notify() {
 	fi
 
 	local message="<!here>
-새 아트 브렌치 분기 완료하였습니다!
+아래 아트 브렌치 분기 완료하였습니다!
 :bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo:
 \`$new_anime_branch\`
 \`$new_env_branch\`
 :bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo:
-이동 이후 다운로드 바이너리스 부탁드려요!"
+브랜치 이동 후 바이너리 다운로드를 진행해주세요!
+바이너리는 약 20분 후에 생성됩니다. ($(date -d '+20 minutes' '+%H:%M') 예상)
+
+이전 릴리즈 브랜치의 커밋들은 체리픽되었습니다.
+"
 	local escaped_message
 	escaped_message=$(echo "$message" | sed 's/\"/\\\"/g' | sed 's/\\/\\\\/g')
 	local payload
