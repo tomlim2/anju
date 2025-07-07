@@ -29,8 +29,10 @@ slack_notify() {
 \`$new_anime_branch\`
 \`$new_env_branch\`
 :bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo::bmo:
+
 브랜치 이동 후 바이너리 다운로드를 진행해주세요!
-바이너리는 약 20분 후에 생성됩니다. ($(date -d '+20 minutes' '+%H:%M') 예상)
+바이너리는 약 20분 후에 생성됩니다.
+($(date -d '+20 minutes' '+%H:%M') 예상)
 
 이전 릴리즈 브랜치의 커밋들은 체리픽되었습니다.
 "
