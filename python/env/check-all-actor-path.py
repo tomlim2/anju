@@ -5,44 +5,52 @@ subsystem_actor = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
 subsystem_editor = unreal.get_editor_subsystem(unreal.EditorAssetSubsystem)
 all_actors = subsystem_actor.get_all_level_actors()
 current_level_name = unreal.GameplayStatics.get_current_level_name(unreal.EditorLevelLibrary.get_editor_world())
-
+error_messages = ""
+issue_message = ""
+is_passed = False
+issued_actor_list = []
+to_engine_actor_list = []
+paths_to_check = ["/Game/", "/Game/CineProps/"]
 
 def check_path_condition(path):
-	project_path = "/Game/"
-	condition1_path = "/Game/Market_Purchase/"
 	messages = ""
-
-	if not path.startswith(project_path):
-		messages = "프로젝트 경로가 아닙니다."
-		print(f"Path: {path} - {messages}")
-	elif not path.startswith(condition1_path):
-		messages = "Market_Purchase 폴더에 없습니다."
+	for path_to_check in paths_to_check:
+		if not path.startswith(path_to_check):
+			if path_to_check == "/Game/":
+				messages = "엔진 경로에 있는 에셋입니다."
+			else:
+				messages = "경로 확인이 필요합니다."
+			return messages
 	return messages
 
-def issue_list_to_message (issue_list):
-	messages = ""
+def issued_list_to_message(issue_list):
+	lines = []
 	for issue_actor in issue_list:
 		if issue_actor['issue']['has_issue']:
-			messages += f"\n{issue_actor['static_mesh_name']} | {issue_actor['actor_name']}"
+			header = f"--\n[{issue_actor['actor_name']}] {issue_actor['static_mesh_name']}"
 			if not issue_actor['material_errors']:
-				messages += f" | {issue_actor['issue']['message']}\n"
+				header += f" <<<<< {issue_actor['issue']['message']} ({issue_actor['static_mesh_path']})"
+				lines.append(header)
 			else:
-				messages += f"\n"
+				lines.append(header)
 				for material_error in issue_actor['material_errors']:
+					mat_line = f"  [{material_error['material_index']}] {material_error['material_name']}"
 					if material_error['issue']['has_issue']:
-						messages += f"  머티리얼 인덱스: {material_error['material_index']} | 머티리얼 이름: {material_error['material_name']} | 문제: {material_error['issue']['message']}\n"
-						messages += f"  머티리얼 경로: {material_error['material_path']}\n"
-					else:
-						messages += f"  머티리얼 인덱스: {material_error['material_index']} | 머티리얼 이름: {material_error['material_name']}\n"
-					if material_error['texture_errors']:
-						for texture_error in material_error['texture_errors']:
-							if texture_error['issue']['has_issue']:
-								messages += f"    텍스처 이름: {texture_error['texture_name']} | 텍스처 파라미터: {texture_error['texture_parameter_name']} | {texture_error['issue']['message']}\n"
-	return messages
+						mat_line += f" <<<<< {material_error['issue']['message']} ({material_error['material_path']})"
+					lines.append(mat_line)
+					for texture_error in material_error.get('texture_errors', []):
+						if texture_error['issue']['has_issue']:
+							tex_line = (
+								f"    [{texture_error['texture_parameter_name']}] "
+								f"{texture_error['texture_name']} <<<<< {texture_error['issue']['message']} "
+								f"({texture_error['texture_path']})"
+							)
+							lines.append(tex_line)
+	return "\n".join(lines)
 
-error_messages = ""
-error_messages += f"레벨의 모든 액터 확인 중: {current_level_name}\n"
-issue_actor_list = []
+def add_to_engine_actor_list(actor):
+	if actor not in to_engine_actor_list:
+		to_engine_actor_list.append(actor)
 
 for actor in all_actors:
 	if isinstance(actor, unreal.StaticMeshActor):
@@ -61,7 +69,6 @@ for actor in all_actors:
 			},
 			'material_errors': [],
 		}
-
 		sm_issue_item['actor_name'] = actor.get_name()
 		sm_issue_item['static_mesh_name'] = static_mesh_component_name
 		if check_sm:
@@ -69,6 +76,7 @@ for actor in all_actors:
 			sm_issue_item['has_issue'] = True
 			sm_issue_item['issue']['message'] = check_sm
 			sm_issue_item['issue']['has_issue'] = True
+			add_to_engine_actor_list(actor)
 		materials = static_mesh_component.get_materials()
 		if materials:	
 			for material in materials:
@@ -93,7 +101,7 @@ for actor in all_actors:
 						m_issue_item['issue']['has_issue'] = True
 						sm_issue_item['has_issue'] = True
 						sm_issue_item['material_errors'].append(m_issue_item)
-
+						add_to_engine_actor_list(actor)
 					loaded_material = subsystem_editor.load_asset(material.get_path_name())
 					if isinstance(loaded_material, unreal.MaterialInstance):
 						texture_parameter_values = loaded_material.get_editor_property('texture_parameter_values')
@@ -118,11 +126,20 @@ for actor in all_actors:
 									txt_issue_item['issue']['message'] = check_texture
 									txt_issue_item['issue']['has_issue'] = True
 									m_issue_item['texture_errors'].append(txt_issue_item)
+									sm_issue_item['has_issue'] = True
+									add_to_engine_actor_list(actor)
 			if sm_issue_item['has_issue']:
-				issue_actor_list.append(sm_issue_item)
+				issued_actor_list.append(sm_issue_item)
 
 print("Check completed.")
-print(error_messages)
-if issue_actor_list:
-	issue_messages = issue_list_to_message(issue_actor_list)
+if issued_actor_list:
+	is_passed = False
+	error_messages += f"{current_level_name}의 레벨 스태틱 매시, 마테리얼, 텍스처 경로 확인 결과\n"
+	issue_messages = issued_list_to_message(issued_actor_list)
 	print(issue_messages)
+	issue_message = issue_messages
+else:
+	is_passed = True
+	error_messages = f"🎉 {current_level_name}의 레벨 스태틱 매시, 마테리얼, 텍스처 경로 체크 결과: 모든 경로는 완벽해요! 🐣✨\n"
+	print(error_messages)
+	issue_message = error_messages
