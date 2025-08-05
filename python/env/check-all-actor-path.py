@@ -108,13 +108,13 @@ def format_error_message (BasicForm: BasicForm):
 	return f"[{BasicForm['key']}] '{BasicForm['name']}' {BasicForm['issue']['message']} {clean_path}"
 
 def format_material_lines(material: MIForm):
-    lines = []
-    lines.append(format_error_message(material))    
-    if material['textures']:
-        for texture in material['textures']:
-            if texture['issue']['has_issue']:
-                lines.append(format_error_message(texture))
-    return lines
+	lines = []
+	lines.append(format_error_message(material))
+	if material['textures']:
+		for texture in material['textures']:
+			if texture['issue']['has_issue']:
+				lines.append(format_error_message(texture))
+	return lines
 
 def format_material_texture_issue_actor(actor: IssuedActorForm):
 	lines = []
@@ -131,36 +131,33 @@ def issued_list_to_message(actors: list[IssuedActorForm]):
 		lines.extend(format_material_texture_issue_actor(actor))
 	return "\n".join(lines)
 
+def process_static_mesh_actor(actor: unreal.StaticMeshActor) -> IssuedActorForm | None:
+	static_mesh_component = actor.static_mesh_component
+	static_mesh_path = static_mesh_component.static_mesh.get_path_name()
+	check_path = check_path_condition(static_mesh_path)
+	issue_actor: IssuedActorForm = {
+		'key': actor.get_name(),
+		'name': static_mesh_component.static_mesh.get_name(),
+		'path': static_mesh_path if check_path else "",
+		'issue': {
+			'message': check_path,
+			'has_issue': bool(check_path),
+		},
+		'actor_has_issue': bool(check_path),
+		'materials': [],
+	}
+	check_material_result = check_materials_in_sm_actor(static_mesh_component)
+	if check_material_result['has_issue']:
+		issue_actor['actor_has_issue'] = True
+		issue_actor['materials'] = check_material_result['issued_materials']
+	return issue_actor if issue_actor['actor_has_issue'] else None
+
 all_actors = subsystem_actor.get_all_level_actors()
 for actor in all_actors:
 	if isinstance(actor, unreal.StaticMeshActor):
-		sm_actor = actor
-		static_mesh_component = sm_actor.static_mesh_component
-		static_mesh_component_name = static_mesh_component.static_mesh.get_name()
-		static_mesh_path = static_mesh_component.static_mesh.get_path_name()
-		check_sm = check_path_condition(static_mesh_path)
-		issue_actor: IssuedActorForm = {
-			'key': sm_actor.get_name(),
-			'name': static_mesh_component_name,
-			'path': "",
-			'issue': {
-				'message': check_sm,
-				'has_issue': bool(check_sm),
-			},
-			'actor_has_issue': False,
-			'materials': [],
-		}
-		if check_sm:
-			issue_actor['path'] = static_mesh_path
-			issue_actor['issue']['message'] = check_sm
-			issue_actor['issue']['has_issue'] = True
-			issue_actor['actor_has_issue'] = True
-		check_material_result = check_materials_in_sm_actor(static_mesh_component)
-		if check_material_result['has_issue']:
-			issue_actor['actor_has_issue'] = True
-			issue_actor['materials'] = check_material_result['issued_materials']
-		if issue_actor['actor_has_issue']:
-			add_to_engine_actor_list(sm_actor)
+		issue_actor = process_static_mesh_actor(actor)
+		if issue_actor:
+			add_to_engine_actor_list(actor)
 			issued_actor_list.append(issue_actor)
 
 if issued_actor_list:
