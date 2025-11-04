@@ -36,7 +36,7 @@ def generate_sprite_sheet(folder_path, output_filename, frame_size=(260, 145), f
 	total_frames = min(len(png_files), max_frames)
 	png_files = png_files[:total_frames]
 
-	sprite_sheet = Image.new('RGBA', sheet_size, (0, 0, 0, 255))
+	sprite_sheet = Image.new('RGBA', sheet_size, (0, 0, 0, 0))
 
 	for i, png_file in enumerate(png_files):
 		img = Image.open(os.path.join(folder_path, png_file))        
@@ -70,14 +70,14 @@ def generate_sprite_sheet(folder_path, output_filename, frame_size=(260, 145), f
 	print(f"Generated sprite sheet: {output_filename} with {total_frames} frames (sheet size: {sheet_size})")
 	return True
 
-def main(frame_size = (80, 80), fps_reduction = 1, is_motion = True):
+def main(frame_size = (80, 80), fps_reduction = 1, use_png_subfolder = True):
 	script_dir = os.path.dirname(os.path.abspath(__file__))
 	base_dir = os.path.join(script_dir, "input")
 	output_dir = os.path.join(script_dir, "output")
 
 	frame_size = frame_size
 	fps_reduction = fps_reduction
-	is_motion = is_motion
+	use_png_subfolder = use_png_subfolder
 
 	os.makedirs(output_dir, exist_ok=True)
 
@@ -85,10 +85,13 @@ def main(frame_size = (80, 80), fps_reduction = 1, is_motion = True):
 
 	for folder in folders:
 		input_folder = os.path.join(base_dir, folder)
-		if is_motion:
+		if use_png_subfolder:
 			input_folder = os.path.join(input_folder, "png")
 		if not os.path.exists(input_folder):
-			print(f"Skipping {folder}: No 'png' subfolder found.")
+			if use_png_subfolder:
+				print(f"Skipping {folder}: No 'png' subfolder found.")
+			else:
+				print(f"Skipping {folder}: Folder not found.")
 			continue
 		img_files = [f for f in os.listdir(input_folder) if f.lower().endswith(('.png', '.jpg'))]
 
@@ -110,7 +113,7 @@ def main(frame_size = (80, 80), fps_reduction = 1, is_motion = True):
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Generate sprite sheets from image folders')
-	parser.add_argument('--is_motion', type=bool, default=True, help='Whether to look for png subfolder (default: True)')
+	parser.add_argument('--use_png_subfolder', type=lambda x: x.lower() == 'true', default=True, help='Look for images in png/ subfolder. Set to False for facial animations where images are directly in the folder (default: True)')
 	parser.add_argument('--fps_reduction', type=int, default=1, help='FPS reduction factor (default: 1)')
 	parser.add_argument('--frame_width', type=int, default=80, help='Frame width (default: 80)')
 	parser.add_argument('--frame_height', type=int, default=80, help='Frame height (default: 80)')
@@ -118,6 +121,6 @@ if __name__ == "__main__":
 
 	frame_size = (args.frame_width, args.frame_height)
 	fps_reduction = args.fps_reduction
-	is_motion = args.is_motion
+	use_png_subfolder = args.use_png_subfolder
 
-	main(frame_size=frame_size, fps_reduction=fps_reduction, is_motion=is_motion)
+	main(frame_size=frame_size, fps_reduction=fps_reduction, use_png_subfolder=use_png_subfolder)
