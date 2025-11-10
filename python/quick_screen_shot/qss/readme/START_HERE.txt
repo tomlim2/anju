@@ -1,0 +1,51 @@
+========================================
+  Screenshot Cropper - Quick Start
+========================================
+
+STEP 1: Setup (First time only)
+--------------------------------
+Double-click: SETUP_CHECK.bat
+
+This will check if you have Python and install required libraries.
+
+
+STEP 2: Crop Your Screenshots
+------------------------------
+EASIEST METHOD - DRAG FOLDER:
+  Drag your screenshots folder onto: DRAG_FOLDER_HERE.bat
+  (Creates a "cropped" subfolder)
+
+EASIEST METHOD - DRAG FILES:
+  Drag one or more image files onto: DRAG_FILES_HERE.bat
+  (Saves as "filename_cropped.png" in same location)
+
+OTHER OPTIONS:
+  - Double-click: crop_screenshots_menu.bat (interactive menu)
+  - Double-click: crop_screenshots.bat (use default folders)
+
+
+NEED HELP?
+----------
+Read: USER_GUIDE.md for detailed instructions
+Read: README.md for technical details
+
+
+WHAT IT DOES:
+-------------
+- Takes all PNG images from your folder
+- Crops them based on the mask template
+- Saves cropped versions to "cropped" subfolder
+- Original files are NOT modified!
+
+
+FOLDER STRUCTURE AFTER CROPPING:
+---------------------------------
+YourFolder/
+  screenshot_0001.png  (original)
+  screenshot_0002.png  (original)
+  cropped/
+    screenshot_0001.png  (cropped)
+    screenshot_0002.png  (cropped)
+
+
+Questions? Check USER_GUIDE.md or README.md
