@@ -3,33 +3,13 @@ float dotLR = dot(LightVector, Head_Right_Vector);
 
 float finalSDF;
 
-// Right side lighting
-if (dotLR > 0.0)
+if (dotFB > 0.0)
 {
-    // Front lighting
-    if (dotFB > 0.0)
-    {
-        finalSDF = mad(dotFB, 1.0, 0.4);
-    }
-    // Back lighting
-    else
-    {
-        finalSDF = max(0.0, mad(dotFB, 1.0, 0.4));
-    }
+    finalSDF = mad(dotFB, -1.0, -0.6);
 }
-// Left side lighting
+// Back lighting
 else
 {
-    // Front lighting
-    if (dotFB > 0.0)
-    {
-        finalSDF = mad(dotFB, -1.0, -0.6);
-    }
-    // Back lighting
-    else
-    {
-        finalSDF = min(0.0, mad(dotFB, -1.0, -0.6));
-    }
+    finalSDF = min(0.0, mad(dotFB, -1.0, -0.6));
 }
-
 return finalSDF;
