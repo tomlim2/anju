@@ -175,11 +175,19 @@ def set_datatable (dt_datatable_path, selected_asset, new_sk_mesh, material_list
 												value = materials_str
 												print(f"  Replacing {col_name} with {len(material_list)} materials")
 
-										row_line.append(f'"{value}"')
+										# Properly escape CSV values - replace double quotes with double-double quotes
+										value_escaped = str(value).replace('"', '""')
+										row_line.append(f'"{value_escaped}"')
 									csv_lines.append(','.join(row_line))
 
 								csv_content = '\n'.join(csv_lines)
 								print(f"  Built CSV with {len(csv_lines)} lines, {len(available_columns)} columns")
+
+								# Debug: Print the first few rows to check format
+								print(f"\n  === CSV Preview (first 3 rows) ===")
+								for i, line in enumerate(csv_lines[:3]):
+									print(f"  {line}")
+								print(f"  ===================================\n")
 
 								# Try to reimport
 								print(f"  Reimporting CSV to DataTable...")
@@ -207,7 +215,7 @@ datatable_path = "/Script/Engine.DataTable'/Game/Character/Anime/_LookDev/DataTa
 da_cm_parameter_name = "CustomMaterialsBody"
 skeletal_mesh_parameter_name = "BaseSkeletalMesh"
 skeletal_mesh_parameter_name_cloth = "SK_AnimePartCloth"
-skeletal_mesh_to_replace = "/Script/Engine.SkeletalMesh'/Game/Character/Anime/Female/Cloth/F_Daily_002/Skinning/F_Daily_002.F_Daily_002'"
+skeletal_mesh_to_replace = "/Script/Engine.SkeletalMesh'/Game/Character/Anime/Male/Cloth/M_Daily_001/Skinning/M_Daily_001.M_Daily_001'"
 
 sm_path = skeletal_mesh_to_replace.split("'")[1] if "'" in skeletal_mesh_to_replace else skeletal_mesh_to_replace
 sk_mesh = unreal.EditorAssetLibrary.load_asset(sm_path)
