@@ -1,17 +1,27 @@
 import unreal
 
-print("SkeletalMesh Replace Start")
+selected_assets = unreal.EditorUtilityLibrary.get_selected_assets()
+datatable_path = "/Script/Engine.DataTable'/Game/Character/Anime/_LookDev/DataTable/DT_LookDevHair.DT_LookDevHair'"
+da_cm_parameter_name = "CustomMaterialsHair"
+skeletal_mesh_parameter_name = "BaseSkeletalMesh"
+skeletal_mesh_parameter_name_part = "SK_AnimePartHair"
+skeletal_mesh_to_replace = "/Script/Engine.SkeletalMesh'/Game/Character/Anime/Female/Body/000_Freyja/Skinning/Freyja_hair.Freyja_hair'"
 
 def get_material_list_from_selected_skeletalmesh(selected_asset):
     get_material_list = []
-    package_path = selected_asset.get_path_name().rsplit('/', 1)[0]
-    mat_folder_path = f"{package_path}/Mat"
 
-    for asset_path in unreal.EditorAssetLibrary.list_assets(mat_folder_path, recursive=True, include_folder=False):
-        asset = unreal.EditorAssetLibrary.load_asset(asset_path)
-        if isinstance(asset, unreal.MaterialInterface):
-            get_material_list.append(asset)
-            # print(f"Material: {asset_path}")
+    # For hair, only get material from slot [0]
+    skeletal_materials = selected_asset.get_editor_property('materials')
+    if skeletal_materials and len(skeletal_materials) > 0:
+        try:
+            mat_interface = skeletal_materials[0].get_editor_property('material_interface')
+        except Exception:
+            mat_interface = getattr(skeletal_materials[0], 'material_interface', None)
+
+        if mat_interface:
+            get_material_list.append(mat_interface)
+            print(f"Hair Material from slot [0]: {mat_interface.get_path_name()}")
+
     return get_material_list
 
 def get_dataasset_list_from_referencers(selected_asset):
@@ -123,7 +133,7 @@ def set_datatable (dt_datatable_path, selected_asset, new_sk_mesh, material_list
 								print(f"  Falling back to brute-force column detection...")
 								possible_columns = [
 									'SkeletalMesh', 'CustomMaterialsBody', 'CustomMaterialsHead', 'CustomMaterialsFace',
-									'CustomMaterials', 'Materials', 'MaterialSlots',
+									'CustomMaterials', 'Materials', 'MaterialSlots', "EyebrowColorTexture",
 									'OSTexture', 'OSTextureHead', 'OSTextureFace', 'OSTextureBody',
 									'BaseSkeletalMesh', 'SK_AnimePartCloth', 'SK_AnimePart',
 									'Texture', 'TextureSet', 'MaterialSet',
@@ -210,13 +220,6 @@ def set_datatable (dt_datatable_path, selected_asset, new_sk_mesh, material_list
 
 	return found_row_name
 
-selected_assets = unreal.EditorUtilityLibrary.get_selected_assets()
-datatable_path = "/Script/Engine.DataTable'/Game/Character/Anime/_LookDev/DataTable/DT_LookDevBody.DT_LookDevBody'"
-da_cm_parameter_name = "CustomMaterialsBody"
-skeletal_mesh_parameter_name = "BaseSkeletalMesh"
-skeletal_mesh_parameter_name_cloth = "SK_AnimePartCloth"
-skeletal_mesh_to_replace = "/Script/Engine.SkeletalMesh'/Game/Character/Anime/Male/Cloth/M_Daily_001/Skinning/M_Daily_001.M_Daily_001'"
-
 sm_path = skeletal_mesh_to_replace.split("'")[1] if "'" in skeletal_mesh_to_replace else skeletal_mesh_to_replace
 sk_mesh = unreal.EditorAssetLibrary.load_asset(sm_path)
 
@@ -252,8 +255,6 @@ if len(selected_assets) == 1:
 			# Fallback: TMap<Name, TSoftObjectPtr<UMaterialInterface>>
 			slot_to_soft = {k: unreal.SoftObjectPath(v.get_path_name()) for k, v in slotname_to_material_map.items()}
 			da_asset.set_editor_property(da_cm_parameter_name, slot_to_soft)
-		set_skeletal_mesh_in_dataasset(sk_mesh, skeletal_mesh_parameter_name)
-		if (da_cm_parameter_name == da_cm_parameter_name):
-			set_skeletal_mesh_in_dataasset(sk_mesh, skeletal_mesh_parameter_name_cloth)
+		set_skeletal_mesh_in_dataasset(sk_mesh, skeletal_mesh_parameter_name_part)
 
 		print(f"  ✓ Updated {da_cm_parameter_name} on {da} with {len(slotname_to_material_map)} entries (NOT SAVED - review in editor before saving)")
