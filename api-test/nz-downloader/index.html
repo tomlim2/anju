@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NZ 임시 다운로더</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .input-section {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            color: #000;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        textarea {
+            width: 100%;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 15px;
+            font-family: inherit;
+            color: #000;
+            resize: vertical;
+            min-height: 120px;
+            outline: none;
+            transition: background 0.2s;
+        }
+
+        textarea:focus {
+            background: #e8e8e8;
+        }
+
+        textarea::placeholder {
+            color: #999;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        button {
+            flex: 1;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        button:active {
+            opacity: 0.6;
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        button.clear-btn {
+            background: #666;
+        }
+
+        .queue-section {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            color: #000;
+        }
+
+        .queue-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .queue-empty {
+            color: #999;
+            text-align: center;
+            padding: 24px;
+            font-size: 14px;
+        }
+
+        .queue-item {
+            background: #f5f5f5;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .queue-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .queue-id {
+            font-weight: 500;
+            font-size: 15px;
+        }
+
+        .queue-status {
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .status-waiting {
+            background: #e8e8e8;
+            color: #666;
+        }
+
+        .status-downloading {
+            background: #000;
+            color: #fff;
+        }
+
+        .status-success {
+            background: #000;
+            color: #fff;
+        }
+
+        .status-error {
+            background: #666;
+            color: #fff;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: #e8e8e8;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #000;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .warning {
+            background: #666;
+            color: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>NZ 임시 다운로더</h1>
+
+        <div class="warning" id="warningMessage">
+            ⚠️ 로컬 전용 · 한 줄에 하나씩 NZ ID를 입력하세요
+        </div>
+
+        <div class="input-section">
+            <label for="NaZoIds">NZ ID 입력</label>
+            <textarea
+                id="NaZoIds"
+                placeholder="hongdooo22&#10;example_user&#10;another_user"
+            >hongdooo22</textarea>
+            <div class="button-group">
+                <button onclick="startDownload()" id="downloadBtn">다운로드 시작</button>
+                <button onclick="clearQueue()" class="clear-btn">초기화</button>
+            </div>
+        </div>
+
+        <div class="queue-section">
+            <div class="queue-header">다운로드 큐</div>
+            <div id="queueList" class="queue-empty">
+                큐가 비어있습니다
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // TODO: API 설정을 여기에 입력하세요
+        const API_CONFIG = {
+            url: '',  // TODO: VRM API URL을 입력하세요
+            token: ''  // TODO: Authorization 토큰을 입력하세요
+        };
+
+        let queue = [];
+        let isProcessing = false;
+
+        function startDownload() {
+            const textarea = document.getElementById('NaZoIds');
+            const ids = textarea.value
+                .split('\n')
+                .map(id => id.trim())
+                .filter(id => id.length > 0);
+
+            if (ids.length === 0) {
+                alert('NZ ID를 입력해주세요');
+                return;
+            }
+
+            if (!API_CONFIG.url || !API_CONFIG.token) {
+                alert('API 설정이 필요합니다. 코드에서 API_CONFIG를 설정해주세요.');
+                return;
+            }
+
+            // 큐에 추가
+            ids.forEach(id => {
+                if (!queue.find(item => item.id === id && item.status !== 'error')) {
+                    queue.push({
+                        id: id,
+                        status: 'waiting'
+                    });
+                }
+            });
+
+            updateQueueDisplay();
+            processQueue();
+        }
+
+        function clearQueue() {
+            if (isProcessing) {
+                if (!confirm('다운로드가 진행 중입니다. 정말 초기화하시겠습니까?')) {
+                    return;
+                }
+            }
+            queue = [];
+            isProcessing = false;
+            updateQueueDisplay();
+            document.getElementById('NaZoIds').value = '';
+            document.getElementById('downloadBtn').disabled = false;
+        }
+
+        async function processQueue() {
+            if (isProcessing) return;
+            isProcessing = true;
+            document.getElementById('downloadBtn').disabled = true;
+
+            while (queue.length > 0) {
+                const waitingItem = queue.find(item => item.status === 'waiting');
+                if (!waitingItem) break;
+
+                waitingItem.status = 'downloading';
+                updateQueueDisplay();
+
+                try {
+                    await downloadVRM(waitingItem.id);
+                    waitingItem.status = 'success';
+                } catch (error) {
+                    console.error(`Error downloading ${waitingItem.id}:`, error);
+                    waitingItem.status = 'error';
+                    waitingItem.error = error.message;
+                }
+
+                updateQueueDisplay();
+                await sleep(500);
+            }
+
+            isProcessing = false;
+            document.getElementById('downloadBtn').disabled = false;
+        }
+
+        async function downloadVRM(NaZoId) {
+            try {
+                const response = await fetch(API_CONFIG.url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': API_CONFIG.token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ NaZoId: NaZoId })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API 요청 실패: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (!data.url) {
+                    throw new Error('응답에 URL이 없습니다');
+                }
+
+                const vrmResponse = await fetch(data.url);
+
+                if (!vrmResponse.ok) {
+                    throw new Error(`VRM 다운로드 실패: ${vrmResponse.status}`);
+                }
+
+                const blob = await vrmResponse.blob();
+                const now = new Date();
+                const timestamp = now.getFullYear() +
+                    String(now.getMonth() + 1).padStart(2, '0') +
+                    String(now.getDate()).padStart(2, '0') + '_' +
+                    String(now.getHours()).padStart(2, '0') +
+                    String(now.getMinutes()).padStart(2, '0') +
+                    String(now.getSeconds()).padStart(2, '0');
+                const filename = `${NaZoId}_${timestamp}.vrm`;
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        function updateQueueDisplay() {
+            const queueList = document.getElementById('queueList');
+
+            if (queue.length === 0) {
+                queueList.className = 'queue-empty';
+                queueList.innerHTML = '큐가 비어있습니다';
+                return;
+            }
+
+            queueList.className = '';
+            queueList.innerHTML = queue.map(item => {
+                let statusClass = '';
+                let statusText = '';
+
+                switch(item.status) {
+                    case 'waiting':
+                        statusClass = 'status-waiting';
+                        statusText = '대기중';
+                        break;
+                    case 'downloading':
+                        statusClass = 'status-downloading';
+                        statusText = '다운로드중';
+                        break;
+                    case 'success':
+                        statusClass = 'status-success';
+                        statusText = '완료';
+                        break;
+                    case 'error':
+                        statusClass = 'status-error';
+                        statusText = '실패';
+                        break;
+                }
+
+                return `
+                    <div class="queue-item">
+                        <span class="queue-id">${item.id}</span>
+                        <span class="queue-status ${statusClass}">${statusText}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // 페이지 로드 시 API 설정 확인
+        window.addEventListener('DOMContentLoaded', function() {
+            if (!API_CONFIG.url || !API_CONFIG.token) {
+                const warningMsg = document.getElementById('warningMessage');
+                warningMsg.innerHTML = '⚠️ API 설정이 필요합니다. 코드에서 API_CONFIG를 설정해주세요.';
+                warningMsg.style.background = '#ff0000';
+
+                const downloadBtn = document.getElementById('downloadBtn');
+                downloadBtn.disabled = true;
+                downloadBtn.style.opacity = '0.4';
+                downloadBtn.style.cursor = 'not-allowed';
+            }
+        });
+    </script>
+</body>
+</html>
