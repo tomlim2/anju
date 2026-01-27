@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(\"E:\\\\shipped\\\\Windows\\\\CINEVStudio.exe\":*)"
+      "Bash(\"E:\\\\shipped\\\\Windows\\\\CINEVStudio.exe\":*)",
+      "Bash(python:*)"
     ]
   }
 }
