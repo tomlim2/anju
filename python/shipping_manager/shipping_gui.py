@@ -282,11 +282,51 @@ class ShippingGUI:
         output_path = os.path.normpath(self.config['output_path'])
 
         runuat = os.path.join(ue_dir, "Engine", "Build", "BatchFiles", "RunUAT.bat")
-        uproject = os.path.join(project_path, "CINEVStudio.uproject")
+        default_uproject = os.path.join(project_path, "CINEVStudio.uproject")
         archive_dir = os.path.join(output_path, output_name)
 
         self.log("=== PACKAGING ===")
         self.log(f"Archive: {archive_dir}\n")
+
+        # Verify RunUAT exists
+        if not os.path.exists(runuat):
+            self.log(f"[ERROR] RunUAT not found at: {runuat}")
+            self.log("Please set `ue_engine_dir` to a valid Unreal Engine install.")
+            return False
+
+        # Locate .uproject: prefer default, otherwise search recursively under project_path
+        uproject = None
+        if os.path.exists(default_uproject):
+            uproject = default_uproject
+            self.log(f"Found project: {uproject}")
+        else:
+            self.log(f"Default project not found: {default_uproject}")
+            self.log(f"Searching for .uproject files under: {project_path} ...")
+            matches = []
+            try:
+                for root, dirs, files in os.walk(project_path):
+                    for f in files:
+                        if f.lower().endswith('.uproject'):
+                            matches.append(os.path.join(root, f))
+            except Exception as e:
+                self.log(f"[ERROR] Searching project_path failed: {e}")
+
+            if not matches:
+                self.log(f"[ERROR] No .uproject found under {project_path}")
+                self.log("Ensure `project_path` points to your project root or contains the .uproject file.")
+                return False
+            # Prefer file named CINEVStudio.uproject if present
+            chosen = None
+            for m in matches:
+                if os.path.basename(m).lower() == 'cinevstudio.uproject':
+                    chosen = m
+                    break
+            if not chosen:
+                chosen = matches[0]
+                self.log(f"Multiple .uproject candidates found; using: {chosen}")
+            else:
+                self.log(f"Located .uproject: {chosen}")
+            uproject = chosen
 
         cmd = (
             f'"{runuat}" BuildCookRun '
@@ -296,17 +336,29 @@ class ShippingGUI:
             f'-archivedirectory="{archive_dir}"'
         )
 
-        self.log("Running UAT (check console window)...")
+        self.log("Running UAT (capturing output)...")
+        self.log(f"Command: {cmd}")
 
         try:
-            process = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
-            process.wait()
+            result = subprocess.run(cmd, shell=True, cwd=project_path,
+                                    capture_output=True, text=True)
 
-            if process.returncode == 0:
+            if result.stdout:
+                for line in result.stdout.splitlines():
+                    self.log(f"  {line}")
+            if result.stderr:
+                for line in result.stderr.splitlines():
+                    self.log(f"  {line}")
+
+            if result.returncode == 0:
                 self.log("[OK] Packaging complete.\n")
                 return True
             else:
-                self.log(f"[FAILED] Exit code: {process.returncode}")
+                self.log(f"[FAILED] Exit code: {result.returncode}")
+                appdata = os.getenv('APPDATA') or ''
+                if appdata:
+                    at_log = os.path.join(appdata, 'Unreal Engine', 'AutomationTool', 'Logs')
+                    self.log(f"Check AutomationTool logs under: {at_log}")
                 return False
         except Exception as e:
             self.log(f"[ERROR] {str(e)}")
