@@ -403,8 +403,15 @@ class ShippingGUI:
         for cmd, desc in commands:
             self.log(f"> {desc}")
             try:
-                result = subprocess.run(cmd, cwd=project_path, shell=True,
-                                       capture_output=True, text=True)
+                result = subprocess.run(
+                    cmd,
+                    cwd=project_path,
+                    shell=True,
+                    capture_output=True,
+                    text=True,
+                    encoding='utf-8',
+                    errors='replace'
+                )
                 if result.stdout:
                     self.log(f"  {result.stdout.strip()}")
                 if result.stderr:
@@ -485,9 +492,15 @@ class ShippingGUI:
 
         try:
             process = subprocess.Popen(
-                cmd, shell=True, cwd=project_path,
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                text=True, bufsize=1
+                cmd,
+                shell=True,
+                cwd=project_path,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding='utf-8',
+                errors='replace',
+                bufsize=1
             )
 
             last_heartbeat = time.time()
