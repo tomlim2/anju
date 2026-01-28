@@ -12,7 +12,7 @@ import time
 class ShippingGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("CINEV 쉬핑 매니저")
+        self.root.title("CINEV 연출용 패키지 매니저")
         self.root.geometry("960x720")
         self.root.configure(bg='white')
 
