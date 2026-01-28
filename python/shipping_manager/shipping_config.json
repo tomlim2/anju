@@ -1,7 +1,7 @@
 {
-  "ue_engine_dir": "E:/UE_CINEV",
-  "project_path": "E:/Second/CINEVStudio",
-  "output_path": "E:/shipped",
+  "ue_engine_dir": "D:/UE_CINEV",
+  "project_path": "D:/Project/CINEVStudio",
+  "output_path": "D:/Packages",
   "nas_path": "\\\\nas.cinamon.me\\CineV\\11_Cinema\\CINEVPackageCO",
   "branch": "contents/production/divorce-unconditionally-v1.3.11"
 }
