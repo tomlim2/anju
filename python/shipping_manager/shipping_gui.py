@@ -394,13 +394,7 @@ class ShippingGUI:
         self.log(f"경로: {project_path}")
         self.log(f"브랜치: {branch}\n")
 
-        commands = [
-            ("git fetch --all", "가져오는 중..."),
-            (f"git checkout {branch}", f"체크아웃: {branch}"),
-            ("git pull", "풀 받는 중...")
-        ]
-
-        for cmd, desc in commands:
+        def run_cmd(cmd, desc, allow_fail=False):
             self.log(f"> {desc}")
             try:
                 result = subprocess.run(
@@ -417,12 +411,54 @@ class ShippingGUI:
                 if result.stderr:
                     self.log(f"  {result.stderr.strip()}")
                 if result.returncode != 0:
-                    self.log(f"  [실패]")
+                    self.log("  [실패]" if not allow_fail else "  [경고]")
                     return False
-                self.log(f"  [완료]")
+                self.log("  [완료]")
+                return True
             except Exception as e:
                 self.log(f"  [오류] {str(e)}")
                 return False
+
+        # Fetch (only when remotes exist)
+        try:
+            remotes_result = subprocess.run(
+                "git remote",
+                cwd=project_path,
+                shell=True,
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace'
+            )
+            remotes = [r.strip() for r in remotes_result.stdout.splitlines() if r.strip()]
+        except Exception:
+            remotes = []
+
+        if remotes:
+            if not run_cmd("git fetch --all", "가져오는 중..."):
+                return False
+        else:
+            self.log("⚠ 원격 리모트 없음. fetch/pull 건너뜀")
+
+        if not run_cmd(f"git checkout {branch}", f"체크아웃: {branch}"):
+            return False
+
+        # Pull only when upstream exists (allow local-only branch to pass)
+        if remotes:
+            upstream_check = subprocess.run(
+                f"git rev-parse --abbrev-ref --symbolic-full-name {branch}@{{upstream}}",
+                cwd=project_path,
+                shell=True,
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace'
+            )
+            if upstream_check.returncode == 0:
+                if not run_cmd("git pull", "풀 받는 중..."):
+                    return False
+            else:
+                self.log("⚠ 원격 추적 브랜치 없음. pull 건너뜀")
 
         self.log("\nGit 업데이트 완료.\n")
         return True
