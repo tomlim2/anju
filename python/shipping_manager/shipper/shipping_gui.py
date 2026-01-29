@@ -7,6 +7,7 @@ import json
 from datetime import datetime
 import threading
 import time
+import urllib.request
 
 
 class ShippingGUI:
@@ -349,27 +350,46 @@ class ShippingGUI:
         thread.start()
 
     def run_shipping(self):
+        slack_channel, slack_thread_ts = None, None
+        current_step = "초기화"
         try:
             output_name = self.generate_output_name()
             self.log(f"출력 이름: {output_name}\n")
 
+            # Slack: Send start notification
+            slack_channel, slack_thread_ts = self.send_slack_start()
+
             # Step 1: Packaging (Git already verified)
+            current_step = "패키징"
             self.root.after(0, lambda: self.update_status('packaging'))
             if not self.run_packaging(output_name):
+                self.send_slack_failure(slack_channel, slack_thread_ts, current_step, "UAT 빌드 실패")
                 return
 
             # Step 2: ZIP
+            current_step = "압축"
             self.root.after(0, lambda: self.update_timer_task("압축"))
             self.root.after(0, lambda: self.update_status('zip'))
             zip_file = self.run_zip(output_name)
             if not zip_file:
+                self.send_slack_failure(slack_channel, slack_thread_ts, current_step, "ZIP 생성 실패")
                 return
 
             # Step 3: Upload
+            current_step = "업로드"
             self.root.after(0, lambda: self.update_timer_task("업로드"))
             self.root.after(0, lambda: self.update_status('upload'))
             if not self.run_upload(zip_file, output_name):
+                self.send_slack_failure(slack_channel, slack_thread_ts, current_step, "NAS 업로드 실패")
                 return
+
+            # Slack: Send completion notification
+            nas_path = self.config.get('nas_path', '')
+            if nas_path and os.path.exists(nas_path):
+                file_path = os.path.join(nas_path, f"{output_name}.zip")
+            else:
+                file_path = zip_file
+            self.send_slack_complete(slack_channel, slack_thread_ts, file_path)
 
             # Complete
             self.root.after(0, lambda: self.update_status('complete'))
@@ -380,6 +400,7 @@ class ShippingGUI:
 
         except Exception as e:
             self.log(f"\n[오류] {str(e)}")
+            self.send_slack_failure(slack_channel, slack_thread_ts, current_step, str(e))
             self.root.after(0, lambda: messagebox.showerror("오류", str(e)))
         finally:
             self.root.after(0, self.stop_timer)
@@ -624,6 +645,161 @@ class ShippingGUI:
         except Exception as e:
             self.log(f"[오류] {str(e)}")
             return False
+
+    def get_git_info(self):
+        """Get git commit info for Slack notification."""
+        project_path = self.config.get('project_path', '')
+        if not project_path:
+            return None
+
+        try:
+            result = subprocess.run(
+                'git log -1 --format="%H|%s|%ci"',
+                cwd=project_path, shell=True, capture_output=True,
+                text=True, encoding='utf-8', errors='replace'
+            )
+            if result.returncode == 0:
+                parts = result.stdout.strip().strip('"').split('|')
+                if len(parts) >= 3:
+                    return {
+                        'hash': parts[0][:8],
+                        'message': parts[1],
+                        'date': parts[2]
+                    }
+        except Exception:
+            pass
+        return None
+
+    def slack_post_webhook(self, message):
+        """Send message via webhook. Returns None (webhook doesn't return thread_ts)."""
+        webhook_url = os.environ.get('SLACK_WEBHOOK_URL', '')
+        if not webhook_url:
+            return None
+
+        try:
+            payload = json.dumps({"text": message}).encode('utf-8')
+            req = urllib.request.Request(
+                webhook_url, data=payload,
+                headers={"Content-Type": "application/json; charset=utf-8"}
+            )
+            urllib.request.urlopen(req, timeout=10)
+            return True
+        except Exception as e:
+            self.log(f"[경고] Slack 웹훅 전송 실패: {e}")
+            return None
+
+    def slack_post_message(self, channel, text, thread_ts=None):
+        """Send message via Bot Token API. Returns message ts."""
+        bot_token = os.environ.get('SLACK_BOT_TOKEN', '')
+        if not bot_token:
+            return None
+
+        try:
+            payload = {"channel": channel, "text": text}
+            if thread_ts:
+                payload["thread_ts"] = thread_ts
+
+            data = json.dumps(payload).encode('utf-8')
+            req = urllib.request.Request(
+                "https://slack.com/api/chat.postMessage",
+                data=data,
+                headers={
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Authorization": f"Bearer {bot_token}"
+                }
+            )
+            response = urllib.request.urlopen(req, timeout=10)
+            result = json.loads(response.read().decode('utf-8'))
+            if result.get('ok'):
+                return result.get('ts')
+            else:
+                self.log(f"[경고] Slack API 오류: {result.get('error')}")
+        except Exception as e:
+            self.log(f"[경고] Slack API 전송 실패: {e}")
+        return None
+
+    def send_slack_start(self):
+        """Send start notification to Slack. Returns (channel, thread_ts) for replies."""
+        self.log("=== Slack 시작 알림 ===")
+
+        bot_token = os.environ.get('SLACK_BOT_TOKEN', '')
+        channel = os.environ.get('SLACK_CHANNEL', '')
+
+        if not bot_token or not channel:
+            self.log("[건너뜀] SLACK_BOT_TOKEN 또는 SLACK_CHANNEL 미설정.")
+            return None, None
+
+        # Send start message
+        message = "[연출용 빌드머신] 외부 작업자용 패키지를 시작합니다"
+        thread_ts = self.slack_post_message(channel, message)
+
+        if not thread_ts:
+            self.log("[경고] 시작 메시지 전송 실패.")
+            return None, None
+
+        self.log("[완료] 시작 알림 전송됨.")
+
+        # Send project spec as thread reply
+        git_info = self.get_git_info()
+        branch = self.branch_var.get()
+
+        if git_info:
+            spec_message = (
+                f"패키징 대상 프로젝트 명세서\n"
+                f"```\n"
+                f"브랜치: {branch}\n"
+                f"커밋: {git_info['message']}\n"
+                f"커밋날짜: {git_info['date']}\n"
+                f"해시값: {git_info['hash']}\n"
+                f"```"
+            )
+        else:
+            spec_message = (
+                f"패키징 대상 프로젝트 명세서\n"
+                f"```\n"
+                f"브랜치: {branch}\n"
+                f"```"
+            )
+
+        self.slack_post_message(channel, spec_message, thread_ts)
+        self.log("[완료] 프로젝트 명세서 전송됨.\n")
+
+        return channel, thread_ts
+
+    def send_slack_complete(self, channel, thread_ts, file_path):
+        """Send completion notification as thread reply."""
+        self.log("=== Slack 완료 알림 ===")
+
+        if not channel or not thread_ts:
+            self.log("[건너뜀] 스레드 정보 없음.")
+            return
+
+        message = (
+            f"✅ 쉬핑 완료!\n"
+            f"파일경로: {file_path}"
+        )
+
+        self.slack_post_message(channel, message, thread_ts)
+        self.log("[완료] 완료 알림 전송됨.\n")
+
+    def send_slack_failure(self, channel, thread_ts, step, reason):
+        """Send failure notification as thread reply."""
+        self.log("=== Slack 실패 알림 ===")
+
+        if not channel or not thread_ts:
+            self.log("[건너뜀] 스레드 정보 없음.")
+            return
+
+        message = (
+            f"⚠️ 쉬핑 실패!\n"
+            f"```\n"
+            f"실패 단계: {step}\n"
+            f"실패 이유: {reason}\n"
+            f"```"
+        )
+
+        self.slack_post_message(channel, message, thread_ts)
+        self.log("[완료] 실패 알림 전송됨.\n")
 
 
 if __name__ == "__main__":
