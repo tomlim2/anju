@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(\"E:\\\\shipped\\\\Windows\\\\CINEVStudio.exe\":*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(cd /d d:vsanju)",
+      "Bash(git -C \"d:\\\\vs\\\\anju\" log --oneline -15)"
     ]
   }
 }
