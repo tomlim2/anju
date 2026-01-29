@@ -307,8 +307,52 @@ class ShippingGUI:
         else:
             self.log("⚠ NAS: 설정 안됨 (업로드 건너뜀)")
 
+        # Slack bot verification (warning only, not blocking)
+        self.verify_slack_bot()
+
         self.log("")
         return all_ok
+
+    def verify_slack_bot(self):
+        """Verify Slack bot token and channel configuration."""
+        bot_token = os.environ.get('SLACK_BOT_TOKEN', '')
+        channel = os.environ.get('SLACK_CHANNEL', '')
+
+        if not bot_token:
+            self.log("⚠ Slack: SLACK_BOT_TOKEN 미설정")
+            return False
+        if not channel:
+            self.log("⚠ Slack: SLACK_CHANNEL 미설정")
+            return False
+
+        # Test API call to verify token and permissions
+        try:
+            payload = json.dumps({"channel": channel, "text": ""}).encode('utf-8')
+            req = urllib.request.Request(
+                "https://slack.com/api/auth.test",
+                data=None,
+                headers={
+                    "Authorization": f"Bearer {bot_token}"
+                }
+            )
+            response = urllib.request.urlopen(req, timeout=5)
+            result = json.loads(response.read().decode('utf-8'))
+
+            if result.get('ok'):
+                bot_name = result.get('user', 'Unknown')
+                self.log(f"✓ Slack: 봇 연결됨 ({bot_name})")
+                return True
+            else:
+                error = result.get('error', 'Unknown error')
+                if error == 'invalid_auth':
+                    self.log("✗ Slack: 토큰이 유효하지 않습니다")
+                elif error == 'token_revoked':
+                    self.log("✗ Slack: 토큰이 취소되었습니다")
+                else:
+                    self.log(f"✗ Slack: {error}")
+                return False
+        except Exception as e:
+            self.log(f"⚠ Slack: 연결 테스트 실패 ({e})")
 
     def generate_output_name(self):
         branch = self.branch_var.get()
