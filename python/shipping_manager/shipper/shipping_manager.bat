@@ -5,7 +5,7 @@ rem Load environment variables from .env if exists
 if exist ".env" (
   echo Loading environment variables from .env
   for /f "usebackq tokens=1,* delims==" %%a in (".env") do (
-    if not "%%a"=="" if not "%%a:~0,1%"=="#" set "%%a=%%b"
+    if not "%%a"=="" if not "%%a:~0,1"=="#" set "%%a=%%b"
   )
 )
 
