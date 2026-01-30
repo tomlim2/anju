@@ -23,37 +23,29 @@ A complete invoice generation system for monthly lesson billing. Features includ
 
 ### Web Interface
 
-Command: `/open-invoice <student_name>`
+Command: `/open-invoice`
 
-Open in browser for complex invoices:
 ```bash
-/open-invoice 학생1
+/open-invoice
 ```
 
 **Workflow:**
-1. Validates student exists in presets.json
-2. Opens web app with auto-filled:
-   - Student name
-   - Hourly rate from presets
-   - Bank information
-3. Add lesson dates and hours
-4. Click "PDF로 저장"
-5. **✨ Auto-copies to clipboard**: `/move-invoice 학생1`
-6. Alert: "명령이 클립보드에 복사되었습니다"
-7. Paste (`Cmd+V`) in Claude Code
-8. PDF automatically moved to `private/tutoring/invoices/`
+1. Opens web app with empty form
+2. **Select student** from dropdown (loaded from presets.json)
+3. Hourly rate and bank info **auto-filled** when student is selected
+4. Add lesson dates and hours
+5. Click "PDF로 저장"
+6. **✨ Auto-copies to clipboard**: `/move-invoice 학생1`
+7. Alert: "명령이 클립보드에 복사되었습니다"
+8. Paste (`Cmd+V`) in Claude Code
+9. PDF automatically moved to `private/tutoring/invoices/`
 
-**Advantages:**
+**Features:**
+- Student selection dropdown
+- Auto-fill hourly rate on selection
 - Visual editing and preview
 - Multiple lesson dates tracking
-- Auto-clipboard for easy archival
-
-### Default Values
-- Student: 석민이
-- Hourly rate: 150,000원
-- Bank: XX은행
-- Account: 123456789012
-- Account holder: 홍길동
+- Clipboard automation for easy archival
 
 ## Configuration
 

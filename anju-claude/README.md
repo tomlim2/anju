@@ -48,7 +48,7 @@ When working with Unreal Engine C++ code, consult **both** standards:
 - **`/commit-m`** - Generate conventional commit messages from staged changes
 - **`/clean-up`** - Update CLAUDE.md project overview based on codebase analysis
 - **`/collect-commits`** - Extract git commit history for portfolio use
-- **`/open-invoice <student_name>`** - Open invoice generator web app with student preset
+- **`/open-invoice`** - Open invoice generator web app (select student from dropdown)
 - **`/move-invoice <student_name>`** - Move latest PDF from Downloads to private/tutoring/invoices
 
 ### Available Skills

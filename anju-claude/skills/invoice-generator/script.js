@@ -1,35 +1,48 @@
-// Load student preset from URL parameter
+// Load student list from presets.json
 window.addEventListener('DOMContentLoaded', async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const studentName = urlParams.get('student');
+    try {
+        const response = await fetch('../../private/tutoring/presets.json');
+        const presets = await response.json();
 
-    if (studentName) {
-        try {
-            const response = await fetch('../../private/tutoring/presets.json');
-            const presets = await response.json();
-
-            // Set student name
-            document.getElementById('studentName').value = studentName;
-
-            // Load student-specific settings if exists
-            if (presets.students && presets.students[studentName]) {
-                const studentPreset = presets.students[studentName];
-                if (studentPreset.hourly_rate) {
-                    document.getElementById('hourlyRate').value = studentPreset.hourly_rate;
-                }
-            }
-
-            // Load default teacher info
-            if (presets.default_teacher) {
-                const teacher = presets.default_teacher;
-                if (teacher.bank) document.getElementById('bankName').value = teacher.bank;
-                if (teacher.account) document.getElementById('accountNumber').value = teacher.account;
-                if (teacher.account_holder) document.getElementById('accountHolder').value = teacher.account_holder;
-            }
-        } catch (error) {
-            console.error('Failed to load presets:', error);
+        // Populate student dropdown
+        const studentSelect = document.getElementById('studentName');
+        if (presets.students) {
+            Object.keys(presets.students).forEach(studentName => {
+                const option = document.createElement('option');
+                option.value = studentName;
+                option.textContent = studentName;
+                studentSelect.appendChild(option);
+            });
         }
+
+        // Load default teacher info
+        if (presets.default_teacher) {
+            const teacher = presets.default_teacher;
+            if (teacher.bank) document.getElementById('bankName').value = teacher.bank;
+            if (teacher.account) document.getElementById('accountNumber').value = teacher.account;
+            if (teacher.account_holder) document.getElementById('accountHolder').value = teacher.account_holder;
+        }
+
+        // Store presets for later use
+        window.presets = presets;
+    } catch (error) {
+        console.error('Failed to load presets:', error);
+        alert('presets.json을 불러오는데 실패했습니다.');
     }
+});
+
+// Auto-fill hourly rate when student is selected
+document.addEventListener('DOMContentLoaded', () => {
+    const studentSelect = document.getElementById('studentName');
+    studentSelect.addEventListener('change', (e) => {
+        const studentName = e.target.value;
+        if (studentName && window.presets && window.presets.students[studentName]) {
+            const studentPreset = window.presets.students[studentName];
+            if (studentPreset.hourly_rate) {
+                document.getElementById('hourlyRate').value = studentPreset.hourly_rate;
+            }
+        }
+    });
 });
 
 // Add new class entry
