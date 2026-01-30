@@ -16,6 +16,7 @@ A complete invoice generation system for monthly lesson billing. Features includ
 - `index.html` - Main web interface with form and invoice preview
 - `script.js` - Invoice generation logic and PDF export
 - `style.css` - Styling
+- `presets.json.example` - Template for storing student/teacher info (reference only)
 
 ## Usage
 
@@ -44,6 +45,18 @@ Command: `/open-invoice`
 
 ## File Locations
 - **Generated PDFs**: Downloads folder (move to `private/tutoring/invoices/` for archival)
+- **Student info (optional)**: `~/.claude/private/tutoring/presets.json` - Store student/teacher info for reference
+
+## Optional: Student Information Storage
+
+You can maintain student and teacher information in `~/.claude/private/tutoring/presets.json`:
+
+```bash
+# Copy example file
+cp skills/invoice-generator/presets.json.example ~/.claude/private/tutoring/presets.json
+```
+
+**Note**: This file is for reference only. The web app does not auto-load this data.
 
 ## Future Enhancements
 

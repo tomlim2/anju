@@ -77,6 +77,7 @@ anju-claude/
 │   ├── notes/
 │   ├── cache/
 │   └── tutoring/
+│       ├── presets.json      # Student & teacher info (reference)
 │       └── invoices/         # Generated invoices archive
 ├── CLAUDE.md            # System documentation (read this for details)
 └── README.md            # This file
