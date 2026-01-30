@@ -9,7 +9,9 @@
       "Bash(ln:*)",
       "Bash(ls:*)",
       "Bash(dir D:vs)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Read(//Users/younsoolim/.claude/**)",
+      "Bash(tree:*)"
     ]
   }
 }
