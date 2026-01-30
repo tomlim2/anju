@@ -17,7 +17,7 @@ A complete invoice generation system for monthly lesson billing. Features includ
 - `script.js` - Invoice generation logic and PDF export
 - `style.css` - Styling
 - `presets.json.example` - Template for student presets
-- `../../private/tutoring/presets.json` - Actual student data (gitignored)
+- `presets.json` - Symlink to `~/.claude/private/tutoring/presets.json` (gitignored)
 
 ## Usage
 

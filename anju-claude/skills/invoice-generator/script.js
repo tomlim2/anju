@@ -1,7 +1,7 @@
 // Load student list from presets.json
 window.addEventListener('DOMContentLoaded', async () => {
     try {
-        const response = await fetch('../../private/tutoring/presets.json');
+        const response = await fetch('presets.json');
         const presets = await response.json();
 
         // Populate student dropdown
