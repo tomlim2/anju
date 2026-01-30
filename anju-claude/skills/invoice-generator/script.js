@@ -5,8 +5,8 @@ document.getElementById('addEntry').addEventListener('click', () => {
     newEntry.className = 'class-entry';
     newEntry.innerHTML = `
         <input type="date" class="class-date" required>
-        <input type="number" class="class-hours" placeholder="시간" step="0.5" required>
-        <input type="number" class="class-minutes" placeholder="분" step="15" value="0">
+        <input type="number" class="class-hours" placeholder="0" step="0.5" required>
+        <input type="number" class="class-minutes" placeholder="0" step="15">
         <input type="text" class="class-note" placeholder="비고">
         <button type="button" class="remove-btn" onclick="removeEntry(this)">삭제</button>
     `;
