@@ -10,3 +10,6 @@ projects/
 file-history/
 shell-snapshots/
 agents/
+
+# Other
+statsig/
