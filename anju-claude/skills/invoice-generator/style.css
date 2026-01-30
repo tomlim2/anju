@@ -1,0 +1,319 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    min-height: 100vh;
+    padding: 40px 20px;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 968px) {
+    .container {
+        grid-template-columns: 1fr;
+    }
+}
+
+.form-section, .invoice-section {
+    background: white;
+    padding: 40px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+}
+
+.form-section h2 {
+    margin-bottom: 30px;
+    color: #1a1a1a;
+    font-size: 28px;
+    font-weight: 700;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #555;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #000;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    font-family: 'Courier New', monospace;
+    background: white;
+}
+
+.form-group input:focus {
+    outline: none;
+    border: 2px solid #000;
+}
+
+.class-entry {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 2fr auto;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.class-entry input {
+    width: 100%;
+}
+
+.remove-btn {
+    background: #000;
+    color: white;
+    border: none;
+    padding: 12px 18px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.remove-btn:hover {
+    background: #333;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+#addEntry {
+    background: #333;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+#addEntry:hover {
+    background: #555;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+button[type="submit"] {
+    width: 100%;
+    padding: 16px;
+    background: #000;
+    color: white;
+    border: none;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+button[type="submit"]:hover {
+    background: #1a1a1a;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+#invoice {
+    background: white;
+    padding: 20mm;
+    max-width: 210mm;
+    width: 210mm;
+    box-sizing: border-box;
+}
+
+#invoice h1 {
+    text-align: left;
+    color: #000;
+    margin-bottom: 8mm;
+    font-size: 24px;
+    font-weight: 700;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.student-name {
+    text-align: left;
+    font-size: 14px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 5mm;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.student-name span {
+    color: #333;
+}
+
+.invoice-number {
+    text-align: right;
+    margin-bottom: 5mm;
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+
+.invoice-number p {
+    font-weight: 400;
+    color: #999;
+    margin: 0;
+    font-size: 10px;
+    font-family: 'Courier New', monospace;
+}
+
+.invoice-number span {
+    color: #666;
+    font-weight: 400;
+}
+
+.highlight-section {
+    background: #f9f9f9;
+    padding: 4mm 5mm;
+    border: 3px solid #000;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+#invoice section {
+    margin-bottom: 6mm;
+    page-break-inside: avoid;
+}
+
+#invoice h3 {
+    color: #1a1a1a;
+    margin-bottom: 3mm;
+    font-size: 16px;
+    font-weight: 700;
+    padding-bottom: 2mm;
+    border-bottom: 2px solid #f0f0f0;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+#invoice p {
+    margin-bottom: 2mm;
+    color: #555;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+}
+
+#invoice table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 3mm 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+#invoice table th,
+#invoice table td {
+    border: 1px solid #e8e8e8;
+    padding: 2mm 3mm;
+    text-align: left;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+}
+
+#invoice table th {
+    background: #000;
+    font-weight: 600;
+    color: white;
+    border: none;
+}
+
+#invoice table tbody tr:last-child {
+    font-weight: 600;
+    background: #f5f5f5;
+}
+
+#invoice table tbody tr:hover:not(:last-child) {
+    background: #fafafa;
+}
+
+.calculation {
+    background: #f5f5f5;
+    padding: 3mm 4mm;
+    margin-top: 3mm;
+    border-left: 4px solid #000;
+}
+
+.calculation p {
+    font-family: 'Courier New', monospace;
+    margin-bottom: 1mm;
+}
+
+.total-amount {
+    font-size: 14px;
+}
+
+.total-amount strong {
+    color: #000;
+    font-size: 18px;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 5mm 0;
+}
+
+.footer {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    font-size: 11px;
+    margin-top: 5mm;
+}
+
+@media print {
+    #downloadPDF, #editInvoice {
+        display: none !important;
+    }
+}
+
+#downloadPDF, #editInvoice {
+    width: 100%;
+    padding: 15px;
+    margin-top: 20px;
+    border: none;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#downloadPDF {
+    background: #000;
+    color: white;
+}
+
+#downloadPDF:hover {
+    background: #1a1a1a;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+#editInvoice {
+    background: #fff;
+    color: #000;
+    border: 2px solid #000;
+}
+
+#editInvoice:hover {
+    background: #f5f5f5;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}

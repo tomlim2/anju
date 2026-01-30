@@ -48,9 +48,13 @@ When working with Unreal Engine C++ code, consult **both** standards:
 - **`/commit-m`** - Generate conventional commit messages from staged changes
 - **`/clean-up`** - Update CLAUDE.md project overview based on codebase analysis
 - **`/collect-commits`** - Extract git commit history for portfolio use
+- **`/open-invoice <student_name>`** - Open invoice generator web app with student preset
+- **`/generate-invoice <student_name>`** - Generate invoice PDF (auto-save to private, current month)
+- **`/move-invoice <student_name>`** - Move latest PDF from Downloads to private/tutoring/invoices
 
 ### Available Skills
 - **`git-commit-collector`** - Git commit history extraction and analysis tool
+- **`invoice-generator`** - Hybrid invoice system (web app + Python CLI) for tuition billing
 
 ---
 
@@ -61,7 +65,10 @@ anju-claude/
 ├── commands/            # Slash commands for workflow automation
 │   ├── commit-m.md
 │   ├── clean-up.md
-│   └── collect-commits.md
+│   ├── collect-commits.md
+│   ├── open-invoice.md
+│   ├── generate-invoice.md
+│   └── move-invoice.md
 ├── skills/              # Reusable utilities (scripts, tools)
 │   └── git-commit-collector/
 ├── standards/           # Technical standards and conventions
@@ -70,7 +77,10 @@ anju-claude/
 ├── private/             # Personal data (gitignored)
 │   ├── commits/
 │   ├── notes/
-│   └── cache/
+│   ├── cache/
+│   └── tutoring/
+│       ├── presets.json      # Student & bank info
+│       └── invoices/         # Generated invoices archive
 ├── CLAUDE.md            # System documentation (read this for details)
 └── README.md            # This file
 ```
