@@ -61,3 +61,7 @@ Unreal Engine automation tools for technical artists. Python scripts under `pyth
 - Python: `snake_case`, standalone scripts using `import unreal`
 - Assets: `DA_` prefix for Data Assets, forward-slash paths
 - Environment: UE Python API, Three.js (web), Git
+
+## Data Storage
+
+- Claude가 수집하는 개인 데이터/정보: `anju-claude/private/` 폴더에 저장

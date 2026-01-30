@@ -4,7 +4,12 @@
       "Bash(\"E:\\\\shipped\\\\Windows\\\\CINEVStudio.exe\":*)",
       "Bash(python:*)",
       "Bash(cd /d d:vsanju)",
-      "Bash(git -C \"d:\\\\vs\\\\anju\" log --oneline -15)"
+      "Bash(git -C \"d:\\\\vs\\\\anju\" log --oneline -15)",
+      "Bash(test:*)",
+      "Bash(ln:*)",
+      "Bash(ls:*)",
+      "Bash(dir D:vs)",
+      "Bash(findstr:*)"
     ]
   }
 }
