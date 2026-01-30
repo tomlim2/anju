@@ -70,14 +70,15 @@ body {
     display: grid;
     grid-template-columns: 1.5fr 1fr 1fr 2fr auto;
     gap: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     font-weight: 600;
     color: #333;
     font-size: 13px;
 }
 
 .class-entry-header span {
-    padding: 8px 0;
+    padding: 8px 16px;
+    text-align: left;
 }
 
 .class-entry {
