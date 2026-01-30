@@ -16,40 +16,12 @@ A complete invoice generation system for monthly lesson billing. Features includ
 - `index.html` - Main web interface with form and invoice preview
 - `script.js` - Invoice generation logic and PDF export
 - `style.css` - Styling
-- `generate_invoice_pdf.py` - Python CLI for automated PDF generation
-- `requirements.txt` - Python dependencies (weasyprint)
 - `presets.json.example` - Template for student presets
 - `../../private/tutoring/presets.json` - Actual student data (gitignored)
 
 ## Usage
 
-### Method 1: Python CLI (Automated) ⭐ Recommended for recurring invoices
-
-Command: `/generate-invoice`
-
-```bash
-# Super simple - just student name
-/generate-invoice 학생1
-```
-
-**What it does:**
-- Automatically uses current month (2026-01)
-- Reads `default_lessons_per_month` from presets.json (e.g., 2 hours)
-- Calculates: 2 hours × 150,000원 = 300,000원
-- Saves to `private/tutoring/invoices/2026-01_학생1.pdf`
-
-**Advantages:**
-- **Fastest method** - 1 command, no manual input
-- Automatic save to `private/tutoring/invoices/`
-- Perfect for monthly recurring invoices
-- Command-line friendly
-
-**Requirements:**
-```bash
-pip install weasyprint
-```
-
-### Method 2: Web Interface (Visual editing)
+### Web Interface
 
 Command: `/open-invoice <student_name>`
 
@@ -94,19 +66,8 @@ Open in browser for complex invoices:
 - **Student data**: `~/.claude/private/tutoring/presets.json` (gitignored)
 - **Generated PDFs**: Downloads folder (move to `private/tutoring/invoices/` for archival)
 
-## Choosing the Right Method
-
-| Use Case | Method |
-|----------|--------|
-| **Monthly recurring invoice** (same hours every month) | **Python CLI** (`/generate-invoice 학생1`) |
-| Need to see/edit lesson dates | Web Interface (`/open-invoice`) |
-| Variable hours each month | Web Interface |
-| Preview before saving | Web Interface |
-| Batch processing multiple students | Python CLI (scriptable) |
-
 ## Future Enhancements
 
-- ✅ Python CLI for automation (DONE)
 - Automatic monthly invoice generation (cron job)
 - Email integration (SMTP)
 - Invoice history viewer/manager
