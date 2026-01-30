@@ -13,7 +13,7 @@ import urllib.request
 class ShippingGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("CINEV 연출용 패키지 매니저")
+        self.root.title("CINEV Creator 패키지 매니저")
         self.root.geometry("960x720")
         self.root.configure(bg='white')
 
@@ -54,7 +54,7 @@ class ShippingGUI:
         main_frame.pack(fill=tk.BOTH, expand=True)
 
         # Title
-        title = tk.Label(main_frame, text="CINEV 쉬핑 매니저",
+        title = tk.Label(main_frame, text="CINEV Creator 쉬핑 매니저",
                         font=('Arial', 18, 'bold'), bg='white', fg='black')
         title.pack(pady=(0, 30))
 
@@ -774,7 +774,7 @@ class ShippingGUI:
             return None, None
 
         # Send start message
-        message = "[연출용 빌드머신] 외부 작업자용 패키지를 시작합니다"
+        message = "[CineV Creator] 패키지 빌드를 시작합니다"
         thread_ts = self.slack_post_message(channel, message)
 
         if not thread_ts:
