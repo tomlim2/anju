@@ -40,6 +40,25 @@ When working with Unreal Engine C++ code, consult **both** standards:
 ### General C++ (Non-Unreal)
 - **`code-review-cpp.md`** - Memory management, best practices, performance (ignore Unreal-specific sections)
 
+### GUI/UI Development
+**MANDATORY**: GUI/UI 작업 시작 전 반드시 디자인 시스템 참조
+
+- **`design-system.md`** - 색상, 간격, 타이포그래피, 컴포넌트, 상태, 아이콘, z-index 등 모든 UI 토큰
+- **핵심 원칙**: Brutalist B&W, 패딩 최소화 (8px 12px), border-radius = 0
+
+**Example workflow**: 새 버튼 컴포넌트 작성
+1. `design-system.md` 읽기 (버전 확인)
+2. **파일 상단에 버전 주석 추가**: `// Design System: v1.0.0`
+3. Buttons 섹션 참조 (2px border, 8px 12px padding, UPPERCASE)
+4. Component States 참조 (Default, Hover, Focus, Disabled)
+
+**버전 스탬프** (첫 GUI 작업 시 필수):
+```tsx
+// Design System: v1.0.0
+```
+
+**버전 동기화**: `/design-sync` 명령어로 작업물과 디자인 시스템 버전 일치 확인
+
 ---
 
 ## Quick Reference
@@ -50,6 +69,7 @@ When working with Unreal Engine C++ code, consult **both** standards:
 - **`/collect-commits`** - Extract git commit history for portfolio use
 - **`/open-invoice`** - Open invoice generator web app (manual entry)
 - **`/move-invoice <student_name>`** - Move latest PDF from Downloads to private/tutoring/invoices
+- **`/design-sync [version]`** - 디자인 시스템 버전 확인 및 작업물 동기화
 
 ### Available Skills
 - **`git-commit-collector`** - Git commit history extraction and analysis tool
@@ -66,12 +86,14 @@ anju-claude/
 │   ├── clean-up.md
 │   ├── collect-commits.md
 │   ├── open-invoice.md
-│   └── move-invoice.md
+│   ├── move-invoice.md
+│   └── design-sync.md   # 디자인 시스템 동기화
 ├── skills/              # Reusable utilities (scripts, tools)
 │   └── git-commit-collector/
 ├── standards/           # Technical standards and conventions
 │   ├── unreal-engine.md
-│   └── code-review-cpp.md
+│   ├── code-review-cpp.md
+│   └── design-system.md  # GUI/UI 디자인 시스템 (versioned)
 ├── private/             # Personal data (gitignored)
 │   ├── commits/
 │   ├── notes/

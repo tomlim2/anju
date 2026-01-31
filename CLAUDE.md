@@ -62,6 +62,13 @@ Unreal Engine automation tools for technical artists. Python scripts under `pyth
 - Assets: `DA_` prefix for Data Assets, forward-slash paths
 - Environment: UE Python API, Three.js (web), Git
 
+## GUI Work
+
+**MANDATORY**: GUI/UI 작업 시작 전 반드시 디자인 시스템 참조:
+- 파일: `anju-claude/standards/design-system.md`
+- 모든 색상, 간격, 타이포그래피, 컴포넌트 스타일은 이 문서를 따를 것
+- Brutalist B&W, 패딩 최소화, border-radius = 0
+
 ## Data Storage
 
 - Claude가 수집하는 개인 데이터/정보: `anju-claude/private/` 폴더에 저장

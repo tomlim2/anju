@@ -11,7 +11,9 @@
       "Bash(dir D:vs)",
       "Bash(findstr:*)",
       "Read(//Users/younsoolim/.claude/**)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)"
     ]
   }
 }
