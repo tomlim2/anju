@@ -2,16 +2,30 @@
 import os
 import json
 import urllib.request
+from pathlib import Path
 
-# .env 파일에서 환경변수 로드 (간단 버전)
-env_file = os.path.join(os.path.dirname(__file__), '.env')
-if os.path.exists(env_file):
-    with open(env_file, 'r', encoding='utf-8') as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith('#') and '=' in line:
-                key, value = line.split('=', 1)
-                os.environ[key.strip()] = value.strip()
+
+def load_shared_config():
+    """Load shared Slack config from claude config."""
+    # Load .env
+    env_path = Path.home() / ".claude" / "config" / ".env"
+    if env_path.exists():
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, value = line.split("=", 1)
+                    os.environ[key.strip()] = value.strip()
+
+    # Load slack.json
+    slack_config_path = Path.home() / ".claude" / "config" / "slack.json"
+    if slack_config_path.exists():
+        with open(slack_config_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
+SLACK_CONFIG = load_shared_config()
 
 def test_slack():
     bot_token = os.environ.get('SLACK_BOT_TOKEN', '')
@@ -35,7 +49,8 @@ def test_slack():
     try:
         payload = {
             "channel": channel,
-            "text": "🧪 [테스트] Slack 연동 테스트 메시지입니다."
+            "text": "🧪 [테스트] Slack 연동 테스트 메시지입니다.",
+            "username": SLACK_CONFIG.get("bot_username", "아트 아르리므"),
         }
         data = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(
@@ -59,7 +74,8 @@ def test_slack():
             payload2 = {
                 "channel": channel,
                 "text": "📝 스레드 댓글 테스트입니다.",
-                "thread_ts": thread_ts
+                "thread_ts": thread_ts,
+                "username": SLACK_CONFIG.get("bot_username", "아트 아르리므"),
             }
             data2 = json.dumps(payload2).encode('utf-8')
             req2 = urllib.request.Request(

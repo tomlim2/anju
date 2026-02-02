@@ -5,9 +5,33 @@ import shutil
 import os
 import json
 from datetime import datetime
+from pathlib import Path
 import threading
 import time
 import urllib.request
+
+
+def load_shared_slack_config():
+    """Load shared Slack config from claude config."""
+    # Load .env
+    env_path = Path.home() / ".claude" / "config" / ".env"
+    if env_path.exists():
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, value = line.split("=", 1)
+                    os.environ[key.strip()] = value.strip()
+
+    # Load slack.json
+    slack_config_path = Path.home() / ".claude" / "config" / "slack.json"
+    if slack_config_path.exists():
+        with open(slack_config_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
+SLACK_CONFIG = load_shared_slack_config()
 
 
 class ShippingGUI:
@@ -739,7 +763,11 @@ class ShippingGUI:
             return None
 
         try:
-            payload = {"channel": channel, "text": text}
+            payload = {
+                "channel": channel,
+                "text": text,
+                "username": SLACK_CONFIG.get("bot_username", "아트 아르리므"),
+            }
             if thread_ts:
                 payload["thread_ts"] = thread_ts
 
