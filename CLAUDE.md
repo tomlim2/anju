@@ -72,3 +72,27 @@ Unreal Engine automation tools for technical artists. Python scripts under `pyth
 ## Data Storage
 
 - Claude가 수집하는 개인 데이터/정보: `~/.claude/private/` 폴더에 저장
+
+## Learnings & Global Config
+
+프로젝트별 learnings 및 공유 설정은 **Global Claude Config**에서 관리:
+
+```
+~/.claude/                    (symlink to D:\vs\caol-ila\claude)
+├── private/learnings/        # 프로젝트별 배운 것들
+│   ├── _template.md
+│   └── projects/
+│       └── slack.md          # Slack 관련 learnings
+├── config/                   # 공유 설정
+│   ├── .env                  # API 토큰 (SLACK_BOT_TOKEN 등)
+│   └── slack.json            # Slack 설정 (채널, 봇 이름)
+└── standards/                # 코딩 표준
+```
+
+**Learnings 추가:** `/learn <project> <category>` 커맨드 사용
+
+**카테고리:**
+- `convention` - 코드베이스에서 발견한 패턴
+- `worked` - 성공한 접근법
+- `failed` - 실패한 접근법 (이유 포함)
+- `gotcha` - 비직관적인 문제점
