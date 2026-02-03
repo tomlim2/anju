@@ -3,3 +3,10 @@
 # Environment files (contain secrets)
 .env
 *.env.local
+
+# Shipping manager configs (user-specific)
+python/shipping_manager/shipper/shipping_config.json
+python/shipping_manager/creator_only/config.json
+
+# NZ Downloader config (contains API secrets)
+api-test/nz-downloader/config.js
