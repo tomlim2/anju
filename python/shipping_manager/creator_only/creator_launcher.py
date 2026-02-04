@@ -16,9 +16,9 @@ VERSION = "1.2.0"
 class CreatorLauncher:
     def __init__(self, root):
         self.root = root
-        self.root.title(f"CINEV Creator Launcher v{VERSION}")
+        self.root.title(f"CineV Studio Creator v{VERSION}")
         self.root.geometry("600x320")
-        self.root.configure(bg='white')
+        self.root.configure(bg='#1a1a1a')
 
         # config 파일 경로
         self.config_file = os.path.join(os.path.dirname(__file__), "config.json")
@@ -77,33 +77,33 @@ class CreatorLauncher:
             return "Creator Mode"
 
     def create_widgets(self):
-        outer = tk.Frame(self.root, bg='white')
+        outer = tk.Frame(self.root, bg='#1a1a1a')
         outer.pack(fill=tk.BOTH, expand=True)
 
-        main_frame = tk.Frame(outer, bg='white', padx=30)
+        main_frame = tk.Frame(outer, bg='#1a1a1a', padx=30)
         main_frame.place(relx=0.5, rely=0.5, anchor='center')
 
         # Title
-        title = tk.Label(main_frame, text="CINEV Creator Launcher",
-                         font=('Arial', 24, 'bold'), bg='white', fg='black')
+        title = tk.Label(main_frame, text="Studio Launcher",
+                         font=('Arial', 24, 'bold'), bg='#1a1a1a', fg='#f8f8f8')
         title.pack(pady=(0, 5))
 
         # Project name subtitle
         project_name = tk.Label(main_frame, text=self.get_project_name(),
-                                font=('Arial', 16), bg='white', fg='#666666')
+                                font=('Arial', 16), bg='#1a1a1a', fg='#f8f8f8')
         project_name.pack(pady=(0, 36))
 
         # Launch button
-        self.launch_btn = tk.Button(main_frame, text="CINEV 시작",
+        self.launch_btn = tk.Button(main_frame, text="LAUNCH",
                                     command=self.launch,
-                                    bg='black', fg='white', relief=tk.FLAT,
+                                    bg='#f8f8f8', fg='#1a1a1a', relief=tk.FLAT,
                                     font=('Arial', 12, 'bold'),
                                     padx=40, cursor='hand2')
-        self.launch_btn.pack(ipady=12)
+        self.launch_btn.pack(ipady=8)
 
         # Status label
         self.status_label = tk.Label(main_frame, text="",
-                                     font=('Arial', 8), bg='white', fg='#666666')
+                                     font=('Arial', 8), bg='#1a1a1a', fg='#888888')
         self.status_label.pack(pady=(4, 0))
 
     def get_latest_zip(self, nas_path):
@@ -128,12 +128,12 @@ class CreatorLauncher:
         studio_path = self.get_studio_path()
 
         if not nas_path or not os.path.exists(nas_path):
-            self.status_label.config(text="NAS 연결 필요", fg='#cc0000')
+            self.status_label.config(text="NAS 연결 필요", fg='#f8f8f8')
             return
 
         latest_zip = self.get_latest_zip(nas_path)
         if not latest_zip:
-            self.status_label.config(text="NAS에 빌드 없음", fg='#cc0000')
+            self.status_label.config(text="NAS에 빌드 없음", fg='#f8f8f8')
             return
 
         folder_name = self.get_folder_name_from_zip(latest_zip)
@@ -141,11 +141,11 @@ class CreatorLauncher:
         exe_path = os.path.join(local_folder, "Windows", "CINEVStudio.exe")
 
         if os.path.exists(exe_path):
-            self.status_label.config(text=f"실행 준비 완료 ({folder_name})", fg='#00aa00')
-            self.launch_btn.config(text="CINEV 시작", bg='black')
+            self.status_label.config(text=f"실행 준비 완료 ({folder_name})", fg='#f8f8f8')
+            self.launch_btn.config(text="LAUNCH", bg='#f8f8f8')
         else:
-            self.status_label.config(text=f"최신화 필요 ({folder_name})", fg='#ff8800')
-            self.launch_btn.config(text="업데이트하기", bg='#ff8800')
+            self.status_label.config(text=f"최신화 필요 ({folder_name})", fg='#f8f8f8')
+            self.launch_btn.config(text="UPDATE", bg='#ff8800')
 
     def load_history(self):
         if os.path.exists(self.history_file):
@@ -177,7 +177,7 @@ class CreatorLauncher:
         m, s = divmod(seconds, 60)
         return f"{m}분 {s}초"
 
-    def update_status(self, text, color='#666666'):
+    def update_status(self, text, color='#f8f8f8'):
         """스레드 안전한 상태 업데이트"""
         self.root.after(0, lambda: self.status_label.config(text=text, fg=color))
 
@@ -200,8 +200,8 @@ class CreatorLauncher:
     def monitor_process(self):
         """프로세스 상태 확인 및 UI 업데이트"""
         if self.is_process_running():
-            self.status_label.config(text="CINEV 실행 중...", fg='#0066cc')
-            self.launch_btn.config(state=tk.DISABLED, text="실행 중")
+            self.status_label.config(text="CINEV 실행 중...", fg='#f8f8f8')
+            self.launch_btn.config(state=tk.DISABLED, text="RUNNING")
         else:
             # 실행 중이 아니면 일반 상태 체크
             self.launch_btn.config(state=tk.NORMAL)
@@ -217,7 +217,7 @@ class CreatorLauncher:
             messagebox.showerror("오류", "NAS 경로가 설정되지 않았습니다.\nconfig.json을 확인하세요.")
             return
 
-        self.launch_btn.config(state=tk.DISABLED, text="처리 중...")
+        self.launch_btn.config(state=tk.DISABLED, text="PROCESSING...")
 
         thread = threading.Thread(target=self.run_launch)
         thread.daemon = True
@@ -246,7 +246,7 @@ class CreatorLauncher:
                 start_time = time.time()
 
                 # 파일 전송 (NAS → 로컬)
-                self.update_status(f"파일전송 중...{est_msg}", '#0066cc')
+                self.update_status(f"파일전송 중...{est_msg}", '#f8f8f8')
 
                 local_zip = os.path.join(studio_path, os.path.basename(latest_zip))
                 shutil.copy2(latest_zip, local_zip)
@@ -255,15 +255,15 @@ class CreatorLauncher:
                 elapsed = round(time.time() - start_time)
                 if est:
                     remaining = max(0, est - elapsed)
-                    self.update_status(f"압축풀기 중... (약 {self.format_time(remaining)} 남음)", '#0066cc')
+                    self.update_status(f"압축풀기 중... (약 {self.format_time(remaining)} 남음)", '#f8f8f8')
                 else:
-                    self.update_status("압축풀기 중...", '#0066cc')
+                    self.update_status("압축풀기 중...", '#f8f8f8')
 
                 with zipfile.ZipFile(local_zip, 'r') as zf:
                     zf.extractall(studio_path)
 
                 # 셋팅 (임시 파일 정리)
-                self.update_status("셋팅 중...", '#0066cc')
+                self.update_status("셋팅 중...", '#f8f8f8')
 
                 os.remove(local_zip)
 
