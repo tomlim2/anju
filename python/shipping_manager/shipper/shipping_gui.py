@@ -32,6 +32,7 @@ def load_shared_slack_config():
 
 
 SLACK_CONFIG = load_shared_slack_config()
+SLACK_NOTIFICATIONS_ENABLED = True
 
 
 class ShippingGUI:
@@ -339,6 +340,9 @@ class ShippingGUI:
 
     def verify_slack_bot(self):
         """Verify Slack bot token and channel configuration."""
+        if not SLACK_NOTIFICATIONS_ENABLED:
+            self.log("[건너뜀] Slack 알림 비활성화됨")
+            return False
         bot_token = os.environ.get('SLACK_BOT_TOKEN', '')
         channel = os.environ.get('SLACK_CHANNEL', '')
 
@@ -409,6 +413,9 @@ class ShippingGUI:
             messagebox.showerror("오류", "먼저 브랜치를 검증해주세요")
             return
 
+        if not self.ensure_unreal_closed():
+            return
+
         self.start_btn.config(state=tk.DISABLED, text="진행 중...")
         self.output_text.delete(1.0, tk.END)
         self.start_timer("패키징")
@@ -417,12 +424,100 @@ class ShippingGUI:
         thread.daemon = True
         thread.start()
 
+    def ensure_unreal_closed(self):
+        """Ensure Unreal/LiveCoding processes are closed before build."""
+        running = self.get_running_unreal_processes()
+        if not running:
+            return True
+
+        proc_list = "\n".join(running)
+        should_close = messagebox.askyesno(
+            "언리얼 종료 필요",
+            "쉬핑 시작 전에 언리얼을 종료해야 합니다.\n"
+            "아래 프로세스를 종료할까요?\n\n"
+            f"{proc_list}"
+        )
+
+        if not should_close:
+            self.log("[중단] 언리얼 실행 중. 쉬핑을 취소했습니다.")
+            return False
+
+        self.log("언리얼 종료 시도 중...")
+        for name in running:
+            self.taskkill_process(name)
+
+        # Re-check
+        still_running = self.get_running_unreal_processes()
+        if still_running:
+            self.log("[실패] 일부 프로세스를 종료하지 못했습니다:")
+            for name in still_running:
+                self.log(f"  - {name}")
+            messagebox.showerror("오류", "언리얼 종료에 실패했습니다. 수동으로 종료 후 다시 시도해주세요.")
+            return False
+
+        self.log("[완료] 언리얼 종료됨.")
+        return True
+
+    def get_running_unreal_processes(self):
+        """Return list of Unreal-related process names that are running."""
+        process_names = [
+            "UnrealEditor.exe",
+            "UE5Editor.exe",
+            "UE4Editor.exe",
+            "UnrealEditor-Cmd.exe",
+            "UE5Editor-Cmd.exe",
+            "UE4Editor-Cmd.exe",
+            "LiveCodingConsole.exe",
+        ]
+
+        running = []
+        for name in process_names:
+            if self.is_process_running(name):
+                running.append(name)
+        return running
+
+    def is_process_running(self, process_name):
+        try:
+            result = subprocess.run(
+                f'tasklist /FI "IMAGENAME eq {process_name}"',
+                shell=True,
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace'
+            )
+            output = (result.stdout or "") + (result.stderr or "")
+            return process_name.lower() in output.lower()
+        except Exception:
+            return False
+
+    def taskkill_process(self, process_name):
+        try:
+            subprocess.run(
+                f'taskkill /IM "{process_name}" /T /F',
+                shell=True,
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace'
+            )
+        except Exception:
+            pass
+
     def run_shipping(self):
         slack_channel, slack_thread_ts = None, None
         current_step = "초기화"
         try:
             output_name = self.generate_output_name()
             self.log(f"출력 이름: {output_name}\n")
+
+            # Step 0: Hard update git before shipping
+            current_step = "Git 업데이트"
+            self.root.after(0, lambda: self.update_timer_task("Git 업데이트"))
+            self.root.after(0, lambda: self.update_status('git'))
+            if not self.run_git_hard_update():
+                self.log("[중단] Git 업데이트 실패")
+                return
 
             # Slack: Send start notification
             slack_channel, slack_thread_ts = self.send_slack_start()
@@ -550,6 +645,51 @@ class ShippingGUI:
                 self.log("⚠ 원격 추적 브랜치 없음. pull 건너뜀")
 
         self.log("\nGit 업데이트 완료.\n")
+        return True
+
+    def run_git_hard_update(self):
+        project_path = os.path.normpath(self.config['project_path'])
+        branch = self.branch_var.get()
+
+        self.log("=== GIT 강제 업데이트 ===")
+        self.log(f"경로: {project_path}")
+        self.log(f"브랜치: {branch}\n")
+
+        def run_cmd(cmd, desc):
+            self.log(f"> {desc}")
+            try:
+                result = subprocess.run(
+                    cmd,
+                    cwd=project_path,
+                    shell=True,
+                    capture_output=True,
+                    text=True,
+                    encoding='utf-8',
+                    errors='replace'
+                )
+                if result.stdout:
+                    self.log(f"  {result.stdout.strip()}")
+                if result.stderr:
+                    self.log(f"  {result.stderr.strip()}")
+                if result.returncode != 0:
+                    self.log("  [실패]")
+                    return False
+                self.log("  [완료]")
+                return True
+            except Exception as e:
+                self.log(f"  [오류] {str(e)}")
+                return False
+
+        if not run_cmd("git reset --hard", "로컬 변경사항 초기화"):
+            return False
+        if not run_cmd("git fetch --all", "가져오는 중..."):
+            return False
+        if branch and not run_cmd(f"git checkout {branch}", f"체크아웃: {branch}"):
+            return False
+        if not run_cmd("git pull --rebase", "리베이스 풀"):
+            return False
+
+        self.log("\nGit 강제 업데이트 완료.\n")
         return True
 
     def run_packaging(self, output_name):
@@ -756,10 +896,13 @@ class ShippingGUI:
             self.log(f"[경고] Slack 웹훅 전송 실패: {e}")
             return None
 
-    def slack_post_message(self, channel, text, thread_ts=None):
+    def slack_post_message(self, channel, text, thread_ts=None, require_thread=False):
         """Send message via Bot Token API. Returns message ts."""
         bot_token = os.environ.get('SLACK_BOT_TOKEN', '')
         if not bot_token:
+            return None
+
+        if require_thread and not thread_ts:
             return None
 
         try:
@@ -792,6 +935,9 @@ class ShippingGUI:
 
     def send_slack_start(self):
         """Send start notification to Slack. Returns (channel, thread_ts) for replies."""
+        if not SLACK_NOTIFICATIONS_ENABLED:
+            self.log("[건너뜀] Slack 알림 비활성화됨")
+            return None, None
         self.log("=== Slack 시작 알림 ===")
 
         bot_token = os.environ.get('SLACK_BOT_TOKEN', '')
@@ -833,13 +979,16 @@ class ShippingGUI:
                 f"```"
             )
 
-        self.slack_post_message(channel, spec_message, thread_ts)
+        self.slack_post_message(channel, spec_message, thread_ts, require_thread=True)
         self.log("[완료] 프로젝트 명세서 전송됨.\n")
 
         return channel, thread_ts
 
     def send_slack_complete(self, channel, thread_ts, file_path):
         """Send completion notification as thread reply."""
+        if not SLACK_NOTIFICATIONS_ENABLED:
+            self.log("[건너뜀] Slack 알림 비활성화됨")
+            return
         self.log("=== Slack 완료 알림 ===")
 
         if not channel or not thread_ts:
@@ -851,11 +1000,14 @@ class ShippingGUI:
             f"파일경로: {file_path}"
         )
 
-        self.slack_post_message(channel, message, thread_ts)
+        self.slack_post_message(channel, message, thread_ts, require_thread=True)
         self.log("[완료] 완료 알림 전송됨.\n")
 
     def send_slack_failure(self, channel, thread_ts, step, reason):
         """Send failure notification as thread reply."""
+        if not SLACK_NOTIFICATIONS_ENABLED:
+            self.log("[건너뜀] Slack 알림 비활성화됨")
+            return
         self.log("=== Slack 실패 알림 ===")
 
         if not channel or not thread_ts:
@@ -870,7 +1022,7 @@ class ShippingGUI:
             f"```"
         )
 
-        self.slack_post_message(channel, message, thread_ts)
+        self.slack_post_message(channel, message, thread_ts, require_thread=True)
         self.log("[완료] 실패 알림 전송됨.\n")
 
 
