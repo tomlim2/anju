@@ -9,11 +9,13 @@ import glob
 import shutil
 import threading
 
+VERSION = "1.0.0"
+
 
 class CreatorLauncher:
     def __init__(self, root):
         self.root = root
-        self.root.title("CINEV Creator Launcher")
+        self.root.title(f"CINEV Creator Launcher v{VERSION}")
         self.root.geometry("400x200")
         self.root.configure(bg='white')
 

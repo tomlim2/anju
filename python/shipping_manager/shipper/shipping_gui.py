@@ -10,6 +10,8 @@ import threading
 import time
 import urllib.request
 
+VERSION = "1.0.0"
+
 
 def load_shared_slack_config():
     """Load shared Slack config from claude config."""
@@ -38,7 +40,7 @@ SLACK_NOTIFICATIONS_ENABLED = True
 class ShippingGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("CINEV Creator 패키지 매니저")
+        self.root.title(f"CINEV Creator 패키지 매니저 v{VERSION}")
         self.root.geometry("960x720")
         self.root.configure(bg='white')
 
