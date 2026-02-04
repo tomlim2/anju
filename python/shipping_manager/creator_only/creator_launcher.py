@@ -8,15 +8,16 @@ import subprocess
 import glob
 import shutil
 import threading
+import time
 
-VERSION = "1.0.0"
+VERSION = "1.2.0"
 
 
 class CreatorLauncher:
     def __init__(self, root):
         self.root = root
         self.root.title(f"CINEV Creator Launcher v{VERSION}")
-        self.root.geometry("400x200")
+        self.root.geometry("600x320")
         self.root.configure(bg='white')
 
         # config 파일 경로
@@ -25,6 +26,7 @@ class CreatorLauncher:
             os.path.dirname(__file__), "..", "shipper", "shipping_config.json"
         )
         self.config = self.load_config()
+        self.history_file = os.path.join(os.path.dirname(__file__), "update_history.json")
 
         self.create_widgets()
         self.check_status()
@@ -75,31 +77,34 @@ class CreatorLauncher:
             return "Creator Mode"
 
     def create_widgets(self):
-        main_frame = tk.Frame(self.root, bg='white', padx=30, pady=30)
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        outer = tk.Frame(self.root, bg='white')
+        outer.pack(fill=tk.BOTH, expand=True)
+
+        main_frame = tk.Frame(outer, bg='white', padx=30)
+        main_frame.place(relx=0.5, rely=0.5, anchor='center')
 
         # Title
         title = tk.Label(main_frame, text="CINEV Creator Launcher",
-                         font=('Arial', 16, 'bold'), bg='white', fg='black')
+                         font=('Arial', 24, 'bold'), bg='white', fg='black')
         title.pack(pady=(0, 5))
 
         # Project name subtitle
         project_name = tk.Label(main_frame, text=self.get_project_name(),
-                                font=('Arial', 10), bg='white', fg='#666666')
-        project_name.pack(pady=(0, 15))
-
-        # Status label
-        self.status_label = tk.Label(main_frame, text="",
-                                     font=('Arial', 11), bg='white', fg='#666666')
-        self.status_label.pack(pady=(0, 20))
+                                font=('Arial', 16), bg='white', fg='#666666')
+        project_name.pack(pady=(0, 36))
 
         # Launch button
         self.launch_btn = tk.Button(main_frame, text="CINEV 시작",
                                     command=self.launch,
                                     bg='black', fg='white', relief=tk.FLAT,
-                                    font=('Arial', 14, 'bold'),
-                                    padx=40, pady=12, cursor='hand2')
-        self.launch_btn.pack()
+                                    font=('Arial', 12, 'bold'),
+                                    padx=40, cursor='hand2')
+        self.launch_btn.pack(ipady=12)
+
+        # Status label
+        self.status_label = tk.Label(main_frame, text="",
+                                     font=('Arial', 8), bg='white', fg='#666666')
+        self.status_label.pack(pady=(4, 0))
 
     def get_latest_zip(self, nas_path):
         """NAS에서 가장 최신 .zip 파일 찾기 (파일명 기준 정렬)"""
@@ -137,10 +142,40 @@ class CreatorLauncher:
 
         if os.path.exists(exe_path):
             self.status_label.config(text=f"실행 준비 완료 ({folder_name})", fg='#00aa00')
-            self.launch_btn.config(text="CINEV 시작")
+            self.launch_btn.config(text="CINEV 시작", bg='black')
         else:
             self.status_label.config(text=f"최신화 필요 ({folder_name})", fg='#ff8800')
-            self.launch_btn.config(text="업데이트하기")
+            self.launch_btn.config(text="업데이트하기", bg='#ff8800')
+
+    def load_history(self):
+        if os.path.exists(self.history_file):
+            try:
+                with open(self.history_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        return []
+
+    def save_history(self, duration):
+        history = self.load_history()
+        history.append({"duration": round(duration, 1)})
+        # 최근 10개만 유지
+        history = history[-10:]
+        with open(self.history_file, 'w', encoding='utf-8') as f:
+            json.dump(history, f)
+
+    def get_estimated_time(self):
+        history = self.load_history()
+        if not history:
+            return None
+        durations = [h["duration"] for h in history]
+        return round(sum(durations) / len(durations))
+
+    def format_time(self, seconds):
+        if seconds < 60:
+            return f"{seconds}초"
+        m, s = divmod(seconds, 60)
+        return f"{m}분 {s}초"
 
     def update_status(self, text, color='#666666'):
         """스레드 안전한 상태 업데이트"""
@@ -206,14 +241,23 @@ class CreatorLauncher:
                 # CinevVStudio 폴더 생성
                 os.makedirs(studio_path, exist_ok=True)
 
+                est = self.get_estimated_time()
+                est_msg = f" (예상 {self.format_time(est)})" if est else ""
+                start_time = time.time()
+
                 # 파일 전송 (NAS → 로컬)
-                self.update_status("파일전송 중...", '#0066cc')
+                self.update_status(f"파일전송 중...{est_msg}", '#0066cc')
 
                 local_zip = os.path.join(studio_path, os.path.basename(latest_zip))
                 shutil.copy2(latest_zip, local_zip)
 
                 # 압축 해제 (로컬에서)
-                self.update_status("압축풀기 중...", '#0066cc')
+                elapsed = round(time.time() - start_time)
+                if est:
+                    remaining = max(0, est - elapsed)
+                    self.update_status(f"압축풀기 중... (약 {self.format_time(remaining)} 남음)", '#0066cc')
+                else:
+                    self.update_status("압축풀기 중...", '#0066cc')
 
                 with zipfile.ZipFile(local_zip, 'r') as zf:
                     zf.extractall(studio_path)
@@ -222,6 +266,10 @@ class CreatorLauncher:
                 self.update_status("셋팅 중...", '#0066cc')
 
                 os.remove(local_zip)
+
+                # 소요 시간 기록
+                total_duration = time.time() - start_time
+                self.save_history(total_duration)
 
                 if not os.path.exists(exe_path):
                     self.root.after(0, lambda: messagebox.showerror("오류", f"EXE를 찾을 수 없습니다.\n{exe_path}"))
