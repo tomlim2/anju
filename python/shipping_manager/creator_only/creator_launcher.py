@@ -27,6 +27,7 @@ class CreatorLauncher:
         )
         self.config = self.load_config()
         self.history_file = os.path.join(os.path.dirname(__file__), "update_history.json")
+        self.is_launching = False  # 런칭 중 플래그
 
         self.create_widgets()
         self.check_status()
@@ -75,7 +76,21 @@ class CreatorLauncher:
             return "프로젝트 남매지만 괜찮아"
         else:
             return "Creator Mode"
+    def get_screenshot_folder(self):
+        """스크린샷 저장 폴더 경로 반환"""
+        project_save_path = self.config.get('project_save_path', '') or self.get_studio_path()
+        return os.path.join(project_save_path, 'Screenshots')
 
+    def open_screenshot_folder(self):
+        """스크린샷 폴더 열기 (없으면 생성)"""
+        screenshot_folder = self.get_screenshot_folder()
+        
+        # 폴더가 없으면 생성
+        if not os.path.exists(screenshot_folder):
+            os.makedirs(screenshot_folder, exist_ok=True)
+        
+        # 폴더 열기
+        os.startfile(screenshot_folder)
     def create_widgets(self):
         outer = tk.Frame(self.root, bg='#1a1a1a')
         outer.pack(fill=tk.BOTH, expand=True)
@@ -105,6 +120,14 @@ class CreatorLauncher:
         self.status_label = tk.Label(main_frame, text="",
                                      font=('Arial', 8), bg='#1a1a1a', fg='#888888')
         self.status_label.pack(pady=(4, 0))
+        
+        # Screenshot folder button
+        screenshot_btn = tk.Button(main_frame, text="스크린샷 저장소 열기",
+                                   command=self.open_screenshot_folder,
+                                   bg='#2a2a2a', fg='#f8f8f8', relief=tk.FLAT,
+                                   font=('Arial', 8),
+                                   padx=10, pady=4, cursor='hand2')
+        screenshot_btn.pack(pady=(6, 0))
 
     def get_latest_zip(self, nas_path):
         """NAS에서 가장 최신 .zip 파일 찾기 (파일명 기준 정렬)"""
@@ -142,10 +165,10 @@ class CreatorLauncher:
 
         if os.path.exists(exe_path):
             self.status_label.config(text=f"실행 준비 완료 ({folder_name})", fg='#f8f8f8')
-            self.launch_btn.config(text="LAUNCH", bg='#f8f8f8')
+            self.launch_btn.config(text="LAUNCH", bg='#f8f8f8', fg='#1a1a1a')
         else:
             self.status_label.config(text=f"최신화 필요 ({folder_name})", fg='#f8f8f8')
-            self.launch_btn.config(text="UPDATE", bg='#ff8800')
+            self.launch_btn.config(text="UPDATE", bg='#f8f8f8', fg='#1a1a1a')
 
     def load_history(self):
         if os.path.exists(self.history_file):
@@ -199,9 +222,14 @@ class CreatorLauncher:
 
     def monitor_process(self):
         """프로세스 상태 확인 및 UI 업데이트"""
+        # 런칭 중이면 상태 체크 건너뛰기
+        if self.is_launching:
+            self.root.after(3000, self.monitor_process)
+            return
+            
         if self.is_process_running():
             self.status_label.config(text="CINEV 실행 중...", fg='#f8f8f8')
-            self.launch_btn.config(state=tk.DISABLED, text="RUNNING")
+            self.launch_btn.config(state=tk.DISABLED, text="RUNNING", bg='#f8f8f8', fg='#1a1a1a')
         else:
             # 실행 중이 아니면 일반 상태 체크
             self.launch_btn.config(state=tk.NORMAL)
@@ -217,7 +245,8 @@ class CreatorLauncher:
             messagebox.showerror("오류", "NAS 경로가 설정되지 않았습니다.\nconfig.json을 확인하세요.")
             return
 
-        self.launch_btn.config(state=tk.DISABLED, text="PROCESSING...")
+        self.is_launching = True
+        self.launch_btn.config(state=tk.DISABLED, text="PROCESSING...", bg='#f8f8f8', fg='#1a1a1a')
 
         thread = threading.Thread(target=self.run_launch)
         thread.daemon = True
@@ -230,7 +259,10 @@ class CreatorLauncher:
         try:
             latest_zip = self.get_latest_zip(nas_path)
             if not latest_zip:
+                self.is_launching = False
                 self.root.after(0, lambda: messagebox.showerror("오류", f"NAS에 .zip 파일이 없습니다.\n{nas_path}"))
+                self.root.after(0, lambda: self.launch_btn.config(state=tk.NORMAL))
+                self.root.after(0, self.check_status)
                 return
 
             folder_name = self.get_folder_name_from_zip(latest_zip)
@@ -251,31 +283,69 @@ class CreatorLauncher:
                 local_zip = os.path.join(studio_path, os.path.basename(latest_zip))
                 shutil.copy2(latest_zip, local_zip)
 
-                # 압축 해제 (로컬에서)
-                elapsed = round(time.time() - start_time)
-                if est:
-                    remaining = max(0, est - elapsed)
-                    self.update_status(f"압축풀기 중... (약 {self.format_time(remaining)} 남음)", '#f8f8f8')
-                else:
-                    self.update_status("압축풀기 중...", '#f8f8f8')
+                try:
+                    # 압축 해제 (로컬에서)
+                    elapsed = round(time.time() - start_time)
+                    if est:
+                        remaining = max(0, est - elapsed)
+                        self.update_status(f"압축풀기 중... (약 {self.format_time(remaining)} 남음)", '#f8f8f8')
+                    else:
+                        self.update_status("압축풀기 중...", '#f8f8f8')
 
-                with zipfile.ZipFile(local_zip, 'r') as zf:
-                    zf.extractall(studio_path)
+                    with zipfile.ZipFile(local_zip, 'r') as zf:
+                        zf.extractall(studio_path)
 
-                # 셋팅 (임시 파일 정리)
-                self.update_status("셋팅 중...", '#f8f8f8')
+                    # 셋팅 (임시 파일 정리)
+                    self.update_status("셋팅 중...", '#f8f8f8')
 
-                os.remove(local_zip)
+                finally:
+                    # 압축 파일 영구 삭제 (에러 발생 시에도 삭제)
+                    if os.path.exists(local_zip):
+                        os.remove(local_zip)
 
                 # 소요 시간 기록
                 total_duration = time.time() - start_time
                 self.save_history(total_duration)
 
-                if not os.path.exists(exe_path):
-                    self.root.after(0, lambda: messagebox.showerror("오류", f"EXE를 찾을 수 없습니다.\n{exe_path}"))
-                    return
+                # EXE 파일이 완전히 생성될 때까지 대기 (3초마다 체크, 최대 10분)
+                self.update_status("파일 확인 중...", '#f8f8f8')
+                max_wait = 600  # 최대 10분 대기
+                wait_count = 0
+                last_size = 0
+                stable_count = 0
+                
+                while wait_count < max_wait:
+                    if os.path.exists(exe_path):
+                        # 파일이 존재하면 크기가 안정적인지 확인 (2회 연속 같은 크기)
+                        try:
+                            current_size = os.path.getsize(exe_path)
+                            if current_size > 0 and current_size == last_size:
+                                stable_count += 1
+                                if stable_count >= 2:  # 6초 동안 크기 변화 없음
+                                    break
+                            else:
+                                stable_count = 0
+                                last_size = current_size
+                        except:
+                            pass
+                    
+                    time.sleep(3)  # 3초마다 체크
+                    wait_count += 3
 
-            # 실행
+                if not os.path.exists(exe_path):
+                    self.is_launching = False
+                    self.root.after(0, lambda: messagebox.showerror("오류", f"EXE를 찾을 수 없습니다.\n{exe_path}"))
+                    self.root.after(0, lambda: self.launch_btn.config(state=tk.NORMAL))
+                    self.root.after(0, self.check_status)
+                    return
+                
+                # EXE 파일 생성 완료 - 런처 버튼만 활성화
+                self.is_launching = False
+                self.root.after(0, lambda: self.launch_btn.config(state=tk.NORMAL, text="LAUNCH", bg='#f8f8f8', fg='#1a1a1a'))
+                self.update_status(f"실행 준비 완료 ({folder_name})", '#f8f8f8')
+                return
+
+            # 이미 EXE가 존재하는 경우 - 실행
             project_save_path = self.config.get('project_save_path', '') or studio_path
             access_key = self.config.get('access_key', '')
 
@@ -284,12 +354,24 @@ class CreatorLauncher:
                 cmd += f' -AccessKey={access_key}'
             subprocess.run(cmd, shell=True)
 
-            self.update_status(f"실행 준비 완료 ({folder_name})", '#00aa00')
+            # 프로세스 시작 대기 (최대 5초, 1초마다 체크)
+            self.update_status("실행 중...", '#f8f8f8')
+            for _ in range(5):
+                time.sleep(1)
+                if self.is_process_running():
+                    break
+            
+            # 런칭 완료 플래그 해제
+            self.is_launching = False
+            # 프로세스 모니터가 즉시 상태를 업데이트하도록 트리거
+            self.root.after(100, self.monitor_process)
 
         except Exception as e:
+            self.is_launching = False
             self.root.after(0, lambda: messagebox.showerror("오류", str(e)))
-            self.update_status("오류 발생", '#cc0000')
+            self.update_status("오류 발생", '#f8f8f8')
             self.root.after(0, lambda: self.launch_btn.config(state=tk.NORMAL))
+            self.root.after(0, self.check_status)
 
 
 if __name__ == "__main__":
