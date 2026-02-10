@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, scrolledtext
 import json
 import os
+import socket
 import subprocess
 import threading
 import shutil
@@ -407,6 +408,70 @@ class CharacterCreatorGUI:
                 shutil.move(json_path, new_json_path)
                 self.json_file_var.set(new_json_path)
 
+    # --- ZenServer check ---
+    def is_zen_server_running(self, port=8558, timeout=1.0):
+        """Check if ZenServer is running on localhost"""
+        try:
+            with socket.create_connection(("::1", port), timeout=timeout):
+                return True
+        except (ConnectionRefusedError, OSError, TimeoutError):
+            pass
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=timeout):
+                return True
+        except (ConnectionRefusedError, OSError, TimeoutError):
+            return False
+
+    def warn_if_zen_not_running(self):
+        """Block execution if ZenServer is not running. Returns True to proceed, False to cancel."""
+        if self.is_zen_server_running():
+            return True
+        messagebox.showerror(
+            "ZenServer Not Running",
+            "ZenServer (port 8558) is not running.\n"
+            "Start ZenServer first before running the commandlet."
+        )
+        return False
+
+    # --- Source patching for commandlet ---
+    COMMANDLET_SOURCE = r"E:\CINEVStudio\CINEVStudio\Source\Cinev\CLI\CinevCreateUserCharacterCommandlet.cpp"
+    PATCH_ORIGINAL = "if (!InitializeWorldAndGameInstance())"
+    PATCH_REPLACE = "if (!InitializeWorldAndGameInstance(FString(), false, false))"
+
+    def patch_commandlet_source(self):
+        """Patch InitializeWorldAndGameInstance before commandlet run"""
+        try:
+            with open(self.COMMANDLET_SOURCE, 'r', encoding='utf-8') as f:
+                content = f.read()
+            if self.PATCH_ORIGINAL in content:
+                content = content.replace(self.PATCH_ORIGINAL, self.PATCH_REPLACE, 1)
+                with open(self.COMMANDLET_SOURCE, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                self.log_output("[Patch] Applied: InitializeWorldAndGameInstance(FString(), false, false)")
+                return True
+            elif self.PATCH_REPLACE in content:
+                self.log_output("[Patch] Already applied, skipping")
+                return True
+            else:
+                self.log_output("[Patch] Warning: target string not found in source")
+                return False
+        except Exception as e:
+            self.log_output(f"[Patch] Error: {str(e)}")
+            return False
+
+    def restore_commandlet_source(self):
+        """Restore InitializeWorldAndGameInstance after commandlet run"""
+        try:
+            with open(self.COMMANDLET_SOURCE, 'r', encoding='utf-8') as f:
+                content = f.read()
+            if self.PATCH_REPLACE in content:
+                content = content.replace(self.PATCH_REPLACE, self.PATCH_ORIGINAL, 1)
+                with open(self.COMMANDLET_SOURCE, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                self.log_output("[Patch] Restored: InitializeWorldAndGameInstance()")
+        except Exception as e:
+            self.log_output(f"[Patch] Restore error: {str(e)}")
+
     def log_output(self, message):
         self.output_text.insert(tk.END, message + "\n")
         self.output_text.see(tk.END)
@@ -417,6 +482,9 @@ class CharacterCreatorGUI:
         errors = self.validate_paths()
         if errors:
             messagebox.showerror("Validation Error", "\n".join(errors))
+            return
+
+        if not self.warn_if_zen_not_running():
             return
 
         # Disable button
@@ -439,6 +507,22 @@ class CharacterCreatorGUI:
 
     def run_command(self):
         try:
+            # Patch source and rebuild
+            self.patch_commandlet_source()
+
+            build_bat = os.path.normpath(os.path.join(self.ue_dir_var.get(), "Engine", "Build", "BatchFiles", "Build.bat"))
+            project_file = os.path.normpath(self.project_file_var.get())
+            if os.path.exists(build_bat):
+                self.log_output("=== Building with patched source ===")
+                build_cmd = f'"{build_bat}" CINEVStudioEditor Win64 Development -Project="{project_file}" -WaitMutex'
+                build_process = subprocess.Popen(build_cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+                build_process.wait()
+                if build_process.returncode != 0:
+                    self.log_output(f"Build failed with code {build_process.returncode}")
+                    self.root.after(0, lambda: messagebox.showwarning("Build Failed", f"Build exited with code {build_process.returncode}"))
+                    return
+                self.log_output("Build succeeded\n")
+
             exe_path = os.path.normpath(os.path.join(self.ue_dir_var.get(), "Engine", "Binaries", "Win64", "UnrealEditor-Cmd.exe"))
 
             # Validate executable exists before attempting spawn
@@ -509,6 +593,7 @@ class CharacterCreatorGUI:
             self.root.after(0, lambda: messagebox.showerror("Error", f"Failed to execute: {str(e)}"))
 
         finally:
+            self.restore_commandlet_source()
             self.root.after(0, lambda: self.execute_btn.config(state=tk.NORMAL, text="CREATE CHARACTER"))
 
     def build_editor(self):
@@ -632,6 +717,9 @@ class CharacterCreatorGUI:
             messagebox.showerror("Validation Error", "Character creation will fail:\n" + "\n".join(errors))
             return
 
+        if not self.warn_if_zen_not_running():
+            return
+
         # Disable buttons
         self.build_and_create_btn.config(state=tk.DISABLED, text="BUILDING...")
         self.execute_btn.config(state=tk.DISABLED)
@@ -646,6 +734,9 @@ class CharacterCreatorGUI:
     def run_build_and_create(self):
         """Run build then create character"""
         try:
+            # Patch source before build
+            self.patch_commandlet_source()
+
             build_bat = os.path.normpath(os.path.join(self.ue_dir_var.get(), "Engine", "Build", "BatchFiles", "Build.bat"))
             project_file = os.path.normpath(self.project_file_var.get())
 
@@ -721,6 +812,7 @@ class CharacterCreatorGUI:
             self.root.after(0, lambda: messagebox.showerror("Error", f"Failed: {str(e)}"))
 
         finally:
+            self.restore_commandlet_source()
             self.root.after(0, lambda: self.build_and_create_btn.config(state=tk.NORMAL, text="BUILD & CREATE"))
             self.root.after(0, lambda: self.execute_btn.config(state=tk.NORMAL))
             self.root.after(0, lambda: self.build_btn.config(state=tk.NORMAL))
