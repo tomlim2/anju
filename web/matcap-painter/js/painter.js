@@ -10,7 +10,9 @@ export class Painter {
     this.canvas = canvas;
     this.brush = brush;
     this.layers = layerSystem;
-    this.mirror = false;
+    this.mirrorX = false;
+    this.mirrorY = false;
+    this.panMode = false;
 
     this._painting = false;
     this._lastX = 0;
@@ -105,6 +107,7 @@ export class Painter {
   }
 
   _onDown(e) {
+    if (this.panMode) return;
     const { x, y } = this._canvasCoords(e);
 
     // Save snapshot before any modification
@@ -128,9 +131,7 @@ export class Painter {
     if (!ctx) return;
 
     this.brush.stamp(ctx, x, y);
-    if (this.mirror) {
-      this.brush.stamp(ctx, 2 * CENTER - x, y);
-    }
+    this._mirrorStamp(ctx, x, y);
     this.layers.composite();
   }
 
@@ -147,13 +148,7 @@ export class Painter {
     if (!ctx) return;
 
     this.brush.strokeInterpolated(ctx, this._lastX, this._lastY, x, y);
-    if (this.mirror) {
-      this.brush.strokeInterpolated(
-        ctx,
-        2 * CENTER - this._lastX, this._lastY,
-        2 * CENTER - x, y
-      );
-    }
+    this._mirrorStroke(ctx, this._lastX, this._lastY, x, y);
 
     this._lastX = x;
     this._lastY = y;
@@ -170,7 +165,7 @@ export class Painter {
     const canvas = this._cursorCanvas;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (!this._cursorVisible) return;
+    if (!this._cursorVisible || this.panMode) return;
 
     const x = this._cursorX;
     const y = this._cursorY;
@@ -192,11 +187,11 @@ export class Painter {
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Mirror cursor
-    if (this.mirror) {
-      ctx.lineWidth = 0.8;
+    // Mirror cursors
+    ctx.lineWidth = 0.8;
+    for (const [mx, my] of this._mirrorPoints(x, y)) {
       ctx.beginPath();
-      ctx.arc(2 * CENTER - x, y, r, 0, Math.PI * 2);
+      ctx.arc(mx, my, r, 0, Math.PI * 2);
       ctx.stroke();
     }
 
@@ -232,6 +227,40 @@ export class Painter {
     ctx.fill();
 
     ctx.globalCompositeOperation = 'source-over';
+  }
+
+  _mirrorPoints(x, y) {
+    const pts = [];
+    if (this.mirrorX) pts.push([2 * CENTER - x, y]);
+    if (this.mirrorY) pts.push([x, 2 * CENTER - y]);
+    if (this.mirrorX && this.mirrorY) pts.push([2 * CENTER - x, 2 * CENTER - y]);
+    return pts;
+  }
+
+  _mirrorStamp(ctx, x, y) {
+    for (const [mx, my] of this._mirrorPoints(x, y)) {
+      this.brush.stamp(ctx, mx, my);
+    }
+  }
+
+  _mirrorStroke(ctx, x0, y0, x1, y1) {
+    for (const [, , flipX, flipY] of this._mirrorAxes()) {
+      this.brush.strokeInterpolated(
+        ctx,
+        flipX ? 2 * CENTER - x0 : x0,
+        flipY ? 2 * CENTER - y0 : y0,
+        flipX ? 2 * CENTER - x1 : x1,
+        flipY ? 2 * CENTER - y1 : y1,
+      );
+    }
+  }
+
+  _mirrorAxes() {
+    const axes = [];
+    if (this.mirrorX) axes.push([0, 0, true, false]);
+    if (this.mirrorY) axes.push([0, 0, false, true]);
+    if (this.mirrorX && this.mirrorY) axes.push([0, 0, true, true]);
+    return axes;
   }
 
   refreshCursor() {

@@ -4,10 +4,23 @@ export class UI {
     this.painter = painter;
     this.layers = layerSystem;
 
+    // Canvas navigation state
+    this._zoom = 1;
+    this._panX = 0;
+    this._panY = 0;
+    this._baseSize = 200;
+    this._spaceHeld = false;
+    this._panning = false;
+    this._panStartX = 0;
+    this._panStartY = 0;
+    this._panOriginX = 0;
+    this._panOriginY = 0;
+
     this._bindToolbar();
     this._bindControls();
     this._bindLayers();
     this._bindKeyboard();
+    this._bindCanvasNav();
     this._resizeCanvasDisplay();
     window.addEventListener('resize', () => this._resizeCanvasDisplay());
   }
@@ -43,11 +56,127 @@ export class UI {
     this._bindSlider('opacity', (v) => { this.brush.opacity = v / 100; });
     this._bindSlider('hardness', (v) => { this.brush.hardness = v / 100; });
 
-    const mirror = document.getElementById('mirror-x');
-    mirror.addEventListener('change', (e) => {
-      this.painter.mirror = e.target.checked;
+    document.getElementById('mirror-x').addEventListener('change', (e) => {
+      this.painter.mirrorX = e.target.checked;
+      this.painter.refreshCursor();
+    });
+    document.getElementById('mirror-y').addEventListener('change', (e) => {
+      this.painter.mirrorY = e.target.checked;
+      this.painter.refreshCursor();
     });
   }
+
+  // --- Canvas Navigation (Zoom / Pan) ---
+
+  _bindCanvasNav() {
+    const area = document.getElementById('canvas-area');
+
+    // Wheel zoom (toward cursor)
+    area.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const factor = e.deltaY > 0 ? 0.9 : 1.1;
+      const newZoom = Math.min(16, Math.max(0.25, this._zoom * factor));
+
+      const wrap = document.getElementById('canvas-wrap');
+      const rect = wrap.getBoundingClientRect();
+      const cx = e.clientX - (rect.left + rect.width / 2);
+      const cy = e.clientY - (rect.top + rect.height / 2);
+
+      const scale = newZoom / this._zoom;
+      this._panX += cx - cx * scale;
+      this._panY += cy - cy * scale;
+      this._zoom = newZoom;
+      this._applyTransform();
+    }, { passive: false });
+
+    // Middle mouse or space+left for pan
+    area.addEventListener('pointerdown', (e) => {
+      if (e.button === 1 || (e.button === 0 && (this._spaceHeld || this._panToggle))) {
+        e.preventDefault();
+        e.stopPropagation();
+        this._panning = true;
+        this._panStartX = e.clientX;
+        this._panStartY = e.clientY;
+        this._panOriginX = this._panX;
+        this._panOriginY = this._panY;
+        area.setPointerCapture(e.pointerId);
+      }
+    });
+
+    area.addEventListener('pointermove', (e) => {
+      if (!this._panning) return;
+      this._panX = this._panOriginX + (e.clientX - this._panStartX);
+      this._panY = this._panOriginY + (e.clientY - this._panStartY);
+      this._applyTransform();
+    });
+
+    area.addEventListener('pointerup', (e) => {
+      if (this._panning) {
+        this._panning = false;
+        area.releasePointerCapture(e.pointerId);
+      }
+    });
+
+    // Prevent middle-click auto-scroll
+    area.addEventListener('mousedown', (e) => {
+      if (e.button === 1) e.preventDefault();
+    });
+
+    // Nav buttons
+    document.getElementById('nav-zoom-in').addEventListener('click', () => {
+      this._zoomBy(1.25);
+    });
+    document.getElementById('nav-zoom-out').addEventListener('click', () => {
+      this._zoomBy(0.8);
+    });
+    document.getElementById('nav-fit').addEventListener('click', () => {
+      this.resetView();
+    });
+
+    const panBtn = document.getElementById('nav-pan');
+    this._panToggle = false;
+    panBtn.addEventListener('click', () => {
+      this._panToggle = !this._panToggle;
+      panBtn.classList.toggle('active', this._panToggle);
+      this.painter.panMode = this._panToggle;
+      document.getElementById('canvas-area').classList.toggle('panning', this._panToggle);
+    });
+  }
+
+  _zoomBy(factor) {
+    this._zoom = Math.min(16, Math.max(0.25, this._zoom * factor));
+    this._applyTransform();
+  }
+
+  _applyTransform() {
+    const wrap = document.getElementById('canvas-wrap');
+    wrap.style.transform = `translate(${this._panX}px, ${this._panY}px) scale(${this._zoom})`;
+
+    // Show zoom level badge
+    this._showZoomBadge();
+  }
+
+  _showZoomBadge() {
+    let badge = document.getElementById('zoom-badge');
+    if (!badge) {
+      badge = document.createElement('div');
+      badge.id = 'zoom-badge';
+      document.getElementById('canvas-area').appendChild(badge);
+    }
+    badge.textContent = Math.round(this._zoom * 100) + '%';
+    badge.classList.add('visible');
+    clearTimeout(this._zoomBadgeTimer);
+    this._zoomBadgeTimer = setTimeout(() => badge.classList.remove('visible'), 800);
+  }
+
+  resetView() {
+    this._zoom = 1;
+    this._panX = 0;
+    this._panY = 0;
+    this._applyTransform();
+  }
+
+  // --- Layers ---
 
   _bindLayers() {
     const addBtn = document.getElementById('layer-add');
@@ -149,8 +278,19 @@ export class UI {
     }
   }
 
+  // --- Keyboard ---
+
   _bindKeyboard() {
     document.addEventListener('keydown', (e) => {
+      // Space for pan mode
+      if (e.code === 'Space' && !e.repeat) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        e.preventDefault();
+        this._spaceHeld = true;
+        this.painter.panMode = true;
+        document.getElementById('canvas-area').classList.add('panning');
+      }
+
       // Undo/Redo — works even when focused on inputs
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
@@ -171,8 +311,16 @@ export class UI {
       // Don't intercept tool shortcuts when typing in inputs
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
 
-      const toolMap = { b: 'brush', a: 'airbrush', r: 'blur', e: 'eraser', g: 'fill' };
       const key = e.key.toLowerCase();
+
+      // Reset view
+      if ((e.ctrlKey || e.metaKey) && key === '0') {
+        e.preventDefault();
+        this.resetView();
+        return;
+      }
+
+      const toolMap = { b: 'brush', a: 'airbrush', r: 'blur', e: 'eraser', g: 'fill' };
 
       if (toolMap[key]) {
         this.brush.type = toolMap[key];
@@ -194,7 +342,19 @@ export class UI {
         this.painter.refreshCursor();
       }
     });
+
+    document.addEventListener('keyup', (e) => {
+      if (e.code === 'Space') {
+        this._spaceHeld = false;
+        if (!this._panToggle) {
+          this.painter.panMode = false;
+          document.getElementById('canvas-area').classList.remove('panning');
+        }
+      }
+    });
   }
+
+  // --- Canvas Display ---
 
   _resizeCanvasDisplay() {
     const area = document.getElementById('canvas-area');
@@ -205,9 +365,11 @@ export class UI {
     const maxSize = Math.min(area.clientWidth, area.clientHeight) - padding * 2;
     const displaySize = Math.max(200, maxSize);
 
+    this._baseSize = displaySize;
     wrap.style.width = displaySize + 'px';
     wrap.style.height = displaySize + 'px';
     canvas.style.width = displaySize + 'px';
     canvas.style.height = displaySize + 'px';
+    this._applyTransform();
   }
 }
