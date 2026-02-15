@@ -1,67 +1,49 @@
 # anju
 
-Technical Artist Toolkit for Unreal Engine
+TA toolkit for Unreal Engine. Asset management, camera control, character tools, shaders, batch automation — all as self-contained scripts you can drop into any branch.
 
-Automation scripts for UE workflows - asset management, camera control, character tools, and more. Each script is self-contained for cross-branch compatibility.
+## Python Modules
 
----
+20 modules in `python/`. Each one runs standalone with `import unreal`.
 
-## Project Structure
-
-```
-anju/
-├── python/              # UE Python scripts (15+ modules)
-│   ├── anime_manager/
-│   ├── asset_manager/
-│   ├── camera_manager/
-│   ├── preset_manager/
-│   ├── quick_screen_shot/
-│   ├── texture_manager/
-│   ├── tag_manager/
-│   ├── motion_manager/
-│   ├── user_character_manager/
-│   └── ...
-├── hlsl/                # Shader code
-├── bat/                 # Windows batch scripts
-├── sh/                  # Shell scripts
-└── web/                 # Three.js web components
-```
-
----
-
-## Core Modules
-
-| Module | Purpose |
-|--------|---------|
+| Module | What it does |
+|--------|-------------|
 | `anime_manager` | VRM conversion, outline creation, material instances |
 | `asset_manager` | Replace skeletal meshes, delete unreferenced, recompile materials |
 | `camera_manager` | Actor sorting, aspect ratio, screen percentage |
-| `preset_manager` | Preset customization, thumbnail mapping |
-| `quick_screen_shot` | Multi-resolution capture, batch crop with masks |
+| `preset_manager` | Preset customization, preview pipeline |
 | `user_character_manager` | GUI character creator for CINEV |
+| `quick_screen_shot` | Multi-resolution capture, batch crop with masks |
+| `shipping_manager` | Build shipping, creator launcher/shipper |
 | `texture_manager` | Texture utilities |
-| `tag_manager` | Asset tagging system |
+| `tag-manager` | Asset tagging system |
 | `motion_manager` | Animation tools |
+| `actor_manager` | Actor manipulation in editor |
+| `action_manager` | Action sequence tools |
+| `blueprint_tools` | Blueprint automation |
+| `material_tools` | Material editing helpers |
+| `sprite_sheet_generator` | Image sequence → sprite sheet |
+| `git_manager` / `gitGUI` | Git operations from within UE |
+| `character-tool` | Character pipeline utilities |
+| `sm-path-to-csv` | Static mesh path export |
 
----
+## Shaders
 
-## Other Tools
+- **HLSL** — Cartoon rendering, shadow SDF, Laplacian filter, water effects (`hlsl/`)
+- **GLSL** — Toon shader, ripple effects (`glsl/`)
 
-- **HLSL** - Cartoon rendering, shadow SDF, water effects
-- **Batch Scripts** - Git configuration, LFS setup
-- **Web** - Three.js visualization, render targets
+## Scripts
 
----
+- **Batch** (`bat/`) — Git config, LFS setup, redirector cleanup
+- **Shell** (`sh/`) — Art branch creation, Slack notifications
+- **PowerShell** (`ps1/`) — Content unlocking, art branch creation
+
+## Web
+
+Three.js experiments in `web/` and `webgl/`. Render targets, boid simulation, interactive flow.
 
 ## Conventions
 
-- **Python**: `snake_case`, standalone scripts using `import unreal`
-- **Assets**: `DA_` prefix for Data Assets, forward-slash paths
-- **Philosophy**: Self-contained scripts for cross-branch compatibility
-
----
-
-## Documentation
-
-- Individual module READMEs in each folder
-- `CLAUDE.md` for development guidelines
+- `snake_case` for Python, standalone scripts with `import unreal`
+- `DA_` prefix for Data Assets, forward-slash paths
+- Self-contained per module — no cross-module dependencies
