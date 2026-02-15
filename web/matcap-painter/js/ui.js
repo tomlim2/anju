@@ -63,8 +63,6 @@ export class UI {
     this._panToggle = on;
     this.painter.panMode = on;
     document.getElementById('canvas-area').classList.toggle('panning', on);
-    const navPan = document.getElementById('nav-pan');
-    if (navPan) navPan.classList.toggle('active', on);
   }
 
   _bindSlider(name, setter) {
@@ -154,28 +152,11 @@ export class UI {
     });
 
     // Nav buttons
-    document.getElementById('nav-zoom-in').addEventListener('click', () => {
-      this._zoomBy(1.25);
-    });
-    document.getElementById('nav-zoom-out').addEventListener('click', () => {
-      this._zoomBy(0.8);
-    });
     document.getElementById('nav-fit').addEventListener('click', () => {
       this.resetView();
     });
 
     this._panToggle = false;
-    document.getElementById('nav-pan').addEventListener('click', () => {
-      const entering = !this._panToggle;
-      this._setPanMode(entering);
-      const toolPan = document.getElementById('tool-pan');
-      if (toolPan) toolPan.classList.toggle('active', entering);
-      if (entering) {
-        document.querySelectorAll('[data-tool]').forEach((b) => b.classList.remove('active'));
-      } else {
-        document.querySelectorAll('[data-tool]').forEach((b) => b.classList.toggle('active', b.dataset.tool === this.brush.type));
-      }
-    });
   }
 
   _zoomBy(factor) {
