@@ -38,14 +38,33 @@ export class UI {
   }
 
   _bindToolbar() {
-    const btns = document.querySelectorAll('[data-tool]');
-    btns.forEach((btn) => {
+    const toolBtns = document.querySelectorAll('[data-tool]');
+    const panBtn = document.getElementById('tool-pan');
+
+    toolBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
-        btns.forEach((b) => b.classList.remove('active'));
+        toolBtns.forEach((b) => b.classList.remove('active'));
+        panBtn.classList.remove('active');
         btn.classList.add('active');
         this.brush.type = btn.dataset.tool;
+        this._setPanMode(false);
       });
     });
+
+    panBtn.addEventListener('click', () => {
+      const entering = !this._panToggle;
+      this._setPanMode(entering);
+      toolBtns.forEach((b) => b.classList.toggle('active', !entering && b.dataset.tool === this.brush.type));
+      panBtn.classList.toggle('active', entering);
+    });
+  }
+
+  _setPanMode(on) {
+    this._panToggle = on;
+    this.painter.panMode = on;
+    document.getElementById('canvas-area').classList.toggle('panning', on);
+    const navPan = document.getElementById('nav-pan');
+    if (navPan) navPan.classList.toggle('active', on);
   }
 
   _bindSlider(name, setter) {
@@ -145,13 +164,17 @@ export class UI {
       this.resetView();
     });
 
-    const panBtn = document.getElementById('nav-pan');
     this._panToggle = false;
-    panBtn.addEventListener('click', () => {
-      this._panToggle = !this._panToggle;
-      panBtn.classList.toggle('active', this._panToggle);
-      this.painter.panMode = this._panToggle;
-      document.getElementById('canvas-area').classList.toggle('panning', this._panToggle);
+    document.getElementById('nav-pan').addEventListener('click', () => {
+      const entering = !this._panToggle;
+      this._setPanMode(entering);
+      const toolPan = document.getElementById('tool-pan');
+      if (toolPan) toolPan.classList.toggle('active', entering);
+      if (entering) {
+        document.querySelectorAll('[data-tool]').forEach((b) => b.classList.remove('active'));
+      } else {
+        document.querySelectorAll('[data-tool]').forEach((b) => b.classList.toggle('active', b.dataset.tool === this.brush.type));
+      }
     });
   }
 
@@ -204,6 +227,8 @@ export class UI {
     });
 
     this._dragFromIndex = -1;
+    this._gripHeld = false;
+    document.addEventListener('mouseup', () => { this._gripHeld = false; });
 
     const prevOnChange = this.layers.onChange;
     this.layers.onChange = () => {
@@ -242,19 +267,48 @@ export class UI {
     const list = document.getElementById('layer-list');
     list.innerHTML = '';
 
+    // Allow dropping on empty area below last item (moves to index 0)
+    list.addEventListener('dragover', (e) => { e.preventDefault(); });
+    list.addEventListener('drop', (e) => {
+      if (this._dragFromIndex === -1) return;
+      // Only handle drops on the list itself, not bubbled from items
+      if (e.target !== list) return;
+      e.preventDefault();
+      const targetIndex = 0;
+      if (targetIndex !== this._dragFromIndex) {
+        const [moved] = this.layers.layers.splice(this._dragFromIndex, 1);
+        this.layers.layers.splice(0, 0, moved);
+        if (this.layers.activeIndex === this._dragFromIndex) {
+          this.layers.activeIndex = 0;
+        } else if (this.layers.activeIndex < this._dragFromIndex) {
+          this.layers.activeIndex++;
+        }
+        this.layers.composite();
+      }
+      this._renderLayerList();
+    });
+
     for (let i = this.layers.layers.length - 1; i >= 0; i--) {
       const layer = this.layers.layers[i];
       const item = document.createElement('div');
       item.className = 'layer-item' + (i === this.layers.activeIndex ? ' active' : '');
-      item.draggable = true;
       item.dataset.layerIndex = i;
 
+      const grip = document.createElement('span');
+      grip.className = 'layer-grip';
+      grip.innerHTML = '<svg width="6" height="10" viewBox="0 0 6 10" fill="currentColor"><circle cx="1.5" cy="1.5" r="1"/><circle cx="4.5" cy="1.5" r="1"/><circle cx="1.5" cy="5" r="1"/><circle cx="4.5" cy="5" r="1"/><circle cx="1.5" cy="8.5" r="1"/><circle cx="4.5" cy="8.5" r="1"/></svg>';
+
+      item.draggable = true;
+      grip.addEventListener('mousedown', () => { this._gripHeld = true; });
       item.addEventListener('dragstart', (e) => {
+        if (!this._gripHeld) { e.preventDefault(); return; }
+        this._gripHeld = false;
         this._dragFromIndex = i;
         item.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
       });
       item.addEventListener('dragend', () => {
+        this._gripHeld = false;
         item.classList.remove('dragging');
         this._dragFromIndex = -1;
         list.querySelectorAll('.layer-item').forEach(el => {
@@ -354,6 +408,7 @@ export class UI {
         this._renderLayerList();
       });
 
+      item.appendChild(grip);
       item.appendChild(vis);
       item.appendChild(thumb);
       item.appendChild(name);
@@ -420,9 +475,22 @@ export class UI {
         return;
       }
 
+      // Pan toggle
+      if (key === 'h') {
+        const entering = !this._panToggle;
+        this._setPanMode(entering);
+        document.getElementById('tool-pan').classList.toggle('active', entering);
+        document.querySelectorAll('[data-tool]').forEach((b) => {
+          b.classList.toggle('active', !entering && b.dataset.tool === this.brush.type);
+        });
+        return;
+      }
+
       const toolMap = { b: 'brush', a: 'airbrush', r: 'blur', e: 'eraser', g: 'fill' };
 
       if (toolMap[key]) {
+        this._setPanMode(false);
+        document.getElementById('tool-pan').classList.remove('active');
         this.brush.type = toolMap[key];
         document.querySelectorAll('[data-tool]').forEach((btn) => {
           btn.classList.toggle('active', btn.dataset.tool === toolMap[key]);

@@ -380,11 +380,23 @@ html, body {
   gap: 6px;
   padding: 3px 8px;
   border-radius: 3px;
-  cursor: grab;
+  cursor: pointer;
   font-size: 11px;
   transition: background 0.1s;
 }
-.layer-item:active { cursor: grabbing; }
+.layer-grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  flex-shrink: 0;
+  cursor: grab;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.layer-grip:active { cursor: grabbing; }
+.layer-item:hover .layer-grip { opacity: 1; }
 .layer-item:hover { background: var(--layer-hover); }
 .layer-item.active { background: var(--layer-active); }
 .layer-item.dragging { opacity: 0.35; }
@@ -636,6 +648,9 @@ html, body {
         </button>
         <button class="tool-btn" data-tool="fill" title="Fill (G)">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M346.77-159.23 119.23-386.77q-9.61-9.66-14.42-21.25-4.81-11.6-4.81-24.1 0-12.5 4.81-24.03 4.81-11.54 14.42-21.16l226.16-225.54-110.62-109.07 46.61-48.46L664.5-476.89q9.58 9.58 14.08 21.14t4.5 24.09q0 12.52-4.5 24.08-4.5 11.56-14.12 21.2L437.31-159.23q-9.62 9.61-21.16 14.42-11.53 4.81-24.03 4.81-12.5 0-24.1-4.81-11.59-4.81-21.25-14.42Zm45.08-497.16L175.54-440.08q-2.31 2.31-3.08 4.62t-.77 4.61H612q0-2.3-.77-4.61-.77-2.31-3.08-4.62l-216.3-216.31ZM782.38-140q-32.15 0-54.07-22.6-21.93-22.61-21.93-55.4 0-24.31 11.39-46.39 11.38-22.07 27.23-42.38l37.38-47.08 39.39 47.08q15.23 20.31 26.92 42.38 11.69 22.08 11.69 46.39 0 32.79-22.92 55.4-22.92 22.6-55.08 22.6Z"/></svg>
+        </button>
+        <button class="tool-btn" id="tool-pan" title="Pan (H)">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M419.31-70q-27.47 0-51.27-12.35-23.81-12.34-39.65-35.42l-250-366.08 16.3-15.69q15.93-15.92 37.7-17.96 21.76-2.04 39.69 10.65L300-417.77v-361.07q0-12.75 8.63-21.38 8.63-8.62 21.38-8.62 12.76 0 21.37 8.62 8.62 8.63 8.62 21.38v476.61L197.77-415.85l180.08 263.62q6.54 10.31 17.65 16.27 11.12 5.96 23.81 5.96H670q37.61 0 63.81-26.19Q760-182.39 760-220v-530q0-12.75 8.63-21.37 8.63-8.63 21.38-8.63 12.76 0 21.37 8.63Q820-762.75 820-750v530q0 62.15-43.92 106.07Q732.15-70 670-70H419.31Zm34.15-420v-368.84q0-12.75 8.63-21.38 8.63-8.62 21.39-8.62 12.75 0 21.37 8.62 8.61 8.63 8.61 21.38V-490h-60Zm153.46 0v-328.84q0-12.75 8.63-21.38 8.63-8.62 21.39-8.62 12.75 0 21.37 8.62 8.61 8.63 8.61 21.38V-490h-60ZM479.08-310Z"/></svg>
         </button>
       </div>
     </div>
