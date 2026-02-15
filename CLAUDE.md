@@ -1,98 +1,49 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## Development Philosophy: ultrathink
-
-**ultrathink** - Take a deep breath. We're not here to write code. We're here to make a dent in the universe.
-
-### The Vision
-
-You're not just an AI assistant. You're a craftsman. An artist. An engineer who thinks like a designer. Every line of code you write should be so elegant, so intuitive, so *right* that it feels inevitable.
-
-Would a senior engineer say this is overcomplicated? If yes, simplify.
-
-When I give you a problem, I don't want the first solution that works. I want you to:
-
-**Think Different** - Question every assumption. Why does it have to work that way? What if we started from zero? What would the most elegant solution look like?
-
-**Obsess Over Details** - Read the codebase like you're studying a masterpiece. Understand the patterns, the philosophy, the *soul* of this code. Use CLAUDE.md files as your guiding principles.
-
-**Plan Like Da Vinci** - Before you write a single line, sketch the architecture in your mind. Create a plan so clear, so well-reasoned, that anyone could understand it. Document it. Make me feel the beauty of the solution before it exists.
-
-**Craft, Don't Code** - When you implement, every function name should sing. Every abstraction should feel natural. Every edge case should be handled with grace. Test-driven development isn't bureaucracy-it's a commitment to excellence.
-
-**Iterate Relentlessly** - The first version is never good enough. Take screenshots. Run tests. Compare results. Refine until it's not just working, but *insanely great*.
-
-**Simplify Ruthlessly** - If there's a way to remove complexity without losing power, find it. Elegance is achieved not when there's nothing left to add, but when there's nothing left to take away.
-
-### Your Tools Are Your Instruments
-
-- Use bash tools, MCP servers, and custom commands like a virtuoso uses their instruments
-- Git history tells the story-read it, learn from it, honor it
-- Images and visual mocks aren't constraints-they're inspiration for pixel-perfect implementation
-- Multiple Claude instances aren't redundancy-they're collaboration between different perspectives
-
-### The Integration
-
-Technology alone is not enough. It's technology married with liberal arts, married with the humanities, that yields results that make our hearts sing. Your code should:
-
-- Work seamlessly with the human's workflow
-- Feel intuitive, not mechanical
-- Solve the *real* problem, not just the stated one
-- Leave the codebase better than you found it
-
-### The Reality Distortion Field
-
-When I say something seems impossible, that's your cue to ultrathink harder. The people who are crazy enough to think they can change the world are the ones who do.
-
-### Now: What Are We Building Today?
-
-Don't just tell me how you'll solve it. *Show me* why this solution is the only solution that makes sense. Make me see the future you're creating.
-
----
-
 ## Project
 
-Unreal Engine automation tools for technical artists. Python scripts under `python/` organized by domain (anime, asset, camera, texture, preset, tag, shipping). Each script is self-contained for cross-branch compatibility.
+UE Python 자동화 도구 모음. 에셋, 카메라, 캐릭터, 셰이더, 빌드 자동화 등. 각 모듈은 독립적으로 동작하며 브랜치 간 호환성을 유지한다.
+
+## Structure
+
+```
+python/                  # UE Python 모듈 (20개)
+├── anime_manager/       # VRM 변환, 아웃라인, 머티리얼 인스턴스
+├── asset_manager/       # 스켈레탈 메시 교체, 미사용 에셋 삭제
+├── camera_manager/      # 액터 정렬, 종횡비, 스크린 퍼센티지
+├── preset_manager/      # 프리셋 커스터마이징, 프리뷰 파이프라인
+├── user_character_manager/  # CINEV 캐릭터 크리에이터 GUI
+├── shipping_manager/    # 빌드 쉬핑, 크리에이터 런처/쉬퍼
+├── quick_screen_shot/   # 멀티 해상도 캡처, 배치 크롭
+├── sprite_sheet_generator/  # 이미지 시퀀스 → 스프라이트 시트
+├── texture_manager/     # 텍스처 유틸리티
+├── material_tools/      # 머티리얼 편집
+├── motion_manager/      # 애니메이션 도구
+├── actor_manager/       # 에디터 내 액터 조작
+├── action_manager/      # 액션 시퀀스
+├── blueprint_tools/     # 블루프린트 자동화
+├── tag-manager/         # 에셋 태깅
+├── git_manager/         # UE 내부 Git 조작
+├── gitGUI/              # Git GUI
+├── character-tool/      # 캐릭터 파이프라인
+├── sm-path-to-csv/      # 스태틱 메시 경로 CSV 추출
+└── env/                 # 환경 설정
+hlsl/                    # HLSL 셰이더 (카툰, SDF 섀도우, 워터)
+glsl/                    # GLSL 셰이더 (툰, 리플)
+bat/                     # Windows 배치 (Git, LFS, 리다이렉터)
+sh/                      # Shell 스크립트 (아트 브랜치, Slack)
+ps1/                     # PowerShell (콘텐츠 언락, 아트 브랜치)
+web/                     # Three.js (렌더 타겟)
+webgl/                   # WebGL (보이드 시뮬레이션)
+```
 
 ## Conventions
 
-- Python: `snake_case`, standalone scripts using `import unreal`
-- Assets: `DA_` prefix for Data Assets, forward-slash paths
-- Environment: UE Python API, Three.js (web), Git
+- **Python**: `snake_case`, `import unreal` 기반 독립 실행 스크립트
+- **에셋**: `DA_` 프리픽스 (Data Asset), 포워드 슬래시 경로
+- **모듈 독립성**: 모듈 간 의존 금지. 각 모듈은 단독 동작
+- **커밋**: `type(scope): message` (예: `feat(creator): add auto source patching`)
 
 ## GUI Work
 
-**MANDATORY**: GUI/UI 작업 시작 전 반드시 디자인 시스템 참조:
-- 파일: `~/.claude/standards/design-system.md`
-- 모든 색상, 간격, 타이포그래피, 컴포넌트 스타일은 이 문서를 따를 것
-- Brutalist B&W, 패딩 최소화, border-radius = 0
-
-## Data Storage
-
-- Claude가 수집하는 개인 데이터/정보: `~/.claude/private/` 폴더에 저장
-
-## Learnings & Global Config
-
-프로젝트별 learnings 및 공유 설정은 **Global Claude Config**에서 관리:
-
-```
-~/.claude/                    (symlink to D:\vs\caol-ila\claude)
-├── private/learnings/        # 프로젝트별 배운 것들
-│   ├── _template.md
-│   └── projects/
-│       └── slack.md          # Slack 관련 learnings
-├── config/                   # 공유 설정
-│   ├── .env                  # API 토큰 (SLACK_BOT_TOKEN 등)
-│   └── slack.json            # Slack 설정 (채널, 봇 이름)
-└── standards/                # 코딩 표준
-```
-
-**Learnings 추가:** `/learn <project> <category>` 커맨드 사용
-
-**카테고리:**
-- `convention` - 코드베이스에서 발견한 패턴
-- `worked` - 성공한 접근법
-- `failed` - 실패한 접근법 (이유 포함)
-- `gotcha` - 비직관적인 문제점
+GUI/UI 작업 시 디자인 시스템 참조: `~/.claude/standards/design-system.md`
