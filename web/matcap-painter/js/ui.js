@@ -1,3 +1,6 @@
+import { MatcapPicker } from './matcap-picker.js';
+import { FULL_PATH } from './matcaps.js';
+
 export class UI {
   constructor(brush, painter, layerSystem) {
     this.brush = brush;
@@ -15,6 +18,15 @@ export class UI {
     this._panStartY = 0;
     this._panOriginX = 0;
     this._panOriginY = 0;
+
+    this._picker = new MatcapPicker((matcapId, layerIndex) => {
+      const img = new Image();
+      img.onload = () => {
+        this.painter.loadImageToLayer(img, layerIndex);
+        this._renderLayerList();
+      };
+      img.src = FULL_PATH + matcapId + '.png';
+    });
 
     this._bindToolbar();
     this._bindControls();
@@ -181,8 +193,6 @@ export class UI {
   _bindLayers() {
     const addBtn = document.getElementById('layer-add');
     const delBtn = document.getElementById('layer-delete');
-    const upBtn = document.getElementById('layer-up');
-    const downBtn = document.getElementById('layer-down');
 
     addBtn.addEventListener('click', () => {
       this.layers.addLayer();
@@ -192,14 +202,14 @@ export class UI {
       this.layers.deleteLayer(this.layers.activeIndex);
       this._renderLayerList();
     });
-    upBtn.addEventListener('click', () => {
-      this.layers.moveLayer(this.layers.activeIndex, 1);
-      this._renderLayerList();
-    });
-    downBtn.addEventListener('click', () => {
-      this.layers.moveLayer(this.layers.activeIndex, -1);
-      this._renderLayerList();
-    });
+
+    this._dragFromIndex = -1;
+
+    const prevOnChange = this.layers.onChange;
+    this.layers.onChange = () => {
+      if (prevOnChange) prevOnChange();
+      this._updateThumbnails();
+    };
 
     this._renderLayerList();
   }
@@ -236,6 +246,65 @@ export class UI {
       const layer = this.layers.layers[i];
       const item = document.createElement('div');
       item.className = 'layer-item' + (i === this.layers.activeIndex ? ' active' : '');
+      item.draggable = true;
+      item.dataset.layerIndex = i;
+
+      item.addEventListener('dragstart', (e) => {
+        this._dragFromIndex = i;
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      item.addEventListener('dragend', () => {
+        item.classList.remove('dragging');
+        this._dragFromIndex = -1;
+        list.querySelectorAll('.layer-item').forEach(el => {
+          el.classList.remove('drag-over-top', 'drag-over-bottom');
+        });
+      });
+      item.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        list.querySelectorAll('.layer-item').forEach(el => {
+          el.classList.remove('drag-over-top', 'drag-over-bottom');
+        });
+        const rect = item.getBoundingClientRect();
+        const mid = rect.top + rect.height / 2;
+        item.classList.add(e.clientY < mid ? 'drag-over-top' : 'drag-over-bottom');
+      });
+      item.addEventListener('dragleave', () => {
+        item.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
+      item.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (this._dragFromIndex === -1 || this._dragFromIndex === i) return;
+        const rect = item.getBoundingClientRect();
+        const mid = rect.top + rect.height / 2;
+        // Visual list is reversed: top of DOM = high index, bottom = low index
+        // Dropping above an item in DOM = moving to a higher index
+        // Dropping below an item in DOM = moving to a lower index
+        let targetIndex = e.clientY < mid ? i + 1 : i;
+        // Clamp
+        targetIndex = Math.max(0, Math.min(this.layers.layers.length - 1, targetIndex));
+        if (targetIndex !== this._dragFromIndex) {
+          const [moved] = this.layers.layers.splice(this._dragFromIndex, 1);
+          const insertAt = targetIndex > this._dragFromIndex ? targetIndex - 1 : targetIndex;
+          this.layers.layers.splice(insertAt, 0, moved);
+          // Update active index
+          if (this.layers.activeIndex === this._dragFromIndex) {
+            this.layers.activeIndex = insertAt;
+          } else {
+            // Adjust if active was shifted
+            const oldActive = this.layers.activeIndex;
+            if (this._dragFromIndex < oldActive && insertAt >= oldActive) {
+              this.layers.activeIndex--;
+            } else if (this._dragFromIndex > oldActive && insertAt <= oldActive) {
+              this.layers.activeIndex++;
+            }
+          }
+          this.layers.composite();
+        }
+        this._renderLayerList();
+      });
 
       const vis = document.createElement('span');
       vis.className = 'layer-vis' + (layer.visible ? '' : ' hidden');
@@ -248,9 +317,24 @@ export class UI {
         this._renderLayerList();
       });
 
+      const thumb = document.createElement('canvas');
+      thumb.className = 'layer-thumb';
+      thumb.width = 28;
+      thumb.height = 28;
+      thumb.dataset.layerIndex = i;
+
       const name = document.createElement('span');
       name.className = 'layer-name';
       name.textContent = layer.name;
+
+      const matcapBtn = document.createElement('button');
+      matcapBtn.className = 'layer-matcap-btn';
+      matcapBtn.title = 'Load matcap preset';
+      matcapBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M480-480Zm0 360q-75 0-140.5-28.5t-114-77q-48.5-48.5-77-114T120-480q0-75 28.5-140.5t77-114q48.5-48.5 114-77T480-840q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-480q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-120Zm0-80q116 0 198-82t82-198q0-116-82-198t-198-82q-116 0-198 82t-82 198q0 116 82 198t198 82Z"/></svg>';
+      matcapBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._picker.open(i);
+      });
 
       const blendSel = this._createBlendSelect(i, layer.blendMode);
 
@@ -271,10 +355,26 @@ export class UI {
       });
 
       item.appendChild(vis);
+      item.appendChild(thumb);
       item.appendChild(name);
+      item.appendChild(matcapBtn);
       item.appendChild(blendSel);
       item.appendChild(opSlider);
       list.appendChild(item);
+    }
+
+    this._updateThumbnails();
+  }
+
+  _updateThumbnails() {
+    const thumbs = document.querySelectorAll('.layer-thumb');
+    for (const thumb of thumbs) {
+      const idx = +thumb.dataset.layerIndex;
+      const layer = this.layers.layers[idx];
+      if (!layer) continue;
+      const ctx = thumb.getContext('2d');
+      ctx.clearRect(0, 0, 28, 28);
+      ctx.drawImage(layer.canvas, 0, 0, 28, 28);
     }
   }
 

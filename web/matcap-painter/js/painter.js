@@ -276,6 +276,18 @@ export class Painter {
     this.layers.composite();
   }
 
+  loadImageToLayer(img, layerIndex) {
+    const layer = this.layers.layers[layerIndex];
+    if (!layer) return;
+    const imageData = layer.ctx.getImageData(0, 0, SIZE, SIZE);
+    this._undoStack.push({ layerIndex, imageData });
+    if (this._undoStack.length > MAX_HISTORY) this._undoStack.shift();
+    this._redoStack.length = 0;
+    layer.ctx.clearRect(0, 0, SIZE, SIZE);
+    layer.ctx.drawImage(img, 0, 0, SIZE, SIZE);
+    this.layers.composite();
+  }
+
   exportPNG() {
     return this.layers.outputCanvas.toDataURL('image/png');
   }
