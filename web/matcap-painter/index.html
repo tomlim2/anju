@@ -176,15 +176,23 @@ html, body {
   background: #1e1e1e;
 }
 #paint-canvas {
-  cursor: crosshair;
+  cursor: none;
   border-radius: 50%;
   image-rendering: auto;
+  position: relative;
+  z-index: 1;
+}
+#cursor-overlay {
+  position: absolute;
+  pointer-events: none;
+  z-index: 2;
 }
 .canvas-bg {
   position: absolute;
   border-radius: 50%;
   background: repeating-conic-gradient(#2a2a2a 0% 25%, #222 0% 50%) 50% / 16px 16px;
   pointer-events: none;
+  z-index: 0;
 }
 
 /* Layers panel */
@@ -342,6 +350,9 @@ html, body {
         <button class="tool-btn" data-tool="eraser" title="Eraser (E)">
           <svg viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="8" rx="1"/><line x1="4" y1="4" x2="12" y2="12" stroke="var(--bg)" stroke-width="1.5"/></svg>
         </button>
+        <button class="tool-btn" data-tool="fill" title="Fill (G)">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 13V5l7-2v8M3 9l7-2"/><ellipse cx="12" cy="12" rx="2" ry="3" opacity="0.5"/></svg>
+        </button>
       </div>
     </div>
 
@@ -375,6 +386,7 @@ html, body {
     <div class="canvas-area" id="canvas-area">
       <div class="canvas-bg" id="canvas-bg"></div>
       <canvas id="paint-canvas" width="512" height="512"></canvas>
+      <canvas id="cursor-overlay" width="512" height="512"></canvas>
     </div>
 
     <!-- Layers Panel -->

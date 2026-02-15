@@ -136,10 +136,27 @@ export class UI {
 
   _bindKeyboard() {
     document.addEventListener('keydown', (e) => {
-      // Don't intercept when typing in inputs
+      // Undo/Redo — works even when focused on inputs
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        this.painter.undo();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'Z' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        this.painter.redo();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        e.preventDefault();
+        this.painter.redo();
+        return;
+      }
+
+      // Don't intercept tool shortcuts when typing in inputs
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
 
-      const toolMap = { b: 'brush', a: 'airbrush', r: 'blur', e: 'eraser' };
+      const toolMap = { b: 'brush', a: 'airbrush', r: 'blur', e: 'eraser', g: 'fill' };
       const key = e.key.toLowerCase();
 
       if (toolMap[key]) {
@@ -169,6 +186,8 @@ export class UI {
     const canvas = document.getElementById('paint-canvas');
     const bg = document.getElementById('canvas-bg');
 
+    const cursor = document.getElementById('cursor-overlay');
+
     const padding = 24;
     const maxSize = Math.min(area.clientWidth, area.clientHeight) - padding * 2;
     const displaySize = Math.max(200, maxSize);
@@ -177,5 +196,13 @@ export class UI {
     canvas.style.height = displaySize + 'px';
     bg.style.width = displaySize + 'px';
     bg.style.height = displaySize + 'px';
+
+    // Position cursor overlay to match paint canvas exactly
+    const rect = canvas.getBoundingClientRect();
+    const areaRect = area.getBoundingClientRect();
+    cursor.style.width = displaySize + 'px';
+    cursor.style.height = displaySize + 'px';
+    cursor.style.left = (rect.left - areaRect.left) + 'px';
+    cursor.style.top = (rect.top - areaRect.top) + 'px';
   }
 }

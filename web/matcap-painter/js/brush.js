@@ -142,6 +142,55 @@ export class Brush {
   }
 }
 
+export function floodFill(ctx, startX, startY, fillColor, tolerance = 32) {
+  const w = ctx.canvas.width;
+  const h = ctx.canvas.height;
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+  const rgb = hexToRgb(fillColor);
+
+  const sx = Math.floor(startX);
+  const sy = Math.floor(startY);
+  if (sx < 0 || sx >= w || sy < 0 || sy >= h) return;
+
+  const startIdx = (sy * w + sx) * 4;
+  const sr = data[startIdx], sg = data[startIdx + 1], sb = data[startIdx + 2], sa = data[startIdx + 3];
+
+  // Don't fill if target color is same as fill color
+  if (sr === rgb.r && sg === rgb.g && sb === rgb.b && sa === 255) return;
+
+  const visited = new Uint8Array(w * h);
+  const stack = [sx, sy];
+
+  function matches(i) {
+    const dr = data[i] - sr;
+    const dg = data[i + 1] - sg;
+    const db = data[i + 2] - sb;
+    const da = data[i + 3] - sa;
+    return dr * dr + dg * dg + db * db + da * da <= tolerance * tolerance * 4;
+  }
+
+  while (stack.length > 0) {
+    const y = stack.pop();
+    const x = stack.pop();
+    const pos = y * w + x;
+    if (x < 0 || x >= w || y < 0 || y >= h) continue;
+    if (visited[pos]) continue;
+    const idx = pos * 4;
+    if (!matches(idx)) continue;
+
+    visited[pos] = 1;
+    data[idx] = rgb.r;
+    data[idx + 1] = rgb.g;
+    data[idx + 2] = rgb.b;
+    data[idx + 3] = 255;
+
+    stack.push(x - 1, y, x + 1, y, x, y - 1, x, y + 1);
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
 function hexToRgb(hex) {
   const v = parseInt(hex.slice(1), 16);
   return { r: (v >> 16) & 0xff, g: (v >> 8) & 0xff, b: v & 0xff };
