@@ -35,11 +35,11 @@ async function init() {
   await preview.init(paintCanvas);
 
   // Load default model
-  const geo = await getGeometry('sphere');
+  const geo = await getGeometry('agus');
   preview.setGeometry(geo);
 
   // UI
-  new UI(brush, painter, layers);
+  new UI(brush, painter, layers, preview);
 
   // Model selector
   modelSelect.addEventListener('change', async (e) => {

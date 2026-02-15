@@ -5,6 +5,7 @@ import {
   BoxGeometry,
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const PRESETS = {
   sphere: () => new SphereGeometry(1, 64, 64),
@@ -13,13 +14,13 @@ const PRESETS = {
   box: () => new BoxGeometry(1.2, 1.2, 1.2, 4, 4, 4),
 };
 
-let suzanneGeometry = null;
+let agusGeometry = null;
 
 export function getGeometry(name) {
   if (PRESETS[name]) return Promise.resolve(PRESETS[name]());
 
-  if (name === 'suzanne') {
-    if (suzanneGeometry) return Promise.resolve(suzanneGeometry.clone());
+  if (name === 'agus') {
+    if (agusGeometry) return Promise.resolve(agusGeometry.clone());
     return loadSuzanne();
   }
 
@@ -30,24 +31,22 @@ function loadSuzanne() {
   return new Promise((resolve, reject) => {
     const loader = new GLTFLoader();
     loader.load(
-      'assets/suzanne.glb',
+      'assets/agus.glb',
       (gltf) => {
+        const geometries = [];
         gltf.scene.traverse((child) => {
-          if (child.isMesh) {
-            suzanneGeometry = child.geometry;
-            suzanneGeometry.computeVertexNormals();
-          }
+          if (child.isMesh) geometries.push(child.geometry);
         });
-        if (suzanneGeometry) {
-          resolve(suzanneGeometry.clone());
+        if (geometries.length) {
+          agusGeometry = geometries.length > 1 ? mergeGeometries(geometries) : geometries[0];
+          resolve(agusGeometry.clone());
         } else {
-          // Fallback to sphere if no mesh found
           resolve(PRESETS.sphere());
         }
       },
       undefined,
       (err) => {
-        console.warn('Failed to load suzanne.glb, falling back to sphere', err);
+        console.warn('Failed to load agus.glb, falling back to sphere', err);
         resolve(PRESETS.sphere());
       }
     );

@@ -2,10 +2,11 @@ import { MatcapPicker } from './matcap-picker.js';
 import { FULL_PATH } from './matcaps.js';
 
 export class UI {
-  constructor(brush, painter, layerSystem) {
+  constructor(brush, painter, layerSystem, preview) {
     this.brush = brush;
     this.painter = painter;
     this.layers = layerSystem;
+    this.preview = preview;
 
     // Canvas navigation state
     this._zoom = 1;
@@ -33,6 +34,7 @@ export class UI {
     this._bindLayers();
     this._bindKeyboard();
     this._bindCanvasNav();
+    this._bindViewport();
     this._resizeCanvasDisplay();
     window.addEventListener('resize', () => this._resizeCanvasDisplay());
   }
@@ -157,6 +159,16 @@ export class UI {
     });
 
     this._panToggle = false;
+  }
+
+  _bindViewport() {
+    document.getElementById('vp-rotate').addEventListener('click', (e) => {
+      const on = this.preview.toggleAutoRotate();
+      e.currentTarget.classList.toggle('active', on);
+    });
+    document.getElementById('vp-reset').addEventListener('click', () => {
+      this.preview.resetView();
+    });
   }
 
   _zoomBy(factor) {

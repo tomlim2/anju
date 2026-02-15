@@ -3,12 +3,12 @@ import {
   PerspectiveCamera,
   Mesh,
   CanvasTexture,
-  MeshBasicNodeMaterial,
+  MeshMatcapMaterial,
   WebGPURenderer,
   SRGBColorSpace,
   Color,
+  DoubleSide,
 } from 'three/webgpu';
-import { normalView, texture } from 'three/tsl';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 export class Preview {
@@ -38,21 +38,21 @@ export class Preview {
 
     // Camera
     this.camera = new PerspectiveCamera(45, 1, 0.1, 100);
-    this.camera.position.set(0, 0, 3);
+    this.camera.position.set(0, 0, 5);
 
     // Controls
     this.controls = new OrbitControls(this.camera, this.canvas);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.08;
+    this.controls.autoRotate = true;
+    this.controls.autoRotateSpeed = 2.0;
 
     // Matcap texture from 2D canvas
     this.matcapTexture = new CanvasTexture(matcapCanvas);
     this.matcapTexture.colorSpace = SRGBColorSpace;
 
-    // TSL matcap shader
-    const matcapUV = normalView.xy.mul(0.5).add(0.5);
-    this.material = new MeshBasicNodeMaterial();
-    this.material.colorNode = texture(this.matcapTexture, matcapUV);
+    // Matcap material
+    this.material = new MeshMatcapMaterial({ matcap: this.matcapTexture, flatShading: false, side: DoubleSide });
 
     // Resize
     this._resize();
@@ -74,11 +74,21 @@ export class Preview {
       this.mesh.geometry.dispose();
     }
     this.mesh = new Mesh(geometry, this.material);
+    this.mesh.position.y = -1;
     this.scene.add(this.mesh);
   }
 
   markTextureDirty() {
     this._textureDirty = true;
+  }
+
+  toggleAutoRotate() {
+    this.controls.autoRotate = !this.controls.autoRotate;
+    return this.controls.autoRotate;
+  }
+
+  resetView() {
+    this.controls.reset();
   }
 
   render() {

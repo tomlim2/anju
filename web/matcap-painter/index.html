@@ -476,7 +476,28 @@ html, body {
   top: 8px;
   right: 8px;
   z-index: 10;
+  display: flex;
+  gap: 4px;
+  align-items: center;
 }
+.vp-btn {
+  width: 26px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  transition: all 0.12s;
+  backdrop-filter: blur(4px);
+}
+.vp-btn:hover { background: var(--btn-hover); color: var(--text); }
+.vp-btn.active { background: var(--accent); color: #fff; }
 .viewport-controls select {
   background: rgba(30,30,30,0.85);
   color: var(--text);
@@ -710,12 +731,12 @@ html, body {
     <canvas id="preview-canvas"></canvas>
     <div class="viewport-controls">
       <select id="model-select">
-        <option value="sphere" selected>Sphere</option>
         <option value="torus">Torus</option>
         <option value="torusknot">TorusKnot</option>
-        <option value="box">Box</option>
-        <option value="suzanne">Suzanne</option>
+        <option value="agus" selected>Suzanne</option>
       </select>
+      <button class="vp-btn active" id="vp-rotate" title="Auto Rotate">↻</button>
+      <button class="vp-btn" id="vp-reset" title="Reset View">⊡</button>
     </div>
   </div>
 </div>
