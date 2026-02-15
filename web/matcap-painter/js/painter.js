@@ -106,7 +106,6 @@ export class Painter {
 
   _onDown(e) {
     const { x, y } = this._canvasCoords(e);
-    if (!this._inCircle(x, y)) return;
 
     // Save snapshot before any modification
     this._saveSnapshot();
@@ -172,41 +171,71 @@ export class Painter {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (!this._cursorVisible) return;
-    if (this.brush.type === 'fill') return;
 
     const x = this._cursorX;
     const y = this._cursorY;
+
+    if (this.brush.type === 'fill') {
+      this._drawFillCursor(ctx, x, y);
+      return;
+    }
+
     const r = this.brush.size;
+
+    // Difference mode — auto-contrasts against any background
+    ctx.globalCompositeOperation = 'difference';
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.2;
 
     // Main cursor circle
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
-
-    // Inner outline for contrast
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-    ctx.lineWidth = 0.6;
     ctx.stroke();
 
     // Mirror cursor
     if (this.mirror) {
-      const mx = 2 * CENTER - x;
+      ctx.lineWidth = 0.8;
       ctx.beginPath();
-      ctx.arc(mx, y, r, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-      ctx.lineWidth = 1;
+      ctx.arc(2 * CENTER - x, y, r, 0, Math.PI * 2);
       ctx.stroke();
     }
 
-    // Center crosshair dot
+    // Center dot
+    ctx.fillStyle = '#fff';
     ctx.beginPath();
     ctx.arc(x, y, 1.5, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.fill();
+
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  _drawFillCursor(ctx, x, y) {
+    ctx.globalCompositeOperation = 'difference';
+    ctx.strokeStyle = '#fff';
+    ctx.fillStyle = '#fff';
+    ctx.lineWidth = 1.2;
+
+    // Crosshair
+    const s = 7;
+    ctx.beginPath();
+    ctx.moveTo(x - s, y); ctx.lineTo(x + s, y);
+    ctx.moveTo(x, y - s); ctx.lineTo(x, y + s);
+    ctx.stroke();
+
+    // Small fill bucket icon (simplified drop shape)
+    const ox = x + 6;
+    const oy = y + 6;
+    ctx.beginPath();
+    ctx.moveTo(ox, oy - 4);
+    ctx.quadraticCurveTo(ox + 4, oy, ox, oy + 4);
+    ctx.quadraticCurveTo(ox - 4, oy, ox, oy - 4);
+    ctx.fill();
+
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  refreshCursor() {
+    this._drawCursor();
   }
 
   loadImage(img) {

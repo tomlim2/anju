@@ -19,17 +19,22 @@
 
 :root {
   --bg: #1a1a1a;
-  --panel: #242424;
-  --border: #333;
-  --text: #e0e0e0;
-  --text-dim: #888;
+  --panel: #232323;
+  --surface: #2a2a2a;
+  --border: #2f2f2f;
+  --text: #d4d4d4;
+  --text-dim: #777;
+  --text-muted: #555;
   --accent: #5b9bd5;
-  --accent-hover: #7ab3e8;
-  --btn: #333;
+  --accent-dim: #3d6d99;
+  --btn: #2e2e2e;
+  --btn-hover: #363636;
   --btn-active: #5b9bd5;
-  --input-bg: #2a2a2a;
-  --layer-bg: #2e2e2e;
-  --layer-active: #3a3a4a;
+  --layer-hover: #2c2c2c;
+  --layer-active: #2e3548;
+  --track: #3a3a3a;
+  --thumb: #888;
+  --thumb-hover: #aaa;
 }
 
 html, body {
@@ -37,9 +42,10 @@ html, body {
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   overflow: hidden;
   user-select: none;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* --- Top Bar --- */
@@ -47,34 +53,41 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 40px;
-  padding: 0 16px;
+  height: 36px;
+  padding: 0 12px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
 }
-.topbar h1 { font-size: 14px; font-weight: 600; letter-spacing: 0.5px; }
-.topbar-right { display: flex; align-items: center; gap: 8px; }
-.topbar-right label { color: var(--text-dim); font-size: 12px; }
+.topbar h1 {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+  letter-spacing: 0.3px;
+}
+.topbar-right { display: flex; align-items: center; gap: 6px; }
+.topbar-right label { color: var(--text-dim); font-size: 11px; }
 .topbar-right select {
-  background: var(--input-bg);
+  background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 12px;
+  border-radius: 3px;
+  padding: 3px 6px;
+  font-size: 11px;
   cursor: pointer;
+  outline: none;
 }
+.topbar-right select:focus { border-color: var(--accent-dim); }
 
 /* --- Main Layout --- */
 .main {
   display: flex;
-  height: calc(100% - 40px);
+  height: calc(100% - 36px);
 }
 
 /* --- Left Panel --- */
 .left-panel {
-  width: 400px;
-  min-width: 400px;
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border);
@@ -83,87 +96,150 @@ html, body {
 
 /* Toolbar */
 .toolbar {
-  padding: 8px 12px;
+  padding: 6px 10px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   align-items: center;
   border-bottom: 1px solid var(--border);
 }
 .toolbar-group {
   display: flex;
-  gap: 2px;
+  gap: 1px;
   align-items: center;
 }
-.toolbar-sep {
-  width: 1px;
-  height: 24px;
-  background: var(--border);
-  margin: 0 4px;
-}
 .tool-btn {
-  width: 32px;
-  height: 28px;
+  width: 28px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--btn);
+  background: transparent;
   border: 1px solid transparent;
   border-radius: 4px;
-  color: var(--text);
+  color: var(--text-dim);
   cursor: pointer;
-  font-size: 14px;
-  transition: background 0.15s;
+  transition: all 0.12s;
 }
-.tool-btn:hover { background: #3a3a3a; }
-.tool-btn.active { background: var(--btn-active); border-color: var(--accent); }
-.tool-btn svg { width: 16px; height: 16px; }
+.tool-btn:hover { background: var(--btn-hover); color: var(--text); }
+.tool-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}
+.tool-btn svg { width: 15px; height: 15px; }
+
+/* --- Slider Component --- */
+.slider {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+}
+.slider-label {
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  min-width: 18px;
+  flex-shrink: 0;
+}
+.slider-track {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 72px;
+  height: 3px;
+  background: var(--track);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.slider-track::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--thumb);
+  border: none;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.slider-track::-webkit-slider-thumb:hover { background: var(--thumb-hover); }
+.slider-track::-webkit-slider-thumb:active { background: var(--accent); }
+.slider-track::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--thumb);
+  border: none;
+  cursor: pointer;
+}
+.slider-track::-moz-range-track {
+  height: 3px;
+  background: var(--track);
+  border-radius: 2px;
+  border: none;
+}
+.slider-val {
+  color: var(--text-dim);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  min-width: 20px;
+  text-align: right;
+  flex-shrink: 0;
+}
 
 /* Controls row */
 .controls-row {
-  padding: 6px 12px;
+  padding: 5px 10px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
   border-bottom: 1px solid var(--border);
-  font-size: 12px;
 }
-.control-item {
+.control-color {
   display: flex;
   align-items: center;
   gap: 4px;
 }
-.control-item label { color: var(--text-dim); white-space: nowrap; }
-.control-item input[type="range"] {
-  width: 80px;
-  accent-color: var(--accent);
-  cursor: pointer;
+.control-color label {
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
-.control-item input[type="color"] {
-  width: 28px;
-  height: 24px;
+.control-color input[type="color"] {
+  width: 24px;
+  height: 20px;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 3px;
   background: none;
   cursor: pointer;
   padding: 0;
 }
-.control-item input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
-.control-item input[type="color"]::-webkit-color-swatch { border-radius: 2px; border: none; }
-.control-item .value-display {
-  width: 28px;
-  text-align: right;
-  color: var(--text-dim);
-  font-variant-numeric: tabular-nums;
+.control-color input[type="color"]::-webkit-color-swatch-wrapper { padding: 1px; }
+.control-color input[type="color"]::-webkit-color-swatch { border-radius: 2px; border: none; }
+.controls-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
 }
 .mirror-toggle {
   display: flex;
   align-items: center;
   gap: 4px;
   cursor: pointer;
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
-.mirror-toggle input { accent-color: var(--accent); cursor: pointer; }
+.mirror-toggle input {
+  width: 12px;
+  height: 12px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
 
 /* Canvas area */
 .canvas-area {
@@ -173,32 +249,46 @@ html, body {
   justify-content: center;
   overflow: hidden;
   position: relative;
-  background: #1e1e1e;
+  background: var(--bg);
+}
+.canvas-wrap {
+  position: relative;
+}
+.canvas-wrap > * {
+  display: block;
 }
 #paint-canvas {
   cursor: none;
-  border-radius: 50%;
   image-rendering: auto;
   position: relative;
   z-index: 1;
 }
-#cursor-overlay {
-  position: absolute;
-  pointer-events: none;
-  z-index: 2;
-}
 .canvas-bg {
   position: absolute;
+  inset: 0;
+  z-index: 0;
   border-radius: 50%;
   background: repeating-conic-gradient(#2a2a2a 0% 25%, #222 0% 50%) 50% / 16px 16px;
   pointer-events: none;
-  z-index: 0;
+}
+.canvas-circle-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(circle closest-side, transparent 98%, rgba(26,26,26,0.8) 100%);
+}
+#cursor-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
 }
 
 /* Layers panel */
 .layers-panel {
-  height: 180px;
-  min-height: 120px;
+  height: 170px;
+  min-height: 110px;
   border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -207,93 +297,108 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 12px;
+  padding: 5px 10px;
   border-bottom: 1px solid var(--border);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-dim);
 }
-.layers-actions { display: flex; gap: 2px; }
+.layers-actions { display: flex; gap: 1px; }
 .layers-actions button {
-  width: 26px;
-  height: 24px;
+  width: 24px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--btn);
+  background: transparent;
   border: none;
-  border-radius: 4px;
-  color: var(--text);
+  border-radius: 3px;
+  color: var(--text-dim);
   cursor: pointer;
-  font-size: 14px;
+  transition: all 0.12s;
 }
-.layers-actions button:hover { background: #3a3a3a; }
+.layers-actions button:hover { background: var(--btn-hover); color: var(--text); }
+.layers-actions button svg { width: 14px; height: 14px; }
 .layer-list {
   flex: 1;
   overflow-y: auto;
-  padding: 4px;
+  padding: 2px;
 }
 .layer-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 3px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
+  transition: background 0.1s;
 }
-.layer-item:hover { background: var(--layer-bg); }
+.layer-item:hover { background: var(--layer-hover); }
 .layer-item.active { background: var(--layer-active); }
-.layer-name { flex: 1; }
+.layer-name {
+  flex: 1;
+  color: var(--text);
+  font-size: 11px;
+}
 .layer-vis {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  opacity: 0.7;
-  font-size: 12px;
+  color: var(--text-dim);
+  transition: opacity 0.1s;
 }
-.layer-vis:hover { opacity: 1; }
-.layer-vis.hidden { opacity: 0.3; }
+.layer-vis:hover { color: var(--text); }
+.layer-vis.hidden { opacity: 0.25; }
 .layer-opacity {
-  width: 50px;
-  accent-color: var(--accent);
-}
-.layer-blend-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-top: 1px solid var(--border);
-  font-size: 12px;
-}
-.layer-blend-row label { color: var(--text-dim); }
-.layer-blend-row select {
-  background: var(--input-bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 2px 6px;
-  font-size: 12px;
-}
-.layer-actions-bottom {
-  display: flex;
-  gap: 4px;
-  padding: 4px 12px;
-  border-top: 1px solid var(--border);
-}
-.layer-actions-bottom button {
-  flex: 1;
-  padding: 4px;
-  background: var(--btn);
-  border: none;
-  border-radius: 4px;
-  color: var(--text);
+  -webkit-appearance: none;
+  appearance: none;
+  width: 44px;
+  height: 3px;
+  background: var(--track);
+  border-radius: 2px;
+  outline: none;
   cursor: pointer;
-  font-size: 12px;
 }
-.layer-actions-bottom button:hover { background: #3a3a3a; }
+.layer-opacity::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--thumb);
+  border: none;
+  cursor: pointer;
+}
+.layer-opacity::-moz-range-thumb {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--thumb);
+  border: none;
+}
+.layer-opacity::-moz-range-track {
+  height: 3px;
+  background: var(--track);
+  border-radius: 2px;
+  border: none;
+}
+.layer-blend {
+  background: var(--surface);
+  color: var(--text-dim);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 10px;
+  outline: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.layer-blend:focus { border-color: var(--accent-dim); }
 
 /* --- Right Panel (3D Preview) --- */
 .right-panel {
@@ -308,10 +413,10 @@ html, body {
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #555; }
+::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
 </style>
 </head>
 <body>
@@ -327,8 +432,12 @@ html, body {
       <option value="box">Box</option>
       <option value="suzanne">Suzanne</option>
     </select>
-    <button class="tool-btn" id="btn-export" title="Export PNG">&#x2B73;</button>
-    <button class="tool-btn" id="btn-import" title="Import matcap">&#x2B71;</button>
+    <button class="tool-btn" id="btn-export" title="Export PNG">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M450-780v485.08L222.15-522.77 180-480l300 300 300-300-42.15-42.77L510-294.92V-780h-60Z"/></svg>
+    </button>
+    <button class="tool-btn" id="btn-import" title="Import matcap">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M450-328.46v-336l-98.61 98.61-42.16-43.38L480-780l170.77 170.77-42.16 43.38L510-664.46v336h-60ZM252.31-180Q222-180 201-201q-21-21-21-51.31v-108.46h60v108.46q0 4.62 3.85 8.46 3.84 3.85 8.46 3.85h455.38q4.62 0 8.46-3.85 3.85-3.84 3.85-8.46v-108.46h60v108.46Q780-222 759-201q-21 21-51.31 21H252.31Z"/></svg>
+    </button>
     <input type="file" id="file-import" accept="image/*" style="display:none">
   </div>
 </div>
@@ -339,54 +448,58 @@ html, body {
     <div class="toolbar">
       <div class="toolbar-group">
         <button class="tool-btn active" data-tool="brush" title="Brush (B)">
-          <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="5"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M247.69-147.69q-34.33 0-67.89-15.08-33.57-15.08-55.95-40.31 22.92-6.54 43.38-27.81 20.46-21.26 20.46-56.8 0-41.93 29.04-70.96 29.04-29.04 70.96-29.04 41.93 0 70.96 29.04 29.04 29.03 29.04 70.96 0 57.75-41.12 98.87-41.13 41.13-98.88 41.13Zm0-60q33 0 56.5-23.5t23.5-56.5q0-17-11.5-28.5t-28.5-11.5q-17 0-28.5 11.5t-11.5 28.5q0 23-5.5 42t-14.5 36q5 2 10 2h10ZM460-370l-89.23-89.23 342.61-342.61q11-11 27.5-11.5t28.5 11.5l33.23 33.23q12 12 12 28t-12 28L460-370Zm-172.31 82.31Z"/></svg>
         </button>
         <button class="tool-btn" data-tool="airbrush" title="Airbrush (A)">
-          <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="5" opacity="0.4"/><circle cx="8" cy="8" r="3" opacity="0.7"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M460-174.62q-43.08 0-74.04-29.03-30.96-29.04-34.42-70.96h60.77q3.07 17.38 16.31 28.69 13.23 11.31 31.38 11.31 20.85 0 35.42-14.58Q510-263.77 510-284.62q0-20.84-14.58-35.42-14.57-14.58-35.42-14.58H90v-59.99h370q45.77 0 77.88 32.11Q570-330.38 570-284.62q0 45.77-32.12 77.89-32.11 32.11-77.88 32.11ZM90-565.39v-59.99h530q29.85 0 49.92-20.08Q690-665.54 690-695.38q0-29.85-20.08-49.93-20.07-20.08-49.92-20.08-27.54 0-46.46 17-18.93 17-22 43h-60.77q3.46-51.3 40.31-85.65 36.84-34.34 88.92-34.34 54.77 0 92.38 37.61Q750-750.15 750-695.38q0 54.76-37.62 92.38-37.61 37.61-92.38 37.61H90Zm660 314.62v-60.77q26-3.07 43-22 17-18.92 17-46.46 0-29.85-20.08-49.92Q769.85-450 740-450H90v-60h650q54.77 0 92.38 37.62Q870-434.77 870-380q0 52.08-34.35 88.92-34.34 36.85-85.65 40.31Z"/></svg>
         </button>
         <button class="tool-btn" data-tool="blur" title="Blur (R)">
-          <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="6" cy="8" r="3" opacity="0.3"/><circle cx="10" cy="8" r="3" opacity="0.3"/><circle cx="8" cy="6" r="3" opacity="0.3"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M426.38-533.62q10.54-10.53 10.54-26.38t-10.54-26.38q-10.53-10.54-26.38-10.54t-26.38 10.54q-10.54 10.53-10.54 26.38t10.54 26.38q10.53 10.54 26.38 10.54t26.38-10.54Zm0 160q10.54-10.53 10.54-26.38t-10.54-26.38q-10.53-10.54-26.38-10.54t-26.38 10.54q-10.54 10.53-10.54 26.38t10.54 26.38q10.53 10.54 26.38 10.54t26.38-10.54ZM294-546q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm106 286q8 0 14-6t6-14q0-8-6-14t-14-6q-8 0-14 6t-6 14q0 8 6 14t14 6ZM294-386q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm120-280q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm172.38 132.38q10.54-10.53 10.54-26.38t-10.54-26.38q-10.53-10.54-26.38-10.54t-26.38 10.54q-10.54 10.53-10.54 26.38t10.54 26.38q10.53 10.54 26.38 10.54t26.38-10.54ZM574-666q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm120 280q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm0-160q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6ZM331.86-129.92q-69.37-29.92-120.68-81.21-51.31-51.29-81.25-120.63Q100-401.1 100-479.93q0-78.84 29.92-148.21t81.21-120.68q51.29-51.31 120.63-81.25Q401.1-860 479.93-860q78.84 0 148.21 29.92t120.68 81.21q51.31 51.29 81.25 120.63Q860-558.9 860-480.07q0 78.84-29.92 148.21t-81.21 120.68q-51.29 51.31-120.63 81.25Q558.9-100 480.07-100q-78.84 0-148.21-29.92ZM480-160q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm94-106q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm12.38-107.62q10.54-10.53 10.54-26.38t-10.54-26.38q-10.53-10.54-26.38-10.54t-26.38 10.54q-10.54 10.53-10.54 26.38t10.54 26.38q10.53 10.54 26.38 10.54t26.38-10.54ZM480-480Z"/></svg>
         </button>
         <button class="tool-btn" data-tool="eraser" title="Eraser (E)">
-          <svg viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="8" rx="1"/><line x1="4" y1="4" x2="12" y2="12" stroke="var(--bg)" stroke-width="1.5"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M679.23-240h188.46v60H619.23l60-60Zm-493.08 60-70.76-70.77Q94.31-271.85 93.81-302t20.58-52.23l423.07-439.08q21.08-22.07 50.92-21.88 29.85.19 50.93 21.27l181.3 181.31q21.08 21.07 21.27 51.42.19 30.34-20.88 51.42L499.23-180H186.15Zm287.54-60 305.15-313.15q3.08-3.08 3.08-8.85t-3.08-8.85L598.15-751.54q-3.07-3.07-8.65-3.07t-8.66 3.46l-424.3 438.3q-3.08 3.46-3.08 9.04 0 5.58 3.08 8.66L211.69-240h262ZM480-480Z"/></svg>
         </button>
         <button class="tool-btn" data-tool="fill" title="Fill (G)">
-          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 13V5l7-2v8M3 9l7-2"/><ellipse cx="12" cy="12" rx="2" ry="3" opacity="0.5"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M346.77-159.23 119.23-386.77q-9.61-9.66-14.42-21.25-4.81-11.6-4.81-24.1 0-12.5 4.81-24.03 4.81-11.54 14.42-21.16l226.16-225.54-110.62-109.07 46.61-48.46L664.5-476.89q9.58 9.58 14.08 21.14t4.5 24.09q0 12.52-4.5 24.08-4.5 11.56-14.12 21.2L437.31-159.23q-9.62 9.61-21.16 14.42-11.53 4.81-24.03 4.81-12.5 0-24.1-4.81-11.59-4.81-21.25-14.42Zm45.08-497.16L175.54-440.08q-2.31 2.31-3.08 4.62t-.77 4.61H612q0-2.3-.77-4.61-.77-2.31-3.08-4.62l-216.3-216.31ZM782.38-140q-32.15 0-54.07-22.6-21.93-22.61-21.93-55.4 0-24.31 11.39-46.39 11.38-22.07 27.23-42.38l37.38-47.08 39.39 47.08q15.23 20.31 26.92 42.38 11.69 22.08 11.69 46.39 0 32.79-22.92 55.4-22.92 22.6-55.08 22.6Z"/></svg>
         </button>
       </div>
     </div>
 
     <!-- Controls -->
     <div class="controls-row">
-      <div class="control-item">
-        <label>Color</label>
+      <div class="control-color">
         <input type="color" id="brush-color" value="#c0c0c0">
       </div>
-      <div class="control-item">
-        <label>Size</label>
-        <input type="range" id="brush-size" min="1" max="100" value="20">
-        <span class="value-display" id="size-val">20</span>
+      <div class="controls-sep"></div>
+      <div class="slider" data-slider="size">
+        <span class="slider-label">Size</span>
+        <input class="slider-track" type="range" min="1" max="100" value="20">
+        <span class="slider-val">20</span>
       </div>
-      <div class="control-item">
-        <label>Opacity</label>
-        <input type="range" id="brush-opacity" min="1" max="100" value="100">
-        <span class="value-display" id="opacity-val">100</span>
+      <div class="slider" data-slider="opacity">
+        <span class="slider-label">Op</span>
+        <input class="slider-track" type="range" min="1" max="100" value="100">
+        <span class="slider-val">100</span>
       </div>
-      <div class="control-item">
-        <label>Hardness</label>
-        <input type="range" id="brush-hardness" min="0" max="100" value="50">
-        <span class="value-display" id="hardness-val">50</span>
+      <div class="slider" data-slider="hardness">
+        <span class="slider-label">Hard</span>
+        <input class="slider-track" type="range" min="0" max="100" value="50">
+        <span class="slider-val">50</span>
       </div>
+      <div class="controls-sep"></div>
       <label class="mirror-toggle">
-        <input type="checkbox" id="mirror-x"> X Mirror
+        <input type="checkbox" id="mirror-x"> Mirror
       </label>
     </div>
 
     <!-- Canvas Area -->
     <div class="canvas-area" id="canvas-area">
-      <div class="canvas-bg" id="canvas-bg"></div>
-      <canvas id="paint-canvas" width="512" height="512"></canvas>
-      <canvas id="cursor-overlay" width="512" height="512"></canvas>
+      <div class="canvas-wrap" id="canvas-wrap">
+        <div class="canvas-bg"></div>
+        <canvas id="paint-canvas" width="512" height="512"></canvas>
+        <div class="canvas-circle-mask"></div>
+        <canvas id="cursor-overlay" width="512" height="512"></canvas>
+      </div>
     </div>
 
     <!-- Layers Panel -->
@@ -394,22 +507,13 @@ html, body {
       <div class="layers-header">
         <span>Layers</span>
         <div class="layers-actions">
-          <button id="layer-add" title="Add Layer">+</button>
-          <button id="layer-delete" title="Delete Layer">&minus;</button>
-          <button id="layer-up" title="Move Up">&uarr;</button>
-          <button id="layer-down" title="Move Down">&darr;</button>
+          <button id="layer-add" title="Add Layer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="16" height="16" fill="currentColor"><path d="M450-450H220v-60h230v-230h60v230h230v60H510v230h-60v-230Z"/></svg></button>
+          <button id="layer-delete" title="Delete Layer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="16" height="16" fill="currentColor"><path d="M220-450v-60h520v60H220Z"/></svg></button>
+          <button id="layer-up" title="Move Up"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="16" height="16" fill="currentColor"><path d="M450-332.31h60.38v-182.23l74 74 41.77-41.77-145.77-145.77-146.15 145.77L376-440.54l74-74v182.23ZM480.07-100q-78.84 0-148.21-29.92t-120.68-81.21q-51.31-51.29-81.25-120.63Q100-401.1 100-479.93q0-78.84 29.92-148.21t81.21-120.68q51.29-51.31 120.63-81.25Q401.1-860 479.93-860q78.84 0 148.21 29.92t120.68 81.21q51.31 51.29 81.25 120.63Q860-558.9 860-480.07q0 78.84-29.92 148.21t-81.21 120.68q-51.29 51.31-120.63 81.25Q558.9-100 480.07-100Zm-.07-60q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg></button>
+          <button id="layer-down" title="Move Down"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="16" height="16" fill="currentColor"><path d="m480.38-332.31 145.77-145.77-41.77-41.76-74 74v-182.24H450v182.24l-74-74-41.77 41.76 146.15 145.77ZM480.07-100q-78.84 0-148.21-29.92t-120.68-81.21q-51.31-51.29-81.25-120.63Q100-401.1 100-479.93q0-78.84 29.92-148.21t81.21-120.68q51.29-51.31 120.63-81.25Q401.1-860 479.93-860q78.84 0 148.21 29.92t120.68 81.21q51.31 51.29 81.25 120.63Q860-558.9 860-480.07q0 78.84-29.92 148.21t-81.21 120.68q-51.29 51.31-120.63 81.25Q558.9-100 480.07-100Zm-.07-60q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg></button>
         </div>
       </div>
       <div class="layer-list" id="layer-list"></div>
-      <div class="layer-blend-row">
-        <label>Blend:</label>
-        <select id="layer-blend">
-          <option value="source-over">Normal</option>
-          <option value="multiply">Multiply</option>
-          <option value="screen">Screen</option>
-          <option value="overlay">Overlay</option>
-        </select>
-      </div>
     </div>
   </div>
 
