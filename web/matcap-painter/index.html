@@ -64,19 +64,6 @@ html, body {
   color: var(--text-dim);
   letter-spacing: 0.3px;
 }
-.topbar-right { display: flex; align-items: center; gap: 6px; }
-.topbar-right label { color: var(--text-dim); font-size: 11px; }
-.topbar-right select {
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 3px 6px;
-  font-size: 11px;
-  cursor: pointer;
-  outline: none;
-}
-.topbar-right select:focus { border-color: var(--accent-dim); }
 
 /* --- Main Layout --- */
 .main {
@@ -86,7 +73,7 @@ html, body {
 
 /* --- Left Panel --- */
 .left-panel {
-  flex: 1;
+  flex: 3;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -475,7 +462,7 @@ html, body {
 
 /* --- Right Panel (3D Preview) --- */
 .right-panel {
-  flex: 1;
+  flex: 2;
   position: relative;
   background: #111;
 }
@@ -484,6 +471,24 @@ html, body {
   height: 100%;
   display: block;
 }
+.viewport-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+}
+.viewport-controls select {
+  background: rgba(30,30,30,0.85);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  outline: none;
+  backdrop-filter: blur(4px);
+}
+.viewport-controls select:focus { border-color: var(--accent-dim); }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 5px; }
@@ -612,23 +617,6 @@ html, body {
 
 <div class="topbar">
   <h1>Matcap Painter</h1>
-  <div class="topbar-right">
-    <label>Model:</label>
-    <select id="model-select">
-      <option value="sphere" selected>Sphere</option>
-      <option value="torus">Torus</option>
-      <option value="torusknot">TorusKnot</option>
-      <option value="box">Box</option>
-      <option value="suzanne">Suzanne</option>
-    </select>
-    <button class="tool-btn" id="btn-export" title="Export PNG">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M450-780v485.08L222.15-522.77 180-480l300 300 300-300-42.15-42.77L510-294.92V-780h-60Z"/></svg>
-    </button>
-    <button class="tool-btn" id="btn-import" title="Import matcap">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M450-328.46v-336l-98.61 98.61-42.16-43.38L480-780l170.77 170.77-42.16 43.38L510-664.46v336h-60ZM252.31-180Q222-180 201-201q-21-21-21-51.31v-108.46h60v108.46q0 4.62 3.85 8.46 3.84 3.85 8.46 3.85h455.38q4.62 0 8.46-3.85 3.85-3.84 3.85-8.46v-108.46h60v108.46Q780-222 759-201q-21 21-51.31 21H252.31Z"/></svg>
-    </button>
-    <input type="file" id="file-import" accept="image/*" style="display:none">
-  </div>
 </div>
 
 <div class="main">
@@ -653,6 +641,9 @@ html, body {
         </button>
         <button class="tool-btn" id="tool-pan" title="Pan (H)">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M419.31-70q-27.47 0-51.27-12.35-23.81-12.34-39.65-35.42l-250-366.08 16.3-15.69q15.93-15.92 37.7-17.96 21.76-2.04 39.69 10.65L300-417.77v-361.07q0-12.75 8.63-21.38 8.63-8.62 21.38-8.62 12.76 0 21.37 8.62 8.62 8.63 8.62 21.38v476.61L197.77-415.85l180.08 263.62q6.54 10.31 17.65 16.27 11.12 5.96 23.81 5.96H670q37.61 0 63.81-26.19Q760-182.39 760-220v-530q0-12.75 8.63-21.37 8.63-8.63 21.38-8.63 12.76 0 21.37 8.63Q820-762.75 820-750v530q0 62.15-43.92 106.07Q732.15-70 670-70H419.31Zm34.15-420v-368.84q0-12.75 8.63-21.38 8.63-8.62 21.39-8.62 12.75 0 21.37 8.62 8.61 8.63 8.61 21.38V-490h-60Zm153.46 0v-328.84q0-12.75 8.63-21.38 8.63-8.62 21.39-8.62 12.75 0 21.37 8.62 8.61 8.63 8.61 21.38V-490h-60ZM479.08-310Z"/></svg>
+        </button>
+        <button class="tool-btn" id="btn-export" title="Export PNG">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M480-480ZM202-65l-56-57 118-118h-90v-80h226v226h-80v-89L202-65Zm278-15v-80h240v-440H520v-200H240v400h-80v-400q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H480Z"/></svg>
         </button>
       </div>
     </div>
@@ -717,6 +708,15 @@ html, body {
 
   <div class="right-panel">
     <canvas id="preview-canvas"></canvas>
+    <div class="viewport-controls">
+      <select id="model-select">
+        <option value="sphere" selected>Sphere</option>
+        <option value="torus">Torus</option>
+        <option value="torusknot">TorusKnot</option>
+        <option value="box">Box</option>
+        <option value="suzanne">Suzanne</option>
+      </select>
+    </div>
   </div>
 </div>
 

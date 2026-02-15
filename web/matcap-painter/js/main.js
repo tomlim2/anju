@@ -9,8 +9,6 @@ const paintCanvas = document.getElementById('paint-canvas');
 const previewCanvas = document.getElementById('preview-canvas');
 const modelSelect = document.getElementById('model-select');
 const btnExport = document.getElementById('btn-export');
-const btnImport = document.getElementById('btn-import');
-const fileImport = document.getElementById('file-import');
 
 // Initialize modules
 const brush = new Brush();
@@ -58,19 +56,6 @@ async function init() {
     a.click();
   });
 
-  // Import
-  btnImport.addEventListener('click', () => fileImport.click());
-  fileImport.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const img = new Image();
-    img.onload = () => {
-      painter.loadImage(img);
-      URL.revokeObjectURL(img.src);
-    };
-    img.src = URL.createObjectURL(file);
-    fileImport.value = '';
-  });
 
   // Render loop
   function animate() {

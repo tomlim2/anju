@@ -103,7 +103,7 @@ export class UI {
     // Wheel zoom (toward cursor)
     area.addEventListener('wheel', (e) => {
       e.preventDefault();
-      const factor = e.deltaY > 0 ? 0.9 : 1.1;
+      const factor = e.deltaY > 0 ? 0.95 : 1.05;
       const newZoom = Math.min(16, Math.max(0.25, this._zoom * factor));
 
       const wrap = document.getElementById('canvas-wrap');
@@ -371,6 +371,29 @@ export class UI {
         this._picker.open(i);
       });
 
+      const importBtn = document.createElement('button');
+      importBtn.className = 'layer-matcap-btn';
+      importBtn.title = 'Import image';
+      importBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M450-328.46v-336l-98.61 98.61-42.16-43.38L480-780l170.77 170.77-42.16 43.38L510-664.46v336h-60ZM252.31-180Q222-180 201-201q-21-21-21-51.31v-108.46h60v108.46q0 4.62 3.85 8.46 3.84 3.85 8.46 3.85h455.38q4.62 0 8.46-3.85 3.85-3.84 3.85-8.46v-108.46h60v108.46Q780-222 759-201q-21 21-51.31 21H252.31Z"/></svg>';
+      importBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.addEventListener('change', () => {
+          const file = input.files[0];
+          if (!file) return;
+          const img = new Image();
+          img.onload = () => {
+            this.painter.loadImageToLayer(img, i);
+            this._renderLayerList();
+            URL.revokeObjectURL(img.src);
+          };
+          img.src = URL.createObjectURL(file);
+        });
+        input.click();
+      });
+
       const blendSel = this._createBlendSelect(i, layer.blendMode);
 
       const opSlider = document.createElement('input');
@@ -394,6 +417,7 @@ export class UI {
       item.appendChild(thumb);
       item.appendChild(name);
       item.appendChild(matcapBtn);
+      item.appendChild(importBtn);
       item.appendChild(blendSel);
       item.appendChild(opSlider);
       list.appendChild(item);
