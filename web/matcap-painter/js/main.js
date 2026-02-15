@@ -4,6 +4,7 @@ import { Painter } from './painter.js';
 import { Preview } from './preview.js';
 import { UI } from './ui.js';
 import { getGeometry } from './models.js';
+import { MATCAP_IDS, FULL_PATH } from './matcaps.js';
 
 const paintCanvas = document.getElementById('paint-canvas');
 const previewCanvas = document.getElementById('preview-canvas');
@@ -19,18 +20,6 @@ const preview = new Preview(previewCanvas);
 // When layers composite, mark texture dirty
 layers.onChange = () => preview.markTextureDirty();
 
-// Fill default matcap: soft gray gradient
-const defaultCtx = layers.getActiveCtx();
-if (defaultCtx) {
-  const grad = defaultCtx.createRadialGradient(256, 200, 20, 256, 300, 350);
-  grad.addColorStop(0, '#e8e8e8');
-  grad.addColorStop(0.5, '#a0a0a0');
-  grad.addColorStop(1, '#303030');
-  defaultCtx.fillStyle = grad;
-  defaultCtx.fillRect(0, 0, 512, 512);
-  layers.composite();
-}
-
 async function init() {
   await preview.init(paintCanvas);
 
@@ -38,8 +27,25 @@ async function init() {
   const geo = await getGeometry('agus');
   preview.setGeometry(geo);
 
-  // UI
+  // UI (must exist before matcap load so thumbnails update)
   new UI(brush, painter, layers, preview);
+
+  // Load random matcap preset
+  const randomId = MATCAP_IDS[Math.floor(Math.random() * MATCAP_IDS.length)];
+  await new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const ctx = layers.getActiveCtx();
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, 512, 512);
+        layers.composite();
+        preview.markTextureDirty();
+      }
+      resolve();
+    };
+    img.onerror = () => { console.warn('Failed to load matcap:', randomId); resolve(); };
+    img.src = FULL_PATH + randomId + '.png';
+  });
 
   // Model selector
   modelSelect.addEventListener('change', async (e) => {

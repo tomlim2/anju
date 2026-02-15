@@ -39,7 +39,7 @@ export class MatcapPicker {
 
     const title = document.createElement('span');
     title.className = 'matcap-picker-title';
-    title.textContent = 'Matcap Presets';
+    title.textContent = `Matcap Presets (${MATCAP_IDS.length})`;
 
     const search = document.createElement('input');
     search.type = 'text';
@@ -56,17 +56,23 @@ export class MatcapPicker {
     grid.className = 'matcap-picker-grid';
 
     this._thumbs = [];
-    for (const id of MATCAP_IDS) {
+    for (let i = 0; i < MATCAP_IDS.length; i++) {
+      const id = MATCAP_IDS[i];
       const btn = document.createElement('button');
       btn.className = 'matcap-thumb';
       btn.dataset.id = id;
-      btn.title = id;
+      btn.title = `#${i + 1} ${id}`;
 
       const img = document.createElement('img');
       img.src = THUMB_PATH + id + '.jpg';
       img.alt = id;
       img.loading = 'lazy';
       btn.appendChild(img);
+
+      const num = document.createElement('span');
+      num.className = 'matcap-num';
+      num.textContent = i + 1;
+      btn.appendChild(num);
 
       btn.addEventListener('click', () => {
         this._onSelect(id, this._layerIndex);

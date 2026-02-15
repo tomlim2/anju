@@ -39,6 +39,7 @@ function loadSuzanne() {
         });
         if (geometries.length) {
           agusGeometry = geometries.length > 1 ? mergeGeometries(geometries) : geometries[0];
+          agusGeometry.translate(0, -1, 0);
           resolve(agusGeometry.clone());
         } else {
           resolve(PRESETS.sphere());

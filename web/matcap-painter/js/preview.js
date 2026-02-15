@@ -74,7 +74,6 @@ export class Preview {
       this.mesh.geometry.dispose();
     }
     this.mesh = new Mesh(geometry, this.material);
-    this.mesh.position.y = -1;
     this.scene.add(this.mesh);
   }
 
