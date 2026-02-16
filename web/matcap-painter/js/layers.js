@@ -210,7 +210,9 @@ export class LayerSystem {
 
       if (this.transform) this.transform.applyToContext(ctx, layerIndex);
 
-      if (this._hasAdjustments(layer)) {
+      // Skip expensive per-pixel filter on active layer while painting
+      const skipFilter = this._painting && layerIndex === this.activeIndex;
+      if (this._hasAdjustments(layer) && !skipFilter) {
         ctx.drawImage(this._applyFilter(layer), 0, 0);
       } else {
         ctx.drawImage(layer.canvas, 0, 0);

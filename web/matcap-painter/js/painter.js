@@ -135,6 +135,7 @@ export class Painter {
     }
 
     this._painting = true;
+    this.layers._painting = true;
     this._lastX = x;
     this._lastY = y;
     this.canvas.setPointerCapture(event.pointerId);
@@ -170,6 +171,8 @@ export class Painter {
   _onUp() {
     if (!this._painting) return;
     this._painting = false;
+    this.layers._painting = false;
+    this.layers.composite();
   }
 
   _drawCursor() {
