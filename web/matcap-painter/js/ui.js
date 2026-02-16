@@ -1,6 +1,16 @@
 import { MatcapPicker } from './matcap-picker.js';
 import { MATCAP_IDS, FULL_PATH } from './matcaps.js';
 
+// Navigation constants
+const ZOOM_IN_FACTOR = 1.05;
+const ZOOM_OUT_FACTOR = 0.95;
+const ZOOM_MIN = 0.25;
+const ZOOM_MAX = 16;
+const ZOOM_BADGE_DURATION = 800;
+const BRUSH_SIZE_STEP = 50;
+const BRUSH_SIZE_MIN = 0;
+const BRUSH_SIZE_MAX = 1024;
+
 export class UI {
   constructor(brush, painter, layerSystem, preview, transform) {
     this.brush = brush;
@@ -134,8 +144,8 @@ export class UI {
     // Wheel zoom (toward cursor)
     area.addEventListener('wheel', (event) => {
       event.preventDefault();
-      const factor = event.deltaY > 0 ? 0.95 : 1.05;
-      const newZoom = Math.min(16, Math.max(0.25, this._zoom * factor));
+      const factor = event.deltaY > 0 ? ZOOM_OUT_FACTOR : ZOOM_IN_FACTOR;
+      const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, this._zoom * factor));
 
       const wrap = document.getElementById('canvas-wrap');
       const rect = wrap.getBoundingClientRect();
@@ -237,7 +247,7 @@ export class UI {
   }
 
   _zoomBy(factor) {
-    this._zoom = Math.min(16, Math.max(0.25, this._zoom * factor));
+    this._zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, this._zoom * factor));
     this._applyTransform();
   }
 
@@ -254,12 +264,13 @@ export class UI {
     if (!badge) {
       badge = document.createElement('div');
       badge.id = 'zoom-badge';
+      badge.className = 'zoom-badge';
       document.getElementById('canvas-area').appendChild(badge);
     }
     badge.textContent = Math.round(this._zoom * 100) + '%';
     badge.classList.add('visible');
     clearTimeout(this._zoomBadgeTimer);
-    this._zoomBadgeTimer = setTimeout(() => badge.classList.remove('visible'), 800);
+    this._zoomBadgeTimer = setTimeout(() => badge.classList.remove('visible'), ZOOM_BADGE_DURATION);
   }
 
   resetView() {
@@ -290,7 +301,7 @@ export class UI {
       this._renderLayerList();
       this._refreshHSVPanel();
     }, listenerOptions);
-    randomButton.addEventListener('click', () => this._randomPreset(), listenerOptions);
+    randomButton.addEventListener('click', () => this._randomPreset().catch(console.error), listenerOptions);
     resetButton.addEventListener('click', () => {
       this._autoBakeTransform();
       while (this.layers.layers.length > 1) this.layers.layers.pop();
@@ -313,6 +324,29 @@ export class UI {
     this._dragFromIndex = -1;
     this._gripHeld = false;
     document.addEventListener('mouseup', () => { this._gripHeld = false; }, listenerOptions);
+
+    // Bind list-level drag events once (not per render)
+    const list = document.getElementById('layer-list');
+    list.addEventListener('dragover', (event) => { event.preventDefault(); }, listenerOptions);
+    list.addEventListener('drop', (event) => {
+      if (this._dragFromIndex === -1) return;
+      if (event.target !== list) return;
+      event.preventDefault();
+      const targetIndex = 0;
+      if (targetIndex !== this._dragFromIndex) {
+        const [moved] = this.layers.layers.splice(this._dragFromIndex, 1);
+        this.layers.layers.splice(0, 0, moved);
+        if (this.layers.activeIndex === this._dragFromIndex) {
+          this.layers.activeIndex = 0;
+        } else if (this.layers.activeIndex < this._dragFromIndex) {
+          this.layers.activeIndex++;
+        }
+        this.layers.composite();
+      }
+      this._detailOpen = false;
+      this._renderLayerList();
+      this._refreshHSVPanel();
+    }, listenerOptions);
 
     const prevOnChange = this.layers.onChange;
     this.layers.onChange = () => {
@@ -354,29 +388,6 @@ export class UI {
     settingsPanel.remove();
     settingsPanel.classList.remove('open');
     list.innerHTML = '';
-
-    // Allow dropping on empty area below last item (moves to index 0)
-    list.addEventListener('dragover', (event) => { event.preventDefault(); });
-    list.addEventListener('drop', (event) => {
-      if (this._dragFromIndex === -1) return;
-      // Only handle drops on the list itself, not bubbled from items
-      if (event.target !== list) return;
-      event.preventDefault();
-      const targetIndex = 0;
-      if (targetIndex !== this._dragFromIndex) {
-        const [moved] = this.layers.layers.splice(this._dragFromIndex, 1);
-        this.layers.layers.splice(0, 0, moved);
-        if (this.layers.activeIndex === this._dragFromIndex) {
-          this.layers.activeIndex = 0;
-        } else if (this.layers.activeIndex < this._dragFromIndex) {
-          this.layers.activeIndex++;
-        }
-        this.layers.composite();
-      }
-      this._detailOpen = false;
-      this._renderLayerList();
-      this._refreshHSVPanel();
-    });
 
     for (let layerIndex = this.layers.layers.length - 1; layerIndex >= 0; layerIndex--) {
       const layer = this.layers.layers[layerIndex];
@@ -854,12 +865,12 @@ export class UI {
 
       // [ and ] for brush size
       if (key === '[') {
-        this.brush.size = Math.max(0, this.brush.size - 50);
+        this.brush.size = Math.max(BRUSH_SIZE_MIN, this.brush.size - BRUSH_SIZE_STEP);
         if (this._sizeSlider) this._sizeSlider.set(Math.round(this.brush.size));
         this.painter.refreshCursor();
       }
       if (key === ']') {
-        this.brush.size = Math.min(1024, this.brush.size + 50);
+        this.brush.size = Math.min(BRUSH_SIZE_MAX, this.brush.size + BRUSH_SIZE_STEP);
         if (this._sizeSlider) this._sizeSlider.set(Math.round(this.brush.size));
         this.painter.refreshCursor();
       }

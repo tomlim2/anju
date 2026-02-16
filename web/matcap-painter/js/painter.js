@@ -5,6 +5,14 @@ const CENTER = SIZE / 2;
 const RADIUS = SIZE / 2;
 const MAX_HISTORY = 40;
 
+// Cursor drawing constants (screen-space CSS pixels)
+const CURSOR_OUTER_WIDTH = 2.4;
+const CURSOR_DOT_RADIUS = 2;
+const CROSSHAIR_SIZE = 7;
+const DROP_ICON_OFFSET = 6;
+const DROP_ICON_SIZE_OUTER = 4;
+const DROP_ICON_SIZE_INNER = 3;
+
 export class Painter {
   constructor(canvas, brush, layerSystem) {
     this.canvas = canvas;
@@ -220,9 +228,9 @@ export class Painter {
 
   _drawCursor() {
     const ctx = this._cursorCtx;
-    const w = this._cursorArea.clientWidth;
-    const h = this._cursorArea.clientHeight;
-    ctx.clearRect(0, 0, w, h);
+    const width = this._cursorArea.clientWidth;
+    const height = this._cursorArea.clientHeight;
+    ctx.clearRect(0, 0, width, height);
 
     if (!this._cursorVisible || this.panMode) return;
 
@@ -241,7 +249,7 @@ export class Painter {
 
     // Outer dark ring
     ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-    ctx.lineWidth = 2.4;
+    ctx.lineWidth = CURSOR_OUTER_WIDTH;
     ctx.beginPath();
     ctx.arc(x, y, brushRadius, 0, Math.PI * 2);
     ctx.stroke();
@@ -271,7 +279,7 @@ export class Painter {
     // Center dot
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.beginPath();
-    ctx.arc(x, y, 2, 0, Math.PI * 2);
+    ctx.arc(x, y, CURSOR_DOT_RADIUS, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
     ctx.beginPath();
@@ -281,7 +289,7 @@ export class Painter {
 
   _drawFillCursor(ctx, x, y) {
     ctx.globalCompositeOperation = 'source-over';
-    const crosshairSize = 7;
+    const crosshairSize = CROSSHAIR_SIZE;
 
     // Dark outline
     ctx.strokeStyle = 'rgba(0,0,0,0.5)';
@@ -300,19 +308,19 @@ export class Painter {
     ctx.stroke();
 
     // Drop icon
-    const dropOffsetX = x + 6;
-    const dropOffsetY = y + 6;
+    const dropOffsetX = x + DROP_ICON_OFFSET;
+    const dropOffsetY = y + DROP_ICON_OFFSET;
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.beginPath();
-    ctx.moveTo(dropOffsetX, dropOffsetY - 4);
-    ctx.quadraticCurveTo(dropOffsetX + 4, dropOffsetY, dropOffsetX, dropOffsetY + 4);
-    ctx.quadraticCurveTo(dropOffsetX - 4, dropOffsetY, dropOffsetX, dropOffsetY - 4);
+    ctx.moveTo(dropOffsetX, dropOffsetY - DROP_ICON_SIZE_OUTER);
+    ctx.quadraticCurveTo(dropOffsetX + DROP_ICON_SIZE_OUTER, dropOffsetY, dropOffsetX, dropOffsetY + DROP_ICON_SIZE_OUTER);
+    ctx.quadraticCurveTo(dropOffsetX - DROP_ICON_SIZE_OUTER, dropOffsetY, dropOffsetX, dropOffsetY - DROP_ICON_SIZE_OUTER);
     ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.8)';
     ctx.beginPath();
-    ctx.moveTo(dropOffsetX, dropOffsetY - 3);
-    ctx.quadraticCurveTo(dropOffsetX + 3, dropOffsetY, dropOffsetX, dropOffsetY + 3);
-    ctx.quadraticCurveTo(dropOffsetX - 3, dropOffsetY, dropOffsetX, dropOffsetY - 3);
+    ctx.moveTo(dropOffsetX, dropOffsetY - DROP_ICON_SIZE_INNER);
+    ctx.quadraticCurveTo(dropOffsetX + DROP_ICON_SIZE_INNER, dropOffsetY, dropOffsetX, dropOffsetY + DROP_ICON_SIZE_INNER);
+    ctx.quadraticCurveTo(dropOffsetX - DROP_ICON_SIZE_INNER, dropOffsetY, dropOffsetX, dropOffsetY - DROP_ICON_SIZE_INNER);
     ctx.fill();
   }
 

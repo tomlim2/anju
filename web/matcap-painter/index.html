@@ -25,8 +25,8 @@
   --surface: #2a2a2a;
   --border: #2f2f2f;
   --text: #d4d4d4;
-  --text-dim: #777;
-  --text-muted: #555;
+  --text-dim: #999;
+  --text-muted: #8a8a8a;
   --accent: #5b9bd5;
   --accent-dim: #3d6d99;
   --btn: #2e2e2e;
@@ -37,6 +37,22 @@
   --track: #3a3a3a;
   --thumb: #888;
   --thumb-hover: #aaa;
+
+  /* spacing & sizing tokens */
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --font-xs: 10px;
+  --font-sm: 11px;
+
+  /* z-index scale */
+  --z-canvas-bg: 0;
+  --z-canvas: 1;
+  --z-canvas-mask: 2;
+  --z-cursor: 3;
+  --z-nav: 10;
+  --z-controls: 10;
+  --z-overlay: 1000;
 }
 
 html, body {
@@ -66,8 +82,8 @@ html, body {
   color: var(--text-dim);
   letter-spacing: 0.3px;
 }
-.topbar-version { font-weight: 400; color: var(--text-muted); font-size: 10px; }
-.topbar-copy { color: var(--text-muted); font-size: 10px; letter-spacing: 0.2px; }
+.topbar-version { font-weight: 400; color: var(--text-muted); font-size: var(--font-xs); }
+.topbar-copy { color: var(--text-muted); font-size: var(--font-xs); letter-spacing: 0.2px; }
 
 /* --- Main Layout --- */
 .main {
@@ -106,10 +122,10 @@ html, body {
   justify-content: center;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   color: var(--text-dim);
   cursor: pointer;
-  transition: all 0.12s;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
 .tool-btn:hover { background: var(--btn-hover); color: var(--text); }
 .tool-btn.active {
@@ -128,7 +144,7 @@ html, body {
 }
 .slider-label {
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: var(--font-xs);
   text-transform: uppercase;
   letter-spacing: 0.4px;
   min-width: 18px;
@@ -156,6 +172,7 @@ html, body {
 }
 .slider-track::-webkit-slider-thumb:hover { background: var(--thumb-hover); }
 .slider-track::-webkit-slider-thumb:active { background: var(--accent); }
+.slider-track:focus-visible { outline: 2px solid var(--accent-dim); outline-offset: 2px; }
 .slider-track::-moz-range-thumb {
   width: 10px;
   height: 10px;
@@ -172,7 +189,7 @@ html, body {
 }
 .slider-val {
   color: var(--text-dim);
-  font-size: 10px;
+  font-size: var(--font-xs);
   font-family: inherit;
   font-variant-numeric: tabular-nums;
   width: 30px;
@@ -180,7 +197,7 @@ html, body {
   flex-shrink: 0;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   padding: 1px 2px;
   outline: none;
   -moz-appearance: textfield;
@@ -188,7 +205,7 @@ html, body {
 .slider-val::-webkit-inner-spin-button,
 .slider-val::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .slider-val:hover { border-color: var(--border); }
-.slider-val:focus { border-color: var(--accent-dim); color: var(--text); }
+.slider-val:focus-visible { border-color: var(--accent-dim); color: var(--text); }
 
 /* Controls row */
 .controls-row {
@@ -206,7 +223,7 @@ html, body {
 }
 .control-color label {
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: var(--font-xs);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -214,7 +231,7 @@ html, body {
   width: 24px;
   height: 20px;
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background: none;
   cursor: pointer;
   padding: 0;
@@ -229,7 +246,7 @@ html, body {
 .color-chip {
   width: 16px;
   height: 16px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   border: 1px solid rgba(255,255,255,0.12);
   cursor: pointer;
   padding: 0;
@@ -256,8 +273,8 @@ html, body {
 }
 .canvas-area.panning { cursor: grab; }
 .canvas-area.panning:active { cursor: grabbing; }
-.canvas-area.panning #paint-canvas { cursor: grab; }
-.canvas-area.panning:active #paint-canvas { cursor: grabbing; }
+.canvas-area.panning .paint-canvas { cursor: grab; }
+.canvas-area.panning:active .paint-canvas { cursor: grabbing; }
 .canvas-wrap {
   position: relative;
   will-change: transform;
@@ -276,7 +293,7 @@ html, body {
   border-radius: 5px;
   padding: 3px;
   backdrop-filter: blur(4px);
-  z-index: 10;
+  z-index: var(--z-nav);
 }
 .nav-btn {
   width: 26px;
@@ -286,39 +303,39 @@ html, body {
   justify-content: center;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   color: var(--text-dim);
   cursor: pointer;
-  transition: all 0.12s;
+  transition: background 0.12s, color 0.12s;
 }
 .nav-btn:hover { background: var(--btn-hover); color: var(--text); }
 .nav-btn.active { background: var(--accent); color: #fff; }
 .nav-btn svg { width: 14px; height: 14px; }
-#zoom-badge {
+.zoom-badge {
   position: absolute;
   bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
   background: rgba(0,0,0,0.6);
   color: var(--text-dim);
-  font-size: 10px;
+  font-size: var(--font-xs);
   padding: 2px 8px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.2s;
 }
-#zoom-badge.visible { opacity: 1; }
-#paint-canvas {
+.zoom-badge.visible { opacity: 1; }
+.paint-canvas {
   cursor: none;
   image-rendering: auto;
   position: relative;
-  z-index: 1;
+  z-index: var(--z-canvas);
 }
 .canvas-bg {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: var(--z-canvas-bg);
   border-radius: 50%;
   background: repeating-conic-gradient(#2a2a2a 0% 25%, #222 0% 50%) 50% / 16px 16px;
   pointer-events: none;
@@ -326,19 +343,19 @@ html, body {
 .canvas-circle-mask {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: var(--z-canvas-mask);
   pointer-events: none;
   border-radius: 50%;
   border: 2px dashed rgba(0,0,0,0.3);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
 }
-#cursor-overlay {
+.cursor-overlay {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 3;
+  z-index: var(--z-cursor);
 }
 
 /* Layers panel */
@@ -362,7 +379,7 @@ html, body {
   justify-content: space-between;
   padding: 5px 10px;
   border-bottom: 1px solid var(--border);
-  font-size: 10px;
+  font-size: var(--font-xs);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -377,10 +394,10 @@ html, body {
   justify-content: center;
   background: transparent;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   color: var(--text-dim);
   cursor: pointer;
-  transition: all 0.12s;
+  transition: background 0.12s, color 0.12s;
 }
 .layers-actions button:hover { background: var(--btn-hover); color: var(--text); }
 .layers-actions button svg { width: 14px; height: 14px; }
@@ -394,9 +411,9 @@ html, body {
   align-items: center;
   gap: 6px;
   padding: 3px 8px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--font-sm);
   transition: background 0.1s;
 }
 .layer-grip {
@@ -420,7 +437,7 @@ html, body {
 .layer-name {
   flex: 1;
   color: var(--text);
-  font-size: 11px;
+  font-size: var(--font-sm);
 }
 .layer-solo {
   width: 14px;
@@ -459,7 +476,7 @@ html, body {
 .layer-thumb {
   width: 28px;
   height: 28px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   flex-shrink: 0;
   image-rendering: auto;
@@ -475,6 +492,7 @@ html, body {
   outline: none;
   cursor: pointer;
 }
+.layer-opacity:focus-visible { outline: 2px solid var(--accent-dim); outline-offset: 2px; }
 .layer-opacity::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 8px;
@@ -501,14 +519,14 @@ html, body {
   background: var(--surface);
   color: var(--text-dim);
   border: 1px solid transparent;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   padding: 1px 4px;
-  font-size: 10px;
+  font-size: var(--font-xs);
   outline: none;
   cursor: pointer;
   flex-shrink: 0;
 }
-.layer-blend:focus { border-color: var(--accent-dim); }
+.layer-blend:focus-visible { border-color: var(--accent-dim); }
 
 /* Layer Detail Toggle (per-layer) */
 .layer-detail-btn {
@@ -519,12 +537,12 @@ html, body {
   justify-content: center;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   color: var(--text-muted);
   cursor: pointer;
   flex-shrink: 0;
   padding: 0;
-  transition: all 0.12s;
+  transition: background 0.12s, color 0.12s;
 }
 .layer-detail-btn:hover { background: var(--btn-hover); color: var(--text); }
 .layer-detail-btn.open { color: var(--accent); }
@@ -549,7 +567,7 @@ html, body {
   border-bottom: 1px solid var(--border);
 }
 .layer-settings-title {
-  font-size: 10px;
+  font-size: var(--font-xs);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -569,7 +587,7 @@ html, body {
 }
 .hsv-label {
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: var(--font-xs);
   font-weight: 500;
   min-width: 10px;
   flex-shrink: 0;
@@ -596,6 +614,7 @@ html, body {
 }
 .hsv-slider::-webkit-slider-thumb:hover { background: var(--thumb-hover); }
 .hsv-slider::-webkit-slider-thumb:active { background: var(--accent); }
+.hsv-slider:focus-visible { outline: 2px solid var(--accent-dim); outline-offset: 2px; }
 .hsv-slider::-moz-range-thumb {
   width: 10px;
   height: 10px;
@@ -612,7 +631,7 @@ html, body {
 }
 .hsv-val {
   color: var(--text-dim);
-  font-size: 10px;
+  font-size: var(--font-xs);
   font-family: inherit;
   font-variant-numeric: tabular-nums;
   width: 34px;
@@ -620,7 +639,7 @@ html, body {
   flex-shrink: 0;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   padding: 1px 2px;
   outline: none;
   -moz-appearance: textfield;
@@ -628,7 +647,7 @@ html, body {
 .hsv-val::-webkit-inner-spin-button,
 .hsv-val::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .hsv-val:hover { border-color: var(--border); }
-.hsv-val:focus { border-color: var(--accent-dim); color: var(--text); }
+.hsv-val:focus-visible { border-color: var(--accent-dim); color: var(--text); }
 
 /* --- Right Panel (3D Preview + Layers) --- */
 .right-panel {
@@ -644,7 +663,7 @@ html, body {
   position: relative;
   flex-shrink: 0;
 }
-#preview-canvas {
+.preview-canvas {
   width: 100%;
   height: 100%;
   display: block;
@@ -652,7 +671,7 @@ html, body {
 .vp-controls-left, .vp-controls-right {
   position: absolute;
   top: 8px;
-  z-index: 10;
+  z-index: var(--z-controls);
   display: flex;
   gap: 4px;
   align-items: center;
@@ -667,12 +686,12 @@ html, body {
   justify-content: center;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   color: var(--text-dim);
   cursor: pointer;
   font-size: 13px;
   line-height: 1;
-  transition: all 0.12s;
+  transition: background 0.12s, color 0.12s;
   backdrop-filter: blur(4px);
 }
 .vp-btn:hover { background: var(--btn-hover); color: var(--text); }
@@ -681,19 +700,19 @@ html, body {
   background: rgba(30,30,30,0.85);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   padding: 4px 8px;
-  font-size: 11px;
+  font-size: var(--font-sm);
   cursor: pointer;
   outline: none;
   backdrop-filter: blur(4px);
 }
-.vp-controls-left select:focus, .vp-controls-right select:focus { border-color: var(--accent-dim); }
+.vp-controls-left select:focus-visible, .vp-controls-right select:focus-visible { border-color: var(--accent-dim); }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: var(--radius-sm); }
 ::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
 
 /* Layer matcap button */
@@ -705,11 +724,11 @@ html, body {
   justify-content: center;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   color: var(--text-muted);
   cursor: pointer;
   flex-shrink: 0;
-  transition: all 0.12s;
+  transition: background 0.12s, color 0.12s;
   padding: 0;
 }
 .layer-matcap-btn:hover { background: var(--btn-hover); color: var(--text); }
@@ -718,7 +737,7 @@ html, body {
 .matcap-picker-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--z-overlay);
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   display: flex;
@@ -735,7 +754,7 @@ html, body {
 .matcap-picker {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   width: 600px;
   max-width: 90vw;
   max-height: 70vh;
@@ -758,7 +777,7 @@ html, body {
   flex-shrink: 0;
 }
 .matcap-picker-title {
-  font-size: 11px;
+  font-size: var(--font-sm);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -803,9 +822,17 @@ html, body {
   border-color: var(--accent);
 }
 .matcap-num {
-  font-size: 11px;
+  font-size: var(--font-sm);
   color: var(--text-dim);
   line-height: 1;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
 </style>
 </head>
@@ -892,10 +919,10 @@ html, body {
     <div class="canvas-area" id="canvas-area">
       <div class="canvas-wrap" id="canvas-wrap">
         <div class="canvas-bg"></div>
-        <canvas id="paint-canvas" width="1024" height="1024"></canvas>
+        <canvas id="paint-canvas" class="paint-canvas" width="1024" height="1024"></canvas>
         <div class="canvas-circle-mask"></div>
       </div>
-      <canvas id="cursor-overlay"></canvas>
+      <canvas id="cursor-overlay" class="cursor-overlay"></canvas>
       <div class="canvas-nav">
         <button class="nav-btn" id="nav-fit" title="Fit to Screen (Ctrl+0)">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M800-600v-107.69q0-4.62-3.85-8.46-3.84-3.85-8.46-3.85H680v-60h107.69Q818-780 839-759q21 21 21 51.31V-600h-60Zm-700 0v-107.69Q100-738 121-759q21-21 51.31-21H280v60H172.31q-4.62 0-8.46 3.85-3.85 3.84-3.85 8.46V-600h-60Zm580 420v-60h107.69q4.62 0 8.46-3.85 3.85-3.84 3.85-8.46V-360h60v107.69Q860-222 839-201q-21 21-51.31 21H680Zm-507.69 0Q142-180 121-201q-21-21-21-51.31V-360h60v107.69q0 4.62 3.85 8.46 3.84 3.85 8.46 3.85H280v60H172.31Zm84.61-156.92v-286.16h446.16v286.16H256.92Zm60-60h326.16v-166.16H316.92v166.16Zm0 0v-166.16 166.16Z"/></svg>
@@ -907,7 +934,7 @@ html, body {
 
   <div class="right-panel">
     <div class="preview-area">
-      <canvas id="preview-canvas"></canvas>
+      <canvas id="preview-canvas" class="preview-canvas"></canvas>
       <div class="vp-controls-left">
         <select id="model-select">
           <option value="torus">Torus</option>

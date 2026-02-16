@@ -30,12 +30,13 @@ export class TransformController {
     const temp = document.createElement('canvas');
     temp.width = SIZE; temp.height = SIZE;
     const ctx = temp.getContext('2d');
-    const c = SIZE / 2, s = this._scale / 100;
+    const center = SIZE / 2;
+    const scaleFactor = this._scale / 100;
     ctx.translate(this._x, this._y);
-    ctx.translate(c, c);
+    ctx.translate(center, center);
     ctx.rotate(this._rotation * Math.PI / 180);
-    ctx.scale(s, s);
-    ctx.translate(-c, -c);
+    ctx.scale(scaleFactor, scaleFactor);
+    ctx.translate(-center, -center);
     ctx.drawImage(layer.canvas, 0, 0);
     layer.ctx.clearRect(0, 0, SIZE, SIZE);
     layer.ctx.drawImage(temp, 0, 0);
@@ -45,11 +46,12 @@ export class TransformController {
 
   applyToContext(ctx, layerIndex) {
     if (layerIndex !== this._layers.activeIndex || !this.hasTransform) return;
-    const c = SIZE / 2, s = this._scale / 100;
+    const center = SIZE / 2;
+    const scaleFactor = this._scale / 100;
     ctx.translate(this._x, this._y);
-    ctx.translate(c, c);
+    ctx.translate(center, center);
     ctx.rotate(this._rotation * Math.PI / 180);
-    ctx.scale(s, s);
-    ctx.translate(-c, -c);
+    ctx.scale(scaleFactor, scaleFactor);
+    ctx.translate(-center, -center);
   }
 }

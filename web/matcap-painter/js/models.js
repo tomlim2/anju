@@ -76,6 +76,7 @@ function loadGLB(name) {
             animations: gltf.animations || [],
           });
         } catch (err) {
+          console.warn(`Error processing ${path}`, err);
           resolve({ geometry: PRESETS.sphere(), scene: null, animations: [] });
         }
       },

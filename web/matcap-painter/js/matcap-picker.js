@@ -6,6 +6,7 @@ export class MatcapPicker {
     this._layerIndex = 0;
     this._overlay = null;
     this._built = false;
+    this._ac = new AbortController();
   }
 
   open(layerIndex) {
@@ -16,6 +17,15 @@ export class MatcapPicker {
 
   close() {
     if (this._overlay) this._overlay.classList.remove('open');
+  }
+
+  destroy() {
+    this._ac.abort();
+    if (this._overlay) {
+      this._overlay.remove();
+      this._overlay = null;
+    }
+    this._built = false;
   }
 
   _build() {
@@ -79,7 +89,7 @@ export class MatcapPicker {
       if (event.key === 'Escape' && this._overlay.classList.contains('open')) {
         this.close();
       }
-    });
+    }, { signal: this._ac.signal });
 
     this._overlay = overlay;
     this._built = true;

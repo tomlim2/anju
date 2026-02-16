@@ -146,7 +146,7 @@ export class Preview {
   }
 
   get clipNames() {
-    return this._clips.map(c => c.name);
+    return this._clips.map(clip => clip.name);
   }
 
   playClip(name) {
@@ -163,7 +163,7 @@ export class Preview {
   toggleAnimation() {
     this._animEnabled = !this._animEnabled;
     if (this._mixer) {
-      this._mixer._actions.forEach(a => { a.paused = !this._animEnabled; });
+      this._mixer._actions.forEach(action => { action.paused = !this._animEnabled; });
     }
     return this._animEnabled;
   }
