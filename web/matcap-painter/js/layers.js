@@ -40,6 +40,8 @@ export class LayerSystem {
       brightness: 0,
       contrast: 0,
       lift: 0,
+      _filteredCanvas: null,
+      _filterDirty: true,
     };
 
     this.layers.push(layer);
@@ -151,6 +153,7 @@ export class LayerSystem {
     layer.hue = h;
     layer.saturation = s;
     layer.brightness = v;
+    layer._filterDirty = true;
     this.composite();
   }
 
@@ -158,6 +161,7 @@ export class LayerSystem {
     const layer = this.layers[index];
     if (!layer) return;
     layer.contrast = value;
+    layer._filterDirty = true;
     this.composite();
   }
 
@@ -165,6 +169,7 @@ export class LayerSystem {
     const layer = this.layers[index];
     if (!layer) return;
     layer.lift = value;
+    layer._filterDirty = true;
     this.composite();
   }
 
@@ -176,6 +181,7 @@ export class LayerSystem {
     layer.brightness = 0;
     layer.contrast = 0;
     layer.lift = 0;
+    layer._filterDirty = true;
   }
 
   getFilteredCanvas(index) {
@@ -188,6 +194,10 @@ export class LayerSystem {
   composite() {
     const ctx = this.outputCtx;
     ctx.clearRect(0, 0, SIZE, SIZE);
+
+    // Active layer content may have changed from painting — invalidate its cache
+    const activeLayer = this.layers[this.activeIndex];
+    if (activeLayer) activeLayer._filterDirty = true;
 
     // Draw bottom-to-top
     for (let layerIndex = 0; layerIndex < this.layers.length; layerIndex++) {
@@ -218,12 +228,17 @@ export class LayerSystem {
   }
 
   _applyFilter(layer) {
-    if (!this._filterCanvas) {
-      this._filterCanvas = document.createElement('canvas');
-      this._filterCanvas.width = SIZE;
-      this._filterCanvas.height = SIZE;
+    // Return cached result if clean
+    if (!layer._filterDirty && layer._filteredCanvas) {
+      return layer._filteredCanvas;
     }
-    const tmpCtx = this._filterCanvas.getContext('2d');
+
+    if (!layer._filteredCanvas) {
+      layer._filteredCanvas = document.createElement('canvas');
+      layer._filteredCanvas.width = SIZE;
+      layer._filteredCanvas.height = SIZE;
+    }
+    const tmpCtx = layer._filteredCanvas.getContext('2d');
     tmpCtx.clearRect(0, 0, SIZE, SIZE);
     tmpCtx.drawImage(layer.canvas, 0, 0);
 
@@ -299,6 +314,7 @@ export class LayerSystem {
     }
 
     tmpCtx.putImageData(imageData, 0, 0);
-    return this._filterCanvas;
+    layer._filterDirty = false;
+    return layer._filteredCanvas;
   }
 }

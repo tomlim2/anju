@@ -235,6 +235,7 @@ export class UI {
     const addButton = document.getElementById('layer-add');
     const deleteButton = document.getElementById('layer-delete');
     const randomButton = document.getElementById('layer-random');
+    const resetButton = document.getElementById('layer-reset');
 
     const listenerOptions = { signal: this._ac.signal };
     addButton.addEventListener('click', () => {
@@ -250,6 +251,22 @@ export class UI {
       this._refreshHSVPanel();
     }, listenerOptions);
     randomButton.addEventListener('click', () => this._randomPreset(), listenerOptions);
+    resetButton.addEventListener('click', () => {
+      this._autoBakeTransform();
+      while (this.layers.layers.length > 1) this.layers.layers.pop();
+      const first = this.layers.layers[0];
+      first.ctx.fillStyle = '#ffffff';
+      first.ctx.fillRect(0, 0, first.canvas.width, first.canvas.height);
+      this.layers.resetDetail(0);
+      first.name = 'Layer 1';
+      first.blendMode = 'source-over';
+      first.opacity = 1.0;
+      this.layers.activeIndex = 0;
+      this.layers.composite();
+      this._detailOpen = false;
+      this._renderLayerList();
+      this._refreshHSVPanel();
+    }, listenerOptions);
 
     this._detailOpen = false;
 
@@ -644,47 +661,59 @@ export class UI {
   async _randomPreset() {
     this._autoBakeTransform();
 
-    // Reset to single empty layer
-    while (this.layers.layers.length > 1) {
-      this.layers.layers.pop();
-    }
-    const first = this.layers.layers[0];
-    first.ctx.clearRect(0, 0, first.canvas.width, first.canvas.height);
-    this.layers.resetDetail(0);
-    first.name = 'Layer 1';
-
     const count = Math.floor(Math.random() * 3) + 1;
-    for (let i = 1; i < count; i++) {
-      this.layers.addLayer(`Layer ${i + 1}`);
-    }
-
     const blendModes = ['source-over', 'multiply', 'screen', 'overlay'];
+
+    // Pre-generate configs and load images while old content stays visible
+    const configs = [];
     const loads = [];
-
     for (let i = 0; i < count; i++) {
-      const layer = this.layers.layers[i];
       const matcapId = MATCAP_IDS[Math.floor(Math.random() * MATCAP_IDS.length)];
-
-      layer.blendMode = i === 0 ? 'source-over' : blendModes[Math.floor(Math.random() * blendModes.length)];
-      layer.opacity = i === 0 ? 1.0 : +(0.4 + Math.random() * 0.6).toFixed(2);
-      layer.hue = Math.floor(Math.random() * 361) - 180;
-      layer.saturation = Math.floor(Math.random() * 101) - 50;
-      layer.brightness = Math.floor(Math.random() * 61) - 30;
-      layer.contrast = Math.floor(Math.random() * 81) - 30;
-      layer.lift = Math.floor(Math.random() * 21);
-
+      const cfg = {
+        blendMode: i === 0 ? 'source-over' : blendModes[Math.floor(Math.random() * blendModes.length)],
+        opacity: i === 0 ? 1.0 : +(0.4 + Math.random() * 0.6).toFixed(2),
+        hue: Math.floor(Math.random() * 361) - 180,
+        saturation: Math.floor(Math.random() * 101) - 50,
+        brightness: Math.floor(Math.random() * 61) - 30,
+        contrast: Math.floor(Math.random() * 81) - 30,
+        lift: Math.floor(Math.random() * 21),
+        img: null,
+      };
+      configs.push(cfg);
       loads.push(new Promise((resolve) => {
         const img = new Image();
-        img.onload = () => {
-          layer.ctx.drawImage(img, 0, 0, layer.canvas.width, layer.canvas.height);
-          resolve();
-        };
+        img.onload = () => { cfg.img = img; resolve(); };
         img.onerror = resolve;
         img.src = FULL_PATH + matcapId + '.png';
       }));
     }
-
     await Promise.all(loads);
+
+    // Suppress intermediate composites — shadow prototype method
+    this.layers.composite = () => {};
+
+    while (this.layers.layers.length > 1) this.layers.layers.pop();
+    const first = this.layers.layers[0];
+    first.ctx.clearRect(0, 0, first.canvas.width, first.canvas.height);
+    this.layers.resetDetail(0);
+    first.name = 'Layer 1';
+    for (let i = 1; i < count; i++) this.layers.addLayer(`Layer ${i + 1}`);
+
+    for (let i = 0; i < count; i++) {
+      const layer = this.layers.layers[i];
+      const cfg = configs[i];
+      layer.blendMode = cfg.blendMode;
+      layer.opacity = cfg.opacity;
+      layer.hue = cfg.hue;
+      layer.saturation = cfg.saturation;
+      layer.brightness = cfg.brightness;
+      layer.contrast = cfg.contrast;
+      layer.lift = cfg.lift;
+      if (cfg.img) layer.ctx.drawImage(cfg.img, 0, 0, layer.canvas.width, layer.canvas.height);
+    }
+
+    // Restore and composite once
+    delete this.layers.composite;
     this.layers.activeIndex = count - 1;
     this.layers.composite();
     this._detailOpen = false;
