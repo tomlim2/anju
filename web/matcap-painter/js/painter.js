@@ -29,17 +29,22 @@ export class Painter {
     this._cursorY = -1;
     this._cursorVisible = false;
 
+    this._ac = new AbortController();
     this._bindEvents();
+  }
+
+  destroy() {
+    this._ac.abort();
   }
 
   // --- History ---
 
   _saveSnapshot() {
-    const idx = this.layers.activeIndex;
+    const layerIndex = this.layers.activeIndex;
     const ctx = this.layers.getActiveCtx();
     if (!ctx) return;
     const imageData = ctx.getImageData(0, 0, SIZE, SIZE);
-    this._undoStack.push({ layerIndex: idx, imageData });
+    this._undoStack.push({ layerIndex, imageData });
     if (this._undoStack.length > MAX_HISTORY) this._undoStack.shift();
     this._redoStack.length = 0;
   }
@@ -77,38 +82,39 @@ export class Painter {
   // --- Events ---
 
   _bindEvents() {
-    this.canvas.addEventListener('pointerdown', (e) => this._onDown(e));
-    this.canvas.addEventListener('pointermove', (e) => this._onMove(e));
-    this.canvas.addEventListener('pointerup', (e) => this._onUp(e));
-    this.canvas.addEventListener('pointerleave', (e) => {
-      this._onUp(e);
+    const listenerOptions = { signal: this._ac.signal };
+    this.canvas.addEventListener('pointerdown', (event) => this._onDown(event), listenerOptions);
+    this.canvas.addEventListener('pointermove', (event) => this._onMove(event), listenerOptions);
+    this.canvas.addEventListener('pointerup', () => this._onUp(), listenerOptions);
+    this.canvas.addEventListener('pointerleave', () => {
+      this._onUp();
       this._cursorVisible = false;
       this._drawCursor();
-    });
+    }, listenerOptions);
     this.canvas.addEventListener('pointerenter', () => {
       this._cursorVisible = true;
-    });
+    }, listenerOptions);
   }
 
-  _canvasCoords(e) {
+  _canvasCoords(event) {
     const rect = this.canvas.getBoundingClientRect();
     const scaleX = SIZE / rect.width;
     const scaleY = SIZE / rect.height;
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
+      x: (event.clientX - rect.left) * scaleX,
+      y: (event.clientY - rect.top) * scaleY,
     };
   }
 
   _inCircle(x, y) {
-    const dx = x - CENTER;
-    const dy = y - CENTER;
-    return dx * dx + dy * dy <= RADIUS * RADIUS;
+    const deltaX = x - CENTER;
+    const deltaY = y - CENTER;
+    return deltaX * deltaX + deltaY * deltaY <= RADIUS * RADIUS;
   }
 
-  _onDown(e) {
+  _onDown(event) {
     if (this.panMode) return;
-    const { x, y } = this._canvasCoords(e);
+    const { x, y } = this._canvasCoords(event);
 
     // Save snapshot before any modification
     this._saveSnapshot();
@@ -125,7 +131,7 @@ export class Painter {
     this._painting = true;
     this._lastX = x;
     this._lastY = y;
-    this.canvas.setPointerCapture(e.pointerId);
+    this.canvas.setPointerCapture(event.pointerId);
 
     const ctx = this.layers.getActiveCtx();
     if (!ctx) return;
@@ -135,8 +141,8 @@ export class Painter {
     this.layers.composite();
   }
 
-  _onMove(e) {
-    const { x, y } = this._canvasCoords(e);
+  _onMove(event) {
+    const { x, y } = this._canvasCoords(event);
     this._cursorX = x;
     this._cursorY = y;
     this._cursorVisible = true;
@@ -155,7 +161,7 @@ export class Painter {
     this.layers.composite();
   }
 
-  _onUp(e) {
+  _onUp() {
     if (!this._painting) return;
     this._painting = false;
   }
@@ -175,7 +181,7 @@ export class Painter {
       return;
     }
 
-    const r = this.brush.size;
+    const brushRadius = this.brush.size;
 
     // Difference mode — auto-contrasts against any background
     ctx.globalCompositeOperation = 'difference';
@@ -184,14 +190,14 @@ export class Painter {
 
     // Main cursor circle
     ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.arc(x, y, brushRadius, 0, Math.PI * 2);
     ctx.stroke();
 
     // Mirror cursors
     ctx.lineWidth = 0.8;
-    for (const [mx, my] of this._mirrorPoints(x, y)) {
+    for (const [mirroredX, mirroredY] of this._mirrorPoints(x, y)) {
       ctx.beginPath();
-      ctx.arc(mx, my, r, 0, Math.PI * 2);
+      ctx.arc(mirroredX, mirroredY, brushRadius, 0, Math.PI * 2);
       ctx.stroke();
     }
 
@@ -211,35 +217,35 @@ export class Painter {
     ctx.lineWidth = 1.2;
 
     // Crosshair
-    const s = 7;
+    const crosshairSize = 7;
     ctx.beginPath();
-    ctx.moveTo(x - s, y); ctx.lineTo(x + s, y);
-    ctx.moveTo(x, y - s); ctx.lineTo(x, y + s);
+    ctx.moveTo(x - crosshairSize, y); ctx.lineTo(x + crosshairSize, y);
+    ctx.moveTo(x, y - crosshairSize); ctx.lineTo(x, y + crosshairSize);
     ctx.stroke();
 
     // Small fill bucket icon (simplified drop shape)
-    const ox = x + 6;
-    const oy = y + 6;
+    const dropOffsetX = x + 6;
+    const dropOffsetY = y + 6;
     ctx.beginPath();
-    ctx.moveTo(ox, oy - 4);
-    ctx.quadraticCurveTo(ox + 4, oy, ox, oy + 4);
-    ctx.quadraticCurveTo(ox - 4, oy, ox, oy - 4);
+    ctx.moveTo(dropOffsetX, dropOffsetY - 4);
+    ctx.quadraticCurveTo(dropOffsetX + 4, dropOffsetY, dropOffsetX, dropOffsetY + 4);
+    ctx.quadraticCurveTo(dropOffsetX - 4, dropOffsetY, dropOffsetX, dropOffsetY - 4);
     ctx.fill();
 
     ctx.globalCompositeOperation = 'source-over';
   }
 
   _mirrorPoints(x, y) {
-    const pts = [];
-    if (this.mirrorX) pts.push([2 * CENTER - x, y]);
-    if (this.mirrorY) pts.push([x, 2 * CENTER - y]);
-    if (this.mirrorX && this.mirrorY) pts.push([2 * CENTER - x, 2 * CENTER - y]);
-    return pts;
+    const points = [];
+    if (this.mirrorX) points.push([2 * CENTER - x, y]);
+    if (this.mirrorY) points.push([x, 2 * CENTER - y]);
+    if (this.mirrorX && this.mirrorY) points.push([2 * CENTER - x, 2 * CENTER - y]);
+    return points;
   }
 
   _mirrorStamp(ctx, x, y) {
-    for (const [mx, my] of this._mirrorPoints(x, y)) {
-      this.brush.stamp(ctx, mx, my);
+    for (const [mirroredX, mirroredY] of this._mirrorPoints(x, y)) {
+      this.brush.stamp(ctx, mirroredX, mirroredY);
     }
   }
 

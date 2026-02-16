@@ -32,34 +32,33 @@ export class Brush {
   _buildStamp() {
     if (!this._needsRebuild()) return;
 
-    const s = Math.ceil(this.size);
-    const d = s * 2;
-    this._stampCanvas.width = d;
-    this._stampCanvas.height = d;
+    const radius = Math.ceil(this.size);
+    const diameter = radius * 2;
+    this._stampCanvas.width = diameter;
+    this._stampCanvas.height = diameter;
     const ctx = this._stampCtx;
-    ctx.clearRect(0, 0, d, d);
+    ctx.clearRect(0, 0, diameter, diameter);
 
     if (this.type === 'blur') {
       // Blur stamp: just a circle mask
       ctx.beginPath();
-      ctx.arc(s, s, s, 0, Math.PI * 2);
+      ctx.arc(radius, radius, radius, 0, Math.PI * 2);
       ctx.fillStyle = 'white';
       ctx.fill();
     } else {
       // Soft brush / airbrush / eraser stamp
-      const r = s;
-      const innerR = r * this.hardness;
-      const gradient = ctx.createRadialGradient(s, s, innerR, s, s, r);
+      const innerRadius = radius * this.hardness;
+      const gradient = ctx.createRadialGradient(radius, radius, innerRadius, radius, radius, radius);
 
       let alpha = this.type === 'airbrush' ? 0.08 : 1.0;
       const rgb = hexToRgb(this.color);
-      const c = this.type === 'eraser' ? '0,0,0' : `${rgb.r},${rgb.g},${rgb.b}`;
+      const colorChannels = this.type === 'eraser' ? '0,0,0' : `${rgb.r},${rgb.g},${rgb.b}`;
 
-      gradient.addColorStop(0, `rgba(${c},${alpha})`);
-      gradient.addColorStop(1, `rgba(${c},0)`);
+      gradient.addColorStop(0, `rgba(${colorChannels},${alpha})`);
+      gradient.addColorStop(1, `rgba(${colorChannels},0)`);
 
       ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, d, d);
+      ctx.fillRect(0, 0, diameter, diameter);
     }
 
     this._dirty = false;
@@ -77,7 +76,7 @@ export class Brush {
     }
 
     this._buildStamp();
-    const s = Math.ceil(this.size);
+    const radius = Math.ceil(this.size);
 
     ctx.save();
     if (this.type === 'eraser') {
@@ -87,113 +86,113 @@ export class Brush {
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = this.opacity;
     }
-    ctx.drawImage(this._stampCanvas, x - s, y - s);
+    ctx.drawImage(this._stampCanvas, x - radius, y - radius);
     ctx.restore();
   }
 
   strokeInterpolated(ctx, x0, y0, x1, y1) {
-    const dx = x1 - x0;
-    const dy = y1 - y0;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    const deltaX = x1 - x0;
+    const deltaY = y1 - y0;
+    const dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     const step = Math.max(1, this.size * SPACING_RATIO);
     const count = Math.ceil(dist / step);
 
-    for (let i = 0; i <= count; i++) {
-      const t = count === 0 ? 0 : i / count;
-      this.stamp(ctx, x0 + dx * t, y0 + dy * t);
+    for (let stepIndex = 0; stepIndex <= count; stepIndex++) {
+      const progress = count === 0 ? 0 : stepIndex / count;
+      this.stamp(ctx, x0 + deltaX * progress, y0 + deltaY * progress);
     }
   }
 
   _blurAt(ctx, x, y) {
-    const r = Math.min(Math.ceil(this.size), 50);
-    const d = r * 2;
-    const sx = Math.max(0, Math.floor(x - r));
-    const sy = Math.max(0, Math.floor(y - r));
-    const w = Math.min(d, ctx.canvas.width - sx);
-    const h = Math.min(d, ctx.canvas.height - sy);
-    if (w <= 0 || h <= 0) return;
+    const blurRadius = Math.min(Math.ceil(this.size), 50);
+    const blurDiameter = blurRadius * 2;
+    const sourceX = Math.max(0, Math.floor(x - blurRadius));
+    const sourceY = Math.max(0, Math.floor(y - blurRadius));
+    const regionWidth = Math.min(blurDiameter, ctx.canvas.width - sourceX);
+    const regionHeight = Math.min(blurDiameter, ctx.canvas.height - sourceY);
+    if (regionWidth <= 0 || regionHeight <= 0) return;
 
-    const imageData = ctx.getImageData(sx, sy, w, h);
+    const imageData = ctx.getImageData(sourceX, sourceY, regionWidth, regionHeight);
     boxBlur(imageData, 3);
     // Apply within circle mask
-    const cx = x - sx;
-    const cy = y - sy;
-    const origData = ctx.getImageData(sx, sy, w, h);
+    const centerX = x - sourceX;
+    const centerY = y - sourceY;
+    const origData = ctx.getImageData(sourceX, sourceY, regionWidth, regionHeight);
     const strength = this.opacity;
 
-    for (let py = 0; py < h; py++) {
-      for (let px = 0; px < w; px++) {
-        const dx = px - cx;
-        const dy = py - cy;
-        const distSq = dx * dx + dy * dy;
-        if (distSq > r * r) continue;
+    for (let pixelY = 0; pixelY < regionHeight; pixelY++) {
+      for (let pixelX = 0; pixelX < regionWidth; pixelX++) {
+        const deltaX = pixelX - centerX;
+        const deltaY = pixelY - centerY;
+        const distSq = deltaX * deltaX + deltaY * deltaY;
+        if (distSq > blurRadius * blurRadius) continue;
 
-        const falloff = 1 - Math.sqrt(distSq) / r;
+        const falloff = 1 - Math.sqrt(distSq) / blurRadius;
         const blend = falloff * strength;
-        const i = (py * w + px) * 4;
-        for (let c = 0; c < 4; c++) {
-          origData.data[i + c] = Math.round(
-            origData.data[i + c] * (1 - blend) + imageData.data[i + c] * blend
+        const pixelOffset = (pixelY * regionWidth + pixelX) * 4;
+        for (let channelIndex = 0; channelIndex < 4; channelIndex++) {
+          origData.data[pixelOffset + channelIndex] = Math.round(
+            origData.data[pixelOffset + channelIndex] * (1 - blend) + imageData.data[pixelOffset + channelIndex] * blend
           );
         }
       }
     }
-    ctx.putImageData(origData, sx, sy);
+    ctx.putImageData(origData, sourceX, sourceY);
   }
 }
 
 export function floodFill(ctx, startX, startY, fillColor, tolerance = 32) {
-  const w = ctx.canvas.width;
-  const h = ctx.canvas.height;
-  const imageData = ctx.getImageData(0, 0, w, h);
+  const canvasWidth = ctx.canvas.width;
+  const canvasHeight = ctx.canvas.height;
+  const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
   const data = imageData.data;
   const rgb = hexToRgb(fillColor);
 
-  const sx = Math.floor(startX);
-  const sy = Math.floor(startY);
-  if (sx < 0 || sx >= w || sy < 0 || sy >= h) return;
+  const startPixelX = Math.floor(startX);
+  const startPixelY = Math.floor(startY);
+  if (startPixelX < 0 || startPixelX >= canvasWidth || startPixelY < 0 || startPixelY >= canvasHeight) return;
 
-  const startIdx = (sy * w + sx) * 4;
-  const sr = data[startIdx], sg = data[startIdx + 1], sb = data[startIdx + 2], sa = data[startIdx + 3];
+  const startOffset = (startPixelY * canvasWidth + startPixelX) * 4;
+  const startRed = data[startOffset], startGreen = data[startOffset + 1], startBlue = data[startOffset + 2], startAlpha = data[startOffset + 3];
 
   // Don't fill if target color is same as fill color
-  if (sr === rgb.r && sg === rgb.g && sb === rgb.b && sa === 255) return;
+  if (startRed === rgb.r && startGreen === rgb.g && startBlue === rgb.b && startAlpha === 255) return;
 
-  const visited = new Uint8Array(w * h);
-  const stack = [sx, sy];
+  const visited = new Uint8Array(canvasWidth * canvasHeight);
+  const stack = [startPixelX, startPixelY];
 
-  function matches(i) {
-    const dr = data[i] - sr;
-    const dg = data[i + 1] - sg;
-    const db = data[i + 2] - sb;
-    const da = data[i + 3] - sa;
-    return dr * dr + dg * dg + db * db + da * da <= tolerance * tolerance * 4;
+  function matches(offset) {
+    const deltaRed = data[offset] - startRed;
+    const deltaGreen = data[offset + 1] - startGreen;
+    const deltaBlue = data[offset + 2] - startBlue;
+    const deltaAlpha = data[offset + 3] - startAlpha;
+    return deltaRed * deltaRed + deltaGreen * deltaGreen + deltaBlue * deltaBlue + deltaAlpha * deltaAlpha <= tolerance * tolerance * 4;
   }
 
   while (stack.length > 0) {
-    const y = stack.pop();
-    const x = stack.pop();
-    const pos = y * w + x;
-    if (x < 0 || x >= w || y < 0 || y >= h) continue;
-    if (visited[pos]) continue;
-    const idx = pos * 4;
-    if (!matches(idx)) continue;
+    const currentY = stack.pop();
+    const currentX = stack.pop();
+    const position = currentY * canvasWidth + currentX;
+    if (currentX < 0 || currentX >= canvasWidth || currentY < 0 || currentY >= canvasHeight) continue;
+    if (visited[position]) continue;
+    const offset = position * 4;
+    if (!matches(offset)) continue;
 
-    visited[pos] = 1;
-    data[idx] = rgb.r;
-    data[idx + 1] = rgb.g;
-    data[idx + 2] = rgb.b;
-    data[idx + 3] = 255;
+    visited[position] = 1;
+    data[offset] = rgb.r;
+    data[offset + 1] = rgb.g;
+    data[offset + 2] = rgb.b;
+    data[offset + 3] = 255;
 
-    stack.push(x - 1, y, x + 1, y, x, y - 1, x, y + 1);
+    stack.push(currentX - 1, currentY, currentX + 1, currentY, currentX, currentY - 1, currentX, currentY + 1);
   }
 
   ctx.putImageData(imageData, 0, 0);
 }
 
 function hexToRgb(hex) {
-  const v = parseInt(hex.slice(1), 16);
-  return { r: (v >> 16) & 0xff, g: (v >> 8) & 0xff, b: v & 0xff };
+  const hexValue = parseInt(hex.slice(1), 16);
+  return { r: (hexValue >> 16) & 0xff, g: (hexValue >> 8) & 0xff, b: hexValue & 0xff };
 }
 
 function boxBlur(imageData, passes) {
@@ -204,17 +203,17 @@ function boxBlur(imageData, passes) {
     // Horizontal
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        let r = 0, g = 0, b = 0, a = 0, count = 0;
-        for (let dx = -1; dx <= 1; dx++) {
-          const nx = x + dx;
-          if (nx < 0 || nx >= width) continue;
-          const i = (y * width + nx) * 4;
-          r += data[i]; g += data[i + 1]; b += data[i + 2]; a += data[i + 3];
-          count++;
+        let red = 0, green = 0, blue = 0, alpha = 0, sampleCount = 0;
+        for (let offsetX = -1; offsetX <= 1; offsetX++) {
+          const neighborX = x + offsetX;
+          if (neighborX < 0 || neighborX >= width) continue;
+          const offset = (y * width + neighborX) * 4;
+          red += data[offset]; green += data[offset + 1]; blue += data[offset + 2]; alpha += data[offset + 3];
+          sampleCount++;
         }
-        const i = (y * width + x) * 4;
-        temp[i] = r / count; temp[i + 1] = g / count;
-        temp[i + 2] = b / count; temp[i + 3] = a / count;
+        const targetOffset = (y * width + x) * 4;
+        temp[targetOffset] = red / sampleCount; temp[targetOffset + 1] = green / sampleCount;
+        temp[targetOffset + 2] = blue / sampleCount; temp[targetOffset + 3] = alpha / sampleCount;
       }
     }
     data.set(temp);
@@ -222,17 +221,17 @@ function boxBlur(imageData, passes) {
     // Vertical
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        let r = 0, g = 0, b = 0, a = 0, count = 0;
-        for (let dy = -1; dy <= 1; dy++) {
-          const ny = y + dy;
-          if (ny < 0 || ny >= height) continue;
-          const i = (ny * width + x) * 4;
-          r += data[i]; g += data[i + 1]; b += data[i + 2]; a += data[i + 3];
-          count++;
+        let red = 0, green = 0, blue = 0, alpha = 0, sampleCount = 0;
+        for (let offsetY = -1; offsetY <= 1; offsetY++) {
+          const neighborY = y + offsetY;
+          if (neighborY < 0 || neighborY >= height) continue;
+          const offset = (neighborY * width + x) * 4;
+          red += data[offset]; green += data[offset + 1]; blue += data[offset + 2]; alpha += data[offset + 3];
+          sampleCount++;
         }
-        const i = (y * width + x) * 4;
-        temp[i] = r / count; temp[i + 1] = g / count;
-        temp[i + 2] = b / count; temp[i + 3] = a / count;
+        const targetOffset = (y * width + x) * 4;
+        temp[targetOffset] = red / sampleCount; temp[targetOffset + 1] = green / sampleCount;
+        temp[targetOffset + 2] = blue / sampleCount; temp[targetOffset + 3] = alpha / sampleCount;
       }
     }
     data.set(temp);

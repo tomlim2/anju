@@ -169,11 +169,22 @@ html, body {
 .slider-val {
   color: var(--text-dim);
   font-size: 10px;
+  font-family: inherit;
   font-variant-numeric: tabular-nums;
-  min-width: 20px;
+  width: 30px;
   text-align: right;
   flex-shrink: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 1px 2px;
+  outline: none;
+  -moz-appearance: textfield;
 }
+.slider-val::-webkit-inner-spin-button,
+.slider-val::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.slider-val:hover { border-color: var(--border); }
+.slider-val:focus { border-color: var(--accent-dim); color: var(--text); }
 
 /* Controls row */
 .controls-row {
@@ -322,11 +333,16 @@ html, body {
 
 /* Layers panel */
 .layers-panel {
-  height: 170px;
-  min-height: 110px;
+  height: 250px;
+  min-height: 180px;
   border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
+}
+.layers-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
 }
 .layers-header {
   display: flex;
@@ -357,7 +373,7 @@ html, body {
 .layers-actions button:hover { background: var(--btn-hover); color: var(--text); }
 .layers-actions button svg { width: 14px; height: 14px; }
 .layer-list {
-  flex: 1;
+  flex: 2;
   overflow-y: auto;
   padding: 2px;
 }
@@ -459,6 +475,100 @@ html, body {
   flex-shrink: 0;
 }
 .layer-blend:focus { border-color: var(--accent-dim); }
+
+/* Layer Settings Panel */
+.layer-settings {
+  flex: 1;
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.layer-settings-section {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.layer-settings-title {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.hsv-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.hsv-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 20px;
+}
+.hsv-label {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 500;
+  min-width: 10px;
+  flex-shrink: 0;
+}
+.hsv-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 3px;
+  background: var(--track);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.hsv-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--thumb);
+  border: none;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.hsv-slider::-webkit-slider-thumb:hover { background: var(--thumb-hover); }
+.hsv-slider::-webkit-slider-thumb:active { background: var(--accent); }
+.hsv-slider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--thumb);
+  border: none;
+  cursor: pointer;
+}
+.hsv-slider::-moz-range-track {
+  height: 3px;
+  background: var(--track);
+  border-radius: 2px;
+  border: none;
+}
+.hsv-val {
+  color: var(--text-dim);
+  font-size: 10px;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  width: 34px;
+  text-align: right;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 1px 2px;
+  outline: none;
+  -moz-appearance: textfield;
+}
+.hsv-val::-webkit-inner-spin-button,
+.hsv-val::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.hsv-val:hover { border-color: var(--border); }
+.hsv-val:focus { border-color: var(--accent-dim); color: var(--text); }
 
 /* --- Right Panel (3D Preview) --- */
 .right-panel {
@@ -674,17 +784,17 @@ html, body {
       <div class="slider" data-slider="size">
         <span class="slider-label">Size</span>
         <input class="slider-track" type="range" min="1" max="100" value="20">
-        <span class="slider-val">20</span>
+        <input type="number" class="slider-val" value="20" min="1" max="100">
       </div>
       <div class="slider" data-slider="opacity">
         <span class="slider-label">Op</span>
         <input class="slider-track" type="range" min="1" max="100" value="100">
-        <span class="slider-val">100</span>
+        <input type="number" class="slider-val" value="100" min="1" max="100">
       </div>
       <div class="slider" data-slider="hardness">
         <span class="slider-label">Hard</span>
         <input class="slider-track" type="range" min="0" max="100" value="50">
-        <span class="slider-val">50</span>
+        <input type="number" class="slider-val" value="50" min="0" max="100">
       </div>
       <div class="controls-sep"></div>
       <label class="mirror-toggle">
@@ -719,7 +829,31 @@ html, body {
           <button id="layer-delete" title="Delete Layer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="16" height="16" fill="currentColor"><path d="M220-450v-60h520v60H220Z"/></svg></button>
         </div>
       </div>
-      <div class="layer-list" id="layer-list"></div>
+      <div class="layers-body">
+        <div class="layer-list" id="layer-list"></div>
+        <div class="layer-settings" id="layer-settings">
+          <div class="layer-settings-section">
+            <div class="layer-settings-title">HSB</div>
+            <div class="hsv-panel" id="hsv-panel">
+              <div class="hsv-row">
+                <span class="hsv-label">H</span>
+                <input class="hsv-slider" id="hsv-hue" type="range" min="-180" max="180" value="0">
+                <input type="number" class="hsv-val" id="hsv-hue-val" value="0" min="-180" max="180">
+              </div>
+              <div class="hsv-row">
+                <span class="hsv-label">S</span>
+                <input class="hsv-slider" id="hsv-sat" type="range" min="-100" max="100" value="0">
+                <input type="number" class="hsv-val" id="hsv-sat-val" value="0" min="-100" max="100">
+              </div>
+              <div class="hsv-row">
+                <span class="hsv-label">B</span>
+                <input class="hsv-slider" id="hsv-val" type="range" min="-100" max="100" value="0">
+                <input type="number" class="hsv-val" id="hsv-val-val" value="0" min="-100" max="100">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

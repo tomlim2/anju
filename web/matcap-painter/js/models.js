@@ -46,8 +46,8 @@ function loadSuzanne() {
         }
       },
       undefined,
-      (err) => {
-        console.warn('Failed to load agus.glb, falling back to sphere', err);
+      (error) => {
+        console.warn('Failed to load agus.glb, falling back to sphere', error);
         resolve(PRESETS.sphere());
       }
     );

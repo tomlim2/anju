@@ -24,8 +24,8 @@ async function init() {
   await preview.init(paintCanvas);
 
   // Load default model
-  const geo = await getGeometry('agus');
-  preview.setGeometry(geo);
+  const geometry = await getGeometry('agus');
+  preview.setGeometry(geometry);
 
   // UI (must exist before matcap load so thumbnails update)
   new UI(brush, painter, layers, preview);
@@ -48,18 +48,18 @@ async function init() {
   });
 
   // Model selector
-  modelSelect.addEventListener('change', async (e) => {
-    const geo = await getGeometry(e.target.value);
-    preview.setGeometry(geo);
+  modelSelect.addEventListener('change', async (event) => {
+    const geometry = await getGeometry(event.target.value);
+    preview.setGeometry(geometry);
   });
 
   // Export
   btnExport.addEventListener('click', () => {
     const dataURL = painter.exportPNG();
-    const a = document.createElement('a');
-    a.href = dataURL;
-    a.download = 'matcap.png';
-    a.click();
+    const link = document.createElement('a');
+    link.href = dataURL;
+    link.download = 'matcap.png';
+    link.click();
   });
 
 

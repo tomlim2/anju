@@ -34,6 +34,9 @@ export class LayerSystem {
       visible: true,
       opacity: 1.0,
       blendMode: 'source-over',
+      hue: 0,
+      saturation: 0,
+      brightness: 0,
     };
 
     this.layers.push(layer);
@@ -105,22 +108,125 @@ export class LayerSystem {
     }
   }
 
+  setHSV(index, h, s, v) {
+    const layer = this.layers[index];
+    if (!layer) return;
+    layer.hue = h;
+    layer.saturation = s;
+    layer.brightness = v;
+    this.composite();
+  }
+
+  resetHSV(index) {
+    const layer = this.layers[index];
+    if (!layer) return;
+    layer.hue = 0;
+    layer.saturation = 0;
+    layer.brightness = 0;
+  }
+
+  getFilteredCanvas(index) {
+    const layer = this.layers[index];
+    if (!layer) return null;
+    const hasHSV = layer.hue !== 0 || layer.saturation !== 0 || layer.brightness !== 0;
+    if (!hasHSV) return layer.canvas;
+    return this._applyHSVFilter(layer.canvas, layer.hue, layer.saturation, layer.brightness);
+  }
+
   composite() {
     const ctx = this.outputCtx;
     ctx.clearRect(0, 0, SIZE, SIZE);
 
     // Draw bottom-to-top
-    for (let i = 0; i < this.layers.length; i++) {
-      const layer = this.layers[i];
+    for (let layerIndex = 0; layerIndex < this.layers.length; layerIndex++) {
+      const layer = this.layers[layerIndex];
       if (!layer.visible || layer.opacity <= 0) continue;
 
       ctx.save();
       ctx.globalAlpha = layer.opacity;
       ctx.globalCompositeOperation = layer.blendMode;
-      ctx.drawImage(layer.canvas, 0, 0);
+
+      const hasHSV = layer.hue !== 0 || layer.saturation !== 0 || layer.brightness !== 0;
+      if (hasHSV) {
+        const filtered = this._applyHSVFilter(layer.canvas, layer.hue, layer.saturation, layer.brightness);
+        ctx.drawImage(filtered, 0, 0);
+      } else {
+        ctx.drawImage(layer.canvas, 0, 0);
+      }
+
       ctx.restore();
     }
 
     if (this.onChange) this.onChange();
+  }
+
+  _applyHSVFilter(sourceCanvas, hue, sat, val) {
+    if (!this._hsvCanvas) {
+      this._hsvCanvas = document.createElement('canvas');
+      this._hsvCanvas.width = SIZE;
+      this._hsvCanvas.height = SIZE;
+    }
+    const tmpCtx = this._hsvCanvas.getContext('2d');
+    tmpCtx.clearRect(0, 0, SIZE, SIZE);
+    tmpCtx.drawImage(sourceCanvas, 0, 0);
+
+    const imageData = tmpCtx.getImageData(0, 0, SIZE, SIZE);
+    const data = imageData.data;
+    const hueShift = hue / 360;
+    const satShift = sat / 100;
+    const valShift = val / 100;
+
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] === 0) continue;
+
+      const r = data[i] / 255;
+      const g = data[i + 1] / 255;
+      const b = data[i + 2] / 255;
+
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const delta = max - min;
+
+      // RGB to HSV
+      let h = 0;
+      let s = max === 0 ? 0 : delta / max;
+      let v = max;
+
+      if (delta !== 0) {
+        if (max === r) h = ((g - b) / delta + 6) % 6;
+        else if (max === g) h = (b - r) / delta + 2;
+        else h = (r - g) / delta + 4;
+        h /= 6;
+      }
+
+      // Apply adjustments
+      h = (h + hueShift + 1) % 1;
+      s = Math.max(0, Math.min(1, s + satShift));
+      v = Math.max(0, Math.min(1, v + valShift));
+
+      // HSV to RGB
+      const hi = Math.floor(h * 6);
+      const f = h * 6 - hi;
+      const p = v * (1 - s);
+      const q = v * (1 - f * s);
+      const t = v * (1 - (1 - f) * s);
+
+      let rr, gg, bb;
+      switch (hi % 6) {
+        case 0: rr = v; gg = t; bb = p; break;
+        case 1: rr = q; gg = v; bb = p; break;
+        case 2: rr = p; gg = v; bb = t; break;
+        case 3: rr = p; gg = q; bb = v; break;
+        case 4: rr = t; gg = p; bb = v; break;
+        case 5: rr = v; gg = p; bb = q; break;
+      }
+
+      data[i] = Math.round(rr * 255);
+      data[i + 1] = Math.round(gg * 255);
+      data[i + 2] = Math.round(bb * 255);
+    }
+
+    tmpCtx.putImageData(imageData, 0, 0);
+    return this._hsvCanvas;
   }
 }

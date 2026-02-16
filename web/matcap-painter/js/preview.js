@@ -23,6 +23,17 @@ export class Preview {
     this.material = null;
     this._textureDirty = false;
     this._animId = null;
+    this._ac = new AbortController();
+  }
+
+  destroy() {
+    this._ac.abort();
+    if (this.mesh) {
+      this.mesh.geometry.dispose();
+      this.mesh.material.dispose();
+    }
+    if (this.matcapTexture) this.matcapTexture.dispose();
+    if (this.renderer) this.renderer.dispose();
   }
 
   async init(matcapCanvas) {
@@ -56,15 +67,15 @@ export class Preview {
 
     // Resize
     this._resize();
-    window.addEventListener('resize', () => this._resize());
+    window.addEventListener('resize', () => this._resize(), { signal: this._ac.signal });
   }
 
   _resize() {
     const parent = this.canvas.parentElement;
-    const w = parent.clientWidth;
-    const h = parent.clientHeight;
-    this.renderer.setSize(w, h);
-    this.camera.aspect = w / h;
+    const width = parent.clientWidth;
+    const height = parent.clientHeight;
+    this.renderer.setSize(width, height);
+    this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
   }
 
