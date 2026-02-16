@@ -3,7 +3,7 @@ const SPACING_RATIO = 0.25;
 export class Brush {
   constructor() {
     this.type = 'brush'; // brush | airbrush | blur | eraser
-    this.size = 20;
+    this.size = 512;
     this.opacity = 1.0;
     this.hardness = 0.5;
     this.color = '#000000';

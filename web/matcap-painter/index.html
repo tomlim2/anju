@@ -221,26 +221,27 @@ html, body {
 }
 .control-color input[type="color"]::-webkit-color-swatch-wrapper { padding: 1px; }
 .control-color input[type="color"]::-webkit-color-swatch { border-radius: 2px; border: none; }
+.color-chips {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+.color-chip {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid rgba(255,255,255,0.12);
+  cursor: pointer;
+  padding: 0;
+  box-sizing: border-box;
+}
+.color-chip:hover {
+  border-color: rgba(255,255,255,0.5);
+}
 .controls-sep {
   width: 1px;
   height: 16px;
   background: var(--border);
-}
-.mirror-toggle {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  color: var(--text-muted);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-.mirror-toggle input {
-  width: 12px;
-  height: 12px;
-  accent-color: var(--accent);
-  cursor: pointer;
 }
 
 /* Canvas area */
@@ -327,7 +328,9 @@ html, body {
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  background: radial-gradient(circle closest-side, transparent 98%, rgba(26,26,26,0.8) 100%);
+  border-radius: 50%;
+  border: 2px dashed rgba(0,0,0,0.3);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
 }
 #cursor-overlay {
   position: absolute;
@@ -646,15 +649,16 @@ html, body {
   height: 100%;
   display: block;
 }
-.viewport-controls {
+.vp-controls-left, .vp-controls-right {
   position: absolute;
   top: 8px;
-  right: 8px;
   z-index: 10;
   display: flex;
   gap: 4px;
   align-items: center;
 }
+.vp-controls-left { left: 8px; }
+.vp-controls-right { right: 8px; }
 .vp-btn {
   width: 26px;
   height: 24px;
@@ -673,7 +677,7 @@ html, body {
 }
 .vp-btn:hover { background: var(--btn-hover); color: var(--text); }
 .vp-btn.active { background: var(--accent); color: #fff; }
-.viewport-controls select {
+.vp-controls-left select, .vp-controls-right select {
   background: rgba(30,30,30,0.85);
   color: var(--text);
   border: 1px solid var(--border);
@@ -684,7 +688,7 @@ html, body {
   outline: none;
   backdrop-filter: blur(4px);
 }
-.viewport-controls select:focus { border-color: var(--accent-dim); }
+.vp-controls-left select:focus, .vp-controls-right select:focus { border-color: var(--accent-dim); }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 5px; }
@@ -829,8 +833,11 @@ html, body {
         <button class="tool-btn" data-tool="eraser" title="Eraser (E)">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M679.23-240h188.46v60H619.23l60-60Zm-493.08 60-70.76-70.77Q94.31-271.85 93.81-302t20.58-52.23l423.07-439.08q21.08-22.07 50.92-21.88 29.85.19 50.93 21.27l181.3 181.31q21.08 21.07 21.27 51.42.19 30.34-20.88 51.42L499.23-180H186.15Zm287.54-60 305.15-313.15q3.08-3.08 3.08-8.85t-3.08-8.85L598.15-751.54q-3.07-3.07-8.65-3.07t-8.66 3.46l-424.3 438.3q-3.08 3.46-3.08 9.04 0 5.58 3.08 8.66L211.69-240h262ZM480-480Z"/></svg>
         </button>
-        <button class="tool-btn" data-tool="fill" title="Fill (G)">
+        <button class="tool-btn" data-tool="fill" title="Fill (F)">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M346.77-159.23 119.23-386.77q-9.61-9.66-14.42-21.25-4.81-11.6-4.81-24.1 0-12.5 4.81-24.03 4.81-11.54 14.42-21.16l226.16-225.54-110.62-109.07 46.61-48.46L664.5-476.89q9.58 9.58 14.08 21.14t4.5 24.09q0 12.52-4.5 24.08-4.5 11.56-14.12 21.2L437.31-159.23q-9.62 9.61-21.16 14.42-11.53 4.81-24.03 4.81-12.5 0-24.1-4.81-11.59-4.81-21.25-14.42Zm45.08-497.16L175.54-440.08q-2.31 2.31-3.08 4.62t-.77 4.61H612q0-2.3-.77-4.61-.77-2.31-3.08-4.62l-216.3-216.31ZM782.38-140q-32.15 0-54.07-22.6-21.93-22.61-21.93-55.4 0-24.31 11.39-46.39 11.38-22.07 27.23-42.38l37.38-47.08 39.39 47.08q15.23 20.31 26.92 42.38 11.69 22.08 11.69 46.39 0 32.79-22.92 55.4-22.92 22.6-55.08 22.6Z"/></svg>
+        </button>
+        <button class="tool-btn" data-tool="eyedropper" title="Eyedropper (I)">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M120-120v-190l358-358-58-56 58-56 76 76 124-124q5.25-5.25 12.13-8.12Q697-839 704.5-839t14.37 2.88q6.88 2.87 12.13 8.12l42 42q5.25 5.25 8.13 12.13Q784-767 784-759.5t-2.87 14.37q-2.88 6.88-8.13 12.13L649-609l76 76-56 58-56-58-358 358H120Zm80-80h36l284-284-36-36-284 284v36Z"/></svg>
         </button>
         <button class="tool-btn" id="tool-pan" title="Pan (H)">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M419.31-70q-27.47 0-51.27-12.35-23.81-12.34-39.65-35.42l-250-366.08 16.3-15.69q15.93-15.92 37.7-17.96 21.76-2.04 39.69 10.65L300-417.77v-361.07q0-12.75 8.63-21.38 8.63-8.62 21.38-8.62 12.76 0 21.37 8.62 8.62 8.63 8.62 21.38v476.61L197.77-415.85l180.08 263.62q6.54 10.31 17.65 16.27 11.12 5.96 23.81 5.96H670q37.61 0 63.81-26.19Q760-182.39 760-220v-530q0-12.75 8.63-21.37 8.63-8.63 21.38-8.63 12.76 0 21.37 8.63Q820-762.75 820-750v530q0 62.15-43.92 106.07Q732.15-70 670-70H419.31Zm34.15-420v-368.84q0-12.75 8.63-21.38 8.63-8.62 21.39-8.62 12.75 0 21.37 8.62 8.61 8.63 8.61 21.38V-490h-60Zm153.46 0v-328.84q0-12.75 8.63-21.38 8.63-8.62 21.39-8.62 12.75 0 21.37 8.62 8.61 8.63 8.61 21.38V-490h-60ZM479.08-310Z"/></svg>
@@ -847,11 +854,27 @@ html, body {
       <div class="control-color">
         <input type="color" id="brush-color" value="#000000">
       </div>
+      <div class="color-chips" id="color-chips">
+        <button class="color-chip" style="background:#ffffff" data-color="#ffffff"></button>
+        <button class="color-chip" style="background:#c0c0c0" data-color="#c0c0c0"></button>
+        <button class="color-chip" style="background:#808080" data-color="#808080"></button>
+        <button class="color-chip" style="background:#404040" data-color="#404040"></button>
+        <button class="color-chip" style="background:#1a1a1a" data-color="#1a1a1a"></button>
+        <button class="color-chip" style="background:#000000" data-color="#000000"></button>
+        <button class="color-chip" style="background:#ffecd2" data-color="#ffecd2"></button>
+        <button class="color-chip" style="background:#f8a468" data-color="#f8a468"></button>
+        <button class="color-chip" style="background:#c25b3f" data-color="#c25b3f"></button>
+        <button class="color-chip" style="background:#5b2c1e" data-color="#5b2c1e"></button>
+        <button class="color-chip" style="background:#d4e4ff" data-color="#d4e4ff"></button>
+        <button class="color-chip" style="background:#6fa0d6" data-color="#6fa0d6"></button>
+        <button class="color-chip" style="background:#2d5a8e" data-color="#2d5a8e"></button>
+        <button class="color-chip" style="background:#1a2744" data-color="#1a2744"></button>
+      </div>
       <div class="controls-sep"></div>
       <div class="slider" data-slider="size">
         <span class="slider-label">Size</span>
-        <input class="slider-track" type="range" min="1" max="100" value="20">
-        <input type="number" class="slider-val" value="20" min="1" max="100">
+        <input class="slider-track" type="range" min="0" max="1024" value="512">
+        <input type="number" class="slider-val" value="512" min="0" max="1024">
       </div>
       <div class="slider" data-slider="opacity">
         <span class="slider-label">Op</span>
@@ -863,13 +886,6 @@ html, body {
         <input class="slider-track" type="range" min="0" max="100" value="50">
         <input type="number" class="slider-val" value="50" min="0" max="100">
       </div>
-      <div class="controls-sep"></div>
-      <label class="mirror-toggle">
-        <input type="checkbox" id="mirror-x"> X
-      </label>
-      <label class="mirror-toggle">
-        <input type="checkbox" id="mirror-y"> Y
-      </label>
     </div>
 
     <!-- Canvas Area -->
@@ -878,8 +894,8 @@ html, body {
         <div class="canvas-bg"></div>
         <canvas id="paint-canvas" width="1024" height="1024"></canvas>
         <div class="canvas-circle-mask"></div>
-        <canvas id="cursor-overlay"></canvas>
       </div>
+      <canvas id="cursor-overlay"></canvas>
       <div class="canvas-nav">
         <button class="nav-btn" id="nav-fit" title="Fit to Screen (Ctrl+0)">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M800-600v-107.69q0-4.62-3.85-8.46-3.84-3.85-8.46-3.85H680v-60h107.69Q818-780 839-759q21 21 21 51.31V-600h-60Zm-700 0v-107.69Q100-738 121-759q21-21 51.31-21H280v60H172.31q-4.62 0-8.46 3.85-3.85 3.84-3.85 8.46V-600h-60Zm580 420v-60h107.69q4.62 0 8.46-3.85 3.85-3.84 3.85-8.46V-360h60v107.69Q860-222 839-201q-21 21-51.31 21H680Zm-507.69 0Q142-180 121-201q-21-21-21-51.31V-360h60v107.69q0 4.62 3.85 8.46 3.84 3.85 8.46 3.85H280v60H172.31Zm84.61-156.92v-286.16h446.16v286.16H256.92Zm60-60h326.16v-166.16H316.92v166.16Zm0 0v-166.16 166.16Z"/></svg>
@@ -892,22 +908,24 @@ html, body {
   <div class="right-panel">
     <div class="preview-area">
       <canvas id="preview-canvas"></canvas>
-      <div class="viewport-controls">
+      <div class="vp-controls-left">
         <select id="model-select">
           <option value="torus">Torus</option>
           <option value="torusknot">TorusKnot</option>
           <option value="amongus" selected>AmongUs</option>
         </select>
         <select id="anim-select" style="display:none"></select>
+        <button class="vp-btn active" id="vp-anim" title="Toggle Animation">⏸</button>
+      </div>
+      <div class="vp-controls-right">
         <select id="bg-select" title="Background Color">
-          <option value="#111111" selected>Dark Gray</option>
+          <option value="#111111">Dark Gray</option>
           <option value="#000000">Black</option>
           <option value="#333333">Gray</option>
-          <option value="#666666">Mid Gray</option>
+          <option value="#666666" selected>Mid Gray</option>
           <option value="#999999">Light Gray</option>
           <option value="#ffffff">White</option>
         </select>
-        <button class="vp-btn active" id="vp-anim" title="Toggle Animation">⏸</button>
         <button class="vp-btn active" id="vp-rotate" title="Auto Rotate">↻</button>
         <button class="vp-btn" id="vp-reset" title="Reset View">⊡</button>
       </div>

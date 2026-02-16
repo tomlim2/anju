@@ -51,7 +51,7 @@ export class Preview {
       antialias: true,
     });
     this.renderer.setPixelRatio(window.devicePixelRatio);
-    this.scene.background = new Color(0x111111);
+    this.scene.background = new Color(0x666666);
 
     await this.renderer.init();
 

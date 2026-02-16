@@ -106,18 +106,23 @@ export class UI {
     const listenerOptions = { signal: this._ac.signal };
     color.addEventListener('input', (event) => { this.brush.color = event.target.value; }, listenerOptions);
 
+    // Eyedropper callback — update color input when color is picked
+    this.painter.onColorPick = (hex) => { color.value = hex; };
+
+    // Color chips
+    document.getElementById('color-chips').addEventListener('click', (event) => {
+      const chip = event.target.closest('[data-color]');
+      if (!chip) return;
+      const hex = chip.dataset.color;
+      this.brush.color = hex;
+      color.value = hex;
+    }, listenerOptions);
+
+
     this._sizeSlider = this._bindSlider('size', (value) => { this.brush.size = value; });
     this._bindSlider('opacity', (value) => { this.brush.opacity = value / 100; });
     this._bindSlider('hardness', (value) => { this.brush.hardness = value / 100; });
 
-    document.getElementById('mirror-x').addEventListener('change', (event) => {
-      this.painter.mirrorX = event.target.checked;
-      this.painter.refreshCursor();
-    }, listenerOptions);
-    document.getElementById('mirror-y').addEventListener('change', (event) => {
-      this.painter.mirrorY = event.target.checked;
-      this.painter.refreshCursor();
-    }, listenerOptions);
   }
 
   // --- Canvas Navigation (Zoom / Pan) ---
@@ -142,6 +147,7 @@ export class UI {
       this._panY += cursorY - cursorY * scale;
       this._zoom = newZoom;
       this._applyTransform();
+      this.painter.refreshCursor();
     }, { passive: false, signal: this._ac.signal });
 
     // Middle mouse or space+left for pan
@@ -834,7 +840,7 @@ export class UI {
         return;
       }
 
-      const toolMap = { b: 'brush', a: 'airbrush', r: 'blur', e: 'eraser', g: 'fill' };
+      const toolMap = { b: 'brush', a: 'airbrush', r: 'blur', e: 'eraser', f: 'fill', i: 'eyedropper' };
 
       if (toolMap[key]) {
         this._setPanMode(false);
@@ -848,12 +854,12 @@ export class UI {
 
       // [ and ] for brush size
       if (key === '[') {
-        this.brush.size = Math.max(1, this.brush.size - 5);
+        this.brush.size = Math.max(0, this.brush.size - 50);
         if (this._sizeSlider) this._sizeSlider.set(Math.round(this.brush.size));
         this.painter.refreshCursor();
       }
       if (key === ']') {
-        this.brush.size = Math.min(100, this.brush.size + 5);
+        this.brush.size = Math.min(1024, this.brush.size + 50);
         if (this._sizeSlider) this._sizeSlider.set(Math.round(this.brush.size));
         this.painter.refreshCursor();
       }

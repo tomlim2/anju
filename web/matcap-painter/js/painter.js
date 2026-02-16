@@ -13,6 +13,7 @@ export class Painter {
     this.mirrorX = false;
     this.mirrorY = false;
     this.panMode = false;
+    this.onColorPick = null; // callback(hexColor) when eyedropper picks
 
     this._painting = false;
     this._lastX = 0;
@@ -22,16 +23,18 @@ export class Painter {
     this._undoStack = [];
     this._redoStack = [];
 
-    // Cursor overlay (DPR-aware for crisp rendering on Retina)
+    // Cursor overlay — lives in canvas-area (screen space, unaffected by zoom/pan)
     this._cursorCanvas = document.getElementById('cursor-overlay');
+    this._cursorArea = this._cursorCanvas.parentElement;
     this._dpr = window.devicePixelRatio || 1;
-    this._cursorCanvas.width = SIZE * this._dpr;
-    this._cursorCanvas.height = SIZE * this._dpr;
     this._cursorCtx = this._cursorCanvas.getContext('2d');
-    this._cursorCtx.scale(this._dpr, this._dpr);
     this._cursorX = -1;
     this._cursorY = -1;
     this._cursorVisible = false;
+    this._resizeCursorCanvas();
+
+    this._resizeObserver = new ResizeObserver(() => this._resizeCursorCanvas());
+    this._resizeObserver.observe(this._cursorArea);
 
     this._ac = new AbortController();
     this._bindEvents();
@@ -39,6 +42,33 @@ export class Painter {
 
   destroy() {
     this._ac.abort();
+    this._resizeObserver.disconnect();
+  }
+
+  // --- Cursor canvas sizing ---
+
+  _resizeCursorCanvas() {
+    const w = this._cursorArea.clientWidth;
+    const h = this._cursorArea.clientHeight;
+    this._cursorCanvas.width = w * this._dpr;
+    this._cursorCanvas.height = h * this._dpr;
+    this._cursorCtx.setTransform(this._dpr, 0, 0, this._dpr, 0, 0);
+  }
+
+  // Canvas coord (0–1024) → screen coord relative to cursor overlay
+  _toScreen(cx, cy) {
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const areaRect = this._cursorArea.getBoundingClientRect();
+    return {
+      x: canvasRect.left - areaRect.left + (cx / SIZE) * canvasRect.width,
+      y: canvasRect.top - areaRect.top + (cy / SIZE) * canvasRect.height,
+    };
+  }
+
+  // Canvas pixels → screen pixels ratio (for brush radius)
+  _screenScale() {
+    const canvasRect = this.canvas.getBoundingClientRect();
+    return canvasRect.width / SIZE;
   }
 
   // --- History ---
@@ -125,6 +155,19 @@ export class Painter {
     // Save snapshot before any modification
     this._saveSnapshot();
 
+    // Eyedropper — sample color from composited output, no modification
+    if (this.brush.type === 'eyedropper') {
+      const px = Math.floor(x);
+      const py = Math.floor(y);
+      if (px < 0 || px >= SIZE || py < 0 || py >= SIZE) return;
+      const data = this.layers.outputCtx.getImageData(px, py, 1, 1).data;
+      const hex = '#' + ((1 << 24) | (data[0] << 16) | (data[1] << 8) | data[2]).toString(16).slice(1);
+      this.brush.color = hex;
+      if (this.onColorPick) this.onColorPick(hex);
+      this._undoStack.pop(); // remove snapshot — no modification was made
+      return;
+    }
+
     // Fill tool — single click action, no drag
     if (this.brush.type === 'fill') {
       const ctx = this.layers.getActiveCtx();
@@ -173,72 +216,104 @@ export class Painter {
     this.layers.composite();
   }
 
+  // --- Cursor drawing (screen space — all dimensions in CSS pixels) ---
+
   _drawCursor() {
     const ctx = this._cursorCtx;
-    ctx.clearRect(0, 0, SIZE, SIZE);
+    const w = this._cursorArea.clientWidth;
+    const h = this._cursorArea.clientHeight;
+    ctx.clearRect(0, 0, w, h);
 
     if (!this._cursorVisible || this.panMode) return;
 
-    const x = this._cursorX;
-    const y = this._cursorY;
+    const { x, y } = this._toScreen(this._cursorX, this._cursorY);
+    const scale = this._screenScale();
 
-    if (this.brush.type === 'fill') {
+    if (this.brush.type === 'fill' || this.brush.type === 'eyedropper') {
       this._drawFillCursor(ctx, x, y);
       return;
     }
 
-    const brushRadius = this.brush.size;
+    const brushRadius = this.brush.size * scale;
 
-    // Difference mode — auto-contrasts against any background
-    ctx.globalCompositeOperation = 'difference';
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1.2;
+    // Double-stroke cursor: dark outline + light inner for visibility on any background
+    ctx.globalCompositeOperation = 'source-over';
 
-    // Main cursor circle
+    // Outer dark ring
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.arc(x, y, brushRadius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Inner light ring
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(x, y, brushRadius, 0, Math.PI * 2);
     ctx.stroke();
 
     // Mirror cursors
-    ctx.lineWidth = 0.8;
-    for (const [mirroredX, mirroredY] of this._mirrorPoints(x, y)) {
+    for (const [mx, my] of this._mirrorPoints(this._cursorX, this._cursorY)) {
+      const { x: sx, y: sy } = this._toScreen(mx, my);
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(mirroredX, mirroredY, brushRadius, 0, Math.PI * 2);
+      ctx.arc(sx, sy, brushRadius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.arc(sx, sy, brushRadius, 0, Math.PI * 2);
       ctx.stroke();
     }
 
     // Center dot
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.beginPath();
-    ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+    ctx.arc(x, y, 2, 0, Math.PI * 2);
     ctx.fill();
-
-    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.arc(x, y, 1, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   _drawFillCursor(ctx, x, y) {
-    ctx.globalCompositeOperation = 'difference';
-    ctx.strokeStyle = '#fff';
-    ctx.fillStyle = '#fff';
-    ctx.lineWidth = 1.2;
-
-    // Crosshair
+    ctx.globalCompositeOperation = 'source-over';
     const crosshairSize = 7;
+
+    // Dark outline
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 2.4;
     ctx.beginPath();
     ctx.moveTo(x - crosshairSize, y); ctx.lineTo(x + crosshairSize, y);
     ctx.moveTo(x, y - crosshairSize); ctx.lineTo(x, y + crosshairSize);
     ctx.stroke();
 
-    // Small fill bucket icon (simplified drop shape)
+    // Light inner
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x - crosshairSize, y); ctx.lineTo(x + crosshairSize, y);
+    ctx.moveTo(x, y - crosshairSize); ctx.lineTo(x, y + crosshairSize);
+    ctx.stroke();
+
+    // Drop icon
     const dropOffsetX = x + 6;
     const dropOffsetY = y + 6;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.beginPath();
     ctx.moveTo(dropOffsetX, dropOffsetY - 4);
     ctx.quadraticCurveTo(dropOffsetX + 4, dropOffsetY, dropOffsetX, dropOffsetY + 4);
     ctx.quadraticCurveTo(dropOffsetX - 4, dropOffsetY, dropOffsetX, dropOffsetY - 4);
     ctx.fill();
-
-    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.beginPath();
+    ctx.moveTo(dropOffsetX, dropOffsetY - 3);
+    ctx.quadraticCurveTo(dropOffsetX + 3, dropOffsetY, dropOffsetX, dropOffsetY + 3);
+    ctx.quadraticCurveTo(dropOffsetX - 3, dropOffsetY, dropOffsetX, dropOffsetY - 3);
+    ctx.fill();
   }
 
   _mirrorPoints(x, y) {
