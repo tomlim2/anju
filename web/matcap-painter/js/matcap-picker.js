@@ -12,9 +12,6 @@ export class MatcapPicker {
     this._layerIndex = layerIndex;
     if (!this._built) this._build();
     this._overlay.classList.add('open');
-    this._searchInput.value = '';
-    this._filter('');
-    this._searchInput.focus();
   }
 
   close() {
@@ -25,8 +22,8 @@ export class MatcapPicker {
     // Overlay
     const overlay = document.createElement('div');
     overlay.className = 'matcap-picker-overlay';
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) this.close();
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) this.close();
     });
 
     // Modal
@@ -41,46 +38,35 @@ export class MatcapPicker {
     title.className = 'matcap-picker-title';
     title.textContent = `Matcap Presets (${MATCAP_IDS.length})`;
 
-    const search = document.createElement('input');
-    search.type = 'text';
-    search.className = 'matcap-picker-search';
-    search.placeholder = 'Filter...';
-    search.addEventListener('input', () => this._filter(search.value));
-    this._searchInput = search;
-
     header.appendChild(title);
-    header.appendChild(search);
 
     // Grid
     const grid = document.createElement('div');
     grid.className = 'matcap-picker-grid';
 
-    this._thumbs = [];
-    for (let i = 0; i < MATCAP_IDS.length; i++) {
-      const id = MATCAP_IDS[i];
-      const btn = document.createElement('button');
-      btn.className = 'matcap-thumb';
-      btn.dataset.id = id;
-      btn.title = `#${i + 1} ${id}`;
+    for (let matcapIndex = 0; matcapIndex < MATCAP_IDS.length; matcapIndex++) {
+      const id = MATCAP_IDS[matcapIndex];
+      const thumbButton = document.createElement('button');
+      thumbButton.className = 'matcap-thumb';
+      thumbButton.title = `#${matcapIndex + 1} ${id}`;
 
       const img = document.createElement('img');
       img.src = THUMB_PATH + id + '.jpg';
       img.alt = id;
       img.loading = 'lazy';
-      btn.appendChild(img);
+      thumbButton.appendChild(img);
 
-      const num = document.createElement('span');
-      num.className = 'matcap-num';
-      num.textContent = i + 1;
-      btn.appendChild(num);
+      const indexLabel = document.createElement('span');
+      indexLabel.className = 'matcap-num';
+      indexLabel.textContent = matcapIndex + 1;
+      thumbButton.appendChild(indexLabel);
 
-      btn.addEventListener('click', () => {
+      thumbButton.addEventListener('click', () => {
         this._onSelect(id, this._layerIndex);
         this.close();
       });
 
-      grid.appendChild(btn);
-      this._thumbs.push(btn);
+      grid.appendChild(thumbButton);
     }
 
     modal.appendChild(header);
@@ -89,20 +75,13 @@ export class MatcapPicker {
     document.body.appendChild(overlay);
 
     // Escape to close
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this._overlay.classList.contains('open')) {
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && this._overlay.classList.contains('open')) {
         this.close();
       }
     });
 
     this._overlay = overlay;
     this._built = true;
-  }
-
-  _filter(query) {
-    const q = query.toLowerCase().trim();
-    for (const btn of this._thumbs) {
-      btn.style.display = !q || btn.dataset.id.toLowerCase().includes(q) ? '' : 'none';
-    }
   }
 }
