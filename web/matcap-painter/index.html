@@ -6,13 +6,17 @@
 <title>Matcap Painter</title>
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+<meta name="description" content="Paint matcap textures in the browser with layers, blend modes, and real-time 3D preview. 228 built-in matcap presets.">
+<meta property="og:title" content="Matcap Painter">
+<meta property="og:description" content="Browser-based matcap texture editor with real-time 3D preview">
+<meta property="og:type" content="website">
 <script type="importmap">
 {
   "imports": {
-    "three": "/node_modules/three/build/three.core.js",
-    "three/webgpu": "/node_modules/three/build/three.webgpu.js",
-    "three/tsl": "/node_modules/three/build/three.tsl.js",
-    "three/addons/": "/node_modules/three/examples/jsm/"
+    "three": "https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.core.js",
+    "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.webgpu.js",
+    "three/tsl": "https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.tsl.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.172.0/examples/jsm/"
   }
 }
 </script>
@@ -840,7 +844,7 @@ html, body {
 
 <div class="topbar">
   <h1>Matcap Painter <span class="topbar-version">v1.0.0</span></h1>
-  <span class="topbar-copy">&copy; 2026 tomlim2</span>
+  <span class="topbar-copy">&copy; 2026 tomlim2 &middot; Matcaps from <a href="https://github.com/nidorx/matcaps" target="_blank" rel="noopener" style="color:var(--text-dim)">nidorx/matcaps</a> (ISC)</span>
 </div>
 
 <div class="main">
@@ -1033,6 +1037,15 @@ html, body {
   </div>
 </div>
 
-<script type="module" src="js/main.js"></script>
+<script>
+if (!navigator.gpu) {
+  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#1a1a1a;color:#ccc;font-family:system-ui;text-align:center;padding:2rem"><div><h2 style="margin-bottom:1rem">WebGPU Required</h2><p style="color:#999">This app requires WebGPU, available in Chrome/Edge 113+ and Safari 18+.<br>Firefox does not yet support WebGPU.</p></div></div>';
+} else {
+  const s = document.createElement('script');
+  s.type = 'module';
+  s.src = 'js/main.js';
+  document.body.appendChild(s);
+}
+</script>
 </body>
 </html>
