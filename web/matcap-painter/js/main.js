@@ -4,7 +4,7 @@ import { TransformController } from './transform.js';
 import { Painter } from './painter.js';
 import { Preview } from './preview.js';
 import { UI } from './ui.js';
-import { getGeometry } from './models.js';
+import { getModel } from './models.js';
 import { MATCAP_IDS, FULL_PATH } from './matcaps.js';
 
 const paintCanvas = document.getElementById('paint-canvas');
@@ -27,8 +27,8 @@ async function init() {
   await preview.init(paintCanvas);
 
   // Load default model
-  const geometry = await getGeometry('agus');
-  preview.setGeometry(geometry);
+  const model = await getModel('amongus');
+  preview.setModel(model);
 
   // UI (must exist before matcap load so thumbnails update)
   new UI(brush, painter, layers, preview, transform);
@@ -52,8 +52,8 @@ async function init() {
 
   // Model selector
   modelSelect.addEventListener('change', async (event) => {
-    const geometry = await getGeometry(event.target.value);
-    preview.setGeometry(geometry);
+    const model = await getModel(event.target.value);
+    preview.setModel(model);
   });
 
   // Export

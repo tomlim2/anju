@@ -64,22 +64,8 @@ html, body {
   color: var(--text-dim);
   letter-spacing: 0.3px;
 }
-.topbar-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text-dim);
-  cursor: pointer;
-  padding: 3px 10px;
-  font-size: 11px;
-  font-family: inherit;
-  transition: all 0.12s;
-}
-.topbar-btn:hover { background: var(--btn-hover); color: var(--text); }
-.topbar-btn svg { width: 13px; height: 13px; }
+.topbar-version { font-weight: 400; color: var(--text-muted); font-size: 10px; }
+.topbar-copy { color: var(--text-muted); font-size: 10px; letter-spacing: 0.2px; }
 
 /* --- Main Layout --- */
 .main {
@@ -820,11 +806,8 @@ html, body {
 <body>
 
 <div class="topbar">
-  <h1>Matcap Painter</h1>
-  <button class="topbar-btn" id="btn-export" title="Export PNG">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M480-480ZM202-65l-56-57 118-118h-90v-80h226v226h-80v-89L202-65Zm278-15v-80h240v-440H520v-200H240v400h-80v-400q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H480Z"/></svg>
-    Export
-  </button>
+  <h1>Matcap Painter <span class="topbar-version">v1.0.0</span></h1>
+  <span class="topbar-copy">&copy; 2026 tomlim2</span>
 </div>
 
 <div class="main">
@@ -851,6 +834,10 @@ html, body {
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M419.31-70q-27.47 0-51.27-12.35-23.81-12.34-39.65-35.42l-250-366.08 16.3-15.69q15.93-15.92 37.7-17.96 21.76-2.04 39.69 10.65L300-417.77v-361.07q0-12.75 8.63-21.38 8.63-8.62 21.38-8.62 12.76 0 21.37 8.62 8.62 8.63 8.62 21.38v476.61L197.77-415.85l180.08 263.62q6.54 10.31 17.65 16.27 11.12 5.96 23.81 5.96H670q37.61 0 63.81-26.19Q760-182.39 760-220v-530q0-12.75 8.63-21.37 8.63-8.63 21.38-8.63 12.76 0 21.37 8.63Q820-762.75 820-750v530q0 62.15-43.92 106.07Q732.15-70 670-70H419.31Zm34.15-420v-368.84q0-12.75 8.63-21.38 8.63-8.62 21.39-8.62 12.75 0 21.37 8.62 8.61 8.63 8.61 21.38V-490h-60Zm153.46 0v-328.84q0-12.75 8.63-21.38 8.63-8.62 21.39-8.62 12.75 0 21.37 8.62 8.61 8.63 8.61 21.38V-490h-60ZM479.08-310Z"/></svg>
         </button>
       </div>
+      <button class="tool-btn" id="btn-export" title="Export PNG" style="margin-left:auto;width:auto;gap:4px;padding:0 6px;font-size:10px;color:var(--text-dim)">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M480-480ZM202-65l-56-57 118-118h-90v-80h226v226h-80v-89L202-65Zm278-15v-80h240v-440H520v-200H240v400h-80v-400q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H480Z"/></svg>
+        Export
+      </button>
     </div>
 
     <!-- Controls -->
@@ -907,7 +894,8 @@ html, body {
         <select id="model-select">
           <option value="torus">Torus</option>
           <option value="torusknot">TorusKnot</option>
-          <option value="agus" selected>Agus</option>
+          <option value="agus">Agus</option>
+          <option value="amongus" selected>AmongUs</option>
         </select>
         <button class="vp-btn active" id="vp-rotate" title="Auto Rotate">↻</button>
         <button class="vp-btn" id="vp-reset" title="Reset View">⊡</button>

@@ -14,41 +14,76 @@ const PRESETS = {
   box: () => new BoxGeometry(1.2, 1.2, 1.2, 4, 4, 4),
 };
 
-let agusGeometry = null;
+const glbCache = {};
 
-export function getGeometry(name) {
-  if (PRESETS[name]) return Promise.resolve(PRESETS[name]());
-
-  if (name === 'agus') {
-    if (agusGeometry) return Promise.resolve(agusGeometry.clone());
-    return loadSuzanne();
+export function getModel(name) {
+  if (PRESETS[name]) {
+    return Promise.resolve({ geometry: PRESETS[name](), scene: null, animations: [] });
   }
-
-  return Promise.resolve(PRESETS.sphere());
+  return loadGLB(name);
 }
 
-function loadSuzanne() {
-  return new Promise((resolve, reject) => {
+// Backward compat
+export function getGeometry(name) {
+  return getModel(name).then((result) => result.geometry);
+}
+
+function loadGLB(name) {
+  if (glbCache[name]) {
+    const cached = glbCache[name];
+    return Promise.resolve({
+      geometry: cached.geometry ? cached.geometry.clone() : null,
+      scene: cached.scene ? cached.scene.clone(true) : null,
+      animations: cached.animations,
+    });
+  }
+
+  const paths = {
+    agus: 'assets/agus.glb',
+    amongus: 'assets/among_us.glb',
+  };
+  const path = paths[name];
+  if (!path) return Promise.resolve({ geometry: PRESETS.sphere(), scene: null, animations: [] });
+
+  return new Promise((resolve) => {
     const loader = new GLTFLoader();
     loader.load(
-      'assets/agus.glb',
+      path,
       (gltf) => {
-        const geometries = [];
-        gltf.scene.traverse((child) => {
-          if (child.isMesh) geometries.push(child.geometry);
-        });
-        if (geometries.length) {
-          agusGeometry = geometries.length > 1 ? mergeGeometries(geometries) : geometries[0];
-          agusGeometry.translate(0, -1, 0);
-          resolve(agusGeometry.clone());
-        } else {
-          resolve(PRESETS.sphere());
+        try {
+          const hasAnimations = gltf.animations && gltf.animations.length > 0;
+
+          // Merge geometries for static fallback (skip if animated — not needed)
+          let geometry = null;
+          if (!hasAnimations) {
+            const geometries = [];
+            gltf.scene.traverse((child) => {
+              if (child.isMesh) geometries.push(child.geometry);
+            });
+            if (geometries.length) {
+              geometry = geometries.length > 1 ? mergeGeometries(geometries) : geometries[0];
+            }
+          }
+
+          glbCache[name] = {
+            geometry,
+            scene: hasAnimations ? gltf.scene : null,
+            animations: gltf.animations || [],
+          };
+
+          resolve({
+            geometry: geometry ? geometry.clone() : null,
+            scene: hasAnimations ? gltf.scene : null,
+            animations: gltf.animations || [],
+          });
+        } catch (err) {
+          resolve({ geometry: PRESETS.sphere(), scene: null, animations: [] });
         }
       },
       undefined,
       (error) => {
-        console.warn('Failed to load agus.glb, falling back to sphere', error);
-        resolve(PRESETS.sphere());
+        console.warn(`Failed to load ${path}`, error);
+        resolve({ geometry: PRESETS.sphere(), scene: null, animations: [] });
       }
     );
   });
