@@ -129,8 +129,8 @@ for id in "${IDS[@]}"; do
     continue
   fi
 
-  # Download full resolution (512px)
-  curl -sL "${BASE}/512/${id}.png" -o "${FULL_DIR}/${id}.png" --max-time 30
+  # Download full resolution (1024px)
+  curl -sL "${BASE}/1024/${id}.png" -o "${FULL_DIR}/${id}.png" --max-time 30
   if [ $? -ne 0 ]; then
     echo "FAIL full: ${id}"
     ((FAIL++))

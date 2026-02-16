@@ -1,6 +1,6 @@
 import { floodFill } from './brush.js';
 
-const SIZE = 512;
+const SIZE = 2048;
 const CENTER = SIZE / 2;
 const RADIUS = SIZE / 2;
 const MAX_HISTORY = 40;
@@ -280,7 +280,10 @@ export class Painter {
     const ctx = this.layers.getActiveCtx();
     if (!ctx) return;
     ctx.clearRect(0, 0, SIZE, SIZE);
-    ctx.drawImage(img, 0, 0, SIZE, SIZE);
+    const scale = Math.min(1, SIZE / img.naturalWidth, SIZE / img.naturalHeight);
+    const w = img.naturalWidth * scale;
+    const h = img.naturalHeight * scale;
+    ctx.drawImage(img, (SIZE - w) / 2, (SIZE - h) / 2, w, h);
     this.layers.composite();
   }
 
@@ -292,11 +295,14 @@ export class Painter {
     if (this._undoStack.length > MAX_HISTORY) this._undoStack.shift();
     this._redoStack.length = 0;
     layer.ctx.clearRect(0, 0, SIZE, SIZE);
-    layer.ctx.drawImage(img, 0, 0, SIZE, SIZE);
+    const scale = Math.min(1, SIZE / img.naturalWidth, SIZE / img.naturalHeight);
+    const w = img.naturalWidth * scale;
+    const h = img.naturalHeight * scale;
+    layer.ctx.drawImage(img, (SIZE - w) / 2, (SIZE - h) / 2, w, h);
     this.layers.composite();
   }
 
   exportPNG() {
-    return this.layers.outputCanvas.toDataURL('image/png');
+    return this.layers.contentCanvas.toDataURL('image/png');
   }
 }

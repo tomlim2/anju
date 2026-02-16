@@ -1,5 +1,7 @@
 const MAX_LAYERS = 8;
-const SIZE = 512;
+const SIZE = 2048;
+export const CONTENT_SIZE = 1024;
+const OFFSET = (SIZE - CONTENT_SIZE) / 2;
 
 const BLEND_OPS = {
   'source-over': 'source-over',
@@ -12,6 +14,10 @@ export class LayerSystem {
   constructor(outputCanvas) {
     this.outputCanvas = outputCanvas;
     this.outputCtx = outputCanvas.getContext('2d');
+    this.contentCanvas = document.createElement('canvas');
+    this.contentCanvas.width = CONTENT_SIZE;
+    this.contentCanvas.height = CONTENT_SIZE;
+    this._contentCtx = this.contentCanvas.getContext('2d');
     this.layers = [];
     this.activeIndex = 0;
     this.transform = null;
@@ -193,6 +199,10 @@ export class LayerSystem {
 
       ctx.restore();
     }
+
+    // Crop center to content canvas (for preview / export)
+    this._contentCtx.clearRect(0, 0, CONTENT_SIZE, CONTENT_SIZE);
+    this._contentCtx.drawImage(this.outputCanvas, OFFSET, OFFSET, CONTENT_SIZE, CONTENT_SIZE, 0, 0, CONTENT_SIZE, CONTENT_SIZE);
 
     if (this.onChange) this.onChange();
   }

@@ -1,6 +1,6 @@
 // Curated matcap preset IDs from https://github.com/nidorx/matcaps
 // Thumbnails: assets/matcaps/thumb/{ID}.jpg  (64px)
-// Full res:   assets/matcaps/full/{ID}.png   (512px)
+// Full res:   assets/matcaps/full/{ID}.png   (1024px)
 
 export const MATCAP_IDS = [
   '0404E8_0404B5_0404CB_3333FC',

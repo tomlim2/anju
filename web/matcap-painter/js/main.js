@@ -24,7 +24,7 @@ const preview = new Preview(previewCanvas);
 layers.onChange = () => preview.markTextureDirty();
 
 async function init() {
-  await preview.init(paintCanvas);
+  await preview.init(layers.contentCanvas);
 
   // Load default model
   const geometry = await getGeometry('agus');
@@ -40,7 +40,9 @@ async function init() {
     img.onload = () => {
       const ctx = layers.getActiveCtx();
       if (ctx) {
-        ctx.drawImage(img, 0, 0, 512, 512);
+        const dx = (2048 - img.naturalWidth) / 2;
+        const dy = (2048 - img.naturalHeight) / 2;
+        ctx.drawImage(img, dx, dy);
         layers.composite();
         preview.markTextureDirty();
       }
