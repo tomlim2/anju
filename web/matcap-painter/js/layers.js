@@ -153,6 +153,22 @@ export class LayerSystem {
     this.composite();
   }
 
+  outputToLayerCoords(index, x, y) {
+    const layer = this.layers[index];
+    if (!layer || (layer.rotation === 0 && layer.scale === 100)) return { x, y };
+    const center = SIZE / 2;
+    const s = layer.scale / 100;
+    const rad = -layer.rotation * Math.PI / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const dx = (x - center) / s;
+    const dy = (y - center) / s;
+    return {
+      x: dx * cos - dy * sin + center,
+      y: dx * sin + dy * cos + center,
+    };
+  }
+
   setTransform(index, rotation, scale) {
     const layer = this.layers[index];
     if (!layer) return;
