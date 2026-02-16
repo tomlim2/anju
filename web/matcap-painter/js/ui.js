@@ -855,5 +855,6 @@ export class UI {
     canvas.style.width = displaySize + 'px';
     canvas.style.height = displaySize + 'px';
     this._applyTransform();
+    wrap.style.opacity = '1';
   }
 }

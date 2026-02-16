@@ -6,7 +6,7 @@ export class Brush {
     this.size = 20;
     this.opacity = 1.0;
     this.hardness = 0.5;
-    this.color = '#c0c0c0';
+    this.color = '#000000';
 
     this._stampCanvas = document.createElement('canvas');
     this._stampCtx = this._stampCanvas.getContext('2d');

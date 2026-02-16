@@ -272,6 +272,7 @@ html, body {
 .canvas-wrap {
   position: relative;
   will-change: transform;
+  opacity: 0;
 }
 .canvas-wrap > * {
   display: block;
@@ -855,7 +856,7 @@ html, body {
     <!-- Controls -->
     <div class="controls-row">
       <div class="control-color">
-        <input type="color" id="brush-color" value="#c0c0c0">
+        <input type="color" id="brush-color" value="#000000">
       </div>
       <div class="controls-sep"></div>
       <div class="slider" data-slider="size">
