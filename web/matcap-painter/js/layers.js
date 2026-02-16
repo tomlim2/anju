@@ -39,7 +39,7 @@ export class LayerSystem {
       saturation: 0,
       brightness: 0,
       contrast: 0,
-      lighten: 0,
+      lift: 0,
     };
 
     this.layers.push(layer);
@@ -161,10 +161,10 @@ export class LayerSystem {
     this.composite();
   }
 
-  setLighten(index, value) {
+  setLift(index, value) {
     const layer = this.layers[index];
     if (!layer) return;
-    layer.lighten = value;
+    layer.lift = value;
     this.composite();
   }
 
@@ -175,7 +175,7 @@ export class LayerSystem {
     layer.saturation = 0;
     layer.brightness = 0;
     layer.contrast = 0;
-    layer.lighten = 0;
+    layer.lift = 0;
   }
 
   getFilteredCanvas(index) {
@@ -214,7 +214,7 @@ export class LayerSystem {
 
   _hasAdjustments(layer) {
     return layer.hue !== 0 || layer.saturation !== 0 || layer.brightness !== 0
-      || layer.contrast !== 0 || layer.lighten !== 0;
+      || layer.contrast !== 0 || layer.lift !== 0;
   }
 
   _applyFilter(layer) {
@@ -233,7 +233,7 @@ export class LayerSystem {
     const satShift = layer.saturation / 100;
     const valShift = layer.brightness / 100;
     const contrastFactor = (100 + layer.contrast) / 100;
-    const lightenFloor = layer.lighten / 100;
+    const liftFloor = layer.lift / 100;
 
     for (let i = 0; i < data.length; i += 4) {
       if (data[i + 3] === 0) continue;
@@ -286,11 +286,11 @@ export class LayerSystem {
         b = (b - 0.5) * contrastFactor + 0.5;
       }
 
-      // Lighten: raise shadow floor
-      if (layer.lighten !== 0) {
-        r = lightenFloor + r * (1 - lightenFloor);
-        g = lightenFloor + g * (1 - lightenFloor);
-        b = lightenFloor + b * (1 - lightenFloor);
+      // Lift: raise shadow floor
+      if (layer.lift !== 0) {
+        r = liftFloor + r * (1 - liftFloor);
+        g = liftFloor + g * (1 - liftFloor);
+        b = liftFloor + b * (1 - liftFloor);
       }
 
       data[i] = Math.round(Math.max(0, Math.min(1, r)) * 255);

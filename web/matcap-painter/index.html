@@ -64,6 +64,22 @@ html, body {
   color: var(--text-dim);
   letter-spacing: 0.3px;
 }
+.topbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-family: inherit;
+  transition: all 0.12s;
+}
+.topbar-btn:hover { background: var(--btn-hover); color: var(--text); }
+.topbar-btn svg { width: 13px; height: 13px; }
 
 /* --- Main Layout --- */
 .main {
@@ -804,6 +820,10 @@ html, body {
 
 <div class="topbar">
   <h1>Matcap Painter</h1>
+  <button class="topbar-btn" id="btn-export" title="Export PNG">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M480-480ZM202-65l-56-57 118-118h-90v-80h226v226h-80v-89L202-65Zm278-15v-80h240v-440H520v-200H240v400h-80v-400q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H480Z"/></svg>
+    Export
+  </button>
 </div>
 
 <div class="main">
@@ -828,9 +848,6 @@ html, body {
         </button>
         <button class="tool-btn" id="tool-pan" title="Pan (H)">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M419.31-70q-27.47 0-51.27-12.35-23.81-12.34-39.65-35.42l-250-366.08 16.3-15.69q15.93-15.92 37.7-17.96 21.76-2.04 39.69 10.65L300-417.77v-361.07q0-12.75 8.63-21.38 8.63-8.62 21.38-8.62 12.76 0 21.37 8.62 8.62 8.63 8.62 21.38v476.61L197.77-415.85l180.08 263.62q6.54 10.31 17.65 16.27 11.12 5.96 23.81 5.96H670q37.61 0 63.81-26.19Q760-182.39 760-220v-530q0-12.75 8.63-21.37 8.63-8.63 21.38-8.63 12.76 0 21.37 8.63Q820-762.75 820-750v530q0 62.15-43.92 106.07Q732.15-70 670-70H419.31Zm34.15-420v-368.84q0-12.75 8.63-21.38 8.63-8.62 21.39-8.62 12.75 0 21.37 8.62 8.61 8.63 8.61 21.38V-490h-60Zm153.46 0v-328.84q0-12.75 8.63-21.38 8.63-8.62 21.39-8.62 12.75 0 21.37 8.62 8.61 8.63 8.61 21.38V-490h-60ZM479.08-310Z"/></svg>
-        </button>
-        <button class="tool-btn" id="btn-export" title="Export PNG">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M480-480ZM202-65l-56-57 118-118h-90v-80h226v226h-80v-89L202-65Zm278-15v-80h240v-440H520v-200H240v400h-80v-400q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H480Z"/></svg>
         </button>
       </div>
     </div>
@@ -901,6 +918,7 @@ html, body {
       <div class="layers-header">
         <span>Layers</span>
         <div class="layers-actions">
+          <button id="layer-random" title="Random Preset"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="16" height="16" fill="currentColor"><path d="M560-160v-80h104L537-367l57-57 126 126v-102h80v240H560Zm-344 0-57-56 504-504H560v-80h240v240h-80v-104L216-160Zm151-377L160-744l56-56 207 207-56 56Z"/></svg></button>
           <button id="layer-add" title="Add Layer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="16" height="16" fill="currentColor"><path d="M450-450H220v-60h230v-230h60v230h230v60H510v230h-60v-230Z"/></svg></button>
           <button id="layer-delete" title="Delete Layer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="16" height="16" fill="currentColor"><path d="M220-450v-60h520v60H220Z"/></svg></button>
         </div>
@@ -909,7 +927,7 @@ html, body {
         <div class="layer-list" id="layer-list"></div>
         <div class="layer-settings" id="layer-settings">
           <div class="layer-settings-section">
-            <div class="layer-settings-title">HSB</div>
+            <div class="layer-settings-title">Adjust</div>
             <div class="detail-panel">
               <div class="hsv-row">
                 <span class="hsv-label">H</span>
@@ -933,8 +951,8 @@ html, body {
               </div>
               <div class="hsv-row">
                 <span class="hsv-label">L</span>
-                <input class="hsv-slider" id="hsv-lighten" type="range" min="0" max="100" value="0" tabindex="-1">
-                <input type="number" class="hsv-val" id="hsv-lighten-val" value="0" min="0" max="100">
+                <input class="hsv-slider" id="hsv-lift" type="range" min="0" max="100" value="0" tabindex="-1">
+                <input type="number" class="hsv-val" id="hsv-lift-val" value="0" min="0" max="100">
               </div>
             </div>
           </div>

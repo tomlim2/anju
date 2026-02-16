@@ -1,5 +1,5 @@
 import { MatcapPicker } from './matcap-picker.js';
-import { FULL_PATH } from './matcaps.js';
+import { MATCAP_IDS, FULL_PATH } from './matcaps.js';
 
 export class UI {
   constructor(brush, painter, layerSystem, preview, transform) {
@@ -234,6 +234,7 @@ export class UI {
   _bindLayers() {
     const addButton = document.getElementById('layer-add');
     const deleteButton = document.getElementById('layer-delete');
+    const randomButton = document.getElementById('layer-random');
 
     const listenerOptions = { signal: this._ac.signal };
     addButton.addEventListener('click', () => {
@@ -248,6 +249,7 @@ export class UI {
       this._renderLayerList();
       this._refreshHSVPanel();
     }, listenerOptions);
+    randomButton.addEventListener('click', () => this._randomPreset(), listenerOptions);
 
     this._detailOpen = false;
 
@@ -542,12 +544,12 @@ export class UI {
     const satSlider = document.getElementById('hsv-sat');
     const valSlider = document.getElementById('hsv-val');
     const contrastSlider = document.getElementById('hsv-contrast');
-    const lightenSlider = document.getElementById('hsv-lighten');
+    const liftSlider = document.getElementById('hsv-lift');
     const hueVal = document.getElementById('hsv-hue-val');
     const satVal = document.getElementById('hsv-sat-val');
     const valVal = document.getElementById('hsv-val-val');
     const contrastVal = document.getElementById('hsv-contrast-val');
-    const lightenVal = document.getElementById('hsv-lighten-val');
+    const liftVal = document.getElementById('hsv-lift-val');
     const xSlider = document.getElementById('layer-x');
     const xVal = document.getElementById('layer-x-val');
     const ySlider = document.getElementById('layer-y');
@@ -568,7 +570,7 @@ export class UI {
     };
 
     const updateContrast = () => { contrastVal.value = contrastSlider.value; this.layers.setContrast(this.layers.activeIndex, +contrastSlider.value); };
-    const updateLighten = () => { lightenVal.value = lightenSlider.value; this.layers.setLighten(this.layers.activeIndex, +lightenSlider.value); };
+    const updateLift = () => { liftVal.value = liftSlider.value; this.layers.setLift(this.layers.activeIndex, +liftSlider.value); };
 
     const updateX = () => { xVal.value = xSlider.value; this.transform.setX(+xSlider.value); };
     const updateY = () => { yVal.value = ySlider.value; this.transform.setY(+ySlider.value); };
@@ -587,7 +589,7 @@ export class UI {
     satSlider.addEventListener('input', updateHSV, listenerOptions);
     valSlider.addEventListener('input', updateHSV, listenerOptions);
     contrastSlider.addEventListener('input', updateContrast, listenerOptions);
-    lightenSlider.addEventListener('input', updateLighten, listenerOptions);
+    liftSlider.addEventListener('input', updateLift, listenerOptions);
     xSlider.addEventListener('input', updateX, listenerOptions);
     ySlider.addEventListener('input', updateY, listenerOptions);
     rotSlider.addEventListener('input', updateRotation, listenerOptions);
@@ -614,7 +616,7 @@ export class UI {
     satVal.addEventListener('change', () => syncFromInput(satVal, satSlider, updateHSV), listenerOptions);
     valVal.addEventListener('change', () => syncFromInput(valVal, valSlider, updateHSV), listenerOptions);
     contrastVal.addEventListener('change', () => syncFromInput(contrastVal, contrastSlider, updateContrast), listenerOptions);
-    lightenVal.addEventListener('change', () => syncFromInput(lightenVal, lightenSlider, updateLighten), listenerOptions);
+    liftVal.addEventListener('change', () => syncFromInput(liftVal, liftSlider, updateLift), listenerOptions);
     xVal.addEventListener('change', () => { syncFromInput(xVal, xSlider, updateX); bakeAndReset(); }, listenerOptions);
     yVal.addEventListener('change', () => { syncFromInput(yVal, ySlider, updateY); bakeAndReset(); }, listenerOptions);
     rotVal.addEventListener('change', () => { syncFromInput(rotVal, rotSlider, updateRotation); bakeAndReset(); }, listenerOptions);
@@ -625,9 +627,9 @@ export class UI {
     satSlider.addEventListener('dblclick', () => { satSlider.value = 0; updateHSV(); }, listenerOptions);
     valSlider.addEventListener('dblclick', () => { valSlider.value = 0; updateHSV(); }, listenerOptions);
     contrastSlider.addEventListener('dblclick', () => { contrastSlider.value = 0; updateContrast(); }, listenerOptions);
-    lightenSlider.addEventListener('dblclick', () => { lightenSlider.value = 0; updateLighten(); }, listenerOptions);
+    liftSlider.addEventListener('dblclick', () => { liftSlider.value = 0; updateLift(); }, listenerOptions);
 
-    this._detailElements = { hueSlider, satSlider, valSlider, contrastSlider, lightenSlider, hueVal, satVal, valVal, contrastVal, lightenVal, xSlider, xVal, ySlider, yVal, rotSlider, rotVal, scaleSlider, scaleVal };
+    this._detailElements = { hueSlider, satSlider, valSlider, contrastSlider, liftSlider, hueVal, satVal, valVal, contrastVal, liftVal, xSlider, xVal, ySlider, yVal, rotSlider, rotVal, scaleSlider, scaleVal };
     this._refreshHSVPanel();
   }
 
@@ -639,6 +641,57 @@ export class UI {
     }
   }
 
+  async _randomPreset() {
+    this._autoBakeTransform();
+
+    // Reset to single empty layer
+    while (this.layers.layers.length > 1) {
+      this.layers.layers.pop();
+    }
+    const first = this.layers.layers[0];
+    first.ctx.clearRect(0, 0, first.canvas.width, first.canvas.height);
+    this.layers.resetDetail(0);
+    first.name = 'Layer 1';
+
+    const count = Math.floor(Math.random() * 3) + 1;
+    for (let i = 1; i < count; i++) {
+      this.layers.addLayer(`Layer ${i + 1}`);
+    }
+
+    const blendModes = ['source-over', 'multiply', 'screen', 'overlay'];
+    const loads = [];
+
+    for (let i = 0; i < count; i++) {
+      const layer = this.layers.layers[i];
+      const matcapId = MATCAP_IDS[Math.floor(Math.random() * MATCAP_IDS.length)];
+
+      layer.blendMode = i === 0 ? 'source-over' : blendModes[Math.floor(Math.random() * blendModes.length)];
+      layer.opacity = i === 0 ? 1.0 : +(0.4 + Math.random() * 0.6).toFixed(2);
+      layer.hue = Math.floor(Math.random() * 361) - 180;
+      layer.saturation = Math.floor(Math.random() * 101) - 50;
+      layer.brightness = Math.floor(Math.random() * 61) - 30;
+      layer.contrast = Math.floor(Math.random() * 81) - 30;
+      layer.lift = Math.floor(Math.random() * 21);
+
+      loads.push(new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          layer.ctx.drawImage(img, 0, 0, layer.canvas.width, layer.canvas.height);
+          resolve();
+        };
+        img.onerror = resolve;
+        img.src = FULL_PATH + matcapId + '.png';
+      }));
+    }
+
+    await Promise.all(loads);
+    this.layers.activeIndex = count - 1;
+    this.layers.composite();
+    this._detailOpen = false;
+    this._renderLayerList();
+    this._refreshHSVPanel();
+  }
+
   _refreshHSVPanel() {
     const el = this._detailElements;
     if (!el) return;
@@ -648,12 +701,12 @@ export class UI {
     el.satSlider.value = layer.saturation;
     el.valSlider.value = layer.brightness;
     el.contrastSlider.value = layer.contrast;
-    el.lightenSlider.value = layer.lighten;
+    el.liftSlider.value = layer.lift;
     el.hueVal.value = layer.hue;
     el.satVal.value = layer.saturation;
     el.valVal.value = layer.brightness;
     el.contrastVal.value = layer.contrast;
-    el.lightenVal.value = layer.lighten;
+    el.liftVal.value = layer.lift;
     el.xSlider.value = this.transform.x;
     el.xVal.value = this.transform.x;
     el.ySlider.value = this.transform.y;
