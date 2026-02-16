@@ -25,7 +25,7 @@ export class UI {
     this._picker = new MatcapPicker((matcapId, layerIndex) => {
       const img = new Image();
       img.onload = () => {
-        this.layers.resetHSV(layerIndex);
+        this.layers.resetDetail(layerIndex);
         this.painter.loadImageToLayer(img, layerIndex);
         this._renderLayerList();
         this._refreshHSVPanel();
@@ -413,7 +413,7 @@ export class UI {
       const importButton = document.createElement('button');
       importButton.className = 'layer-matcap-btn';
       importButton.title = 'Import image';
-      importButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M450-328.46v-336l-98.61 98.61-42.16-43.38L480-780l170.77 170.77-42.16 43.38L510-664.46v336h-60ZM252.31-180Q222-180 201-201q-21-21-21-51.31v-108.46h60v108.46q0 4.62 3.85 8.46 3.84 3.85 8.46 3.85h455.38q4.62 0 8.46-3.85 3.85-3.84 3.85-8.46v-108.46h60v108.46Q780-222 759-201q-21 21-51.31 21H252.31Z"/></svg>';
+      importButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M480-480ZM212.31-140Q182-140 161-161q-21-21-21-51.31v-535.38Q140-778 161-799q21-21 51.31-21h300v60h-300q-5.39 0-8.85 3.46t-3.46 8.85v535.38q0 5.39 3.46 8.85t8.85 3.46h535.38q5.39 0 8.85-3.46t3.46-8.85v-300h60v300Q820-182 799-161q-21 21-51.31 21H212.31Zm43.08-152.31h449.22L565-478.46 445-322.69l-85-108.08-104.61 138.46ZM680-600v-80h-80v-60h80v-80h60v80h80v60h-80v80h-60Z"/></svg>';
       importButton.addEventListener('click', (event) => {
         event.stopPropagation();
         const input = document.createElement('input');
@@ -424,7 +424,7 @@ export class UI {
           if (!file) return;
           const img = new Image();
           img.onload = () => {
-            this.layers.resetHSV(layerIndex);
+            this.layers.resetDetail(layerIndex);
             this.painter.loadImageToLayer(img, layerIndex);
             this._renderLayerList();
             this._refreshHSVPanel();
@@ -491,7 +491,7 @@ export class UI {
     }
   }
 
-  // --- HSV Panel ---
+  // --- Detail Panel (HSB + Transform) ---
 
   _bindHSVPanel() {
     const listenerOptions = { signal: this._ac.signal };
@@ -501,8 +501,12 @@ export class UI {
     const hueVal = document.getElementById('hsv-hue-val');
     const satVal = document.getElementById('hsv-sat-val');
     const valVal = document.getElementById('hsv-val-val');
+    const rotSlider = document.getElementById('layer-rotation');
+    const scaleSlider = document.getElementById('layer-scale');
+    const rotVal = document.getElementById('layer-rotation-val');
+    const scaleVal = document.getElementById('layer-scale-val');
 
-    const update = () => {
+    const updateHSV = () => {
       const h = +hueSlider.value;
       const s = +satSlider.value;
       const v = +valSlider.value;
@@ -512,33 +516,47 @@ export class UI {
       this.layers.setHSV(this.layers.activeIndex, h, s, v);
     };
 
-    const syncFromInput = (numInput, slider) => {
+    const updateTransform = () => {
+      const r = +rotSlider.value;
+      const sc = +scaleSlider.value;
+      rotVal.value = r;
+      scaleVal.value = sc;
+      this.layers.setTransform(this.layers.activeIndex, r, sc);
+    };
+
+    const syncFromInput = (numInput, slider, callback) => {
       const min = +slider.min, max = +slider.max;
       const v = Math.round(Math.min(max, Math.max(min, +numInput.value || 0)));
       numInput.value = v;
       slider.value = v;
-      update();
+      callback();
     };
 
-    hueSlider.addEventListener('input', update, listenerOptions);
-    satSlider.addEventListener('input', update, listenerOptions);
-    valSlider.addEventListener('input', update, listenerOptions);
+    hueSlider.addEventListener('input', updateHSV, listenerOptions);
+    satSlider.addEventListener('input', updateHSV, listenerOptions);
+    valSlider.addEventListener('input', updateHSV, listenerOptions);
+    rotSlider.addEventListener('input', updateTransform, listenerOptions);
+    scaleSlider.addEventListener('input', updateTransform, listenerOptions);
 
-    hueVal.addEventListener('change', () => syncFromInput(hueVal, hueSlider), listenerOptions);
-    satVal.addEventListener('change', () => syncFromInput(satVal, satSlider), listenerOptions);
-    valVal.addEventListener('change', () => syncFromInput(valVal, valSlider), listenerOptions);
+    hueVal.addEventListener('change', () => syncFromInput(hueVal, hueSlider, updateHSV), listenerOptions);
+    satVal.addEventListener('change', () => syncFromInput(satVal, satSlider, updateHSV), listenerOptions);
+    valVal.addEventListener('change', () => syncFromInput(valVal, valSlider, updateHSV), listenerOptions);
+    rotVal.addEventListener('change', () => syncFromInput(rotVal, rotSlider, updateTransform), listenerOptions);
+    scaleVal.addEventListener('change', () => syncFromInput(scaleVal, scaleSlider, updateTransform), listenerOptions);
 
     // Double-click to reset individual slider
-    hueSlider.addEventListener('dblclick', () => { hueSlider.value = 0; update(); }, listenerOptions);
-    satSlider.addEventListener('dblclick', () => { satSlider.value = 0; update(); }, listenerOptions);
-    valSlider.addEventListener('dblclick', () => { valSlider.value = 0; update(); }, listenerOptions);
+    hueSlider.addEventListener('dblclick', () => { hueSlider.value = 0; updateHSV(); }, listenerOptions);
+    satSlider.addEventListener('dblclick', () => { satSlider.value = 0; updateHSV(); }, listenerOptions);
+    valSlider.addEventListener('dblclick', () => { valSlider.value = 0; updateHSV(); }, listenerOptions);
+    rotSlider.addEventListener('dblclick', () => { rotSlider.value = 0; updateTransform(); }, listenerOptions);
+    scaleSlider.addEventListener('dblclick', () => { scaleSlider.value = 100; updateTransform(); }, listenerOptions);
 
-    this._hsvElements = { hueSlider, satSlider, valSlider, hueVal, satVal, valVal };
+    this._detailElements = { hueSlider, satSlider, valSlider, hueVal, satVal, valVal, rotSlider, scaleSlider, rotVal, scaleVal };
     this._refreshHSVPanel();
   }
 
   _refreshHSVPanel() {
-    const el = this._hsvElements;
+    const el = this._detailElements;
     if (!el) return;
     const layer = this.layers.getActiveLayer();
     if (!layer) return;
@@ -548,6 +566,10 @@ export class UI {
     el.hueVal.value = layer.hue;
     el.satVal.value = layer.saturation;
     el.valVal.value = layer.brightness;
+    el.rotSlider.value = layer.rotation;
+    el.scaleSlider.value = layer.scale;
+    el.rotVal.value = layer.rotation;
+    el.scaleVal.value = layer.scale;
   }
 
   // --- Keyboard ---

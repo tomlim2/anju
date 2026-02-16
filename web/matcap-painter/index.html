@@ -521,7 +521,7 @@ html, body {
   color: var(--text-muted);
   margin-bottom: 4px;
 }
-.hsv-panel {
+.detail-panel {
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -881,21 +881,36 @@ html, body {
         <div class="layer-settings" id="layer-settings">
           <div class="layer-settings-section">
             <div class="layer-settings-title">HSB</div>
-            <div class="hsv-panel" id="hsv-panel">
+            <div class="detail-panel">
               <div class="hsv-row">
                 <span class="hsv-label">H</span>
-                <input class="hsv-slider" id="hsv-hue" type="range" min="-180" max="180" value="0">
+                <input class="hsv-slider" id="hsv-hue" type="range" min="-180" max="180" value="0" tabindex="-1">
                 <input type="number" class="hsv-val" id="hsv-hue-val" value="0" min="-180" max="180">
               </div>
               <div class="hsv-row">
                 <span class="hsv-label">S</span>
-                <input class="hsv-slider" id="hsv-sat" type="range" min="-100" max="100" value="0">
+                <input class="hsv-slider" id="hsv-sat" type="range" min="-100" max="100" value="0" tabindex="-1">
                 <input type="number" class="hsv-val" id="hsv-sat-val" value="0" min="-100" max="100">
               </div>
               <div class="hsv-row">
                 <span class="hsv-label">B</span>
-                <input class="hsv-slider" id="hsv-val" type="range" min="-100" max="100" value="0">
+                <input class="hsv-slider" id="hsv-val" type="range" min="-100" max="100" value="0" tabindex="-1">
                 <input type="number" class="hsv-val" id="hsv-val-val" value="0" min="-100" max="100">
+              </div>
+            </div>
+          </div>
+          <div class="layer-settings-section">
+            <div class="layer-settings-title">Transform</div>
+            <div class="detail-panel">
+              <div class="hsv-row">
+                <span class="hsv-label">Rot</span>
+                <input class="hsv-slider" id="layer-rotation" type="range" min="-180" max="180" value="0" tabindex="-1">
+                <input type="number" class="hsv-val" id="layer-rotation-val" value="0" min="-180" max="180">
+              </div>
+              <div class="hsv-row">
+                <span class="hsv-label">Sc</span>
+                <input class="hsv-slider" id="layer-scale" type="range" min="10" max="300" value="100" tabindex="-1">
+                <input type="number" class="hsv-val" id="layer-scale-val" value="100" min="10" max="300">
               </div>
             </div>
           </div>

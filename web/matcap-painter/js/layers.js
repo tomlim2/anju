@@ -37,6 +37,8 @@ export class LayerSystem {
       hue: 0,
       saturation: 0,
       brightness: 0,
+      rotation: 0,
+      scale: 100,
     };
 
     this.layers.push(layer);
@@ -151,12 +153,22 @@ export class LayerSystem {
     this.composite();
   }
 
-  resetHSV(index) {
+  setTransform(index, rotation, scale) {
+    const layer = this.layers[index];
+    if (!layer) return;
+    layer.rotation = rotation;
+    layer.scale = scale;
+    this.composite();
+  }
+
+  resetDetail(index) {
     const layer = this.layers[index];
     if (!layer) return;
     layer.hue = 0;
     layer.saturation = 0;
     layer.brightness = 0;
+    layer.rotation = 0;
+    layer.scale = 100;
   }
 
   getFilteredCanvas(index) {
@@ -179,6 +191,16 @@ export class LayerSystem {
       ctx.save();
       ctx.globalAlpha = layer.opacity;
       ctx.globalCompositeOperation = layer.blendMode;
+
+      const hasTransform = layer.rotation !== 0 || layer.scale !== 100;
+      if (hasTransform) {
+        const center = SIZE / 2;
+        const s = layer.scale / 100;
+        ctx.translate(center, center);
+        ctx.rotate(layer.rotation * Math.PI / 180);
+        ctx.scale(s, s);
+        ctx.translate(-center, -center);
+      }
 
       const hasHSV = layer.hue !== 0 || layer.saturation !== 0 || layer.brightness !== 0;
       if (hasHSV) {
