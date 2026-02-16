@@ -31,7 +31,7 @@ async function init() {
   preview.setModel(model);
 
   // UI (must exist before matcap load so thumbnails update)
-  new UI(brush, painter, layers, preview, transform);
+  const ui = new UI(brush, painter, layers, preview, transform);
 
   // Load random matcap preset
   const randomId = MATCAP_IDS[Math.floor(Math.random() * MATCAP_IDS.length)];
@@ -54,6 +54,7 @@ async function init() {
   modelSelect.addEventListener('change', async (event) => {
     const model = await getModel(event.target.value);
     preview.setModel(model);
+    ui._refreshAnimSelect();
   });
 
   // Export

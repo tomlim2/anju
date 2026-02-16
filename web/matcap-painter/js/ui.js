@@ -187,6 +187,15 @@ export class UI {
 
   _bindViewport() {
     const listenerOptions = { signal: this._ac.signal };
+    this._animSelect = document.getElementById('anim-select');
+    this._animSelect.addEventListener('change', (event) => {
+      this.preview.playClip(event.target.value);
+    }, listenerOptions);
+    document.getElementById('vp-anim').addEventListener('click', (event) => {
+      const on = this.preview.toggleAnimation();
+      event.currentTarget.classList.toggle('active', on);
+      event.currentTarget.textContent = on ? '⏸' : '▶';
+    }, listenerOptions);
     document.getElementById('vp-rotate').addEventListener('click', (event) => {
       const on = this.preview.toggleAutoRotate();
       event.currentTarget.classList.toggle('active', on);
@@ -194,6 +203,28 @@ export class UI {
     document.getElementById('vp-reset').addEventListener('click', () => {
       this.preview.resetView();
     }, listenerOptions);
+
+    this._refreshAnimSelect();
+  }
+
+  _refreshAnimSelect() {
+    const names = this.preview.clipNames;
+    this._animSelect.innerHTML = '';
+    if (names.length === 0) {
+      this._animSelect.style.display = 'none';
+      return;
+    }
+    this._animSelect.style.display = '';
+    const none = document.createElement('option');
+    none.value = '';
+    none.textContent = 'None';
+    this._animSelect.appendChild(none);
+    for (const name of names) {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      this._animSelect.appendChild(opt);
+    }
   }
 
   _zoomBy(factor) {

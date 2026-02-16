@@ -30,6 +30,8 @@ export class Preview {
     this._ac = new AbortController();
     this._clock = new Clock();
     this._mixer = null;
+    this._clips = [];
+    this._animEnabled = true;
   }
 
   destroy() {
@@ -104,8 +106,7 @@ export class Preview {
       this.scene.add(model.scene);
 
       this._mixer = new AnimationMixer(model.scene);
-      const runClip = model.animations.find(c => c.name === 'run') || model.animations[0];
-      if (runClip) this._mixer.clipAction(runClip).play();
+      this._clips = model.animations;
     } else if (model.geometry) {
       this.mesh = new Mesh(model.geometry, this.material);
       this._centerObject(this.mesh);
@@ -117,6 +118,7 @@ export class Preview {
     const box = new Box3().setFromObject(obj);
     const center = box.getCenter(new Vector3());
     obj.position.sub(center);
+    obj.position.y -= 0.2;
   }
 
   _clearModel() {
@@ -137,6 +139,29 @@ export class Preview {
 
   markTextureDirty() {
     this._textureDirty = true;
+  }
+
+  get clipNames() {
+    return this._clips.map(c => c.name);
+  }
+
+  playClip(name) {
+    if (!this._mixer) return;
+    this._mixer.stopAllAction();
+    if (!name) return;
+    const clip = this._clips.find(c => c.name === name);
+    if (!clip) return;
+    const action = this._mixer.clipAction(clip);
+    action.play();
+    if (!this._animEnabled) action.paused = true;
+  }
+
+  toggleAnimation() {
+    this._animEnabled = !this._animEnabled;
+    if (this._mixer) {
+      this._mixer._actions.forEach(a => { a.paused = !this._animEnabled; });
+    }
+    return this._animEnabled;
   }
 
   toggleAutoRotate() {

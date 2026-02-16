@@ -39,7 +39,6 @@ function loadGLB(name) {
   }
 
   const paths = {
-    agus: 'assets/agus.glb',
     amongus: 'assets/among_us.glb',
   };
   const path = paths[name];
