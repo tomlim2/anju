@@ -1,5 +1,6 @@
 import { Brush } from './brush.js';
 import { LayerSystem } from './layers.js';
+import { TransformController } from './transform.js';
 import { Painter } from './painter.js';
 import { Preview } from './preview.js';
 import { UI } from './ui.js';
@@ -14,6 +15,8 @@ const btnExport = document.getElementById('btn-export');
 // Initialize modules
 const brush = new Brush();
 const layers = new LayerSystem(paintCanvas);
+const transform = new TransformController(layers);
+layers.transform = transform;
 const painter = new Painter(paintCanvas, brush, layers);
 const preview = new Preview(previewCanvas);
 
@@ -28,7 +31,7 @@ async function init() {
   preview.setGeometry(geometry);
 
   // UI (must exist before matcap load so thumbnails update)
-  new UI(brush, painter, layers, preview);
+  new UI(brush, painter, layers, preview, transform);
 
   // Load random matcap preset
   const randomId = MATCAP_IDS[Math.floor(Math.random() * MATCAP_IDS.length)];

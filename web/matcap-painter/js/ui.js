@@ -2,11 +2,12 @@ import { MatcapPicker } from './matcap-picker.js';
 import { FULL_PATH } from './matcaps.js';
 
 export class UI {
-  constructor(brush, painter, layerSystem, preview) {
+  constructor(brush, painter, layerSystem, preview, transform) {
     this.brush = brush;
     this.painter = painter;
     this.layers = layerSystem;
     this.preview = preview;
+    this.transform = transform;
 
     // Canvas navigation state
     this._zoom = 1;
@@ -23,6 +24,7 @@ export class UI {
     this._ac = new AbortController();
 
     this._picker = new MatcapPicker((matcapId, layerIndex) => {
+      this._autoBakeTransform();
       const img = new Image();
       img.onload = () => {
         this.layers.resetDetail(layerIndex);
@@ -422,6 +424,7 @@ export class UI {
         input.addEventListener('change', () => {
           const file = input.files[0];
           if (!file) return;
+          this._autoBakeTransform();
           const img = new Image();
           img.onload = () => {
             this.layers.resetDetail(layerIndex);
@@ -449,6 +452,7 @@ export class UI {
       });
 
       item.addEventListener('click', () => {
+        if (layerIndex !== this.layers.activeIndex) this._autoBakeTransform();
         this.layers.setActive(layerIndex);
         this._renderLayerList();
         this._refreshHSVPanel();
@@ -501,9 +505,13 @@ export class UI {
     const hueVal = document.getElementById('hsv-hue-val');
     const satVal = document.getElementById('hsv-sat-val');
     const valVal = document.getElementById('hsv-val-val');
+    const xSlider = document.getElementById('layer-x');
+    const xVal = document.getElementById('layer-x-val');
+    const ySlider = document.getElementById('layer-y');
+    const yVal = document.getElementById('layer-y-val');
     const rotSlider = document.getElementById('layer-rotation');
-    const scaleSlider = document.getElementById('layer-scale');
     const rotVal = document.getElementById('layer-rotation-val');
+    const scaleSlider = document.getElementById('layer-scale');
     const scaleVal = document.getElementById('layer-scale-val');
 
     const updateHSV = () => {
@@ -516,13 +524,10 @@ export class UI {
       this.layers.setHSV(this.layers.activeIndex, h, s, v);
     };
 
-    const updateTransform = () => {
-      const r = +rotSlider.value;
-      const sc = +scaleSlider.value;
-      rotVal.value = r;
-      scaleVal.value = sc;
-      this.layers.setTransform(this.layers.activeIndex, r, sc);
-    };
+    const updateX = () => { xVal.value = xSlider.value; this.transform.setX(+xSlider.value); };
+    const updateY = () => { yVal.value = ySlider.value; this.transform.setY(+ySlider.value); };
+    const updateRotation = () => { rotVal.value = rotSlider.value; this.transform.setRotation(+rotSlider.value); };
+    const updateScale = () => { scaleVal.value = scaleSlider.value; this.transform.setScale(+scaleSlider.value); };
 
     const syncFromInput = (numInput, slider, callback) => {
       const min = +slider.min, max = +slider.max;
@@ -535,24 +540,51 @@ export class UI {
     hueSlider.addEventListener('input', updateHSV, listenerOptions);
     satSlider.addEventListener('input', updateHSV, listenerOptions);
     valSlider.addEventListener('input', updateHSV, listenerOptions);
-    rotSlider.addEventListener('input', updateTransform, listenerOptions);
-    scaleSlider.addEventListener('input', updateTransform, listenerOptions);
+    xSlider.addEventListener('input', updateX, listenerOptions);
+    ySlider.addEventListener('input', updateY, listenerOptions);
+    rotSlider.addEventListener('input', updateRotation, listenerOptions);
+    scaleSlider.addEventListener('input', updateScale, listenerOptions);
+
+    // Bake transform into pixels on release
+    const bakeAndReset = () => {
+      if (this.transform.hasTransform) {
+        this.painter.saveSnapshot();
+        this.transform.bake();
+      }
+      xSlider.value = 0; xVal.value = 0;
+      ySlider.value = 0; yVal.value = 0;
+      rotSlider.value = 0; rotVal.value = 0;
+      scaleSlider.value = 100; scaleVal.value = 100;
+      this._renderLayerList();
+    };
+    xSlider.addEventListener('change', bakeAndReset, listenerOptions);
+    ySlider.addEventListener('change', bakeAndReset, listenerOptions);
+    rotSlider.addEventListener('change', bakeAndReset, listenerOptions);
+    scaleSlider.addEventListener('change', bakeAndReset, listenerOptions);
 
     hueVal.addEventListener('change', () => syncFromInput(hueVal, hueSlider, updateHSV), listenerOptions);
     satVal.addEventListener('change', () => syncFromInput(satVal, satSlider, updateHSV), listenerOptions);
     valVal.addEventListener('change', () => syncFromInput(valVal, valSlider, updateHSV), listenerOptions);
-    rotVal.addEventListener('change', () => syncFromInput(rotVal, rotSlider, updateTransform), listenerOptions);
-    scaleVal.addEventListener('change', () => syncFromInput(scaleVal, scaleSlider, updateTransform), listenerOptions);
+    xVal.addEventListener('change', () => { syncFromInput(xVal, xSlider, updateX); bakeAndReset(); }, listenerOptions);
+    yVal.addEventListener('change', () => { syncFromInput(yVal, ySlider, updateY); bakeAndReset(); }, listenerOptions);
+    rotVal.addEventListener('change', () => { syncFromInput(rotVal, rotSlider, updateRotation); bakeAndReset(); }, listenerOptions);
+    scaleVal.addEventListener('change', () => { syncFromInput(scaleVal, scaleSlider, updateScale); bakeAndReset(); }, listenerOptions);
 
     // Double-click to reset individual slider
     hueSlider.addEventListener('dblclick', () => { hueSlider.value = 0; updateHSV(); }, listenerOptions);
     satSlider.addEventListener('dblclick', () => { satSlider.value = 0; updateHSV(); }, listenerOptions);
     valSlider.addEventListener('dblclick', () => { valSlider.value = 0; updateHSV(); }, listenerOptions);
-    rotSlider.addEventListener('dblclick', () => { rotSlider.value = 0; updateTransform(); }, listenerOptions);
-    scaleSlider.addEventListener('dblclick', () => { scaleSlider.value = 100; updateTransform(); }, listenerOptions);
 
-    this._detailElements = { hueSlider, satSlider, valSlider, hueVal, satVal, valVal, rotSlider, scaleSlider, rotVal, scaleVal };
+    this._detailElements = { hueSlider, satSlider, valSlider, hueVal, satVal, valVal, xSlider, xVal, ySlider, yVal, rotSlider, rotVal, scaleSlider, scaleVal };
     this._refreshHSVPanel();
+  }
+
+  _autoBakeTransform() {
+    if (this.transform.hasTransform) {
+      this.painter.saveSnapshot();
+      this.transform.bake();
+      this._refreshHSVPanel();
+    }
   }
 
   _refreshHSVPanel() {
@@ -566,10 +598,14 @@ export class UI {
     el.hueVal.value = layer.hue;
     el.satVal.value = layer.saturation;
     el.valVal.value = layer.brightness;
-    el.rotSlider.value = layer.rotation;
-    el.scaleSlider.value = layer.scale;
-    el.rotVal.value = layer.rotation;
-    el.scaleVal.value = layer.scale;
+    el.xSlider.value = this.transform.x;
+    el.xVal.value = this.transform.x;
+    el.ySlider.value = this.transform.y;
+    el.yVal.value = this.transform.y;
+    el.rotSlider.value = this.transform.rotation;
+    el.rotVal.value = this.transform.rotation;
+    el.scaleSlider.value = this.transform.scale;
+    el.scaleVal.value = this.transform.scale;
   }
 
   // --- Keyboard ---

@@ -39,6 +39,8 @@ export class Painter {
 
   // --- History ---
 
+  saveSnapshot() { this._saveSnapshot(); }
+
   _saveSnapshot() {
     const layerIndex = this.layers.activeIndex;
     const ctx = this.layers.getActiveCtx();
@@ -115,7 +117,6 @@ export class Painter {
   _onDown(event) {
     if (this.panMode) return;
     const { x, y } = this._canvasCoords(event);
-    const raw = this.layers.outputToLayerCoords(this.layers.activeIndex, x, y);
 
     // Save snapshot before any modification
     this._saveSnapshot();
@@ -124,21 +125,21 @@ export class Painter {
     if (this.brush.type === 'fill') {
       const ctx = this.layers.getActiveCtx();
       if (!ctx) return;
-      floodFill(ctx, raw.x, raw.y, this.brush.color);
+      floodFill(ctx, x, y, this.brush.color);
       this.layers.composite();
       return;
     }
 
     this._painting = true;
-    this._lastX = raw.x;
-    this._lastY = raw.y;
+    this._lastX = x;
+    this._lastY = y;
     this.canvas.setPointerCapture(event.pointerId);
 
     const ctx = this.layers.getActiveCtx();
     if (!ctx) return;
 
-    this.brush.stamp(ctx, raw.x, raw.y);
-    this._mirrorStamp(ctx, raw.x, raw.y);
+    this.brush.stamp(ctx, x, y);
+    this._mirrorStamp(ctx, x, y);
     this.layers.composite();
   }
 
@@ -151,15 +152,14 @@ export class Painter {
 
     if (!this._painting) return;
 
-    const raw = this.layers.outputToLayerCoords(this.layers.activeIndex, x, y);
     const ctx = this.layers.getActiveCtx();
     if (!ctx) return;
 
-    this.brush.strokeInterpolated(ctx, this._lastX, this._lastY, raw.x, raw.y);
-    this._mirrorStroke(ctx, this._lastX, this._lastY, raw.x, raw.y);
+    this.brush.strokeInterpolated(ctx, this._lastX, this._lastY, x, y);
+    this._mirrorStroke(ctx, this._lastX, this._lastY, x, y);
 
-    this._lastX = raw.x;
-    this._lastY = raw.y;
+    this._lastX = x;
+    this._lastY = y;
     this.layers.composite();
   }
 

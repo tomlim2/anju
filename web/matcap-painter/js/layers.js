@@ -14,6 +14,7 @@ export class LayerSystem {
     this.outputCtx = outputCanvas.getContext('2d');
     this.layers = [];
     this.activeIndex = 0;
+    this.transform = null;
     this.onChange = null; // callback when composite changes
 
     this.addLayer('Layer 1');
@@ -37,8 +38,6 @@ export class LayerSystem {
       hue: 0,
       saturation: 0,
       brightness: 0,
-      rotation: 0,
-      scale: 100,
     };
 
     this.layers.push(layer);
@@ -153,70 +152,20 @@ export class LayerSystem {
     this.composite();
   }
 
-  outputToLayerCoords(index, x, y) {
-    const layer = this.layers[index];
-    if (!layer || (layer.rotation === 0 && layer.scale === 100)) return { x, y };
-    const center = SIZE / 2;
-    const s = layer.scale / 100;
-    const rad = -layer.rotation * Math.PI / 180;
-    const cos = Math.cos(rad);
-    const sin = Math.sin(rad);
-    const dx = (x - center) / s;
-    const dy = (y - center) / s;
-    return {
-      x: dx * cos - dy * sin + center,
-      y: dx * sin + dy * cos + center,
-    };
-  }
-
-  setTransform(index, rotation, scale) {
-    const layer = this.layers[index];
-    if (!layer) return;
-    layer.rotation = rotation;
-    layer.scale = scale;
-    this.composite();
-  }
-
   resetDetail(index) {
     const layer = this.layers[index];
     if (!layer) return;
     layer.hue = 0;
     layer.saturation = 0;
     layer.brightness = 0;
-    layer.rotation = 0;
-    layer.scale = 100;
   }
 
   getFilteredCanvas(index) {
     const layer = this.layers[index];
     if (!layer) return null;
     const hasHSV = layer.hue !== 0 || layer.saturation !== 0 || layer.brightness !== 0;
-    const hasTransform = layer.rotation !== 0 || layer.scale !== 100;
-    if (!hasHSV && !hasTransform) return layer.canvas;
-
-    let source = layer.canvas;
-    if (hasHSV) {
-      source = this._applyHSVFilter(layer.canvas, layer.hue, layer.saturation, layer.brightness);
-    }
-    if (!hasTransform) return source;
-
-    if (!this._previewCanvas) {
-      this._previewCanvas = document.createElement('canvas');
-      this._previewCanvas.width = SIZE;
-      this._previewCanvas.height = SIZE;
-    }
-    const ctx = this._previewCanvas.getContext('2d');
-    ctx.clearRect(0, 0, SIZE, SIZE);
-    const center = SIZE / 2;
-    const s = layer.scale / 100;
-    ctx.save();
-    ctx.translate(center, center);
-    ctx.rotate(layer.rotation * Math.PI / 180);
-    ctx.scale(s, s);
-    ctx.translate(-center, -center);
-    ctx.drawImage(source, 0, 0);
-    ctx.restore();
-    return this._previewCanvas;
+    if (!hasHSV) return layer.canvas;
+    return this._applyHSVFilter(layer.canvas, layer.hue, layer.saturation, layer.brightness);
   }
 
   composite() {
@@ -232,15 +181,7 @@ export class LayerSystem {
       ctx.globalAlpha = layer.opacity;
       ctx.globalCompositeOperation = layer.blendMode;
 
-      const hasTransform = layer.rotation !== 0 || layer.scale !== 100;
-      if (hasTransform) {
-        const center = SIZE / 2;
-        const s = layer.scale / 100;
-        ctx.translate(center, center);
-        ctx.rotate(layer.rotation * Math.PI / 180);
-        ctx.scale(s, s);
-        ctx.translate(-center, -center);
-      }
+      if (this.transform) this.transform.applyToContext(ctx, layerIndex);
 
       const hasHSV = layer.hue !== 0 || layer.saturation !== 0 || layer.brightness !== 0;
       if (hasHSV) {
