@@ -1,4 +1,4 @@
-const SIZE = 2048;
+const SIZE = 1024;
 
 export class TransformController {
   constructor(layerSystem) {

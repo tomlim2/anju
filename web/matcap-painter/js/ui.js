@@ -35,10 +35,12 @@ export class UI {
       img.src = FULL_PATH + matcapId + '.png';
     });
 
+    this._settingsPanel = document.getElementById('layer-settings');
+
     this._bindToolbar();
     this._bindControls();
-    this._bindLayers();
-    this._bindHSVPanel();
+    this._bindHSVPanel();   // Must run before _bindLayers — stores element refs while panel is in DOM
+    this._bindLayers();     // _renderLayerList() detaches panel for accordion positioning
     this._bindKeyboard();
     this._bindCanvasNav();
     this._bindViewport();
@@ -235,15 +237,19 @@ export class UI {
 
     const listenerOptions = { signal: this._ac.signal };
     addButton.addEventListener('click', () => {
+      this._detailOpen = false;
       this.layers.addLayer();
       this._renderLayerList();
       this._refreshHSVPanel();
     }, listenerOptions);
     deleteButton.addEventListener('click', () => {
+      this._detailOpen = false;
       this.layers.deleteLayer(this.layers.activeIndex);
       this._renderLayerList();
       this._refreshHSVPanel();
     }, listenerOptions);
+
+    this._detailOpen = false;
 
     this._dragFromIndex = -1;
     this._gripHeld = false;
@@ -284,6 +290,10 @@ export class UI {
 
   _renderLayerList() {
     const list = document.getElementById('layer-list');
+    // Detach settings panel before clearing to preserve element references
+    const settingsPanel = this._settingsPanel;
+    settingsPanel.remove();
+    settingsPanel.classList.remove('open');
     list.innerHTML = '';
 
     // Allow dropping on empty area below last item (moves to index 0)
@@ -304,6 +314,7 @@ export class UI {
         }
         this.layers.composite();
       }
+      this._detailOpen = false;
       this._renderLayerList();
       this._refreshHSVPanel();
     });
@@ -357,8 +368,8 @@ export class UI {
         // Dropping above an item in DOM = moving to a higher index
         // Dropping below an item in DOM = moving to a lower index
         let targetIndex = event.clientY < mid ? layerIndex + 1 : layerIndex;
-        // Clamp
-        targetIndex = Math.max(0, Math.min(this.layers.layers.length - 1, targetIndex));
+        // Clamp — allow layers.length (means "insert at end")
+        targetIndex = Math.max(0, Math.min(this.layers.layers.length, targetIndex));
         if (targetIndex !== this._dragFromIndex) {
           const [moved] = this.layers.layers.splice(this._dragFromIndex, 1);
           const insertAt = targetIndex > this._dragFromIndex ? targetIndex - 1 : targetIndex;
@@ -377,6 +388,7 @@ export class UI {
           }
           this.layers.composite();
         }
+        this._detailOpen = false;
         this._renderLayerList();
         this._refreshHSVPanel();
       });
@@ -468,6 +480,23 @@ export class UI {
         this._renderLayerList();
       });
 
+      const detailBtn = document.createElement('button');
+      detailBtn.className = 'layer-detail-btn' + (this._detailOpen && layerIndex === this.layers.activeIndex ? ' open' : '');
+      detailBtn.title = 'Layer detail';
+      detailBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M440-120v-240h80v80h320v80H520v80h-80Zm-320-80v-80h240v80H120Zm160-160v-80H120v-80h160v-80h80v240h-80Zm160-80v-80h400v80H440Zm160-160v-240h80v80h160v80H680v80h-80Zm-480-80v-80h400v80H120Z"/></svg>';
+      detailBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (layerIndex === this.layers.activeIndex) {
+          this._detailOpen = !this._detailOpen;
+        } else {
+          this._autoBakeTransform();
+          this.layers.setActive(layerIndex);
+          this._detailOpen = true;
+        }
+        this._renderLayerList();
+        this._refreshHSVPanel();
+      });
+
       item.appendChild(grip);
       item.appendChild(soloButton);
       item.appendChild(visibilityToggle);
@@ -477,7 +506,17 @@ export class UI {
       item.appendChild(importButton);
       item.appendChild(blendSelect);
       item.appendChild(opacitySlider);
+      item.appendChild(detailBtn);
       list.appendChild(item);
+    }
+
+    // Accordion: insert detail panel directly below the active layer item
+    if (this._detailOpen) {
+      const activeItem = list.querySelector(`[data-layer-index="${this.layers.activeIndex}"]`);
+      if (activeItem) {
+        activeItem.after(settingsPanel);
+        settingsPanel.classList.add('open');
+      }
     }
 
     this._updateThumbnails();
@@ -502,9 +541,13 @@ export class UI {
     const hueSlider = document.getElementById('hsv-hue');
     const satSlider = document.getElementById('hsv-sat');
     const valSlider = document.getElementById('hsv-val');
+    const contrastSlider = document.getElementById('hsv-contrast');
+    const lightenSlider = document.getElementById('hsv-lighten');
     const hueVal = document.getElementById('hsv-hue-val');
     const satVal = document.getElementById('hsv-sat-val');
     const valVal = document.getElementById('hsv-val-val');
+    const contrastVal = document.getElementById('hsv-contrast-val');
+    const lightenVal = document.getElementById('hsv-lighten-val');
     const xSlider = document.getElementById('layer-x');
     const xVal = document.getElementById('layer-x-val');
     const ySlider = document.getElementById('layer-y');
@@ -524,6 +567,9 @@ export class UI {
       this.layers.setHSV(this.layers.activeIndex, h, s, v);
     };
 
+    const updateContrast = () => { contrastVal.value = contrastSlider.value; this.layers.setContrast(this.layers.activeIndex, +contrastSlider.value); };
+    const updateLighten = () => { lightenVal.value = lightenSlider.value; this.layers.setLighten(this.layers.activeIndex, +lightenSlider.value); };
+
     const updateX = () => { xVal.value = xSlider.value; this.transform.setX(+xSlider.value); };
     const updateY = () => { yVal.value = ySlider.value; this.transform.setY(+ySlider.value); };
     const updateRotation = () => { rotVal.value = rotSlider.value; this.transform.setRotation(+rotSlider.value); };
@@ -540,6 +586,8 @@ export class UI {
     hueSlider.addEventListener('input', updateHSV, listenerOptions);
     satSlider.addEventListener('input', updateHSV, listenerOptions);
     valSlider.addEventListener('input', updateHSV, listenerOptions);
+    contrastSlider.addEventListener('input', updateContrast, listenerOptions);
+    lightenSlider.addEventListener('input', updateLighten, listenerOptions);
     xSlider.addEventListener('input', updateX, listenerOptions);
     ySlider.addEventListener('input', updateY, listenerOptions);
     rotSlider.addEventListener('input', updateRotation, listenerOptions);
@@ -565,6 +613,8 @@ export class UI {
     hueVal.addEventListener('change', () => syncFromInput(hueVal, hueSlider, updateHSV), listenerOptions);
     satVal.addEventListener('change', () => syncFromInput(satVal, satSlider, updateHSV), listenerOptions);
     valVal.addEventListener('change', () => syncFromInput(valVal, valSlider, updateHSV), listenerOptions);
+    contrastVal.addEventListener('change', () => syncFromInput(contrastVal, contrastSlider, updateContrast), listenerOptions);
+    lightenVal.addEventListener('change', () => syncFromInput(lightenVal, lightenSlider, updateLighten), listenerOptions);
     xVal.addEventListener('change', () => { syncFromInput(xVal, xSlider, updateX); bakeAndReset(); }, listenerOptions);
     yVal.addEventListener('change', () => { syncFromInput(yVal, ySlider, updateY); bakeAndReset(); }, listenerOptions);
     rotVal.addEventListener('change', () => { syncFromInput(rotVal, rotSlider, updateRotation); bakeAndReset(); }, listenerOptions);
@@ -574,8 +624,10 @@ export class UI {
     hueSlider.addEventListener('dblclick', () => { hueSlider.value = 0; updateHSV(); }, listenerOptions);
     satSlider.addEventListener('dblclick', () => { satSlider.value = 0; updateHSV(); }, listenerOptions);
     valSlider.addEventListener('dblclick', () => { valSlider.value = 0; updateHSV(); }, listenerOptions);
+    contrastSlider.addEventListener('dblclick', () => { contrastSlider.value = 0; updateContrast(); }, listenerOptions);
+    lightenSlider.addEventListener('dblclick', () => { lightenSlider.value = 0; updateLighten(); }, listenerOptions);
 
-    this._detailElements = { hueSlider, satSlider, valSlider, hueVal, satVal, valVal, xSlider, xVal, ySlider, yVal, rotSlider, rotVal, scaleSlider, scaleVal };
+    this._detailElements = { hueSlider, satSlider, valSlider, contrastSlider, lightenSlider, hueVal, satVal, valVal, contrastVal, lightenVal, xSlider, xVal, ySlider, yVal, rotSlider, rotVal, scaleSlider, scaleVal };
     this._refreshHSVPanel();
   }
 
@@ -595,9 +647,13 @@ export class UI {
     el.hueSlider.value = layer.hue;
     el.satSlider.value = layer.saturation;
     el.valSlider.value = layer.brightness;
+    el.contrastSlider.value = layer.contrast;
+    el.lightenSlider.value = layer.lighten;
     el.hueVal.value = layer.hue;
     el.satVal.value = layer.saturation;
     el.valVal.value = layer.brightness;
+    el.contrastVal.value = layer.contrast;
+    el.lightenVal.value = layer.lighten;
     el.xSlider.value = this.transform.x;
     el.xVal.value = this.transform.x;
     el.ySlider.value = this.transform.y;
@@ -707,7 +763,9 @@ export class UI {
 
     const padding = 24;
     const maxSize = Math.min(area.clientWidth, area.clientHeight) - padding * 2;
-    const displaySize = Math.max(200, maxSize);
+    // Cap at 1:1 physical pixel mapping to avoid blurry upscaling on Retina
+    const dpr = window.devicePixelRatio || 1;
+    const displaySize = Math.max(200, Math.min(maxSize, canvas.width / dpr));
 
     this._baseSize = displaySize;
     wrap.style.width = displaySize + 'px';

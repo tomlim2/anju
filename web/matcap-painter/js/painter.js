@@ -1,6 +1,6 @@
 import { floodFill } from './brush.js';
 
-const SIZE = 2048;
+const SIZE = 1024;
 const CENTER = SIZE / 2;
 const RADIUS = SIZE / 2;
 const MAX_HISTORY = 40;
@@ -22,9 +22,13 @@ export class Painter {
     this._undoStack = [];
     this._redoStack = [];
 
-    // Cursor overlay
+    // Cursor overlay (DPR-aware for crisp rendering on Retina)
     this._cursorCanvas = document.getElementById('cursor-overlay');
+    this._dpr = window.devicePixelRatio || 1;
+    this._cursorCanvas.width = SIZE * this._dpr;
+    this._cursorCanvas.height = SIZE * this._dpr;
     this._cursorCtx = this._cursorCanvas.getContext('2d');
+    this._cursorCtx.scale(this._dpr, this._dpr);
     this._cursorX = -1;
     this._cursorY = -1;
     this._cursorVisible = false;
@@ -170,8 +174,7 @@ export class Painter {
 
   _drawCursor() {
     const ctx = this._cursorCtx;
-    const canvas = this._cursorCanvas;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, SIZE, SIZE);
 
     if (!this._cursorVisible || this.panMode) return;
 
@@ -280,10 +283,7 @@ export class Painter {
     const ctx = this.layers.getActiveCtx();
     if (!ctx) return;
     ctx.clearRect(0, 0, SIZE, SIZE);
-    const scale = Math.min(1, SIZE / img.naturalWidth, SIZE / img.naturalHeight);
-    const w = img.naturalWidth * scale;
-    const h = img.naturalHeight * scale;
-    ctx.drawImage(img, (SIZE - w) / 2, (SIZE - h) / 2, w, h);
+    ctx.drawImage(img, 0, 0, SIZE, SIZE);
     this.layers.composite();
   }
 
@@ -295,14 +295,11 @@ export class Painter {
     if (this._undoStack.length > MAX_HISTORY) this._undoStack.shift();
     this._redoStack.length = 0;
     layer.ctx.clearRect(0, 0, SIZE, SIZE);
-    const scale = Math.min(1, SIZE / img.naturalWidth, SIZE / img.naturalHeight);
-    const w = img.naturalWidth * scale;
-    const h = img.naturalHeight * scale;
-    layer.ctx.drawImage(img, (SIZE - w) / 2, (SIZE - h) / 2, w, h);
+    layer.ctx.drawImage(img, 0, 0, SIZE, SIZE);
     this.layers.composite();
   }
 
   exportPNG() {
-    return this.layers.contentCanvas.toDataURL('image/png');
+    return this.layers.outputCanvas.toDataURL('image/png');
   }
 }

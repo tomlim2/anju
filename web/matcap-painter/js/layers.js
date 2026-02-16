@@ -1,7 +1,5 @@
 const MAX_LAYERS = 8;
-const SIZE = 2048;
-export const CONTENT_SIZE = 1024;
-const OFFSET = (SIZE - CONTENT_SIZE) / 2;
+const SIZE = 1024;
 
 const BLEND_OPS = {
   'source-over': 'source-over',
@@ -14,10 +12,6 @@ export class LayerSystem {
   constructor(outputCanvas) {
     this.outputCanvas = outputCanvas;
     this.outputCtx = outputCanvas.getContext('2d');
-    this.contentCanvas = document.createElement('canvas');
-    this.contentCanvas.width = CONTENT_SIZE;
-    this.contentCanvas.height = CONTENT_SIZE;
-    this._contentCtx = this.contentCanvas.getContext('2d');
     this.layers = [];
     this.activeIndex = 0;
     this.transform = null;
@@ -44,6 +38,8 @@ export class LayerSystem {
       hue: 0,
       saturation: 0,
       brightness: 0,
+      contrast: 0,
+      lighten: 0,
     };
 
     this.layers.push(layer);
@@ -158,20 +154,35 @@ export class LayerSystem {
     this.composite();
   }
 
+  setContrast(index, value) {
+    const layer = this.layers[index];
+    if (!layer) return;
+    layer.contrast = value;
+    this.composite();
+  }
+
+  setLighten(index, value) {
+    const layer = this.layers[index];
+    if (!layer) return;
+    layer.lighten = value;
+    this.composite();
+  }
+
   resetDetail(index) {
     const layer = this.layers[index];
     if (!layer) return;
     layer.hue = 0;
     layer.saturation = 0;
     layer.brightness = 0;
+    layer.contrast = 0;
+    layer.lighten = 0;
   }
 
   getFilteredCanvas(index) {
     const layer = this.layers[index];
     if (!layer) return null;
-    const hasHSV = layer.hue !== 0 || layer.saturation !== 0 || layer.brightness !== 0;
-    if (!hasHSV) return layer.canvas;
-    return this._applyHSVFilter(layer.canvas, layer.hue, layer.saturation, layer.brightness);
+    if (!this._hasAdjustments(layer)) return layer.canvas;
+    return this._applyFilter(layer);
   }
 
   composite() {
@@ -189,10 +200,8 @@ export class LayerSystem {
 
       if (this.transform) this.transform.applyToContext(ctx, layerIndex);
 
-      const hasHSV = layer.hue !== 0 || layer.saturation !== 0 || layer.brightness !== 0;
-      if (hasHSV) {
-        const filtered = this._applyHSVFilter(layer.canvas, layer.hue, layer.saturation, layer.brightness);
-        ctx.drawImage(filtered, 0, 0);
+      if (this._hasAdjustments(layer)) {
+        ctx.drawImage(this._applyFilter(layer), 0, 0);
       } else {
         ctx.drawImage(layer.canvas, 0, 0);
       }
@@ -200,35 +209,38 @@ export class LayerSystem {
       ctx.restore();
     }
 
-    // Crop center to content canvas (for preview / export)
-    this._contentCtx.clearRect(0, 0, CONTENT_SIZE, CONTENT_SIZE);
-    this._contentCtx.drawImage(this.outputCanvas, OFFSET, OFFSET, CONTENT_SIZE, CONTENT_SIZE, 0, 0, CONTENT_SIZE, CONTENT_SIZE);
-
     if (this.onChange) this.onChange();
   }
 
-  _applyHSVFilter(sourceCanvas, hue, sat, val) {
-    if (!this._hsvCanvas) {
-      this._hsvCanvas = document.createElement('canvas');
-      this._hsvCanvas.width = SIZE;
-      this._hsvCanvas.height = SIZE;
+  _hasAdjustments(layer) {
+    return layer.hue !== 0 || layer.saturation !== 0 || layer.brightness !== 0
+      || layer.contrast !== 0 || layer.lighten !== 0;
+  }
+
+  _applyFilter(layer) {
+    if (!this._filterCanvas) {
+      this._filterCanvas = document.createElement('canvas');
+      this._filterCanvas.width = SIZE;
+      this._filterCanvas.height = SIZE;
     }
-    const tmpCtx = this._hsvCanvas.getContext('2d');
+    const tmpCtx = this._filterCanvas.getContext('2d');
     tmpCtx.clearRect(0, 0, SIZE, SIZE);
-    tmpCtx.drawImage(sourceCanvas, 0, 0);
+    tmpCtx.drawImage(layer.canvas, 0, 0);
 
     const imageData = tmpCtx.getImageData(0, 0, SIZE, SIZE);
     const data = imageData.data;
-    const hueShift = hue / 360;
-    const satShift = sat / 100;
-    const valShift = val / 100;
+    const hueShift = layer.hue / 360;
+    const satShift = layer.saturation / 100;
+    const valShift = layer.brightness / 100;
+    const contrastFactor = (100 + layer.contrast) / 100;
+    const lightenFloor = layer.lighten / 100;
 
     for (let i = 0; i < data.length; i += 4) {
       if (data[i + 3] === 0) continue;
 
-      const r = data[i] / 255;
-      const g = data[i + 1] / 255;
-      const b = data[i + 2] / 255;
+      let r = data[i] / 255;
+      let g = data[i + 1] / 255;
+      let b = data[i + 2] / 255;
 
       const max = Math.max(r, g, b);
       const min = Math.min(r, g, b);
@@ -246,7 +258,7 @@ export class LayerSystem {
         h /= 6;
       }
 
-      // Apply adjustments
+      // HSV adjustments
       h = (h + hueShift + 1) % 1;
       s = Math.max(0, Math.min(1, s + satShift));
       v = Math.max(0, Math.min(1, v + valShift));
@@ -258,22 +270,35 @@ export class LayerSystem {
       const q = v * (1 - f * s);
       const t = v * (1 - (1 - f) * s);
 
-      let rr, gg, bb;
       switch (hi % 6) {
-        case 0: rr = v; gg = t; bb = p; break;
-        case 1: rr = q; gg = v; bb = p; break;
-        case 2: rr = p; gg = v; bb = t; break;
-        case 3: rr = p; gg = q; bb = v; break;
-        case 4: rr = t; gg = p; bb = v; break;
-        case 5: rr = v; gg = p; bb = q; break;
+        case 0: r = v; g = t; b = p; break;
+        case 1: r = q; g = v; b = p; break;
+        case 2: r = p; g = v; b = t; break;
+        case 3: r = p; g = q; b = v; break;
+        case 4: r = t; g = p; b = v; break;
+        case 5: r = v; g = p; b = q; break;
       }
 
-      data[i] = Math.round(rr * 255);
-      data[i + 1] = Math.round(gg * 255);
-      data[i + 2] = Math.round(bb * 255);
+      // Contrast: pivot around 0.5
+      if (layer.contrast !== 0) {
+        r = (r - 0.5) * contrastFactor + 0.5;
+        g = (g - 0.5) * contrastFactor + 0.5;
+        b = (b - 0.5) * contrastFactor + 0.5;
+      }
+
+      // Lighten: raise shadow floor
+      if (layer.lighten !== 0) {
+        r = lightenFloor + r * (1 - lightenFloor);
+        g = lightenFloor + g * (1 - lightenFloor);
+        b = lightenFloor + b * (1 - lightenFloor);
+      }
+
+      data[i] = Math.round(Math.max(0, Math.min(1, r)) * 255);
+      data[i + 1] = Math.round(Math.max(0, Math.min(1, g)) * 255);
+      data[i + 2] = Math.round(Math.max(0, Math.min(1, b)) * 255);
     }
 
     tmpCtx.putImageData(imageData, 0, 0);
-    return this._hsvCanvas;
+    return this._filterCanvas;
   }
 }
