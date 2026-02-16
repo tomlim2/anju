@@ -191,8 +191,32 @@ export class LayerSystem {
     const layer = this.layers[index];
     if (!layer) return null;
     const hasHSV = layer.hue !== 0 || layer.saturation !== 0 || layer.brightness !== 0;
-    if (!hasHSV) return layer.canvas;
-    return this._applyHSVFilter(layer.canvas, layer.hue, layer.saturation, layer.brightness);
+    const hasTransform = layer.rotation !== 0 || layer.scale !== 100;
+    if (!hasHSV && !hasTransform) return layer.canvas;
+
+    let source = layer.canvas;
+    if (hasHSV) {
+      source = this._applyHSVFilter(layer.canvas, layer.hue, layer.saturation, layer.brightness);
+    }
+    if (!hasTransform) return source;
+
+    if (!this._previewCanvas) {
+      this._previewCanvas = document.createElement('canvas');
+      this._previewCanvas.width = SIZE;
+      this._previewCanvas.height = SIZE;
+    }
+    const ctx = this._previewCanvas.getContext('2d');
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    const center = SIZE / 2;
+    const s = layer.scale / 100;
+    ctx.save();
+    ctx.translate(center, center);
+    ctx.rotate(layer.rotation * Math.PI / 180);
+    ctx.scale(s, s);
+    ctx.translate(-center, -center);
+    ctx.drawImage(source, 0, 0);
+    ctx.restore();
+    return this._previewCanvas;
   }
 
   composite() {
