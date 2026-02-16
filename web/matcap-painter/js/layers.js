@@ -94,6 +94,40 @@ export class LayerSystem {
     }
   }
 
+  soloLayer(index) {
+    if (!this.layers[index]) return;
+    if (this._soloIndex === index) {
+      this.unsoloLayer();
+      return;
+    }
+    // Only save visibility when entering solo from normal state
+    if (this._soloIndex === undefined) {
+      this._savedVisibility = this.layers.map(layer => layer.visible);
+    }
+    this._soloIndex = index;
+    for (let i = 0; i < this.layers.length; i++) {
+      this.layers[i].visible = i === index;
+    }
+    this.composite();
+  }
+
+  unsoloLayer() {
+    if (this._savedVisibility) {
+      for (let i = 0; i < this.layers.length; i++) {
+        if (this.layers[i] && this._savedVisibility[i] !== undefined) {
+          this.layers[i].visible = this._savedVisibility[i];
+        }
+      }
+    }
+    this._soloIndex = undefined;
+    this._savedVisibility = null;
+    this.composite();
+  }
+
+  get isSoloed() {
+    return this._soloIndex !== undefined;
+  }
+
   setOpacity(index, opacity) {
     if (this.layers[index]) {
       this.layers[index].opacity = Math.max(0, Math.min(1, opacity));
