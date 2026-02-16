@@ -141,6 +141,10 @@ export class Preview {
     this._textureDirty = true;
   }
 
+  setBackground(hex) {
+    this.scene.background = new Color(hex);
+  }
+
   get clipNames() {
     return this._clips.map(c => c.name);
   }

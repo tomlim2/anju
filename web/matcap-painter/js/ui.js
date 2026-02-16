@@ -191,6 +191,9 @@ export class UI {
     this._animSelect.addEventListener('change', (event) => {
       this.preview.playClip(event.target.value);
     }, listenerOptions);
+    document.getElementById('bg-select').addEventListener('change', (event) => {
+      this.preview.setBackground(event.target.value);
+    }, listenerOptions);
     document.getElementById('vp-anim').addEventListener('click', (event) => {
       const on = this.preview.toggleAnimation();
       event.currentTarget.classList.toggle('active', on);
