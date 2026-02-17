@@ -86,7 +86,6 @@ html, body {
   color: var(--text-dim);
   letter-spacing: 0.3px;
 }
-.topbar-version { font-weight: 400; color: var(--text-muted); font-size: var(--font-xs); }
 .topbar-copy { color: var(--text-muted); font-size: var(--font-xs); letter-spacing: 0.2px; }
 
 /* --- Main Layout --- */
@@ -843,6 +842,7 @@ html, body {
   flex: 1;
   min-height: 0;
 }
+#mode-paint-controls,
 #mode-shader-controls {
   width: 25%;
   min-width: 180px;
@@ -854,25 +854,31 @@ html, body {
   flex-shrink: 0;
 }
 
-/* Mode Tabs */
+/* Mode Tabs (in topbar) */
 .mode-tabs {
   display: flex;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+  gap: 2px;
+  align-items: center;
+  margin-left: 16px;
 }
 .mode-tab {
-  flex: 1;
-  padding: 7px 0;
+  padding: 4px 12px;
   background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
   color: var(--text-muted);
   font-size: var(--font-sm);
   cursor: pointer;
-  transition: color 0.12s, border-color 0.12s;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
 }
-.mode-tab:hover { color: var(--text); }
-.mode-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.mode-tab:hover { color: var(--text); background: var(--btn-hover); }
+.mode-tab.active { color: var(--accent); background: var(--surface); border-color: var(--border); }
+.export-tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+}
 
 /* Shader Controls */
 .shader-section { padding: 6px 10px; border-bottom: 1px solid var(--border); }
@@ -1076,92 +1082,101 @@ html, body {
 <body>
 
 <div class="topbar">
-  <h1>Matcap Painter <span class="topbar-version">v1.0.0</span></h1>
-  <span class="topbar-copy">&copy; 2026 tomlim2 &middot; Matcaps from <a href="https://github.com/nidorx/matcaps" target="_blank" rel="noopener" style="color:var(--text-dim)">nidorx/matcaps</a> (ISC)</span>
+  <h1>Matcap Painter</h1>
+  <div class="mode-tabs" id="mode-tabs">
+    <button class="mode-tab active" data-mode="shader">Shader</button>
+    <button class="mode-tab" data-mode="paint">Paint</button>
+    <button class="mode-tab export-tab" id="btn-export" title="Export PNG">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M480-480ZM202-65l-56-57 118-118h-90v-80h226v226h-80v-89L202-65Zm278-15v-80h240v-440H520v-200H240v400h-80v-400q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H480Z"/></svg>
+      Export
+    </button>
+  </div>
+  <span class="topbar-copy">v2.0.0 &middot; &copy; 2026 tomlim2 &middot; Matcaps from <a href="https://github.com/nidorx/matcaps" target="_blank" rel="noopener" style="color:var(--text-dim)">nidorx/matcaps</a> (ISC)</span>
 </div>
 
 <div class="main">
   <div class="left-panel">
-    <!-- Mode Tabs -->
-    <div class="mode-tabs" id="mode-tabs">
-      <button class="mode-tab" data-mode="paint">Paint</button>
-      <button class="mode-tab active" data-mode="shader">Shader</button>
-      <button class="tool-btn" id="btn-export" title="Export PNG" style="margin-left:auto;width:auto;gap:4px;padding:0 8px;font-size:10px;color:var(--text-dim);flex:none">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M480-480ZM202-65l-56-57 118-118h-90v-80h226v226h-80v-89L202-65Zm278-15v-80h240v-440H520v-200H240v400h-80v-400q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H480Z"/></svg>
-        Export
-      </button>
-    </div>
 
+    <!-- Editor area: mode controls (left) + canvas (right) -->
+    <div class="editor-area" id="editor-area">
+
+    <!-- Paint Mode: Controls Panel (left side) -->
     <div id="mode-paint-controls" style="display:none">
-    <!-- Toolbar -->
-    <div class="toolbar">
-      <div class="toolbar-group">
-        <button class="tool-btn active" data-tool="brush" title="Brush (B)">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M247.69-147.69q-34.33 0-67.89-15.08-33.57-15.08-55.95-40.31 22.92-6.54 43.38-27.81 20.46-21.26 20.46-56.8 0-41.93 29.04-70.96 29.04-29.04 70.96-29.04 41.93 0 70.96 29.04 29.04 29.03 29.04 70.96 0 57.75-41.12 98.87-41.13 41.13-98.88 41.13Zm0-60q33 0 56.5-23.5t23.5-56.5q0-17-11.5-28.5t-28.5-11.5q-17 0-28.5 11.5t-11.5 28.5q0 23-5.5 42t-14.5 36q5 2 10 2h10ZM460-370l-89.23-89.23 342.61-342.61q11-11 27.5-11.5t28.5 11.5l33.23 33.23q12 12 12 28t-12 28L460-370Zm-172.31 82.31Z"/></svg>
-        </button>
-        <button class="tool-btn" data-tool="airbrush" title="Airbrush (A)">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M460-174.62q-43.08 0-74.04-29.03-30.96-29.04-34.42-70.96h60.77q3.07 17.38 16.31 28.69 13.23 11.31 31.38 11.31 20.85 0 35.42-14.58Q510-263.77 510-284.62q0-20.84-14.58-35.42-14.57-14.58-35.42-14.58H90v-59.99h370q45.77 0 77.88 32.11Q570-330.38 570-284.62q0 45.77-32.12 77.89-32.11 32.11-77.88 32.11ZM90-565.39v-59.99h530q29.85 0 49.92-20.08Q690-665.54 690-695.38q0-29.85-20.08-49.93-20.07-20.08-49.92-20.08-27.54 0-46.46 17-18.93 17-22 43h-60.77q3.46-51.3 40.31-85.65 36.84-34.34 88.92-34.34 54.77 0 92.38 37.61Q750-750.15 750-695.38q0 54.76-37.62 92.38-37.61 37.61-92.38 37.61H90Zm660 314.62v-60.77q26-3.07 43-22 17-18.92 17-46.46 0-29.85-20.08-49.92Q769.85-450 740-450H90v-60h650q54.77 0 92.38 37.62Q870-434.77 870-380q0 52.08-34.35 88.92-34.34 36.85-85.65 40.31Z"/></svg>
-        </button>
-        <button class="tool-btn" data-tool="blur" title="Blur (R)">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M426.38-533.62q10.54-10.53 10.54-26.38t-10.54-26.38q-10.53-10.54-26.38-10.54t-26.38 10.54q-10.54 10.53-10.54 26.38t10.54 26.38q10.53 10.54 26.38 10.54t26.38-10.54Zm0 160q10.54-10.53 10.54-26.38t-10.54-26.38q-10.53-10.54-26.38-10.54t-26.38 10.54q-10.54 10.53-10.54 26.38t10.54 26.38q10.53 10.54 26.38 10.54t26.38-10.54ZM294-546q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm106 286q8 0 14-6t6-14q0-8-6-14t-14-6q-8 0-14 6t-6 14q0 8 6 14t14 6ZM294-386q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm120-280q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm172.38 132.38q10.54-10.53 10.54-26.38t-10.54-26.38q-10.53-10.54-26.38-10.54t-26.38 10.54q-10.54 10.53-10.54 26.38t10.54 26.38q10.53 10.54 26.38 10.54t26.38-10.54ZM574-666q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm120 280q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm0-160q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6ZM331.86-129.92q-69.37-29.92-120.68-81.21-51.31-51.29-81.25-120.63Q100-401.1 100-479.93q0-78.84 29.92-148.21t81.21-120.68q51.29-51.31 120.63-81.25Q401.1-860 479.93-860q78.84 0 148.21 29.92t120.68 81.21q51.31 51.29 81.25 120.63Q860-558.9 860-480.07q0 78.84-29.92 148.21t-81.21 120.68q-51.29 51.31-120.63 81.25Q558.9-100 480.07-100q-78.84 0-148.21-29.92ZM480-160q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm94-106q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm12.38-107.62q10.54-10.53 10.54-26.38t-10.54-26.38q-10.53-10.54-26.38-10.54t-26.38 10.54q-10.54 10.53-10.54 26.38t10.54 26.38q10.53 10.54 26.38 10.54t26.38-10.54ZM480-480Z"/></svg>
-        </button>
-        <button class="tool-btn" data-tool="eraser" title="Eraser (E)">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M679.23-240h188.46v60H619.23l60-60Zm-493.08 60-70.76-70.77Q94.31-271.85 93.81-302t20.58-52.23l423.07-439.08q21.08-22.07 50.92-21.88 29.85.19 50.93 21.27l181.3 181.31q21.08 21.07 21.27 51.42.19 30.34-20.88 51.42L499.23-180H186.15Zm287.54-60 305.15-313.15q3.08-3.08 3.08-8.85t-3.08-8.85L598.15-751.54q-3.07-3.07-8.65-3.07t-8.66 3.46l-424.3 438.3q-3.08 3.46-3.08 9.04 0 5.58 3.08 8.66L211.69-240h262ZM480-480Z"/></svg>
-        </button>
-        <button class="tool-btn" data-tool="fill" title="Fill (F)">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M346.77-159.23 119.23-386.77q-9.61-9.66-14.42-21.25-4.81-11.6-4.81-24.1 0-12.5 4.81-24.03 4.81-11.54 14.42-21.16l226.16-225.54-110.62-109.07 46.61-48.46L664.5-476.89q9.58 9.58 14.08 21.14t4.5 24.09q0 12.52-4.5 24.08-4.5 11.56-14.12 21.2L437.31-159.23q-9.62 9.61-21.16 14.42-11.53 4.81-24.03 4.81-12.5 0-24.1-4.81-11.59-4.81-21.25-14.42Zm45.08-497.16L175.54-440.08q-2.31 2.31-3.08 4.62t-.77 4.61H612q0-2.3-.77-4.61-.77-2.31-3.08-4.62l-216.3-216.31ZM782.38-140q-32.15 0-54.07-22.6-21.93-22.61-21.93-55.4 0-24.31 11.39-46.39 11.38-22.07 27.23-42.38l37.38-47.08 39.39 47.08q15.23 20.31 26.92 42.38 11.69 22.08 11.69 46.39 0 32.79-22.92 55.4-22.92 22.6-55.08 22.6Z"/></svg>
-        </button>
-        <button class="tool-btn" data-tool="eyedropper" title="Eyedropper (I)">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M120-120v-190l358-358-58-56 58-56 76 76 124-124q5.25-5.25 12.13-8.12Q697-839 704.5-839t14.37 2.88q6.88 2.87 12.13 8.12l42 42q5.25 5.25 8.13 12.13Q784-767 784-759.5t-2.87 14.37q-2.88 6.88-8.13 12.13L649-609l76 76-56 58-56-58-358 358H120Zm80-80h36l284-284-36-36-284 284v36Z"/></svg>
-        </button>
-        <button class="tool-btn" id="tool-pan" title="Pan (H)">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M419.31-70q-27.47 0-51.27-12.35-23.81-12.34-39.65-35.42l-250-366.08 16.3-15.69q15.93-15.92 37.7-17.96 21.76-2.04 39.69 10.65L300-417.77v-361.07q0-12.75 8.63-21.38 8.63-8.62 21.38-8.62 12.76 0 21.37 8.62 8.62 8.63 8.62 21.38v476.61L197.77-415.85l180.08 263.62q6.54 10.31 17.65 16.27 11.12 5.96 23.81 5.96H670q37.61 0 63.81-26.19Q760-182.39 760-220v-530q0-12.75 8.63-21.37 8.63-8.63 21.38-8.63 12.76 0 21.37 8.63Q820-762.75 820-750v530q0 62.15-43.92 106.07Q732.15-70 670-70H419.31Zm34.15-420v-368.84q0-12.75 8.63-21.38 8.63-8.62 21.39-8.62 12.75 0 21.37 8.62 8.61 8.63 8.61 21.38V-490h-60Zm153.46 0v-328.84q0-12.75 8.63-21.38 8.63-8.62 21.39-8.62 12.75 0 21.37 8.62 8.61 8.63 8.61 21.38V-490h-60ZM479.08-310Z"/></svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- Controls -->
-    <div class="controls-row">
-      <div class="control-color">
-        <input type="color" id="brush-color" value="#000000">
-      </div>
-      <div class="color-chips" id="color-chips">
-        <button class="color-chip" style="background:#ffffff" data-color="#ffffff"></button>
-        <button class="color-chip" style="background:#c0c0c0" data-color="#c0c0c0"></button>
-        <button class="color-chip" style="background:#808080" data-color="#808080"></button>
-        <button class="color-chip" style="background:#404040" data-color="#404040"></button>
-        <button class="color-chip" style="background:#1a1a1a" data-color="#1a1a1a"></button>
-        <button class="color-chip" style="background:#000000" data-color="#000000"></button>
-        <button class="color-chip" style="background:#ffecd2" data-color="#ffecd2"></button>
-        <button class="color-chip" style="background:#f8a468" data-color="#f8a468"></button>
-        <button class="color-chip" style="background:#c25b3f" data-color="#c25b3f"></button>
-        <button class="color-chip" style="background:#5b2c1e" data-color="#5b2c1e"></button>
-        <button class="color-chip" style="background:#d4e4ff" data-color="#d4e4ff"></button>
-        <button class="color-chip" style="background:#6fa0d6" data-color="#6fa0d6"></button>
-        <button class="color-chip" style="background:#2d5a8e" data-color="#2d5a8e"></button>
-        <button class="color-chip" style="background:#1a2744" data-color="#1a2744"></button>
-      </div>
-      <div class="controls-sep"></div>
-      <div class="slider" data-slider="size">
-        <span class="slider-label">Size</span>
-        <input class="slider-track" type="range" min="0" max="1024" value="512">
-        <input type="number" class="slider-val" value="512" min="0" max="1024">
-      </div>
-      <div class="slider" data-slider="opacity">
-        <span class="slider-label">Op</span>
-        <input class="slider-track" type="range" min="1" max="100" value="100">
-        <input type="number" class="slider-val" value="100" min="1" max="100">
-      </div>
-      <div class="slider" data-slider="hardness">
-        <span class="slider-label">Hard</span>
-        <input class="slider-track" type="range" min="0" max="100" value="50">
-        <input type="number" class="slider-val" value="50" min="0" max="100">
+    <div class="layers-panel">
+      <div class="layers-header"><span>Paint Tools</span></div>
+      <div style="overflow-y:auto;flex:1">
+        <div class="shader-section">
+          <div class="toolbar" style="border-bottom:none;padding:6px 4px">
+            <div class="toolbar-group">
+              <button class="tool-btn active" data-tool="brush" title="Brush (B)">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M247.69-147.69q-34.33 0-67.89-15.08-33.57-15.08-55.95-40.31 22.92-6.54 43.38-27.81 20.46-21.26 20.46-56.8 0-41.93 29.04-70.96 29.04-29.04 70.96-29.04 41.93 0 70.96 29.04 29.04 29.03 29.04 70.96 0 57.75-41.12 98.87-41.13 41.13-98.88 41.13Zm0-60q33 0 56.5-23.5t23.5-56.5q0-17-11.5-28.5t-28.5-11.5q-17 0-28.5 11.5t-11.5 28.5q0 23-5.5 42t-14.5 36q5 2 10 2h10ZM460-370l-89.23-89.23 342.61-342.61q11-11 27.5-11.5t28.5 11.5l33.23 33.23q12 12 12 28t-12 28L460-370Zm-172.31 82.31Z"/></svg>
+              </button>
+              <button class="tool-btn" data-tool="airbrush" title="Airbrush (A)">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M460-174.62q-43.08 0-74.04-29.03-30.96-29.04-34.42-70.96h60.77q3.07 17.38 16.31 28.69 13.23 11.31 31.38 11.31 20.85 0 35.42-14.58Q510-263.77 510-284.62q0-20.84-14.58-35.42-14.57-14.58-35.42-14.58H90v-59.99h370q45.77 0 77.88 32.11Q570-330.38 570-284.62q0 45.77-32.12 77.89-32.11 32.11-77.88 32.11ZM90-565.39v-59.99h530q29.85 0 49.92-20.08Q690-665.54 690-695.38q0-29.85-20.08-49.93-20.07-20.08-49.92-20.08-27.54 0-46.46 17-18.93 17-22 43h-60.77q3.46-51.3 40.31-85.65 36.84-34.34 88.92-34.34 54.77 0 92.38 37.61Q750-750.15 750-695.38q0 54.76-37.62 92.38-37.61 37.61-92.38 37.61H90Zm660 314.62v-60.77q26-3.07 43-22 17-18.92 17-46.46 0-29.85-20.08-49.92Q769.85-450 740-450H90v-60h650q54.77 0 92.38 37.62Q870-434.77 870-380q0 52.08-34.35 88.92-34.34 36.85-85.65 40.31Z"/></svg>
+              </button>
+              <button class="tool-btn" data-tool="blur" title="Blur (R)">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M426.38-533.62q10.54-10.53 10.54-26.38t-10.54-26.38q-10.53-10.54-26.38-10.54t-26.38 10.54q-10.54 10.53-10.54 26.38t10.54 26.38q10.53 10.54 26.38 10.54t26.38-10.54Zm0 160q10.54-10.53 10.54-26.38t-10.54-26.38q-10.53-10.54-26.38-10.54t-26.38 10.54q-10.54 10.53-10.54 26.38t10.54 26.38q10.53 10.54 26.38 10.54t26.38-10.54ZM294-546q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm106 286q8 0 14-6t6-14q0-8-6-14t-14-6q-8 0-14 6t-6 14q0 8 6 14t14 6ZM294-386q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm120-280q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm172.38 132.38q10.54-10.53 10.54-26.38t-10.54-26.38q-10.53-10.54-26.38-10.54t-26.38 10.54q-10.54 10.53-10.54 26.38t10.54 26.38q10.53 10.54 26.38 10.54t26.38-10.54ZM574-666q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm120 280q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm0-160q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6ZM331.86-129.92q-69.37-29.92-120.68-81.21-51.31-51.29-81.25-120.63Q100-401.1 100-479.93q0-78.84 29.92-148.21t81.21-120.68q51.29-51.31 120.63-81.25Q401.1-860 479.93-860q78.84 0 148.21 29.92t120.68 81.21q51.31 51.29 81.25 120.63Q860-558.9 860-480.07q0 78.84-29.92 148.21t-81.21 120.68q-51.29 51.31-120.63 81.25Q558.9-100 480.07-100q-78.84 0-148.21-29.92ZM480-160q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm94-106q6-6 6-14t-6-14q-6-6-14-6t-14 6q-6 6-6 14t6 14q6 6 14 6t14-6Zm12.38-107.62q10.54-10.53 10.54-26.38t-10.54-26.38q-10.53-10.54-26.38-10.54t-26.38 10.54q-10.54 10.53-10.54 26.38t10.54 26.38q10.53 10.54 26.38 10.54t26.38-10.54ZM480-480Z"/></svg>
+              </button>
+              <button class="tool-btn" data-tool="eraser" title="Eraser (E)">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M679.23-240h188.46v60H619.23l60-60Zm-493.08 60-70.76-70.77Q94.31-271.85 93.81-302t20.58-52.23l423.07-439.08q21.08-22.07 50.92-21.88 29.85.19 50.93 21.27l181.3 181.31q21.08 21.07 21.27 51.42.19 30.34-20.88 51.42L499.23-180H186.15Zm287.54-60 305.15-313.15q3.08-3.08 3.08-8.85t-3.08-8.85L598.15-751.54q-3.07-3.07-8.65-3.07t-8.66 3.46l-424.3 438.3q-3.08 3.46-3.08 9.04 0 5.58 3.08 8.66L211.69-240h262ZM480-480Z"/></svg>
+              </button>
+              <button class="tool-btn" data-tool="fill" title="Fill (F)">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M346.77-159.23 119.23-386.77q-9.61-9.66-14.42-21.25-4.81-11.6-4.81-24.1 0-12.5 4.81-24.03 4.81-11.54 14.42-21.16l226.16-225.54-110.62-109.07 46.61-48.46L664.5-476.89q9.58 9.58 14.08 21.14t4.5 24.09q0 12.52-4.5 24.08-4.5 11.56-14.12 21.2L437.31-159.23q-9.62 9.61-21.16 14.42-11.53 4.81-24.03 4.81-12.5 0-24.1-4.81-11.59-4.81-21.25-14.42Zm45.08-497.16L175.54-440.08q-2.31 2.31-3.08 4.62t-.77 4.61H612q0-2.3-.77-4.61-.77-2.31-3.08-4.62l-216.3-216.31ZM782.38-140q-32.15 0-54.07-22.6-21.93-22.61-21.93-55.4 0-24.31 11.39-46.39 11.38-22.07 27.23-42.38l37.38-47.08 39.39 47.08q15.23 20.31 26.92 42.38 11.69 22.08 11.69 46.39 0 32.79-22.92 55.4-22.92 22.6-55.08 22.6Z"/></svg>
+              </button>
+              <button class="tool-btn" data-tool="eyedropper" title="Eyedropper (I)">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M120-120v-190l358-358-58-56 58-56 76 76 124-124q5.25-5.25 12.13-8.12Q697-839 704.5-839t14.37 2.88q6.88 2.87 12.13 8.12l42 42q5.25 5.25 8.13 12.13Q784-767 784-759.5t-2.87 14.37q-2.88 6.88-8.13 12.13L649-609l76 76-56 58-56-58-358 358H120Zm80-80h36l284-284-36-36-284 284v36Z"/></svg>
+              </button>
+              <button class="tool-btn" id="tool-pan" title="Pan (H)">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M419.31-70q-27.47 0-51.27-12.35-23.81-12.34-39.65-35.42l-250-366.08 16.3-15.69q15.93-15.92 37.7-17.96 21.76-2.04 39.69 10.65L300-417.77v-361.07q0-12.75 8.63-21.38 8.63-8.62 21.38-8.62 12.76 0 21.37 8.62 8.62 8.63 8.62 21.38v476.61L197.77-415.85l180.08 263.62q6.54 10.31 17.65 16.27 11.12 5.96 23.81 5.96H670q37.61 0 63.81-26.19Q760-182.39 760-220v-530q0-12.75 8.63-21.37 8.63-8.63 21.38-8.63 12.76 0 21.37 8.63Q820-762.75 820-750v530q0 62.15-43.92 106.07Q732.15-70 670-70H419.31Zm34.15-420v-368.84q0-12.75 8.63-21.38 8.63-8.62 21.39-8.62 12.75 0 21.37 8.62 8.61 8.63 8.61 21.38V-490h-60Zm153.46 0v-328.84q0-12.75 8.63-21.38 8.63-8.62 21.39-8.62 12.75 0 21.37 8.62 8.61 8.63 8.61 21.38V-490h-60ZM479.08-310Z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="shader-section">
+          <div class="shader-section-title">Color</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:2px 0">
+            <input type="color" id="brush-color" value="#000000" style="width:24px;height:20px;border:1px solid var(--border);border-radius:var(--radius-sm);background:none;cursor:pointer;padding:0">
+            <div class="color-chips" id="color-chips">
+              <button class="color-chip" style="background:#ffffff" data-color="#ffffff"></button>
+              <button class="color-chip" style="background:#c0c0c0" data-color="#c0c0c0"></button>
+              <button class="color-chip" style="background:#808080" data-color="#808080"></button>
+              <button class="color-chip" style="background:#404040" data-color="#404040"></button>
+              <button class="color-chip" style="background:#1a1a1a" data-color="#1a1a1a"></button>
+              <button class="color-chip" style="background:#000000" data-color="#000000"></button>
+              <button class="color-chip" style="background:#ffecd2" data-color="#ffecd2"></button>
+              <button class="color-chip" style="background:#f8a468" data-color="#f8a468"></button>
+              <button class="color-chip" style="background:#c25b3f" data-color="#c25b3f"></button>
+              <button class="color-chip" style="background:#5b2c1e" data-color="#5b2c1e"></button>
+              <button class="color-chip" style="background:#d4e4ff" data-color="#d4e4ff"></button>
+              <button class="color-chip" style="background:#6fa0d6" data-color="#6fa0d6"></button>
+              <button class="color-chip" style="background:#2d5a8e" data-color="#2d5a8e"></button>
+              <button class="color-chip" style="background:#1a2744" data-color="#1a2744"></button>
+            </div>
+          </div>
+        </div>
+        <div class="shader-section">
+          <div class="shader-section-title">Brush</div>
+          <div class="detail-panel">
+            <div class="hsv-row" data-slider="size">
+              <span class="hsv-label">Size</span>
+              <input class="hsv-slider slider-track" type="range" min="0" max="1024" value="512">
+              <input type="number" class="hsv-val slider-val" value="512" min="0" max="1024">
+            </div>
+            <div class="hsv-row" data-slider="opacity">
+              <span class="hsv-label">Op</span>
+              <input class="hsv-slider slider-track" type="range" min="1" max="100" value="100">
+              <input type="number" class="hsv-val slider-val" value="100" min="1" max="100">
+            </div>
+            <div class="hsv-row" data-slider="hardness">
+              <span class="hsv-label">Hard</span>
+              <input class="hsv-slider slider-track" type="range" min="0" max="100" value="50">
+              <input type="number" class="hsv-val slider-val" value="50" min="0" max="100">
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     </div><!-- /mode-paint-controls -->
-
-    <!-- Editor area: shader controls (left) + canvas (right) -->
-    <div class="editor-area" id="editor-area">
 
     <!-- Shader Mode: Controls Panel (left side) -->
     <div id="mode-shader-controls">

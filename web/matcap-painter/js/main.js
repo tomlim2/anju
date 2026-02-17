@@ -41,7 +41,7 @@ modeController.onModeChange = (mode) => {
     toonGenerator.render();
   }
 
-  document.querySelectorAll('.mode-tab').forEach(tab => {
+  document.querySelectorAll('.mode-tab[data-mode]').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.mode === mode);
   });
 
@@ -68,7 +68,7 @@ async function init() {
   const ui = new UI(brush, painter, layers, preview, transform, modeController, toonGenerator);
 
   // Tab click events
-  document.querySelectorAll('.mode-tab').forEach(tab => {
+  document.querySelectorAll('.mode-tab[data-mode]').forEach(tab => {
     tab.addEventListener('click', () => {
       modeController.setMode(tab.dataset.mode);
     });
