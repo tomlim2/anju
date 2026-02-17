@@ -12,12 +12,14 @@ const BRUSH_SIZE_MIN = 0;
 const BRUSH_SIZE_MAX = 1024;
 
 export class UI {
-  constructor(brush, painter, layerSystem, preview, transform) {
+  constructor(brush, painter, layerSystem, preview, transform, modeController, toonGenerator) {
     this.brush = brush;
     this.painter = painter;
     this.layers = layerSystem;
     this.preview = preview;
     this.transform = transform;
+    this.modeController = modeController;
+    this.toonGenerator = toonGenerator;
 
     // Canvas navigation state
     this._zoom = 1;
@@ -54,8 +56,18 @@ export class UI {
     this._bindKeyboard();
     this._bindCanvasNav();
     this._bindViewport();
+    this._bindShaderControls();
     this._resizeCanvasDisplay();
     window.addEventListener('resize', () => this._resizeCanvasDisplay(), { signal: this._ac.signal });
+
+    // Re-layout canvas on mode change
+    if (this.modeController) {
+      const prevCb = this.modeController._onModeChange;
+      this.modeController._onModeChange = (mode, prev) => {
+        if (prevCb) prevCb(mode, prev);
+        this._resizeCanvasDisplay();
+      };
+    }
   }
 
   destroy() {
@@ -141,8 +153,9 @@ export class UI {
     const listenerOptions = { signal: this._ac.signal };
     const area = document.getElementById('canvas-area');
 
-    // Wheel zoom (toward cursor)
+    // Wheel zoom (toward cursor) — disabled in shader mode
     area.addEventListener('wheel', (event) => {
+      if (this.modeController && this.modeController.mode === 'shader') return;
       event.preventDefault();
       const factor = event.deltaY > 0 ? ZOOM_OUT_FACTOR : ZOOM_IN_FACTOR;
       const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, this._zoom * factor));
@@ -160,8 +173,9 @@ export class UI {
       this.painter.refreshCursor();
     }, { passive: false, signal: this._ac.signal });
 
-    // Middle mouse or space+left for pan
+    // Middle mouse or space+left for pan — disabled in shader mode
     area.addEventListener('pointerdown', (event) => {
+      if (this.modeController && this.modeController.mode === 'shader') return;
       if (event.button === 1 || (event.button === 0 && (this._spaceHeld || this._panToggle))) {
         event.preventDefault();
         event.stopPropagation();
@@ -797,6 +811,295 @@ export class UI {
     el.scaleVal.value = this.transform.scale;
   }
 
+  // --- Shader Controls ---
+
+  _shaderRender() {
+    if (this.modeController && this.modeController.mode === 'shader' && this.toonGenerator) {
+      this.toonGenerator.render();
+    }
+  }
+
+  _bindShaderControls() {
+    if (!this.toonGenerator) return;
+    const toon = this.toonGenerator;
+    const listenerOptions = { signal: this._ac.signal };
+
+    const scheduleRender = () => this._shaderRender();
+
+    // Helper: bind slider + number input pair
+    const bindPair = (sliderId, valId, getter, setter) => {
+      const slider = document.getElementById(sliderId);
+      const val = document.getElementById(valId);
+      if (!slider || !val) return;
+      slider.addEventListener('input', () => { val.value = slider.value; setter(+slider.value); scheduleRender(); }, listenerOptions);
+      val.addEventListener('change', () => {
+        const min = +slider.min, max = +slider.max;
+        const v = Math.round(Math.min(max, Math.max(min, +val.value || 0)));
+        val.value = v; slider.value = v; setter(v); scheduleRender();
+      }, listenerOptions);
+    };
+
+    // Gradient editor (Figma-style)
+    this._initGradientEditor();
+
+    // Outline
+    document.getElementById('outline-enabled')?.addEventListener('change', (e) => { toon.outlineEnabled = e.target.checked; scheduleRender(); }, listenerOptions);
+    document.getElementById('outline-color')?.addEventListener('input', (e) => { toon.outlineColor = e.target.value; scheduleRender(); }, listenerOptions);
+    bindPair('outline-width', 'outline-width-val', () => toon.outlineWidth * 1000, (v) => { toon.outlineWidth = v / 1000; });
+
+    // Rim
+    document.getElementById('rim-enabled')?.addEventListener('change', (e) => { toon.rimEnabled = e.target.checked; scheduleRender(); }, listenerOptions);
+    document.getElementById('rim-color')?.addEventListener('input', (e) => { toon.rimColor = e.target.value; scheduleRender(); }, listenerOptions);
+    bindPair('rim-power', 'rim-power-val', () => toon.rimPower * 10, (v) => { toon.rimPower = v / 10; });
+    bindPair('rim-threshold', 'rim-threshold-val', () => toon.rimThreshold * 100, (v) => { toon.rimThreshold = v / 100; });
+
+    // Specular
+    document.getElementById('spec-enabled')?.addEventListener('change', (e) => { toon.specEnabled = e.target.checked; scheduleRender(); }, listenerOptions);
+    document.getElementById('spec-color')?.addEventListener('input', (e) => { toon.specColor = e.target.value; scheduleRender(); }, listenerOptions);
+    bindPair('spec-power', 'spec-power-val', () => toon.specPower, (v) => { toon.specPower = v; });
+    bindPair('spec-threshold', 'spec-threshold-val', () => toon.specThreshold * 100, (v) => { toon.specThreshold = v / 100; });
+
+    // Light direction
+    const normalize = (x, y, z) => {
+      const len = Math.sqrt(x * x + y * y + z * z);
+      return len > 0 ? [x / len, y / len, z / len] : [0, 0, 1];
+    };
+    const updateLight = () => {
+      const lx = +(document.getElementById('light-x')?.value || 30) / 100;
+      const ly = +(document.getElementById('light-y')?.value || 50) / 100;
+      const lz = +(document.getElementById('light-z')?.value || 80) / 100;
+      toon.lightDir = normalize(lx, ly, lz);
+      scheduleRender();
+    };
+    bindPair('light-x', 'light-x-val', () => toon.lightDir[0] * 100, (v) => { updateLight(); });
+    bindPair('light-y', 'light-y-val', () => toon.lightDir[1] * 100, (v) => { updateLight(); });
+    bindPair('light-z', 'light-z-val', () => toon.lightDir[2] * 100, (v) => { updateLight(); });
+  }
+
+  // --- Gradient Editor (Figma-style) ---
+
+  _initGradientEditor() {
+    const toon = this.toonGenerator;
+    const bar = document.getElementById('gradient-bar');
+    const list = document.getElementById('gradient-stop-list');
+    const addBtn = document.getElementById('gradient-add-stop');
+    if (!bar || !list) return;
+
+    this._selectedStopIndex = 0;
+    this._gradientBar = bar;
+    this._gradientList = list;
+
+    // Gradient mode select (Step / Linear)
+    const modeSelect = document.getElementById('gradient-mode');
+    modeSelect?.addEventListener('change', (e) => {
+      toon.gradientMode = e.target.value;
+      this._shaderRender();
+      this._renderGradientUI();
+    }, { signal: this._ac.signal });
+
+    // Add stop button
+    addBtn?.addEventListener('click', () => {
+      const sorted = [...toon.stops].sort((a, b) => a.position - b.position);
+      let newPos = 50;
+      if (sorted.length >= 2) {
+        let maxGap = 0, gapStart = 0, gapEnd = 100;
+        for (let i = 0; i < sorted.length - 1; i++) {
+          const gap = sorted[i + 1].position - sorted[i].position;
+          if (gap > maxGap) { maxGap = gap; gapStart = sorted[i].position; gapEnd = sorted[i + 1].position; }
+        }
+        newPos = Math.round((gapStart + gapEnd) / 2);
+      }
+      toon.stops.push({ position: newPos, color: '#888888' });
+      this._selectedStopIndex = toon.stops.length - 1;
+      this._shaderRender();
+      this._renderGradientUI();
+    }, { signal: this._ac.signal });
+
+    // Click on bar to add stop (left=0%=dark, right=100%=bright)
+    bar.addEventListener('mousedown', (e) => {
+      if (e.target.classList.contains('gradient-handle')) return;
+      const rect = bar.getBoundingClientRect();
+      const pos = Math.round(Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)));
+      toon.stops.push({ position: pos, color: '#888888' });
+      this._selectedStopIndex = toon.stops.length - 1;
+      this._shaderRender();
+      this._renderGradientUI();
+    }, { signal: this._ac.signal });
+
+    this._renderGradientUI();
+  }
+
+  _renderGradientUI() {
+    const toon = this.toonGenerator;
+    const bar = this._gradientBar;
+    const list = this._gradientList;
+    if (!bar || !list) return;
+
+    // Update gradient bar background (left=0%=dark, right=100%=bright)
+    const ascSorted = [...toon.stops].sort((a, b) => a.position - b.position);
+    if (toon.gradientMode === 'linear') {
+      bar.style.background = `linear-gradient(to right, ${ascSorted.map(s => `${s.color} ${s.position}%`).join(', ')})`;
+    } else {
+      // Step mode: each stop's color extends rightward to the next stop's position
+      const stops = [];
+      for (let i = 0; i < ascSorted.length; i++) {
+        const start = i === 0 ? '0%' : ascSorted[i].position + '%';
+        const end = i === ascSorted.length - 1 ? '100%' : ascSorted[i + 1].position + '%';
+        stops.push(`${ascSorted[i].color} ${start}`);
+        stops.push(`${ascSorted[i].color} ${end}`);
+      }
+      bar.style.background = `linear-gradient(to right, ${stops.join(', ')})`;
+    }
+
+    // Render handles
+    bar.querySelectorAll('.gradient-handle').forEach(h => h.remove());
+    toon.stops.forEach((stop, i) => {
+      const handle = document.createElement('div');
+      handle.className = 'gradient-handle' + (i === this._selectedStopIndex ? ' selected' : '');
+      handle.style.left = stop.position + '%';
+      handle.style.background = stop.color;
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this._selectedStopIndex = i;
+        this._renderGradientUI();
+        this._startHandleDrag(i);
+      });
+      bar.appendChild(handle);
+    });
+
+    // Render stop list
+    list.innerHTML = '';
+    toon.stops.forEach((stop, i) => {
+      const row = document.createElement('div');
+      row.className = 'gradient-stop-item' + (i === this._selectedStopIndex ? ' selected' : '');
+      row.addEventListener('click', () => { this._selectedStopIndex = i; this._renderGradientUI(); });
+
+      // Position wrap: [number][%]
+      const posWrap = document.createElement('div');
+      posWrap.className = 'gradient-pos-wrap';
+      const pos = document.createElement('input');
+      pos.type = 'number';
+      pos.className = 'gradient-pos';
+      pos.value = stop.position;
+      pos.min = 0;
+      pos.max = 100;
+      pos.addEventListener('change', () => {
+        toon.stops[i].position = Math.max(0, Math.min(100, Math.round(+pos.value || 0)));
+        this._shaderRender();
+        this._renderGradientUI();
+      });
+      pos.addEventListener('click', (e) => e.stopPropagation());
+      const pct = document.createElement('span');
+      pct.className = 'gradient-pos-pct';
+      pct.textContent = '%';
+      posWrap.appendChild(pos);
+      posWrap.appendChild(pct);
+
+      // Color swatch with hidden color input
+      const swatch = document.createElement('div');
+      swatch.className = 'gradient-swatch';
+      swatch.style.background = stop.color;
+      const colorInput = document.createElement('input');
+      colorInput.type = 'color';
+      colorInput.value = stop.color;
+      colorInput.addEventListener('input', (e) => {
+        e.stopPropagation();
+        toon.stops[i].color = colorInput.value;
+        this._shaderRender();
+        this._renderGradientUI();
+      });
+      colorInput.addEventListener('click', (e) => e.stopPropagation());
+      swatch.appendChild(colorInput);
+
+      // Hex input
+      const hex = document.createElement('input');
+      hex.type = 'text';
+      hex.className = 'gradient-hex';
+      hex.value = stop.color.slice(1).toUpperCase();
+      hex.maxLength = 6;
+      hex.addEventListener('change', () => {
+        const val = hex.value.replace('#', '').trim();
+        if (/^[0-9a-fA-F]{6}$/.test(val)) {
+          toon.stops[i].color = '#' + val.toLowerCase();
+          this._shaderRender();
+          this._renderGradientUI();
+        } else {
+          hex.value = toon.stops[i].color.slice(1).toUpperCase();
+        }
+      });
+      hex.addEventListener('click', (e) => e.stopPropagation());
+
+      // Remove button
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'gradient-remove-btn';
+      removeBtn.textContent = '—';
+      removeBtn.title = 'Remove stop';
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (toon.stops.length <= 2) return;
+        toon.stops.splice(i, 1);
+        if (this._selectedStopIndex >= toon.stops.length) this._selectedStopIndex = toon.stops.length - 1;
+        this._shaderRender();
+        this._renderGradientUI();
+      });
+
+      row.appendChild(posWrap);
+      row.appendChild(swatch);
+      row.appendChild(hex);
+      row.appendChild(removeBtn);
+      list.appendChild(row);
+    });
+  }
+
+  _startHandleDrag(index) {
+    const toon = this.toonGenerator;
+    const bar = this._gradientBar;
+
+    const onMove = (e) => {
+      const rect = bar.getBoundingClientRect();
+      const pos = Math.round(Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)));
+      toon.stops[index].position = pos;
+
+      // Update bar gradient (left=0%=dark, right=100%=bright)
+      const ascSorted = [...toon.stops].sort((a, b) => a.position - b.position);
+      if (toon.gradientMode === 'linear') {
+        bar.style.background = `linear-gradient(to right, ${ascSorted.map(s => `${s.color} ${s.position}%`).join(', ')})`;
+      } else {
+        const stops = [];
+        for (let i = 0; i < ascSorted.length; i++) {
+          const start = i === 0 ? '0%' : ascSorted[i].position + '%';
+          const end = i === ascSorted.length - 1 ? '100%' : ascSorted[i + 1].position + '%';
+          stops.push(`${ascSorted[i].color} ${start}`);
+          stops.push(`${ascSorted[i].color} ${end}`);
+        }
+        bar.style.background = `linear-gradient(to right, ${stops.join(', ')})`;
+      }
+
+      // Update handle position
+      const handles = bar.querySelectorAll('.gradient-handle');
+      if (handles[index]) handles[index].style.left = pos + '%';
+
+      // Update position input in stop list
+      const rows = this._gradientList.querySelectorAll('.gradient-stop-item');
+      if (rows[index]) {
+        const posInput = rows[index].querySelector('.gradient-pos');
+        if (posInput) posInput.value = pos;
+      }
+
+      this._shaderRender();
+    };
+
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      this._renderGradientUI();
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
   // --- Keyboard ---
 
   _bindKeyboard() {
@@ -839,6 +1142,9 @@ export class UI {
         this.resetView();
         return;
       }
+
+      // Tool shortcuts only in paint mode
+      if (this.modeController && this.modeController.mode !== 'paint') return;
 
       // Pan toggle
       if (key === 'h') {
@@ -893,12 +1199,21 @@ export class UI {
     const area = document.getElementById('canvas-area');
     const wrap = document.getElementById('canvas-wrap');
     const canvas = document.getElementById('paint-canvas');
+    const isShader = this.modeController && this.modeController.mode === 'shader';
 
-    const padding = 24;
-    const maxSize = Math.min(area.clientWidth, area.clientHeight) - padding * 2;
-    // Cap at 1:1 physical pixel mapping to avoid blurry upscaling on Retina
-    const dpr = window.devicePixelRatio || 1;
-    const displaySize = Math.max(200, Math.min(maxSize, canvas.width / dpr));
+    let displaySize;
+    if (isShader) {
+      // Shader mode: fill the canvas area, no padding
+      displaySize = Math.max(200, Math.min(area.clientWidth, area.clientHeight));
+      this._zoom = 1;
+      this._panX = 0;
+      this._panY = 0;
+    } else {
+      const padding = 24;
+      const maxSize = Math.min(area.clientWidth, area.clientHeight) - padding * 2;
+      const dpr = window.devicePixelRatio || 1;
+      displaySize = Math.max(200, Math.min(maxSize, canvas.width / dpr));
+    }
 
     this._baseSize = displaySize;
     wrap.style.width = displaySize + 'px';

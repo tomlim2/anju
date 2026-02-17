@@ -21,6 +21,7 @@ export class Painter {
     this.mirrorX = false;
     this.mirrorY = false;
     this.panMode = false;
+    this.enabled = true;
     this.onColorPick = null; // callback(hexColor) when eyedropper picks
 
     this._painting = false;
@@ -157,6 +158,7 @@ export class Painter {
   }
 
   _onDown(event) {
+    if (!this.enabled) return;
     if (this.panMode) return;
     const { x, y } = this._canvasCoords(event);
 

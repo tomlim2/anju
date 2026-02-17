@@ -653,7 +653,7 @@ html, body {
 .hsv-val:hover { border-color: var(--border); }
 .hsv-val:focus-visible { border-color: var(--accent-dim); color: var(--text); }
 
-/* --- Right Panel (3D Preview + Layers) --- */
+/* --- Right Panel (3D Preview) --- */
 .right-panel {
   width: 480px;
   flex-shrink: 0;
@@ -831,6 +831,232 @@ html, body {
   line-height: 1;
 }
 
+/* Mode section wrappers */
+#mode-paint-layers {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+#mode-shader-controls {
+  max-height: 40vh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+}
+
+/* Mode Tabs */
+.mode-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.mode-tab {
+  flex: 1;
+  padding: 7px 0;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.mode-tab:hover { color: var(--text); }
+.mode-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Shader Controls */
+.shader-section { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.shader-section-title {
+  font-size: var(--font-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+/* Gradient Editor (Figma-style) */
+.gradient-bar-wrap {
+  padding: 14px 0 4px;
+}
+.gradient-bar {
+  height: 20px;
+  border-radius: 6px;
+  position: relative;
+  cursor: crosshair;
+  border: 1px solid rgba(255,255,255,0.08);
+  overflow: visible;
+}
+.gradient-handle {
+  position: absolute;
+  top: -12px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #666;
+  border-radius: 3px;
+  cursor: grab;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+.gradient-handle::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #666;
+}
+.gradient-handle.selected { border-color: var(--accent); }
+.gradient-handle.selected::after { border-top-color: var(--accent); }
+.gradient-handle:active { cursor: grabbing; }
+.gradient-stops-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0 4px;
+}
+.gradient-add-btn {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.12s, color 0.12s;
+}
+.gradient-add-btn:hover { background: var(--btn-hover); color: var(--text); }
+.gradient-stop-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.gradient-stop-item:hover { background: var(--layer-hover); }
+.gradient-stop-item.selected { background: var(--layer-active); }
+.gradient-pos-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding-right: 4px;
+  min-width: 48px;
+}
+.gradient-pos {
+  width: 28px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: var(--font-xs);
+  text-align: right;
+  padding: 2px 1px 2px 4px;
+  outline: none;
+  font-family: inherit;
+  -moz-appearance: textfield;
+}
+.gradient-pos::-webkit-inner-spin-button,
+.gradient-pos::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.gradient-pos:focus { color: var(--text); }
+.gradient-pos-pct { color: var(--text-muted); font-size: var(--font-xs); }
+.gradient-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255,255,255,0.15);
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+.gradient-swatch input[type="color"] {
+  position: absolute;
+  inset: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+  opacity: 0;
+  cursor: pointer;
+  border: none;
+}
+.gradient-hex {
+  width: 52px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  font-size: var(--font-xs);
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 4px;
+  outline: none;
+  text-transform: uppercase;
+}
+.gradient-hex:hover { border-color: var(--border); }
+.gradient-hex:focus { border-color: var(--accent-dim); color: var(--text); }
+.gradient-remove-btn {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  margin-left: auto;
+  border-radius: var(--radius-sm);
+  transition: background 0.12s, color 0.12s;
+}
+.gradient-remove-btn:hover { background: var(--btn-hover); color: var(--text); }
+.gradient-mode-row { margin-bottom: 4px; }
+.gradient-mode-select {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 4px 8px;
+  font-size: var(--font-sm);
+  cursor: pointer;
+  outline: none;
+}
+.gradient-mode-select:focus-visible { border-color: var(--accent-dim); }
+.shader-check {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+}
+.shader-check input[type="checkbox"] {
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+.shader-check label {
+  font-size: var(--font-xs);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.shader-effect-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 2px;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -849,6 +1075,17 @@ html, body {
 
 <div class="main">
   <div class="left-panel">
+    <!-- Mode Tabs -->
+    <div class="mode-tabs" id="mode-tabs">
+      <button class="mode-tab" data-mode="paint">Paint</button>
+      <button class="mode-tab active" data-mode="shader">Shader</button>
+      <button class="tool-btn" id="btn-export" title="Export PNG" style="margin-left:auto;width:auto;gap:4px;padding:0 8px;font-size:10px;color:var(--text-dim);flex:none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M480-480ZM202-65l-56-57 118-118h-90v-80h226v226h-80v-89L202-65Zm278-15v-80h240v-440H520v-200H240v400h-80v-400q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H480Z"/></svg>
+        Export
+      </button>
+    </div>
+
+    <div id="mode-paint-controls" style="display:none">
     <!-- Toolbar -->
     <div class="toolbar">
       <div class="toolbar-group">
@@ -874,10 +1111,6 @@ html, body {
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M419.31-70q-27.47 0-51.27-12.35-23.81-12.34-39.65-35.42l-250-366.08 16.3-15.69q15.93-15.92 37.7-17.96 21.76-2.04 39.69 10.65L300-417.77v-361.07q0-12.75 8.63-21.38 8.63-8.62 21.38-8.62 12.76 0 21.37 8.62 8.62 8.63 8.62 21.38v476.61L197.77-415.85l180.08 263.62q6.54 10.31 17.65 16.27 11.12 5.96 23.81 5.96H670q37.61 0 63.81-26.19Q760-182.39 760-220v-530q0-12.75 8.63-21.37 8.63-8.63 21.38-8.63 12.76 0 21.37 8.63Q820-762.75 820-750v530q0 62.15-43.92 106.07Q732.15-70 670-70H419.31Zm34.15-420v-368.84q0-12.75 8.63-21.38 8.63-8.62 21.39-8.62 12.75 0 21.37 8.62 8.61 8.63 8.61 21.38V-490h-60Zm153.46 0v-328.84q0-12.75 8.63-21.38 8.63-8.62 21.39-8.62 12.75 0 21.37 8.62 8.61 8.63 8.61 21.38V-490h-60ZM479.08-310Z"/></svg>
         </button>
       </div>
-      <button class="tool-btn" id="btn-export" title="Export PNG" style="margin-left:auto;width:auto;gap:4px;padding:0 6px;font-size:10px;color:var(--text-dim)">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M480-480ZM202-65l-56-57 118-118h-90v-80h226v226h-80v-89L202-65Zm278-15v-80h240v-440H520v-200H240v400h-80v-400q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H480Z"/></svg>
-        Export
-      </button>
     </div>
 
     <!-- Controls -->
@@ -918,6 +1151,7 @@ html, body {
         <input type="number" class="slider-val" value="50" min="0" max="100">
       </div>
     </div>
+    </div><!-- /mode-paint-controls -->
 
     <!-- Canvas Area -->
     <div class="canvas-area" id="canvas-area">
@@ -933,6 +1167,115 @@ html, body {
         </button>
       </div>
     </div>
+
+    <!-- Shader Mode: Controls Panel (bottom-left) -->
+    <div id="mode-shader-controls">
+    <div class="layers-panel">
+      <div class="layers-header"><span>Shader Material</span></div>
+      <div style="overflow-y:auto;flex:1">
+        <!-- Gradient Stops (Figma-style) -->
+        <div class="shader-section" id="gradient-section">
+          <div class="gradient-mode-row">
+            <select id="gradient-mode" class="gradient-mode-select">
+              <option value="step" selected>Step</option>
+              <option value="linear">Linear</option>
+            </select>
+          </div>
+          <div class="gradient-bar-wrap">
+            <div class="gradient-bar" id="gradient-bar"></div>
+          </div>
+          <div class="gradient-stops-header">
+            <span class="shader-section-title">Stops</span>
+            <button class="gradient-add-btn" id="gradient-add-stop" title="Add stop">+</button>
+          </div>
+          <div id="gradient-stop-list"></div>
+        </div>
+
+        <!-- Outline -->
+        <div class="shader-section">
+          <div class="shader-section-title">Outline</div>
+          <div class="shader-effect-group">
+            <div class="shader-check">
+              <input type="checkbox" id="outline-enabled" checked>
+              <label for="outline-enabled">Enable</label>
+              <input type="color" id="outline-color" value="#000000" style="margin-left:auto">
+            </div>
+            <div class="hsv-row">
+              <span class="hsv-label">W</span>
+              <input class="hsv-slider" id="outline-width" type="range" min="0" max="100" value="30">
+              <input type="number" class="hsv-val" id="outline-width-val" value="30" min="0" max="100">
+            </div>
+          </div>
+        </div>
+
+        <!-- Rim Light -->
+        <div class="shader-section">
+          <div class="shader-section-title">Rim Light</div>
+          <div class="shader-effect-group">
+            <div class="shader-check">
+              <input type="checkbox" id="rim-enabled">
+              <label for="rim-enabled">Enable</label>
+              <input type="color" id="rim-color" value="#aaccff" style="margin-left:auto">
+            </div>
+            <div class="hsv-row">
+              <span class="hsv-label">Pow</span>
+              <input class="hsv-slider" id="rim-power" type="range" min="10" max="100" value="30">
+              <input type="number" class="hsv-val" id="rim-power-val" value="30" min="10" max="100">
+            </div>
+            <div class="hsv-row">
+              <span class="hsv-label">Thr</span>
+              <input class="hsv-slider" id="rim-threshold" type="range" min="0" max="100" value="50">
+              <input type="number" class="hsv-val" id="rim-threshold-val" value="50" min="0" max="100">
+            </div>
+          </div>
+        </div>
+
+        <!-- Specular -->
+        <div class="shader-section">
+          <div class="shader-section-title">Specular</div>
+          <div class="shader-effect-group">
+            <div class="shader-check">
+              <input type="checkbox" id="spec-enabled">
+              <label for="spec-enabled">Enable</label>
+              <input type="color" id="spec-color" value="#ffffff" style="margin-left:auto">
+            </div>
+            <div class="hsv-row">
+              <span class="hsv-label">Pow</span>
+              <input class="hsv-slider" id="spec-power" type="range" min="1" max="128" value="16">
+              <input type="number" class="hsv-val" id="spec-power-val" value="16" min="1" max="128">
+            </div>
+            <div class="hsv-row">
+              <span class="hsv-label">Thr</span>
+              <input class="hsv-slider" id="spec-threshold" type="range" min="0" max="100" value="85">
+              <input type="number" class="hsv-val" id="spec-threshold-val" value="85" min="0" max="100">
+            </div>
+          </div>
+        </div>
+
+        <!-- Light Direction -->
+        <div class="shader-section">
+          <div class="shader-section-title">Light Direction</div>
+          <div class="detail-panel">
+            <div class="hsv-row">
+              <span class="hsv-label">X</span>
+              <input class="hsv-slider" id="light-x" type="range" min="-100" max="100" value="-60">
+              <input type="number" class="hsv-val" id="light-x-val" value="-60" min="-100" max="100">
+            </div>
+            <div class="hsv-row">
+              <span class="hsv-label">Y</span>
+              <input class="hsv-slider" id="light-y" type="range" min="-100" max="100" value="50">
+              <input type="number" class="hsv-val" id="light-y-val" value="50" min="-100" max="100">
+            </div>
+            <div class="hsv-row">
+              <span class="hsv-label">Z</span>
+              <input class="hsv-slider" id="light-z" type="range" min="-100" max="100" value="80">
+              <input type="number" class="hsv-val" id="light-z-val" value="80" min="-100" max="100">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div><!-- /mode-shader-controls -->
 
   </div>
 
@@ -962,7 +1305,8 @@ html, body {
       </div>
     </div>
 
-    <!-- Layers Panel -->
+    <!-- Preset Mode: Layers Panel -->
+    <div id="mode-paint-layers" style="display:none">
     <div class="layers-panel">
       <div class="layers-header">
         <span>Layers</span>
@@ -1034,6 +1378,7 @@ html, body {
         </div>
       </div>
     </div>
+    </div><!-- /mode-paint-layers -->
   </div>
 </div>
 
