@@ -330,7 +330,7 @@ html, body {
 }
 .zoom-badge.visible { opacity: 1; }
 .paint-canvas {
-  cursor: none;
+  cursor: default;
   image-rendering: auto;
   position: relative;
   z-index: var(--z-canvas);
@@ -1206,7 +1206,7 @@ html, body {
           </div>
           <div class="gradient-stops-header">
             <span class="shader-section-title">Stops</span>
-            <button class="gradient-add-btn" id="gradient-add-stop" title="Add stop">+</button>
+            <button class="gradient-add-btn" id="gradient-add-stop" title="Add stop"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M450-450H220v-60h230v-230h60v230h230v60H510v230h-60v-230Z"/></svg></button>
           </div>
           <div id="gradient-stop-list"></div>
         </div>

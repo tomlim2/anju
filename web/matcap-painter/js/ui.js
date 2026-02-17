@@ -1002,18 +1002,14 @@ export class UI {
     this._renderGradientUI();
   }
 
-  _renderGradientUI() {
+  _updateGradientBar() {
     const toon = this.toonGenerator;
     const bar = this._gradientBar;
-    const list = this._gradientList;
-    if (!bar || !list) return;
-
-    // Update gradient bar background (left=0%=dark, right=100%=bright)
+    if (!bar) return;
     const ascSorted = [...toon.stops].sort((a, b) => a.position - b.position);
     if (toon.gradientMode === 'linear') {
       bar.style.background = `linear-gradient(to right, ${ascSorted.map(s => `${s.color} ${s.position}%`).join(', ')})`;
     } else {
-      // Step mode: each stop's color extends rightward to the next stop's position
       const stops = [];
       for (let i = 0; i < ascSorted.length; i++) {
         const start = i === 0 ? '0%' : ascSorted[i].position + '%';
@@ -1023,6 +1019,19 @@ export class UI {
       }
       bar.style.background = `linear-gradient(to right, ${stops.join(', ')})`;
     }
+    // Update handles
+    bar.querySelectorAll('.gradient-handle').forEach((h, i) => {
+      if (toon.stops[i]) { h.style.left = toon.stops[i].position + '%'; h.style.background = toon.stops[i].color; }
+    });
+  }
+
+  _renderGradientUI() {
+    const toon = this.toonGenerator;
+    const bar = this._gradientBar;
+    const list = this._gradientList;
+    if (!bar || !list) return;
+
+    this._updateGradientBar();
 
     // Render handles
     bar.querySelectorAll('.gradient-handle').forEach(h => h.remove());
@@ -1046,7 +1055,7 @@ export class UI {
     toon.stops.forEach((stop, i) => {
       const row = document.createElement('div');
       row.className = 'gradient-stop-item' + (i === this._selectedStopIndex ? ' selected' : '');
-      row.addEventListener('click', () => { this._selectedStopIndex = i; this._renderGradientUI(); });
+      row.addEventListener('click', () => { if (this._selectedStopIndex === i) return; this._selectedStopIndex = i; this._renderGradientUI(); });
 
       // Position wrap: [number][%]
       const posWrap = document.createElement('div');
@@ -1079,7 +1088,13 @@ export class UI {
       colorInput.addEventListener('input', (e) => {
         e.stopPropagation();
         toon.stops[i].color = colorInput.value;
+        swatch.style.background = colorInput.value;
+        hex.value = colorInput.value.slice(1).toUpperCase();
         this._shaderRender();
+        this._updateGradientBar();
+      });
+      colorInput.addEventListener('change', (e) => {
+        e.stopPropagation();
         this._renderGradientUI();
       });
       colorInput.addEventListener('click', (e) => e.stopPropagation());
@@ -1106,7 +1121,7 @@ export class UI {
       // Remove button
       const removeBtn = document.createElement('button');
       removeBtn.className = 'gradient-remove-btn';
-      removeBtn.textContent = '—';
+      removeBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M220-450v-60h520v60H220Z"/></svg>';
       removeBtn.title = 'Remove stop';
       removeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1284,12 +1299,12 @@ export class UI {
     const cursorOverlay = document.getElementById('cursor-overlay');
     if (cursorOverlay) cursorOverlay.style.display = isShader ? 'none' : '';
     const paintCanvas = document.getElementById('paint-canvas');
-    if (paintCanvas) paintCanvas.style.cursor = isShader ? '' : 'none';
+    if (paintCanvas) paintCanvas.style.cursor = isShader ? 'default' : 'none';
 
     let displaySize;
     if (isShader) {
       // Shader mode: slightly smaller sphere, no padding
-      displaySize = Math.max(200, Math.min(area.clientWidth, area.clientHeight) * 0.85);
+      displaySize = Math.max(200, Math.min(area.clientWidth, area.clientHeight) * 0.56);
       this._zoom = 1;
       this._panX = 0;
       this._panY = 0;
