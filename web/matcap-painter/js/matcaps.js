@@ -231,6 +231,7 @@ export const MATCAP_IDS = [
   'DC3E04_B52604_FC7D20_F85F04',
   'DE9261_86361E_A85A37_944C2C',
   'FBB82D_FBEDBF_FBDE7D_FB7E05',
+  'toon_dark',
 ];
 
 export const THUMB_PATH = 'assets/matcaps/thumb/';

@@ -85,8 +85,10 @@ async function init() {
       const ctx = layers.getActiveCtx();
       if (ctx) {
         ctx.drawImage(img, 0, 0, 1024, 1024);
-        layers.composite();
-        preview.markTextureDirty();
+        if (modeController.mode === 'paint') {
+          layers.composite();
+          preview.markTextureDirty();
+        }
       }
       resolve();
     };

@@ -859,6 +859,9 @@ export class UI {
     bindPair('spec-power', 'spec-power-val', () => toon.specPower, (v) => { toon.specPower = v; });
     bindPair('spec-threshold', 'spec-threshold-val', () => toon.specThreshold * 100, (v) => { toon.specThreshold = v / 100; });
 
+    // FOV
+    bindPair('shader-fov', 'shader-fov-val', () => toon.fov, (v) => { toon.fov = v; });
+
     // Light direction
     const normalize = (x, y, z) => {
       const len = Math.sqrt(x * x + y * y + z * z);
@@ -1201,10 +1204,14 @@ export class UI {
     const canvas = document.getElementById('paint-canvas');
     const isShader = this.modeController && this.modeController.mode === 'shader';
 
+    // Hide nav buttons in shader mode
+    const nav = document.querySelector('.canvas-nav');
+    if (nav) nav.style.display = isShader ? 'none' : '';
+
     let displaySize;
     if (isShader) {
-      // Shader mode: fill the canvas area, no padding
-      displaySize = Math.max(200, Math.min(area.clientWidth, area.clientHeight));
+      // Shader mode: slightly smaller sphere, no padding
+      displaySize = Math.max(200, Math.min(area.clientWidth, area.clientHeight) * 0.85);
       this._zoom = 1;
       this._panX = 0;
       this._panY = 0;

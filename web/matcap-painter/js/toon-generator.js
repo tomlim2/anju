@@ -48,6 +48,9 @@ export class ToonGenerator {
 
     // Light direction
     this.lightDir = normalize([-0.6, 0.5, 0.8]);
+
+    // FOV (0 = orthographic, >0 = perspective)
+    this.fov = 0;
   }
 
   set onChange(fn) { this._onChange = fn; }
@@ -72,11 +75,19 @@ export class ToonGenerator {
     const specRgb = hexToRgb(this.specColor);
     const outlineRgb = hexToRgb(this.outlineColor);
 
+    // Perspective setup
+    const usePerspective = this.fov > 0;
+    let camDist = 0, sScale = 1;
+    if (usePerspective) {
+      camDist = 1 / Math.tan(this.fov * Math.PI / 360);
+      sScale = camDist > 1.001 ? camDist / Math.sqrt(camDist * camDist - 1) : 20;
+    }
+
     for (let py = 0; py < SIZE; py++) {
-      const ny = (HALF - py) / HALF;
+      const screenY = (HALF - py) / HALF;
       for (let px = 0; px < SIZE; px++) {
-        const nx = (px - HALF) / HALF;
-        const r2 = nx * nx + ny * ny;
+        const screenX = (px - HALF) / HALF;
+        const r2 = screenX * screenX + screenY * screenY;
         const idx = (py * SIZE + px) * 4;
 
         if (r2 > 1) {
@@ -88,9 +99,25 @@ export class ToonGenerator {
         }
 
         const dist = Math.sqrt(r2);
-        const nz = Math.sqrt(1 - r2);
 
-        // Outline
+        let nx, ny, nz;
+        if (usePerspective) {
+          // Ray-sphere intersection: camera at (0,0,camDist), ray toward (sx,sy,0)
+          const sx = screenX * sScale;
+          const sy = screenY * sScale;
+          const a = sx * sx + sy * sy + camDist * camDist;
+          const sqrtDisc = camDist * Math.sqrt(1 - r2);
+          const t = (camDist * camDist - sqrtDisc) / a;
+          nx = t * sx;
+          ny = t * sy;
+          nz = camDist * (1 - t);
+        } else {
+          nx = screenX;
+          ny = screenY;
+          nz = Math.sqrt(1 - r2);
+        }
+
+        // Outline (screen-space edge)
         if (this.outlineEnabled && dist > 1 - this.outlineWidth) {
           data[idx] = outlineRgb[0];
           data[idx + 1] = outlineRgb[1];

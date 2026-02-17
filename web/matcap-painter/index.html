@@ -838,13 +838,20 @@ html, body {
   display: flex;
   flex-direction: column;
 }
+.editor-area {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
 #mode-shader-controls {
-  max-height: 40vh;
+  width: 25%;
+  min-width: 180px;
+  max-width: 260px;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  border-right: 1px solid var(--border);
   flex-shrink: 0;
-  border-top: 1px solid var(--border);
 }
 
 /* Mode Tabs */
@@ -1153,22 +1160,10 @@ html, body {
     </div>
     </div><!-- /mode-paint-controls -->
 
-    <!-- Canvas Area -->
-    <div class="canvas-area" id="canvas-area">
-      <div class="canvas-wrap" id="canvas-wrap">
-        <div class="canvas-bg"></div>
-        <canvas id="paint-canvas" class="paint-canvas" width="1024" height="1024"></canvas>
-        <div class="canvas-circle-mask"></div>
-      </div>
-      <canvas id="cursor-overlay" class="cursor-overlay"></canvas>
-      <div class="canvas-nav">
-        <button class="nav-btn" id="nav-fit" title="Fit to Screen (Ctrl+0)">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M800-600v-107.69q0-4.62-3.85-8.46-3.84-3.85-8.46-3.85H680v-60h107.69Q818-780 839-759q21 21 21 51.31V-600h-60Zm-700 0v-107.69Q100-738 121-759q21-21 51.31-21H280v60H172.31q-4.62 0-8.46 3.85-3.85 3.84-3.85 8.46V-600h-60Zm580 420v-60h107.69q4.62 0 8.46-3.85 3.85-3.84 3.85-8.46V-360h60v107.69Q860-222 839-201q-21 21-51.31 21H680Zm-507.69 0Q142-180 121-201q-21-21-21-51.31V-360h60v107.69q0 4.62 3.85 8.46 3.84 3.85 8.46 3.85H280v60H172.31Zm84.61-156.92v-286.16h446.16v286.16H256.92Zm60-60h326.16v-166.16H316.92v166.16Zm0 0v-166.16 166.16Z"/></svg>
-        </button>
-      </div>
-    </div>
+    <!-- Editor area: shader controls (left) + canvas (right) -->
+    <div class="editor-area" id="editor-area">
 
-    <!-- Shader Mode: Controls Panel (bottom-left) -->
+    <!-- Shader Mode: Controls Panel (left side) -->
     <div id="mode-shader-controls">
     <div class="layers-panel">
       <div class="layers-header"><span>Shader Material</span></div>
@@ -1252,30 +1247,59 @@ html, body {
           </div>
         </div>
 
+        <!-- Camera -->
+        <div class="shader-section">
+          <div class="shader-section-title">Camera</div>
+          <div class="detail-panel">
+            <div class="hsv-row">
+              <span class="hsv-label">FOV</span>
+              <input class="hsv-slider" id="shader-fov" type="range" min="0" max="80" value="0">
+              <input type="number" class="hsv-val" id="shader-fov-val" value="0" min="0" max="80">
+            </div>
+          </div>
+        </div>
+
         <!-- Light Direction -->
         <div class="shader-section">
           <div class="shader-section-title">Light Direction</div>
           <div class="detail-panel">
             <div class="hsv-row">
               <span class="hsv-label">X</span>
-              <input class="hsv-slider" id="light-x" type="range" min="-100" max="100" value="-60">
-              <input type="number" class="hsv-val" id="light-x-val" value="-60" min="-100" max="100">
+              <input class="hsv-slider" id="light-x" type="range" min="-200" max="200" value="-60">
+              <input type="number" class="hsv-val" id="light-x-val" value="-60" min="-200" max="200">
             </div>
             <div class="hsv-row">
               <span class="hsv-label">Y</span>
-              <input class="hsv-slider" id="light-y" type="range" min="-100" max="100" value="50">
-              <input type="number" class="hsv-val" id="light-y-val" value="50" min="-100" max="100">
+              <input class="hsv-slider" id="light-y" type="range" min="-200" max="200" value="50">
+              <input type="number" class="hsv-val" id="light-y-val" value="50" min="-200" max="200">
             </div>
             <div class="hsv-row">
               <span class="hsv-label">Z</span>
-              <input class="hsv-slider" id="light-z" type="range" min="-100" max="100" value="80">
-              <input type="number" class="hsv-val" id="light-z-val" value="80" min="-100" max="100">
+              <input class="hsv-slider" id="light-z" type="range" min="-200" max="200" value="80">
+              <input type="number" class="hsv-val" id="light-z-val" value="80" min="-200" max="200">
             </div>
           </div>
         </div>
       </div>
     </div>
     </div><!-- /mode-shader-controls -->
+
+    <!-- Canvas Area -->
+    <div class="canvas-area" id="canvas-area">
+      <div class="canvas-wrap" id="canvas-wrap">
+        <div class="canvas-bg"></div>
+        <canvas id="paint-canvas" class="paint-canvas" width="1024" height="1024"></canvas>
+        <div class="canvas-circle-mask"></div>
+      </div>
+      <canvas id="cursor-overlay" class="cursor-overlay"></canvas>
+      <div class="canvas-nav">
+        <button class="nav-btn" id="nav-fit" title="Fit to Screen (Ctrl+0)">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M800-600v-107.69q0-4.62-3.85-8.46-3.84-3.85-8.46-3.85H680v-60h107.69Q818-780 839-759q21 21 21 51.31V-600h-60Zm-700 0v-107.69Q100-738 121-759q21-21 51.31-21H280v60H172.31q-4.62 0-8.46 3.85-3.85 3.84-3.85 8.46V-600h-60Zm580 420v-60h107.69q4.62 0 8.46-3.85 3.85-3.84 3.85-8.46V-360h60v107.69Q860-222 839-201q-21 21-51.31 21H680Zm-507.69 0Q142-180 121-201q-21-21-21-51.31V-360h60v107.69q0 4.62 3.85 8.46 3.84 3.85 8.46 3.85H280v60H172.31Zm84.61-156.92v-286.16h446.16v286.16H256.92Zm60-60h326.16v-166.16H316.92v166.16Zm0 0v-166.16 166.16Z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    </div><!-- /editor-area -->
 
   </div>
 
