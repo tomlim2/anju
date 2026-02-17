@@ -951,6 +951,25 @@ export class UI {
       this._renderGradientUI();
     }, { signal: this._ac.signal });
 
+    // Interpolate color at a position from existing stops
+    const lerpColor = (pos) => {
+      const sorted = [...toon.stops].sort((a, b) => a.position - b.position);
+      if (sorted.length === 0) return '#888888';
+      if (pos <= sorted[0].position) return sorted[0].color;
+      if (pos >= sorted[sorted.length - 1].position) return sorted[sorted.length - 1].color;
+      for (let i = 0; i < sorted.length - 1; i++) {
+        if (pos >= sorted[i].position && pos <= sorted[i + 1].position) {
+          const t = (pos - sorted[i].position) / (sorted[i + 1].position - sorted[i].position);
+          const a = sorted[i].color, b = sorted[i + 1].color;
+          const ar = parseInt(a.slice(1, 3), 16), ag = parseInt(a.slice(3, 5), 16), ab = parseInt(a.slice(5, 7), 16);
+          const br = parseInt(b.slice(1, 3), 16), bg = parseInt(b.slice(3, 5), 16), bb = parseInt(b.slice(5, 7), 16);
+          const r = Math.round(ar + (br - ar) * t), g = Math.round(ag + (bg - ag) * t), bv = Math.round(ab + (bb - ab) * t);
+          return '#' + ((1 << 24) | (r << 16) | (g << 8) | bv).toString(16).slice(1);
+        }
+      }
+      return '#888888';
+    };
+
     // Add stop button
     addBtn?.addEventListener('click', () => {
       const sorted = [...toon.stops].sort((a, b) => a.position - b.position);
@@ -963,7 +982,7 @@ export class UI {
         }
         newPos = Math.round((gapStart + gapEnd) / 2);
       }
-      toon.stops.push({ position: newPos, color: '#888888' });
+      toon.stops.push({ position: newPos, color: lerpColor(newPos) });
       this._selectedStopIndex = toon.stops.length - 1;
       this._shaderRender();
       this._renderGradientUI();
@@ -974,7 +993,7 @@ export class UI {
       if (e.target.classList.contains('gradient-handle')) return;
       const rect = bar.getBoundingClientRect();
       const pos = Math.round(Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)));
-      toon.stops.push({ position: pos, color: '#888888' });
+      toon.stops.push({ position: pos, color: lerpColor(pos) });
       this._selectedStopIndex = toon.stops.length - 1;
       this._shaderRender();
       this._renderGradientUI();
@@ -1262,6 +1281,10 @@ export class UI {
     if (mask) mask.style.display = isShader ? 'none' : '';
     const bg = document.querySelector('.canvas-bg');
     if (bg) bg.style.display = isShader ? 'none' : '';
+    const cursorOverlay = document.getElementById('cursor-overlay');
+    if (cursorOverlay) cursorOverlay.style.display = isShader ? 'none' : '';
+    const paintCanvas = document.getElementById('paint-canvas');
+    if (paintCanvas) paintCanvas.style.cursor = isShader ? '' : 'none';
 
     let displaySize;
     if (isShader) {

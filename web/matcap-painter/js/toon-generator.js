@@ -24,25 +24,25 @@ export class ToonGenerator {
 
     // Gradient stops (bright → mid → dark, low position = bright)
     this.stops = [
-      { position: 8, color: '#f0f0f0' },
-      { position: 19, color: '#888888' },
-      { position: 41, color: '#222222' },
-      { position: 76, color: '#05f6fa' },
+      { position: 8, color: '#b0b0b0' },
+      { position: 16, color: '#4f4f4f' },
+      { position: 35, color: '#0a0a0a' },
+      { position: 67, color: '#05f6fa' },
     ];
 
     // Specular
     this.specEnabled = true;
-    this.specColor = '#ffffff';
+    this.specColor = '#dedede';
     this.specPower = 16;
     this.specThreshold = 0.85;
 
     // Outline
     this.outlineEnabled = true;
     this.outlineColor = '#000000';
-    this.outlineWidth = 0.009;
+    this.outlineWidth = 0.021;
 
     // Light direction
-    this.lightDir = normalize([-0.50, 0.44, 0.74]);
+    this.lightDir = normalize([-0.34, 0.54, 0.77]);
 
     // FOV (0 = orthographic, >0 = perspective)
     this.fov = 0;
