@@ -1181,7 +1181,17 @@ html, body {
     <!-- Shader Mode: Controls Panel (left side) -->
     <div id="mode-shader-controls">
     <div class="layers-panel">
-      <div class="layers-header"><span>Shader Material</span></div>
+      <div class="layers-header">
+        <span>Shader Material</span>
+        <div class="layers-actions">
+          <button id="shader-copy" title="Copy parameters">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/></svg>
+          </button>
+          <button id="shader-paste" title="Paste parameters">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h167q11-35 43-57.5t70-22.5q40 0 71.5 22.5T594-840h166q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560h-80v120H280v-120h-80v560Zm280-560q17 0 28.5-11.5T520-800q0-17-11.5-28.5T480-840q-17 0-28.5 11.5T440-800q0 17 11.5 28.5T480-760Z"/></svg>
+          </button>
+        </div>
+      </div>
       <div style="overflow-y:auto;flex:1">
         <!-- Gradient Stops (Figma-style) -->
         <div class="shader-section" id="gradient-section">
@@ -1212,30 +1222,8 @@ html, body {
             </div>
             <div class="hsv-row">
               <span class="hsv-label">W</span>
-              <input class="hsv-slider" id="outline-width" type="range" min="0" max="100" value="30">
-              <input type="number" class="hsv-val" id="outline-width-val" value="30" min="0" max="100">
-            </div>
-          </div>
-        </div>
-
-        <!-- Rim Light -->
-        <div class="shader-section">
-          <div class="shader-section-title">Rim Light</div>
-          <div class="shader-effect-group">
-            <div class="shader-check">
-              <input type="checkbox" id="rim-enabled">
-              <label for="rim-enabled">Enable</label>
-              <input type="color" id="rim-color" value="#aaccff" style="margin-left:auto">
-            </div>
-            <div class="hsv-row">
-              <span class="hsv-label">Pow</span>
-              <input class="hsv-slider" id="rim-power" type="range" min="10" max="100" value="30">
-              <input type="number" class="hsv-val" id="rim-power-val" value="30" min="10" max="100">
-            </div>
-            <div class="hsv-row">
-              <span class="hsv-label">Thr</span>
-              <input class="hsv-slider" id="rim-threshold" type="range" min="0" max="100" value="50">
-              <input type="number" class="hsv-val" id="rim-threshold-val" value="50" min="0" max="100">
+              <input class="hsv-slider" id="outline-width" type="range" min="0" max="100" value="9">
+              <input type="number" class="hsv-val" id="outline-width-val" value="9" min="0" max="100">
             </div>
           </div>
         </div>
@@ -1245,7 +1233,7 @@ html, body {
           <div class="shader-section-title">Specular</div>
           <div class="shader-effect-group">
             <div class="shader-check">
-              <input type="checkbox" id="spec-enabled">
+              <input type="checkbox" id="spec-enabled" checked>
               <label for="spec-enabled">Enable</label>
               <input type="color" id="spec-color" value="#ffffff" style="margin-left:auto">
             </div>
@@ -1280,18 +1268,18 @@ html, body {
           <div class="detail-panel">
             <div class="hsv-row">
               <span class="hsv-label">X</span>
-              <input class="hsv-slider" id="light-x" type="range" min="-200" max="200" value="-60">
-              <input type="number" class="hsv-val" id="light-x-val" value="-60" min="-200" max="200">
+              <input class="hsv-slider" id="light-x" type="range" min="-200" max="200" value="-50">
+              <input type="number" class="hsv-val" id="light-x-val" value="-50" min="-200" max="200">
             </div>
             <div class="hsv-row">
               <span class="hsv-label">Y</span>
-              <input class="hsv-slider" id="light-y" type="range" min="-200" max="200" value="50">
-              <input type="number" class="hsv-val" id="light-y-val" value="50" min="-200" max="200">
+              <input class="hsv-slider" id="light-y" type="range" min="-200" max="200" value="44">
+              <input type="number" class="hsv-val" id="light-y-val" value="44" min="-200" max="200">
             </div>
             <div class="hsv-row">
               <span class="hsv-label">Z</span>
-              <input class="hsv-slider" id="light-z" type="range" min="-200" max="200" value="80">
-              <input type="number" class="hsv-val" id="light-z-val" value="80" min="-200" max="200">
+              <input class="hsv-slider" id="light-z" type="range" min="-200" max="200" value="74">
+              <input type="number" class="hsv-val" id="light-z-val" value="74" min="-200" max="200">
             </div>
           </div>
         </div>

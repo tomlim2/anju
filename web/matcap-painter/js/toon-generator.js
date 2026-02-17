@@ -24,19 +24,14 @@ export class ToonGenerator {
 
     // Gradient stops (bright → mid → dark, low position = bright)
     this.stops = [
-      { position: 20, color: '#ffffff' },
-      { position: 50, color: '#888888' },
-      { position: 80, color: '#222222' },
+      { position: 8, color: '#f0f0f0' },
+      { position: 19, color: '#888888' },
+      { position: 41, color: '#222222' },
+      { position: 76, color: '#05f6fa' },
     ];
 
-    // Rim light
-    this.rimEnabled = false;
-    this.rimColor = '#aaccff';
-    this.rimPower = 3.0;
-    this.rimThreshold = 0.5;
-
     // Specular
-    this.specEnabled = false;
+    this.specEnabled = true;
     this.specColor = '#ffffff';
     this.specPower = 16;
     this.specThreshold = 0.85;
@@ -44,16 +39,47 @@ export class ToonGenerator {
     // Outline
     this.outlineEnabled = true;
     this.outlineColor = '#000000';
-    this.outlineWidth = 0.03;
+    this.outlineWidth = 0.009;
 
     // Light direction
-    this.lightDir = normalize([-0.6, 0.5, 0.8]);
+    this.lightDir = normalize([-0.50, 0.44, 0.74]);
 
     // FOV (0 = orthographic, >0 = perspective)
     this.fov = 0;
   }
 
   set onChange(fn) { this._onChange = fn; }
+
+  toJSON() {
+    return {
+      gradientMode: this.gradientMode,
+      stops: this.stops.map(s => ({ position: s.position, color: s.color })),
+      outlineEnabled: this.outlineEnabled, outlineColor: this.outlineColor, outlineWidth: this.outlineWidth,
+      specEnabled: this.specEnabled, specColor: this.specColor, specPower: this.specPower, specThreshold: this.specThreshold,
+      fov: this.fov,
+      lightDir: this.lightDir.map(v => Math.round(v * 100)),
+    };
+  }
+
+  fromJSON(data) {
+    if (!data) return false;
+    if (data.gradientMode) this.gradientMode = data.gradientMode;
+    if (Array.isArray(data.stops) && data.stops.length >= 2) this.stops = data.stops;
+    if (data.outlineEnabled !== undefined) this.outlineEnabled = data.outlineEnabled;
+    if (data.outlineColor) this.outlineColor = data.outlineColor;
+    if (data.outlineWidth !== undefined) this.outlineWidth = data.outlineWidth;
+    if (data.specEnabled !== undefined) this.specEnabled = data.specEnabled;
+    if (data.specColor) this.specColor = data.specColor;
+    if (data.specPower !== undefined) this.specPower = data.specPower;
+    if (data.specThreshold !== undefined) this.specThreshold = data.specThreshold;
+    if (data.fov !== undefined) this.fov = data.fov;
+    if (Array.isArray(data.lightDir) && data.lightDir.length === 3) {
+      const [x, y, z] = data.lightDir.map(v => v / 100);
+      const len = Math.sqrt(x * x + y * y + z * z);
+      this.lightDir = len > 0 ? [x / len, y / len, z / len] : [0, 0, 1];
+    }
+    return true;
+  }
 
   render() {
     const imageData = this._ctx.createImageData(SIZE, SIZE);
@@ -71,7 +97,6 @@ export class ToonGenerator {
     const ascColors = ascStops.map(s => hexToRgb(s.color));
     const ascPositions = ascStops.map(s => s.position / 100);
 
-    const rimRgb = hexToRgb(this.rimColor);
     const specRgb = hexToRgb(this.specColor);
     const outlineRgb = hexToRgb(this.outlineColor);
 
@@ -164,31 +189,15 @@ export class ToonGenerator {
           }
         }
 
-        // Rim light
-        if (this.rimEnabled) {
-          const fresnel = Math.pow(1 - nz, this.rimPower);
-          if (fresnel > this.rimThreshold) {
-            const rimT = Math.min(1, (fresnel - this.rimThreshold) / (1 - this.rimThreshold));
-            r = Math.round(lerp(r, rimRgb[0], rimT));
-            g = Math.round(lerp(g, rimRgb[1], rimT));
-            b = Math.round(lerp(b, rimRgb[2], rimT));
-          }
-        }
-
-        // Specular
+        // Specular (hard circle)
         if (this.specEnabled) {
-          // reflect = 2 * N * (N.L) - L
           const rx = 2 * nx * ndotl - lightDir[0];
           const ry = 2 * ny * ndotl - lightDir[1];
           const rz = 2 * nz * ndotl - lightDir[2];
-          // view direction = (0, 0, 1)
           const rdotv = Math.max(0, rz);
           const spec = Math.pow(rdotv, this.specPower);
           if (spec > this.specThreshold) {
-            const specT = Math.min(1, (spec - this.specThreshold) / (1 - this.specThreshold));
-            r = Math.round(lerp(r, specRgb[0], specT));
-            g = Math.round(lerp(g, specRgb[1], specT));
-            b = Math.round(lerp(b, specRgb[2], specT));
+            r = specRgb[0]; g = specRgb[1]; b = specRgb[2];
           }
         }
 

@@ -847,12 +847,6 @@ export class UI {
     document.getElementById('outline-color')?.addEventListener('input', (e) => { toon.outlineColor = e.target.value; scheduleRender(); }, listenerOptions);
     bindPair('outline-width', 'outline-width-val', () => toon.outlineWidth * 1000, (v) => { toon.outlineWidth = v / 1000; });
 
-    // Rim
-    document.getElementById('rim-enabled')?.addEventListener('change', (e) => { toon.rimEnabled = e.target.checked; scheduleRender(); }, listenerOptions);
-    document.getElementById('rim-color')?.addEventListener('input', (e) => { toon.rimColor = e.target.value; scheduleRender(); }, listenerOptions);
-    bindPair('rim-power', 'rim-power-val', () => toon.rimPower * 10, (v) => { toon.rimPower = v / 10; });
-    bindPair('rim-threshold', 'rim-threshold-val', () => toon.rimThreshold * 100, (v) => { toon.rimThreshold = v / 100; });
-
     // Specular
     document.getElementById('spec-enabled')?.addEventListener('change', (e) => { toon.specEnabled = e.target.checked; scheduleRender(); }, listenerOptions);
     document.getElementById('spec-color')?.addEventListener('input', (e) => { toon.specColor = e.target.value; scheduleRender(); }, listenerOptions);
@@ -877,6 +871,63 @@ export class UI {
     bindPair('light-x', 'light-x-val', () => toon.lightDir[0] * 100, (v) => { updateLight(); });
     bindPair('light-y', 'light-y-val', () => toon.lightDir[1] * 100, (v) => { updateLight(); });
     bindPair('light-z', 'light-z-val', () => toon.lightDir[2] * 100, (v) => { updateLight(); });
+
+    // Copy / Paste shader parameters
+    document.getElementById('shader-copy')?.addEventListener('click', async () => {
+      const json = JSON.stringify(toon.toJSON(), null, 2);
+      await navigator.clipboard.writeText(json);
+    }, listenerOptions);
+
+    document.getElementById('shader-paste')?.addEventListener('click', async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        const data = JSON.parse(text);
+        if (toon.fromJSON(data)) {
+          this._refreshShaderUI();
+          scheduleRender();
+        }
+      } catch (e) {
+        console.warn('Paste failed:', e);
+      }
+    }, listenerOptions);
+  }
+
+  _refreshShaderUI() {
+    const toon = this.toonGenerator;
+    const setPair = (sliderId, valId, value) => {
+      const s = document.getElementById(sliderId);
+      const v = document.getElementById(valId);
+      if (s) s.value = value;
+      if (v) v.value = value;
+    };
+
+    // Gradient
+    const modeSelect = document.getElementById('gradient-mode');
+    if (modeSelect) modeSelect.value = toon.gradientMode;
+    this._renderGradientUI();
+
+    // Outline
+    const outEn = document.getElementById('outline-enabled');
+    if (outEn) outEn.checked = toon.outlineEnabled;
+    const outCol = document.getElementById('outline-color');
+    if (outCol) outCol.value = toon.outlineColor;
+    setPair('outline-width', 'outline-width-val', Math.round(toon.outlineWidth * 1000));
+
+    // Specular
+    const specEn = document.getElementById('spec-enabled');
+    if (specEn) specEn.checked = toon.specEnabled;
+    const specCol = document.getElementById('spec-color');
+    if (specCol) specCol.value = toon.specColor;
+    setPair('spec-power', 'spec-power-val', toon.specPower);
+    setPair('spec-threshold', 'spec-threshold-val', Math.round(toon.specThreshold * 100));
+
+    // FOV
+    setPair('shader-fov', 'shader-fov-val', toon.fov);
+
+    // Light direction
+    setPair('light-x', 'light-x-val', Math.round(toon.lightDir[0] * 100));
+    setPair('light-y', 'light-y-val', Math.round(toon.lightDir[1] * 100));
+    setPair('light-z', 'light-z-val', Math.round(toon.lightDir[2] * 100));
   }
 
   // --- Gradient Editor (Figma-style) ---
@@ -1204,9 +1255,13 @@ export class UI {
     const canvas = document.getElementById('paint-canvas');
     const isShader = this.modeController && this.modeController.mode === 'shader';
 
-    // Hide nav buttons in shader mode
+    // Hide nav buttons, circle mask, and checkerboard in shader mode
     const nav = document.querySelector('.canvas-nav');
     if (nav) nav.style.display = isShader ? 'none' : '';
+    const mask = document.querySelector('.canvas-circle-mask');
+    if (mask) mask.style.display = isShader ? 'none' : '';
+    const bg = document.querySelector('.canvas-bg');
+    if (bg) bg.style.display = isShader ? 'none' : '';
 
     let displaySize;
     if (isShader) {
