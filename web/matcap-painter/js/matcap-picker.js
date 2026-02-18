@@ -12,11 +12,19 @@ export class MatcapPicker {
   open(layerIndex) {
     this._layerIndex = layerIndex;
     if (!this._built) this._build();
+    this._triggerElement = document.activeElement;
     this._overlay.classList.add('open');
+    // Focus the close button so keyboard users land inside the modal
+    const closeBtn = this._overlay.querySelector('.matcap-picker-close');
+    if (closeBtn) closeBtn.focus();
   }
 
   close() {
     if (this._overlay) this._overlay.classList.remove('open');
+    if (this._triggerElement && this._triggerElement.focus) {
+      this._triggerElement.focus();
+      this._triggerElement = null;
+    }
   }
 
   destroy() {
@@ -39,6 +47,9 @@ export class MatcapPicker {
     // Modal
     const modal = document.createElement('div');
     modal.className = 'matcap-picker';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Matcap Presets');
 
     // Header
     const header = document.createElement('div');
@@ -48,7 +59,15 @@ export class MatcapPicker {
     title.className = 'matcap-picker-title';
     title.textContent = `Matcap Presets (${MATCAP_IDS.length})`;
 
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'matcap-picker-close';
+    closeBtn.setAttribute('aria-label', 'Close');
+    closeBtn.style.cssText = 'background:none;border:none;color:inherit;cursor:pointer;font-size:18px;padding:4px 8px;border-radius:4px;';
+    closeBtn.textContent = '\u00d7';
+    closeBtn.addEventListener('click', () => this.close());
+
     header.appendChild(title);
+    header.appendChild(closeBtn);
 
     // Grid
     const grid = document.createElement('div');
@@ -84,10 +103,25 @@ export class MatcapPicker {
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
-    // Escape to close
+    // Escape to close + focus trap
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && this._overlay.classList.contains('open')) {
+      if (!this._overlay.classList.contains('open')) return;
+      if (event.key === 'Escape') {
         this.close();
+        return;
+      }
+      if (event.key === 'Tab') {
+        const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
       }
     }, { signal: this._ac.signal });
 

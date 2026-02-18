@@ -1,5 +1,6 @@
 import { MatcapPicker } from './matcap-picker.js';
 import { MATCAP_IDS, FULL_PATH } from './matcaps.js';
+import { ColorChip } from './color-chip.js';
 
 // Navigation constants
 const ZOOM_IN_FACTOR = 1.05;
@@ -124,27 +125,27 @@ export class UI {
   }
 
   _bindControls() {
-    const color = document.getElementById('brush-color');
     const listenerOptions = { signal: this._ac.signal };
-    color.addEventListener('input', (event) => { this.brush.color = event.target.value; }, listenerOptions);
 
-    // Eyedropper callback — update color input when color is picked
-    this.painter.onColorPick = (hex) => { color.value = hex; };
+    // Brush color (ColorChip component)
+    this._brushChip = new ColorChip('#000000', { ariaLabel: 'Brush color' });
+    document.getElementById('brush-color-chip').replaceWith(this._brushChip.el);
+    this._brushChip.onChange = (hex) => { this.brush.color = hex; };
+
+    // Eyedropper callback
+    this.painter.onColorPick = (hex) => { this._brushChip.value = hex; this.brush.color = hex; };
 
     // Color chips
     document.getElementById('color-chips').addEventListener('click', (event) => {
       const chip = event.target.closest('[data-color]');
       if (!chip) return;
-      const hex = chip.dataset.color;
-      this.brush.color = hex;
-      color.value = hex;
+      this._brushChip.value = chip.dataset.color;
+      this.brush.color = chip.dataset.color;
     }, listenerOptions);
-
 
     this._sizeSlider = this._bindSlider('size', (value) => { this.brush.size = value; });
     this._bindSlider('opacity', (value) => { this.brush.opacity = value / 100; });
     this._bindSlider('hardness', (value) => { this.brush.hardness = value / 100; });
-
   }
 
   // --- Canvas Navigation (Zoom / Pan) ---
@@ -227,14 +228,10 @@ export class UI {
     document.getElementById('vp-anim').addEventListener('click', (event) => {
       const on = this.preview.toggleAnimation();
       event.currentTarget.classList.toggle('active', on);
-      event.currentTarget.textContent = on ? '⏸' : '▶';
     }, listenerOptions);
     document.getElementById('vp-rotate').addEventListener('click', (event) => {
       const on = this.preview.toggleAutoRotate();
       event.currentTarget.classList.toggle('active', on);
-    }, listenerOptions);
-    document.getElementById('vp-reset').addEventListener('click', () => {
-      this.preview.resetView();
     }, listenerOptions);
 
     this._refreshAnimSelect();
@@ -242,12 +239,15 @@ export class UI {
 
   _refreshAnimSelect() {
     const names = this.preview.clipNames;
+    const animBtn = document.getElementById('vp-anim');
     this._animSelect.innerHTML = '';
     if (names.length === 0) {
       this._animSelect.style.display = 'none';
+      if (animBtn) animBtn.style.display = 'none';
       return;
     }
     this._animSelect.style.display = '';
+    if (animBtn) animBtn.style.display = '';
     const none = document.createElement('option');
     none.value = '';
     none.textContent = 'None';
@@ -310,10 +310,43 @@ export class UI {
       this._refreshHSVPanel();
     }, listenerOptions);
     deleteButton.addEventListener('click', () => {
+      if (this.layers.layers.length <= 1) return;
+      const idx = this.layers.activeIndex;
+      const removed = this.layers.layers[idx];
+      const savedCanvas = document.createElement('canvas');
+      savedCanvas.width = removed.canvas.width;
+      savedCanvas.height = removed.canvas.height;
+      savedCanvas.getContext('2d').drawImage(removed.canvas, 0, 0);
+      const savedProps = { name: removed.name, blendMode: removed.blendMode, opacity: removed.opacity, hue: removed.hue, saturation: removed.saturation, brightness: removed.brightness, contrast: removed.contrast, lift: removed.lift };
       this._detailOpen = false;
-      this.layers.deleteLayer(this.layers.activeIndex);
+      this.layers.deleteLayer(idx);
       this._renderLayerList();
       this._refreshHSVPanel();
+      this._showToast(`Deleted "${savedProps.name}"`, {
+        label: 'Undo',
+        fn: () => {
+          const layer = this.layers.addLayer(savedProps.name);
+          if (!layer) return;
+          const newIdx = this.layers.layers.length - 1;
+          layer.blendMode = savedProps.blendMode;
+          layer.opacity = savedProps.opacity;
+          layer.hue = savedProps.hue;
+          layer.saturation = savedProps.saturation;
+          layer.brightness = savedProps.brightness;
+          layer.contrast = savedProps.contrast;
+          layer.lift = savedProps.lift;
+          layer.ctx.drawImage(savedCanvas, 0, 0);
+          // Move back to original position
+          if (idx < newIdx) {
+            const [moved] = this.layers.layers.splice(newIdx, 1);
+            this.layers.layers.splice(idx, 0, moved);
+            this.layers.activeIndex = idx;
+          }
+          this.layers.composite();
+          this._renderLayerList();
+          this._refreshHSVPanel();
+        },
+      });
     }, listenerOptions);
     randomButton.addEventListener('click', () => this._randomPreset().catch(console.error), listenerOptions);
     resetButton.addEventListener('click', () => {
@@ -482,7 +515,7 @@ export class UI {
         this._refreshHSVPanel();
       }, layerSignal);
 
-      const visibilityToggle = document.createElement('span');
+      const visibilityToggle = document.createElement('button');
       visibilityToggle.className = 'layer-vis' + (layer.visible ? '' : ' hidden');
       visibilityToggle.innerHTML = layer.visible
         ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="16" height="16" fill="currentColor"><path d="M595.58-384.51q47.5-47.59 47.5-115.58t-47.59-115.49q-47.59-47.5-115.58-47.5t-115.49 47.59q-47.5 47.59-47.5 115.58t47.59 115.49q47.59 47.5 115.58 47.5t115.49-47.59ZM403.5-423.5Q372-455 372-500t31.5-76.5Q435-608 480-608t76.5 31.5Q588-545 588-500t-31.5 76.5Q525-392 480-392t-76.5-31.5ZM228.62-296.12Q115.16-372.23 61.54-500q53.62-127.77 167.02-203.88Q341.97-780 479.95-780q137.97 0 251.43 76.12Q844.84-627.77 898.46-500q-53.62 127.77-167.02 203.88Q618.03-220 480.05-220q-137.97 0-251.43-76.12ZM480-500Zm207.5 160.5Q782-399 832-500q-50-101-144.5-160.5T480-720q-113 0-207.5 59.5T128-500q50 101 144.5 160.5T480-280q113 0 207.5-59.5Z"/></svg>'
@@ -559,7 +592,7 @@ export class UI {
         this._refreshHSVPanel();
       }, layerSignal);
 
-      const soloButton = document.createElement('span');
+      const soloButton = document.createElement('button');
       soloButton.className = 'layer-solo' + (this.layers._soloIndex === layerIndex ? ' active' : '');
       soloButton.title = 'Solo (show only this layer)';
       soloButton.textContent = 'S';
@@ -830,17 +863,31 @@ export class UI {
     const listenerOptions = { signal: this._ac.signal };
 
     const scheduleRender = () => this._shaderRender();
+    const saveAndRender = () => { toon.saveState(); this._updateUndoButtons(); };
+
+    // Undo / Redo buttons
+    document.getElementById('shader-undo')?.addEventListener('click', () => {
+      if (toon.undo()) { scheduleRender(); this._refreshShaderUI(); }
+    }, listenerOptions);
+    document.getElementById('shader-redo')?.addEventListener('click', () => {
+      if (toon.redo()) { scheduleRender(); this._refreshShaderUI(); }
+    }, listenerOptions);
 
     // Helper: bind slider + number input pair
     const bindPair = (sliderId, valId, getter, setter) => {
       const slider = document.getElementById(sliderId);
       const val = document.getElementById(valId);
       if (!slider || !val) return;
+      // Save state once at drag start
+      slider.addEventListener('pointerdown', () => { toon.saveState(); }, listenerOptions);
       slider.addEventListener('input', () => { val.value = slider.value; setter(+slider.value); scheduleRender(); }, listenerOptions);
+      slider.addEventListener('change', () => { saveAndRender(); }, listenerOptions);
       val.addEventListener('change', () => {
+        toon.saveState();
         const min = +slider.min, max = +slider.max;
         const v = Math.round(Math.min(max, Math.max(min, +val.value || 0)));
         val.value = v; slider.value = v; setter(v); scheduleRender();
+        saveAndRender();
       }, listenerOptions);
     };
 
@@ -848,13 +895,27 @@ export class UI {
     this._initGradientEditor();
 
     // Outline
-    document.getElementById('outline-enabled')?.addEventListener('change', (e) => { toon.outlineEnabled = e.target.checked; scheduleRender(); }, listenerOptions);
-    document.getElementById('outline-color')?.addEventListener('input', (e) => { toon.outlineColor = e.target.value; scheduleRender(); }, listenerOptions);
+    document.getElementById('outline-enabled')?.addEventListener('change', (e) => {
+      toon.saveState(); toon.outlineEnabled = e.target.checked; scheduleRender(); saveAndRender();
+    }, listenerOptions);
+    this._outlineChip = new ColorChip(toon.outlineColor, { ariaLabel: 'Outline color' });
+    this._outlineChip.el.style.marginLeft = 'auto';
+    document.getElementById('outline-color-chip').replaceWith(this._outlineChip.el);
+    this._outlineChip.onStart = () => { toon.saveState(); };
+    this._outlineChip.onChange = (hex) => { toon.outlineColor = hex; scheduleRender(); };
+    this._outlineChip.onCommit = () => { saveAndRender(); };
     bindPair('outline-width', 'outline-width-val', () => toon.outlineWidth * 1000, (v) => { toon.outlineWidth = v / 1000; });
 
     // Specular
-    document.getElementById('spec-enabled')?.addEventListener('change', (e) => { toon.specEnabled = e.target.checked; scheduleRender(); }, listenerOptions);
-    document.getElementById('spec-color')?.addEventListener('input', (e) => { toon.specColor = e.target.value; scheduleRender(); }, listenerOptions);
+    document.getElementById('spec-enabled')?.addEventListener('change', (e) => {
+      toon.saveState(); toon.specEnabled = e.target.checked; scheduleRender(); saveAndRender();
+    }, listenerOptions);
+    this._specChip = new ColorChip(toon.specColor, { ariaLabel: 'Specular color' });
+    this._specChip.el.style.marginLeft = 'auto';
+    document.getElementById('spec-color-chip').replaceWith(this._specChip.el);
+    this._specChip.onStart = () => { toon.saveState(); };
+    this._specChip.onChange = (hex) => { toon.specColor = hex; scheduleRender(); };
+    this._specChip.onCommit = () => { saveAndRender(); };
     bindPair('spec-power', 'spec-power-val', () => toon.specPower, (v) => { toon.specPower = v; });
     bindPair('spec-threshold', 'spec-threshold-val', () => toon.specThreshold * 100, (v) => { toon.specThreshold = v / 100; });
 
@@ -882,8 +943,9 @@ export class UI {
       try {
         const json = JSON.stringify(toon.toJSON(), null, 2);
         await navigator.clipboard.writeText(json);
+        this._showToast('Parameters copied');
       } catch (e) {
-        console.warn('Copy failed:', e);
+        this._showToast('Copy failed — check clipboard permissions');
       }
     }, listenerOptions);
 
@@ -891,12 +953,15 @@ export class UI {
       try {
         const text = await navigator.clipboard.readText();
         const data = JSON.parse(text);
+        toon.saveState();
         if (toon.fromJSON(data)) {
-          this._refreshShaderUI();
           scheduleRender();
+          toon.saveState();
+          this._refreshShaderUI();
+          this._showToast('Parameters pasted');
         }
       } catch (e) {
-        console.warn('Paste failed:', e);
+        this._showToast('Paste failed — invalid data or clipboard denied');
       }
     }, listenerOptions);
   }
@@ -918,15 +983,13 @@ export class UI {
     // Outline
     const outEn = document.getElementById('outline-enabled');
     if (outEn) outEn.checked = toon.outlineEnabled;
-    const outCol = document.getElementById('outline-color');
-    if (outCol) outCol.value = toon.outlineColor;
+    if (this._outlineChip) this._outlineChip.value = toon.outlineColor;
     setPair('outline-width', 'outline-width-val', Math.round(toon.outlineWidth * 1000));
 
     // Specular
     const specEn = document.getElementById('spec-enabled');
     if (specEn) specEn.checked = toon.specEnabled;
-    const specCol = document.getElementById('spec-color');
-    if (specCol) specCol.value = toon.specColor;
+    if (this._specChip) this._specChip.value = toon.specColor;
     setPair('spec-power', 'spec-power-val', toon.specPower);
     setPair('spec-threshold', 'spec-threshold-val', Math.round(toon.specThreshold * 100));
 
@@ -937,6 +1000,41 @@ export class UI {
     setPair('light-x', 'light-x-val', Math.round(toon.lightDir[0] * 100));
     setPair('light-y', 'light-y-val', Math.round(toon.lightDir[1] * 100));
     setPair('light-z', 'light-z-val', Math.round(toon.lightDir[2] * 100));
+    this._updateUndoButtons();
+  }
+
+  _updateUndoButtons() {
+    const toon = this.toonGenerator;
+    if (!toon) return;
+    const undoBtn = document.getElementById('shader-undo');
+    const redoBtn = document.getElementById('shader-redo');
+    if (undoBtn) undoBtn.disabled = !toon.canUndo;
+    if (redoBtn) redoBtn.disabled = !toon.canRedo;
+  }
+
+  _showToast(message, action) {
+    clearTimeout(this._toastTimer);
+    let toast = document.getElementById('app-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'app-toast';
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.innerHTML = '';
+    toast.appendChild(document.createTextNode(message));
+    if (action) {
+      const btn = document.createElement('button');
+      btn.className = 'toast-action';
+      btn.textContent = action.label;
+      btn.addEventListener('click', () => {
+        action.fn();
+        toast.classList.remove('visible');
+      });
+      toast.appendChild(btn);
+    }
+    toast.classList.add('visible');
+    this._toastTimer = setTimeout(() => toast.classList.remove('visible'), action ? 5000 : 2500);
   }
 
   // --- Gradient Editor (Figma-style) ---
@@ -955,9 +1053,11 @@ export class UI {
     // Gradient mode select (Step / Linear)
     const modeSelect = document.getElementById('gradient-mode');
     modeSelect?.addEventListener('change', (e) => {
+      toon.saveState();
       toon.gradientMode = e.target.value;
       this._shaderRender();
       this._renderGradientUI();
+      toon.saveState(); this._updateUndoButtons();
     }, { signal: this._ac.signal });
 
     // Interpolate color at a position from existing stops
@@ -979,33 +1079,35 @@ export class UI {
       return '#888888';
     };
 
-    // Add stop button
+    // Add stop button — insert after the selected stop
     addBtn?.addEventListener('click', () => {
+      toon.saveState();
+      const sel = this._selectedStopIndex;
+      const curPos = toon.stops[sel]?.position ?? 50;
+      // Find next stop by position
       const sorted = [...toon.stops].sort((a, b) => a.position - b.position);
-      let newPos = 50;
-      if (sorted.length >= 2) {
-        let maxGap = 0, gapStart = 0, gapEnd = 100;
-        for (let i = 0; i < sorted.length - 1; i++) {
-          const gap = sorted[i + 1].position - sorted[i].position;
-          if (gap > maxGap) { maxGap = gap; gapStart = sorted[i].position; gapEnd = sorted[i + 1].position; }
-        }
-        newPos = Math.round((gapStart + gapEnd) / 2);
-      }
-      toon.stops.push({ position: newPos, color: lerpColor(newPos) });
-      this._selectedStopIndex = toon.stops.length - 1;
+      const sortedIdx = sorted.findIndex(s => s === toon.stops[sel]);
+      const nextPos = sortedIdx < sorted.length - 1 ? sorted[sortedIdx + 1].position : 100;
+      const newPos = Math.round((curPos + nextPos) / 2);
+      // Insert right after selected in array
+      toon.stops.splice(sel + 1, 0, { position: newPos, color: lerpColor(newPos) });
+      this._selectedStopIndex = sel + 1;
       this._shaderRender();
       this._renderGradientUI();
+      toon.saveState(); this._updateUndoButtons();
     }, { signal: this._ac.signal });
 
     // Click on bar to add stop (left=0%=dark, right=100%=bright)
     bar.addEventListener('mousedown', (e) => {
       if (e.target.classList.contains('gradient-handle')) return;
+      toon.saveState();
       const rect = bar.getBoundingClientRect();
       const pos = Math.round(Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)));
       toon.stops.push({ position: pos, color: lerpColor(pos) });
       this._selectedStopIndex = toon.stops.length - 1;
       this._shaderRender();
       this._renderGradientUI();
+      toon.saveState(); this._updateUndoButtons();
     }, { signal: this._ac.signal });
 
     this._renderGradientUI();
@@ -1076,9 +1178,11 @@ export class UI {
       pos.min = 0;
       pos.max = 100;
       pos.addEventListener('change', () => {
+        toon.saveState();
         toon.stops[i].position = Math.max(0, Math.min(100, Math.round(+pos.value || 0)));
         this._shaderRender();
         this._renderGradientUI();
+        toon.saveState(); this._updateUndoButtons();
       });
       pos.addEventListener('click', (e) => e.stopPropagation());
       const pct = document.createElement('span');
@@ -1087,45 +1191,18 @@ export class UI {
       posWrap.appendChild(pos);
       posWrap.appendChild(pct);
 
-      // Color swatch with hidden color input
-      const swatch = document.createElement('div');
-      swatch.className = 'gradient-swatch';
-      swatch.style.background = stop.color;
-      const colorInput = document.createElement('input');
-      colorInput.type = 'color';
-      colorInput.value = stop.color;
-      colorInput.addEventListener('input', (e) => {
-        e.stopPropagation();
-        toon.stops[i].color = colorInput.value;
-        swatch.style.background = colorInput.value;
-        hex.value = colorInput.value.slice(1).toUpperCase();
+      // Color chip (swatch + hex input)
+      const chip = new ColorChip(stop.color);
+      chip.onStart = () => { toon.saveState(); };
+      chip.onChange = (hex) => {
+        toon.stops[i].color = hex;
         this._shaderRender();
         this._updateGradientBar();
-      });
-      colorInput.addEventListener('change', (e) => {
-        e.stopPropagation();
+      };
+      chip.onCommit = () => {
+        toon.saveState(); this._updateUndoButtons();
         this._renderGradientUI();
-      });
-      colorInput.addEventListener('click', (e) => e.stopPropagation());
-      swatch.appendChild(colorInput);
-
-      // Hex input
-      const hex = document.createElement('input');
-      hex.type = 'text';
-      hex.className = 'gradient-hex';
-      hex.value = stop.color.slice(1).toUpperCase();
-      hex.maxLength = 6;
-      hex.addEventListener('change', () => {
-        const val = hex.value.replace('#', '').trim();
-        if (/^[0-9a-fA-F]{6}$/.test(val)) {
-          toon.stops[i].color = '#' + val.toLowerCase();
-          this._shaderRender();
-          this._renderGradientUI();
-        } else {
-          hex.value = toon.stops[i].color.slice(1).toUpperCase();
-        }
-      });
-      hex.addEventListener('click', (e) => e.stopPropagation());
+      };
 
       // Remove button
       const removeBtn = document.createElement('button');
@@ -1135,15 +1212,16 @@ export class UI {
       removeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (toon.stops.length <= 2) return;
+        toon.saveState();
         toon.stops.splice(i, 1);
         if (this._selectedStopIndex >= toon.stops.length) this._selectedStopIndex = toon.stops.length - 1;
         this._shaderRender();
         this._renderGradientUI();
+        toon.saveState(); this._updateUndoButtons();
       });
 
       row.appendChild(posWrap);
-      row.appendChild(swatch);
-      row.appendChild(hex);
+      row.appendChild(chip.el);
       row.appendChild(removeBtn);
       list.appendChild(row);
     });
@@ -1152,6 +1230,7 @@ export class UI {
   _startHandleDrag(index) {
     const toon = this.toonGenerator;
     const bar = this._gradientBar;
+    toon.saveState();
 
     const onMove = (e) => {
       const rect = bar.getBoundingClientRect();
@@ -1190,9 +1269,12 @@ export class UI {
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
+      document.body.classList.remove('grabbing');
+      toon.saveState(); this._updateUndoButtons();
       this._renderGradientUI();
     };
 
+    document.body.classList.add('grabbing');
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
   }
@@ -1214,17 +1296,29 @@ export class UI {
       // Undo/Redo — works even when focused on inputs
       if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
         event.preventDefault();
-        this.painter.undo();
+        if (this.modeController?.mode === 'shader' && this.toonGenerator) {
+          if (this.toonGenerator.undo()) { this._shaderRender(); this._refreshShaderUI(); }
+        } else {
+          this.painter.undo();
+        }
         return;
       }
       if ((event.ctrlKey || event.metaKey) && (event.key === 'Z' || (event.key === 'z' && event.shiftKey))) {
         event.preventDefault();
-        this.painter.redo();
+        if (this.modeController?.mode === 'shader' && this.toonGenerator) {
+          if (this.toonGenerator.redo()) { this._shaderRender(); this._refreshShaderUI(); }
+        } else {
+          this.painter.redo();
+        }
         return;
       }
       if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
         event.preventDefault();
-        this.painter.redo();
+        if (this.modeController?.mode === 'shader' && this.toonGenerator) {
+          if (this.toonGenerator.redo()) { this._shaderRender(); this._refreshShaderUI(); }
+        } else {
+          this.painter.redo();
+        }
         return;
       }
 

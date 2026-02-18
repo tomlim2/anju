@@ -74,7 +74,7 @@ html, body {
 .topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  position: relative;
   height: 36px;
   padding: 0 12px;
   background: var(--panel);
@@ -86,7 +86,16 @@ html, body {
   color: var(--text-dim);
   letter-spacing: 0.3px;
 }
-.topbar-copy { color: var(--text-muted); font-size: var(--font-xs); letter-spacing: 0.2px; }
+.panel-footer {
+  padding: 6px 10px;
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+  letter-spacing: 0.2px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  margin-top: auto;
+}
+.panel-footer a { color: var(--text-muted); }
 
 /* --- Main Layout --- */
 .main {
@@ -97,7 +106,7 @@ html, body {
 /* --- Left Panel --- */
 .left-panel {
   flex: 1;
-  min-width: 0;
+  min-width: 480px;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border);
@@ -243,6 +252,7 @@ html, body {
 .control-color input[type="color"]::-webkit-color-swatch { border-radius: 2px; border: none; }
 .color-chips {
   display: flex;
+  flex-wrap: wrap;
   gap: 3px;
   align-items: center;
 }
@@ -456,6 +466,9 @@ html, body {
   flex-shrink: 0;
   opacity: 0;
   transition: opacity 0.12s, color 0.12s, background 0.12s;
+  background: none;
+  border: none;
+  padding: 0;
 }
 .layer-item:hover .layer-solo { opacity: 1; }
 .layer-solo:hover { color: var(--text); background: var(--btn-hover); }
@@ -473,6 +486,9 @@ html, body {
   cursor: pointer;
   color: var(--text-dim);
   transition: opacity 0.1s;
+  background: none;
+  border: none;
+  padding: 0;
 }
 .layer-vis:hover { color: var(--text); }
 .layer-vis.hidden { opacity: 0.25; }
@@ -599,6 +615,7 @@ html, body {
   -webkit-appearance: none;
   appearance: none;
   flex: 1;
+  min-width: 0;
   height: 3px;
   background: var(--track);
   border-radius: 2px;
@@ -654,33 +671,35 @@ html, body {
 
 /* --- Right Panel (3D Preview) --- */
 .right-panel {
-  width: 480px;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 200px;
   display: flex;
   flex-direction: column;
   background: #111;
 }
 .preview-area {
-  width: 480px;
-  height: 480px;
+  width: 100%;
+  aspect-ratio: 1;
   position: relative;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-height: 0;
 }
 .preview-canvas {
   width: 100%;
   height: 100%;
   display: block;
 }
-.vp-controls-left, .vp-controls-right {
+.vp-controls-top, .vp-controls-bottom {
   position: absolute;
-  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: var(--z-controls);
   display: flex;
   gap: 4px;
   align-items: center;
 }
-.vp-controls-left { left: 8px; }
-.vp-controls-right { right: 8px; }
+.vp-controls-top { top: 8px; }
+.vp-controls-bottom { bottom: 8px; }
 .vp-btn {
   width: 26px;
   height: 24px;
@@ -699,7 +718,7 @@ html, body {
 }
 .vp-btn:hover { background: var(--btn-hover); color: var(--text); }
 .vp-btn.active { background: var(--accent); color: #fff; }
-.vp-controls-left select, .vp-controls-right select {
+.vp-controls-top select, .vp-controls-bottom select {
   background: rgba(30,30,30,0.85);
   color: var(--text);
   border: 1px solid var(--border);
@@ -710,7 +729,8 @@ html, body {
   outline: none;
   backdrop-filter: blur(4px);
 }
-.vp-controls-left select:focus-visible, .vp-controls-right select:focus-visible { border-color: var(--accent-dim); }
+.vp-controls-top select:focus-visible, .vp-controls-bottom select:focus-visible { border-color: var(--accent-dim); }
+.vp-btn svg { width: 16px; height: 16px; }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 5px; }
@@ -856,10 +876,12 @@ html, body {
 
 /* Mode Tabs (in topbar) */
 .mode-tabs {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   gap: 2px;
   align-items: center;
-  margin-left: 16px;
 }
 .mode-tab {
   padding: 4px 12px;
@@ -877,7 +899,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-left: 4px;
+  margin-left: auto;
 }
 
 /* Shader Controls */
@@ -889,6 +911,19 @@ html, body {
   letter-spacing: 0.4px;
   color: var(--text-muted);
   margin-bottom: 4px;
+}
+#mode-shader-controls .detail-panel,
+#mode-shader-controls .shader-effect-group {
+  background: rgba(255,255,255,0.025);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  margin-top: 2px;
+}
+#mode-paint-controls .detail-panel {
+  background: rgba(255,255,255,0.025);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  margin-top: 2px;
 }
 /* Gradient Editor (Figma-style) */
 .gradient-bar-wrap {
@@ -922,10 +957,12 @@ html, body {
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
   border-top: 5px solid #666;
+  cursor: grab;
 }
 .gradient-handle.selected { border-color: var(--accent); }
 .gradient-handle.selected::after { border-top-color: var(--accent); }
 .gradient-handle:active { cursor: grabbing; }
+body.grabbing, body.grabbing * { cursor: grabbing !important; }
 .gradient-stops-header {
   display: flex;
   align-items: center;
@@ -1018,6 +1055,11 @@ html, body {
 }
 .gradient-hex:hover { border-color: var(--border); }
 .gradient-hex:focus { border-color: var(--accent-dim); color: var(--text); }
+.color-chip-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 .gradient-remove-btn {
   width: 20px;
   height: 20px;
@@ -1070,6 +1112,53 @@ html, body {
   margin-top: 2px;
 }
 
+/* Toast notifications */
+.toast {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  font-size: var(--font-sm);
+  z-index: calc(var(--z-overlay) + 1);
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+.toast-action {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+.toast-action:hover { background: var(--btn-hover); }
+
+/* Touch targets */
+@media (pointer: coarse) {
+  .tool-btn { min-width: 44px; min-height: 44px; }
+  .nav-btn, .vp-btn { min-width: 44px; min-height: 44px; }
+  .color-chip { min-width: 44px; min-height: 44px; }
+  .layer-vis { min-width: 44px; min-height: 44px; }
+  .layer-solo { min-width: 44px; min-height: 44px; }
+  .layers-actions button { min-width: 44px; min-height: 44px; }
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -1086,12 +1175,11 @@ html, body {
   <div class="mode-tabs" id="mode-tabs">
     <button class="mode-tab active" data-mode="shader">Shader</button>
     <button class="mode-tab" data-mode="paint">Paint</button>
-    <button class="mode-tab export-tab" id="btn-export" title="Export PNG">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M480-480ZM202-65l-56-57 118-118h-90v-80h226v226h-80v-89L202-65Zm278-15v-80h240v-440H520v-200H240v400h-80v-400q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H480Z"/></svg>
-      Export
-    </button>
   </div>
-  <span class="topbar-copy">v2.0.0 &middot; &copy; 2026 tomlim2 &middot; Matcaps from <a href="https://github.com/nidorx/matcaps" target="_blank" rel="noopener" style="color:var(--text-dim)">nidorx/matcaps</a> (ISC)</span>
+  <button class="mode-tab export-tab" id="btn-export" title="Export PNG">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M480-480ZM202-65l-56-57 118-118h-90v-80h226v226h-80v-89L202-65Zm278-15v-80h240v-440H520v-200H240v400h-80v-400q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H480Z"/></svg>
+    Export
+  </button>
 </div>
 
 <div class="main">
@@ -1135,7 +1223,7 @@ html, body {
         <div class="shader-section">
           <div class="shader-section-title">Color</div>
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:2px 0">
-            <input type="color" id="brush-color" value="#000000" style="width:24px;height:20px;border:1px solid var(--border);border-radius:var(--radius-sm);background:none;cursor:pointer;padding:0">
+            <span id="brush-color-chip"></span>
             <div class="color-chips" id="color-chips">
               <button class="color-chip" style="background:#ffffff" data-color="#ffffff"></button>
               <button class="color-chip" style="background:#c0c0c0" data-color="#c0c0c0"></button>
@@ -1176,6 +1264,7 @@ html, body {
         </div>
       </div>
     </div>
+    <div class="panel-footer">v2.0.0 &middot; &copy; 2026 tomlim2 &middot; Matcaps from <a href="https://github.com/nidorx/matcaps" target="_blank" rel="noopener">nidorx/matcaps</a> (ISC)</div>
     </div><!-- /mode-paint-controls -->
 
     <!-- Shader Mode: Controls Panel (left side) -->
@@ -1184,6 +1273,12 @@ html, body {
       <div class="layers-header">
         <span>Shader Material</span>
         <div class="layers-actions">
+          <button id="shader-undo" title="Undo (Ctrl+Z)" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M280-200v-80h284q63 0 109.5-40T720-420q0-60-46.5-100T564-560H312l104 104-56 56-200-200 200-200 56 56-104 104h252q97 0 166.5 63T800-420q0 94-69.5 157T564-200H280Z"/></svg>
+          </button>
+          <button id="shader-redo" title="Redo (Ctrl+Shift+Z)" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M396-200q-97 0-166.5-63T160-420q0-94 69.5-157T396-640h252L544-744l56-56 200 200-200 200-56-56 104-104H396q-63 0-109.5 40T240-420q0 60 46.5 100T396-280h284v80H396Z"/></svg>
+          </button>
           <button id="shader-copy" title="Copy parameters">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/></svg>
           </button>
@@ -1218,7 +1313,7 @@ html, body {
             <div class="shader-check">
               <input type="checkbox" id="outline-enabled" checked>
               <label for="outline-enabled">Enable</label>
-              <input type="color" id="outline-color" value="#000000" style="margin-left:auto">
+              <span id="outline-color-chip"></span>
             </div>
             <div class="hsv-row">
               <span class="hsv-label">W</span>
@@ -1235,7 +1330,7 @@ html, body {
             <div class="shader-check">
               <input type="checkbox" id="spec-enabled" checked>
               <label for="spec-enabled">Enable</label>
-              <input type="color" id="spec-color" value="#ffffff" style="margin-left:auto">
+              <span id="spec-color-chip"></span>
             </div>
             <div class="hsv-row">
               <span class="hsv-label">Pow</span>
@@ -1246,18 +1341,6 @@ html, body {
               <span class="hsv-label">Thr</span>
               <input class="hsv-slider" id="spec-threshold" type="range" min="0" max="100" value="85">
               <input type="number" class="hsv-val" id="spec-threshold-val" value="85" min="0" max="100">
-            </div>
-          </div>
-        </div>
-
-        <!-- Camera -->
-        <div class="shader-section">
-          <div class="shader-section-title">Camera</div>
-          <div class="detail-panel">
-            <div class="hsv-row">
-              <span class="hsv-label">FOV</span>
-              <input class="hsv-slider" id="shader-fov" type="range" min="0" max="80" value="0">
-              <input type="number" class="hsv-val" id="shader-fov-val" value="0" min="0" max="80">
             </div>
           </div>
         </div>
@@ -1283,8 +1366,21 @@ html, body {
             </div>
           </div>
         </div>
+
+        <!-- Camera -->
+        <div class="shader-section">
+          <div class="shader-section-title">Camera</div>
+          <div class="detail-panel">
+            <div class="hsv-row">
+              <span class="hsv-label">FOV</span>
+              <input class="hsv-slider" id="shader-fov" type="range" min="0" max="80" value="0">
+              <input type="number" class="hsv-val" id="shader-fov-val" value="0" min="0" max="80">
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+    <div class="panel-footer">v2.0.0 &middot; &copy; 2026 tomlim2 &middot; Matcaps from <a href="https://github.com/nidorx/matcaps" target="_blank" rel="noopener">nidorx/matcaps</a> (ISC)</div>
     </div><!-- /mode-shader-controls -->
 
     <!-- Canvas Area -->
@@ -1309,16 +1405,7 @@ html, body {
   <div class="right-panel">
     <div class="preview-area">
       <canvas id="preview-canvas" class="preview-canvas"></canvas>
-      <div class="vp-controls-left">
-        <select id="model-select">
-          <option value="torus">Torus</option>
-          <option value="torusknot">TorusKnot</option>
-          <option value="amongus" selected>AmongUs</option>
-        </select>
-        <select id="anim-select" style="display:none"></select>
-        <button class="vp-btn active" id="vp-anim" title="Toggle Animation">⏸</button>
-      </div>
-      <div class="vp-controls-right">
+      <div class="vp-controls-top">
         <select id="bg-select" title="Background Color">
           <option value="#111111">Dark Gray</option>
           <option value="#000000">Black</option>
@@ -1328,7 +1415,17 @@ html, body {
           <option value="#ffffff">White</option>
         </select>
         <button class="vp-btn active" id="vp-rotate" title="Auto Rotate">↻</button>
-        <button class="vp-btn" id="vp-reset" title="Reset View">⊡</button>
+      </div>
+      <div class="vp-controls-bottom">
+        <select id="model-select">
+          <option value="torus">Torus</option>
+          <option value="torusknot">TorusKnot</option>
+          <option value="amongus" selected>AmongUs</option>
+        </select>
+        <select id="anim-select" style="display:none"></select>
+        <button class="vp-btn active" id="vp-anim" title="Toggle Animation" style="display:none">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M530-50v-233.46l-100.15-95.77-41.54 183.69-256.77-52.15 12.15-59.62 192 39.62 69.39-353.23L310-582.54V-450h-60v-171.85l158.77-67.23q30.38-12.69 44.77-16.8Q467.92-710 480-710q18.31 0 34 9.65 15.69 9.66 25.54 25.74l40 64q25.61 41.23 70.11 69.38T750-510.77v60q-61-1.92-117.92-31.35-56.93-29.42-97.08-85.19l-29.77 150.39L590-335.38V-50h-60Zm-42.27-717.73q-21.58-21.58-21.58-52.27 0-30.69 21.58-52.27 21.58-21.58 52.27-21.58 30.69 0 52.27 21.58 21.58 21.58 21.58 52.27 0 30.69-21.58 52.27-21.58 21.58-52.27 21.58-30.69 0-52.27-21.58Z"/></svg>
+        </button>
       </div>
     </div>
 
@@ -1345,7 +1442,7 @@ html, body {
         </div>
       </div>
       <div class="layers-body">
-        <div class="layer-list" id="layer-list"></div>
+        <div class="layer-list" id="layer-list" role="listbox" tabindex="0" aria-label="Layers"></div>
         <div class="layer-settings" id="layer-settings">
           <div class="layer-settings-section">
             <div class="layer-settings-title">Adjust</div>

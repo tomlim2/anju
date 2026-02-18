@@ -92,15 +92,22 @@ async function init() {
       }
       resolve();
     };
-    img.onerror = () => { console.warn('Failed to load matcap:', randomId); resolve(); };
+    img.onerror = () => { resolve(); };
     img.src = FULL_PATH + randomId + '.png';
   });
 
   // Model selector
   modelSelect.addEventListener('change', async (event) => {
-    const model = await getModel(event.target.value);
-    preview.setModel(model);
-    ui._refreshAnimSelect();
+    modelSelect.disabled = true;
+    try {
+      const model = await getModel(event.target.value);
+      preview.setModel(model);
+      ui._refreshAnimSelect();
+    } catch (e) {
+      ui._showToast('Failed to load model');
+    } finally {
+      modelSelect.disabled = false;
+    }
   });
 
   // Export

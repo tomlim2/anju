@@ -3,7 +3,7 @@ const SIZE = 1024;
 export class ModeController {
   constructor(canvas) {
     this._canvas = canvas;
-    this._ctx = canvas.getContext('2d');
+    this._ctx = canvas.getContext('2d', { willReadFrequently: true });
     this._mode = 'shader';
     this._sections = { paint: [], shader: [] };
     this._snapshots = {};

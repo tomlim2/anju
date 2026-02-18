@@ -11,7 +11,7 @@ const BLEND_OPS = {
 export class LayerSystem {
   constructor(outputCanvas) {
     this.outputCanvas = outputCanvas;
-    this.outputCtx = outputCanvas.getContext('2d');
+    this.outputCtx = outputCanvas.getContext('2d', { willReadFrequently: true });
     this.layers = [];
     this.activeIndex = 0;
     this.transform = null;

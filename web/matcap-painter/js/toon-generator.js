@@ -46,9 +46,41 @@ export class ToonGenerator {
 
     // FOV (0 = orthographic, >0 = perspective)
     this.fov = 0;
+
+    // Undo/redo history
+    this._history = [JSON.stringify(this.toJSON())];
+    this._historyIndex = 0;
   }
 
   set onChange(fn) { this._onChange = fn; }
+
+  saveState() {
+    const json = JSON.stringify(this.toJSON());
+    // Skip if identical to current state
+    if (json === this._history[this._historyIndex]) return;
+    // Truncate future states
+    this._history.splice(this._historyIndex + 1);
+    this._history.push(json);
+    if (this._history.length > 100) this._history.shift();
+    this._historyIndex = this._history.length - 1;
+  }
+
+  undo() {
+    if (this._historyIndex <= 0) return false;
+    this._historyIndex--;
+    this.fromJSON(JSON.parse(this._history[this._historyIndex]));
+    return true;
+  }
+
+  redo() {
+    if (this._historyIndex >= this._history.length - 1) return false;
+    this._historyIndex++;
+    this.fromJSON(JSON.parse(this._history[this._historyIndex]));
+    return true;
+  }
+
+  get canUndo() { return this._historyIndex > 0; }
+  get canRedo() { return this._historyIndex < this._history.length - 1; }
 
   toJSON() {
     return {
