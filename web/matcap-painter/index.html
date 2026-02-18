@@ -899,7 +899,8 @@ html, body {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-left: auto;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 /* Shader Controls */
@@ -1182,21 +1183,15 @@ body.grabbing, body.grabbing * { cursor: grabbing !important; }
 <body>
 
 <div class="topbar">
-  <h1>Matcap Painter</h1>
-  <button class="vp-btn" id="shader-undo" title="Undo (Ctrl+Z)" disabled>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M280-200v-80h284q63 0 109.5-40T720-420q0-60-46.5-100T564-560H312l104 104-56 56-200-200 200-200 56 56-104 104h252q97 0 166.5 63T800-420q0 94-69.5 157T564-200H280Z"/></svg>
-  </button>
-  <button class="vp-btn" id="shader-redo" title="Redo (Ctrl+Shift+Z)" disabled>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M396-200q-97 0-166.5-63T160-420q0-94 69.5-157T396-640h252L544-744l56-56 200 200-200 200-56-56 104-104H396q-63 0-109.5 40T240-420q0 60 46.5 100T396-280h284v80H396Z"/></svg>
+  <button class="mode-tab export-tab" id="btn-export" title="Export as PNG">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M480-480ZM202-65l-56-57 118-118h-90v-80h226v226h-80v-89L202-65Zm278-15v-80h240v-440H520v-200H240v400h-80v-400q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H480Z"/></svg>
+    Export texture as .png
   </button>
   <div class="mode-tabs" id="mode-tabs">
     <button class="mode-tab active" data-mode="shader">Shader</button>
     <button class="mode-tab" data-mode="paint">Paint</button>
   </div>
-  <button class="mode-tab export-tab" id="btn-export" title="Export PNG">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M480-480ZM202-65l-56-57 118-118h-90v-80h226v226h-80v-89L202-65Zm278-15v-80h240v-440H520v-200H240v400h-80v-400q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H480Z"/></svg>
-    Export
-  </button>
+  <h1 style="margin-left:auto">Matcap Painter</h1>
 </div>
 
 <div class="main">
@@ -1281,13 +1276,22 @@ body.grabbing, body.grabbing * { cursor: grabbing !important; }
         </div>
       </div>
     </div>
-    <div class="panel-footer">v2.0.0 &middot; &copy; 2026 tomlim2 &middot; Matcaps from <a href="https://github.com/nidorx/matcaps" target="_blank" rel="noopener">nidorx/matcaps</a> (ISC)</div>
+    <div class="panel-footer">Matcap Painter v2.0.0 &middot; &copy; 2026 <a href="https://github.com/tomlim2" target="_blank" rel="noopener">tomlim2</a><br>Matcaps from <a href="https://github.com/nidorx/matcaps" target="_blank" rel="noopener">nidorx/matcaps</a> (ISC)</div>
     </div><!-- /mode-paint-controls -->
 
     <!-- Shader Mode: Controls Panel (left side) -->
     <div id="mode-shader-controls">
     <div class="layers-panel">
       <div style="overflow-y:auto;flex:1">
+        <!-- Preset -->
+        <div class="shader-section">
+          <div class="shader-section-title">Preset</div>
+          <div style="display:flex;gap:4px;align-items:center">
+            <button class="gradient-add-btn" id="shader-copy" title="Copy parameters"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/></svg></button>
+            <button class="gradient-add-btn" id="shader-paste" title="Paste parameters"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h167q11-35 43-57.5t70-22.5q40 0 71.5 22.5T594-840h166q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560h-80v120H280v-120h-80v560Zm280-560q17 0 28.5-11.5T520-800q0-17-11.5-28.5T480-840q-17 0-28.5 11.5T440-800q0 17 11.5 28.5T480-760Z"/></svg></button>
+          </div>
+        </div>
+
         <!-- Gradient Stops (Figma-style) -->
         <div class="shader-section" id="gradient-section">
           <div class="shader-section-title">Color Ramp</div>
@@ -1296,9 +1300,7 @@ body.grabbing, body.grabbing * { cursor: grabbing !important; }
               <option value="step" selected>Step</option>
               <option value="linear">Linear</option>
             </select>
-            <button class="gradient-add-btn" id="shader-copy" title="Copy parameters" style="margin-left:auto"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/></svg></button>
-            <button class="gradient-add-btn" id="shader-paste" title="Paste parameters"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h167q11-35 43-57.5t70-22.5q40 0 71.5 22.5T594-840h166q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560h-80v120H280v-120h-80v560Zm280-560q17 0 28.5-11.5T520-800q0-17-11.5-28.5T480-840q-17 0-28.5 11.5T440-800q0 17 11.5 28.5T480-760Z"/></svg></button>
-            <button class="gradient-add-btn" id="gradient-flip" title="Flip gradient"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M280-160 80-360l200-200 56 57-103 103h287v80H233l103 103-56 57Zm400-240-56-57 103-103H440v-80h287L624-743l56-57 200 200-200 200Z"/></svg></button>
+            <button class="gradient-add-btn" id="gradient-flip" title="Flip gradient" style="margin-left:auto"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M280-160 80-360l200-200 56 57-103 103h287v80H233l103 103-56 57Zm400-240-56-57 103-103H440v-80h287L624-743l56-57 200 200-200 200Z"/></svg></button>
           </div>
           <div class="gradient-bar-wrap">
             <div class="gradient-bar" id="gradient-bar"></div>
@@ -1384,7 +1386,7 @@ body.grabbing, body.grabbing * { cursor: grabbing !important; }
         </div>
       </div>
     </div>
-    <div class="panel-footer">v2.0.0 &middot; &copy; 2026 tomlim2 &middot; Matcaps from <a href="https://github.com/nidorx/matcaps" target="_blank" rel="noopener">nidorx/matcaps</a> (ISC)</div>
+    <div class="panel-footer">Matcap Painter v2.0.0 &middot; &copy; 2026 <a href="https://github.com/tomlim2" target="_blank" rel="noopener">tomlim2</a><br>Matcaps from <a href="https://github.com/nidorx/matcaps" target="_blank" rel="noopener">nidorx/matcaps</a> (ISC)</div>
     </div><!-- /mode-shader-controls -->
 
     <!-- Canvas Area -->

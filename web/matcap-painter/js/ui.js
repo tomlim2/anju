@@ -274,6 +274,7 @@ export class UI {
   }
 
   _showZoomBadge() {
+    if (this.modeController?.mode === 'shader') return;
     let badge = document.getElementById('zoom-badge');
     if (!badge) {
       badge = document.createElement('div');
