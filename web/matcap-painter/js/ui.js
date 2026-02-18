@@ -300,8 +300,6 @@ export class UI {
   _bindLayers() {
     const addButton = document.getElementById('layer-add');
     const deleteButton = document.getElementById('layer-delete');
-    const randomButton = document.getElementById('layer-random');
-    const resetButton = document.getElementById('layer-reset');
 
     const listenerOptions = { signal: this._ac.signal };
     addButton.addEventListener('click', () => {
@@ -349,22 +347,32 @@ export class UI {
         },
       });
     }, listenerOptions);
-    randomButton.addEventListener('click', () => this._randomPreset().catch(console.error), listenerOptions);
-    resetButton.addEventListener('click', () => {
+    // Paint preset buttons
+    document.getElementById('paint-random')?.addEventListener('click', () => {
+      this._randomPreset().catch(console.error);
+    }, listenerOptions);
+    document.getElementById('paint-reset')?.addEventListener('click', () => {
       this._autoBakeTransform();
+      // Reset to single layer with one random matcap
       while (this.layers.layers.length > 1) this.layers.layers.pop();
       const first = this.layers.layers[0];
-      first.ctx.fillStyle = '#ffffff';
-      first.ctx.fillRect(0, 0, first.canvas.width, first.canvas.height);
+      first.ctx.clearRect(0, 0, first.canvas.width, first.canvas.height);
       this.layers.resetDetail(0);
       first.name = 'Layer 1';
       first.blendMode = 'source-over';
       first.opacity = 1.0;
       this.layers.activeIndex = 0;
-      this.layers.composite();
-      this._detailOpen = false;
-      this._renderLayerList();
-      this._refreshHSVPanel();
+      // Load a single random matcap
+      const matcapId = MATCAP_IDS[Math.floor(Math.random() * MATCAP_IDS.length)];
+      const img = new Image();
+      img.onload = () => {
+        first.ctx.drawImage(img, 0, 0, first.canvas.width, first.canvas.height);
+        this.layers.composite();
+        this._detailOpen = false;
+        this._renderLayerList();
+        this._refreshHSVPanel();
+      };
+      img.src = FULL_PATH + matcapId + '.png';
     }, listenerOptions);
 
     this._detailOpen = false;
@@ -854,7 +862,11 @@ export class UI {
 
   _shaderRender() {
     if (this.modeController && this.modeController.mode === 'shader' && this.toonGenerator) {
-      this.toonGenerator.render();
+      if (this._shaderRafId) return;
+      this._shaderRafId = requestAnimationFrame(() => {
+        this._shaderRafId = null;
+        this.toonGenerator.render();
+      });
     }
   }
 
@@ -891,6 +903,68 @@ export class UI {
         saveAndRender();
       }, listenerOptions);
     };
+
+    // Random shader preset
+    document.getElementById('shader-random')?.addEventListener('click', () => {
+      toon.saveState();
+      const randHex = () => '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+      const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+      // Gradient: 2–8 stops, random colors and positions
+      const stopCount = randInt(2, 8);
+      const positions = Array.from({ length: stopCount }, () => randInt(0, 100)).sort((a, b) => a - b);
+      toon.stops = positions.map(pos => ({ position: pos, color: randHex() }));
+      toon.gradientMode = Math.random() < 0.5 ? 'step' : 'linear';
+
+      // Outline
+      toon.outlineEnabled = Math.random() < 0.7;
+      toon.outlineColor = randHex();
+      toon.outlineWidth = randInt(5, 50) / 1000;
+
+      // Specular
+      toon.specEnabled = Math.random() < 0.6;
+      toon.specColor = randHex();
+      toon.specPower = randInt(1, 128);
+      toon.specThreshold = randInt(50, 100) / 100;
+
+      // Light direction (normalized)
+      const lx = (randInt(-200, 200)) / 100;
+      const ly = (randInt(-200, 200)) / 100;
+      const lz = (randInt(10, 200)) / 100;
+      const len = Math.sqrt(lx * lx + ly * ly + lz * lz);
+      toon.lightDir = [lx / len, ly / len, lz / len];
+
+      scheduleRender();
+      toon.saveState();
+      this._refreshShaderUI();
+      this._updateUndoButtons();
+    }, listenerOptions);
+
+    // Reset shader to defaults
+    document.getElementById('shader-reset')?.addEventListener('click', () => {
+      toon.saveState();
+      toon.gradientMode = 'step';
+      toon.stops = [
+        { position: 8, color: '#b0b0b0' },
+        { position: 16, color: '#4f4f4f' },
+        { position: 35, color: '#0a0a0a' },
+        { position: 67, color: '#05f6fa' },
+      ];
+      toon.outlineEnabled = true;
+      toon.outlineColor = '#000000';
+      toon.outlineWidth = 0.021;
+      toon.specEnabled = true;
+      toon.specColor = '#dedede';
+      toon.specPower = 16;
+      toon.specThreshold = 0.85;
+      toon.lightDir = [-0.34, 0.54, 0.77];
+      const len = Math.sqrt(0.34 * 0.34 + 0.54 * 0.54 + 0.77 * 0.77);
+      toon.lightDir = toon.lightDir.map(v => v / len);
+      scheduleRender();
+      toon.saveState();
+      this._refreshShaderUI();
+      this._updateUndoButtons();
+    }, listenerOptions);
 
     // Gradient editor (Figma-style)
     this._initGradientEditor();
