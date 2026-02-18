@@ -36,10 +36,7 @@ export class Preview {
 
   destroy() {
     this._ac.abort();
-    if (this.mesh) {
-      this.mesh.geometry.dispose();
-      this.mesh.material.dispose();
-    }
+    this._clearModel();
     if (this.matcapTexture) this.matcapTexture.dispose();
     if (this.renderer) this.renderer.dispose();
   }

@@ -195,9 +195,9 @@ export class LayerSystem {
     const ctx = this.outputCtx;
     ctx.clearRect(0, 0, SIZE, SIZE);
 
-    // Active layer content may have changed from painting — invalidate its cache
+    // Active layer content may have changed from painting — invalidate its cache only if it has adjustments
     const activeLayer = this.layers[this.activeIndex];
-    if (activeLayer) activeLayer._filterDirty = true;
+    if (activeLayer && this._hasAdjustments(activeLayer)) activeLayer._filterDirty = true;
 
     // Draw bottom-to-top
     for (let layerIndex = 0; layerIndex < this.layers.length; layerIndex++) {

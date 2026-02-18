@@ -396,6 +396,11 @@ export class UI {
   }
 
   _renderLayerList() {
+    // Abort previous layer-list listeners
+    if (this._layerListAc) this._layerListAc.abort();
+    this._layerListAc = new AbortController();
+    const layerSignal = { signal: this._layerListAc.signal };
+
     const list = document.getElementById('layer-list');
     // Detach settings panel before clearing to preserve element references
     const settingsPanel = this._settingsPanel;
@@ -414,14 +419,14 @@ export class UI {
       grip.innerHTML = '<svg width="6" height="10" viewBox="0 0 6 10" fill="currentColor"><circle cx="1.5" cy="1.5" r="1"/><circle cx="4.5" cy="1.5" r="1"/><circle cx="1.5" cy="5" r="1"/><circle cx="4.5" cy="5" r="1"/><circle cx="1.5" cy="8.5" r="1"/><circle cx="4.5" cy="8.5" r="1"/></svg>';
 
       item.draggable = true;
-      grip.addEventListener('mousedown', () => { this._gripHeld = true; });
+      grip.addEventListener('mousedown', () => { this._gripHeld = true; }, layerSignal);
       item.addEventListener('dragstart', (event) => {
         if (!this._gripHeld) { event.preventDefault(); return; }
         this._gripHeld = false;
         this._dragFromIndex = layerIndex;
         item.classList.add('dragging');
         event.dataTransfer.effectAllowed = 'move';
-      });
+      }, layerSignal);
       item.addEventListener('dragend', () => {
         this._gripHeld = false;
         item.classList.remove('dragging');
@@ -429,7 +434,7 @@ export class UI {
         list.querySelectorAll('.layer-item').forEach(layerElement => {
           layerElement.classList.remove('drag-over-top', 'drag-over-bottom');
         });
-      });
+      }, layerSignal);
       item.addEventListener('dragover', (event) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
@@ -439,10 +444,10 @@ export class UI {
         const rect = item.getBoundingClientRect();
         const mid = rect.top + rect.height / 2;
         item.classList.add(event.clientY < mid ? 'drag-over-top' : 'drag-over-bottom');
-      });
+      }, layerSignal);
       item.addEventListener('dragleave', () => {
         item.classList.remove('drag-over-top', 'drag-over-bottom');
-      });
+      }, layerSignal);
       item.addEventListener('drop', (event) => {
         event.preventDefault();
         if (this._dragFromIndex === -1 || this._dragFromIndex === layerIndex) return;
@@ -475,7 +480,7 @@ export class UI {
         this._detailOpen = false;
         this._renderLayerList();
         this._refreshHSVPanel();
-      });
+      }, layerSignal);
 
       const visibilityToggle = document.createElement('span');
       visibilityToggle.className = 'layer-vis' + (layer.visible ? '' : ' hidden');
@@ -487,7 +492,7 @@ export class UI {
         if (this.layers.isSoloed) this.layers.unsoloLayer();
         this.layers.setVisibility(layerIndex, !layer.visible);
         this._renderLayerList();
-      });
+      }, layerSignal);
 
       const thumb = document.createElement('canvas');
       thumb.className = 'layer-thumb';
@@ -506,7 +511,7 @@ export class UI {
       matcapButton.addEventListener('click', (event) => {
         event.stopPropagation();
         this._picker.open(layerIndex);
-      });
+      }, layerSignal);
 
       const importButton = document.createElement('button');
       importButton.className = 'layer-matcap-btn';
@@ -532,7 +537,7 @@ export class UI {
           img.src = URL.createObjectURL(file);
         });
         input.click();
-      });
+      }, layerSignal);
 
       const blendSelect = this._createBlendSelect(layerIndex, layer.blendMode);
 
@@ -545,14 +550,14 @@ export class UI {
       opacitySlider.addEventListener('input', (event) => {
         event.stopPropagation();
         this.layers.setOpacity(layerIndex, +event.target.value / 100);
-      });
+      }, layerSignal);
 
       item.addEventListener('click', () => {
         if (layerIndex !== this.layers.activeIndex) this._autoBakeTransform();
         this.layers.setActive(layerIndex);
         this._renderLayerList();
         this._refreshHSVPanel();
-      });
+      }, layerSignal);
 
       const soloButton = document.createElement('span');
       soloButton.className = 'layer-solo' + (this.layers._soloIndex === layerIndex ? ' active' : '');
@@ -562,7 +567,7 @@ export class UI {
         event.stopPropagation();
         this.layers.soloLayer(layerIndex);
         this._renderLayerList();
-      });
+      }, layerSignal);
 
       const detailBtn = document.createElement('button');
       detailBtn.className = 'layer-detail-btn' + (this._detailOpen && layerIndex === this.layers.activeIndex ? ' open' : '');
@@ -579,7 +584,7 @@ export class UI {
         }
         this._renderLayerList();
         this._refreshHSVPanel();
-      });
+      }, layerSignal);
 
       item.appendChild(grip);
       item.appendChild(soloButton);
@@ -756,29 +761,29 @@ export class UI {
 
     // Suppress intermediate composites — shadow prototype method
     this.layers.composite = () => {};
+    try {
+      while (this.layers.layers.length > 1) this.layers.layers.pop();
+      const first = this.layers.layers[0];
+      first.ctx.clearRect(0, 0, first.canvas.width, first.canvas.height);
+      this.layers.resetDetail(0);
+      first.name = 'Layer 1';
+      for (let i = 1; i < count; i++) this.layers.addLayer(`Layer ${i + 1}`);
 
-    while (this.layers.layers.length > 1) this.layers.layers.pop();
-    const first = this.layers.layers[0];
-    first.ctx.clearRect(0, 0, first.canvas.width, first.canvas.height);
-    this.layers.resetDetail(0);
-    first.name = 'Layer 1';
-    for (let i = 1; i < count; i++) this.layers.addLayer(`Layer ${i + 1}`);
-
-    for (let i = 0; i < count; i++) {
-      const layer = this.layers.layers[i];
-      const cfg = configs[i];
-      layer.blendMode = cfg.blendMode;
-      layer.opacity = cfg.opacity;
-      layer.hue = cfg.hue;
-      layer.saturation = cfg.saturation;
-      layer.brightness = cfg.brightness;
-      layer.contrast = cfg.contrast;
-      layer.lift = cfg.lift;
-      if (cfg.img) layer.ctx.drawImage(cfg.img, 0, 0, layer.canvas.width, layer.canvas.height);
+      for (let i = 0; i < count; i++) {
+        const layer = this.layers.layers[i];
+        const cfg = configs[i];
+        layer.blendMode = cfg.blendMode;
+        layer.opacity = cfg.opacity;
+        layer.hue = cfg.hue;
+        layer.saturation = cfg.saturation;
+        layer.brightness = cfg.brightness;
+        layer.contrast = cfg.contrast;
+        layer.lift = cfg.lift;
+        if (cfg.img) layer.ctx.drawImage(cfg.img, 0, 0, layer.canvas.width, layer.canvas.height);
+      }
+    } finally {
+      delete this.layers.composite;
     }
-
-    // Restore and composite once
-    delete this.layers.composite;
     this.layers.activeIndex = count - 1;
     this.layers.composite();
     this._detailOpen = false;
@@ -874,8 +879,12 @@ export class UI {
 
     // Copy / Paste shader parameters
     document.getElementById('shader-copy')?.addEventListener('click', async () => {
-      const json = JSON.stringify(toon.toJSON(), null, 2);
-      await navigator.clipboard.writeText(json);
+      try {
+        const json = JSON.stringify(toon.toJSON(), null, 2);
+        await navigator.clipboard.writeText(json);
+      } catch (e) {
+        console.warn('Copy failed:', e);
+      }
     }, listenerOptions);
 
     document.getElementById('shader-paste')?.addEventListener('click', async () => {
