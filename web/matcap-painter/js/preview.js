@@ -119,6 +119,7 @@ export class Preview {
   }
 
   _clearModel() {
+    this._clips = [];
     if (this._mixer) {
       this._mixer.stopAllAction();
       this._mixer = null;

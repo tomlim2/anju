@@ -125,6 +125,7 @@ html, body {
   display: flex;
   gap: 1px;
   align-items: center;
+  flex-wrap: wrap;
 }
 .tool-btn {
   width: 28px;
@@ -671,18 +672,17 @@ html, body {
 
 /* --- Right Panel (3D Preview) --- */
 .right-panel {
-  flex: 1;
-  min-width: 200px;
+  width: 360px;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   background: #111;
 }
 .preview-area {
-  width: 100%;
-  aspect-ratio: 1;
+  width: 360px;
+  height: 360px;
   position: relative;
-  flex-shrink: 1;
-  min-height: 0;
+  flex-shrink: 0;
 }
 .preview-canvas {
   width: 100%;
@@ -864,8 +864,8 @@ html, body {
 }
 #mode-paint-controls,
 #mode-shader-controls {
-  width: 25%;
-  min-width: 180px;
+  width: 240px;
+  flex-shrink: 0;
   max-width: 260px;
   min-height: 0;
   display: flex;
@@ -967,7 +967,7 @@ body.grabbing, body.grabbing * { cursor: grabbing !important; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 0 4px;
+  padding: 6px 4px 4px;
 }
 .gradient-add-btn {
   width: 20px;
@@ -1058,7 +1058,18 @@ body.grabbing, body.grabbing * { cursor: grabbing !important; }
 .color-chip-wrap {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition: border-color 0.12s;
+}
+.color-chip-wrap:hover,
+.color-chip-wrap:focus-within {
+  border-color: var(--accent-dim);
+}
+.color-chip-wrap:hover .gradient-hex,
+.color-chip-wrap:focus-within .gradient-hex {
+  border-color: transparent;
 }
 .gradient-remove-btn {
   width: 20px;
@@ -1076,7 +1087,7 @@ body.grabbing, body.grabbing * { cursor: grabbing !important; }
   transition: background 0.12s, color 0.12s;
 }
 .gradient-remove-btn:hover { background: var(--btn-hover); color: var(--text); }
-.gradient-mode-row { margin-bottom: 4px; }
+.gradient-mode-row { display: flex; align-items: center; margin-bottom: 4px; }
 .gradient-mode-select {
   background: var(--surface);
   color: var(--text);
@@ -1172,6 +1183,12 @@ body.grabbing, body.grabbing * { cursor: grabbing !important; }
 
 <div class="topbar">
   <h1>Matcap Painter</h1>
+  <button class="vp-btn" id="shader-undo" title="Undo (Ctrl+Z)" disabled>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M280-200v-80h284q63 0 109.5-40T720-420q0-60-46.5-100T564-560H312l104 104-56 56-200-200 200-200 56 56-104 104h252q97 0 166.5 63T800-420q0 94-69.5 157T564-200H280Z"/></svg>
+  </button>
+  <button class="vp-btn" id="shader-redo" title="Redo (Ctrl+Shift+Z)" disabled>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M396-200q-97 0-166.5-63T160-420q0-94 69.5-157T396-640h252L544-744l56-56 200 200-200 200-56-56 104-104H396q-63 0-109.5 40T240-420q0 60 46.5 100T396-280h284v80H396Z"/></svg>
+  </button>
   <div class="mode-tabs" id="mode-tabs">
     <button class="mode-tab active" data-mode="shader">Shader</button>
     <button class="mode-tab" data-mode="paint">Paint</button>
@@ -1191,10 +1208,10 @@ body.grabbing, body.grabbing * { cursor: grabbing !important; }
     <!-- Paint Mode: Controls Panel (left side) -->
     <div id="mode-paint-controls" style="display:none">
     <div class="layers-panel">
-      <div class="layers-header"><span>Paint Tools</span></div>
       <div style="overflow-y:auto;flex:1">
         <div class="shader-section">
-          <div class="toolbar" style="border-bottom:none;padding:6px 4px">
+          <div class="shader-section-title">Toolbar</div>
+          <div class="toolbar" style="border-bottom:none;padding:6px 4px;flex-wrap:wrap">
             <div class="toolbar-group">
               <button class="tool-btn active" data-tool="brush" title="Brush (B)">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M247.69-147.69q-34.33 0-67.89-15.08-33.57-15.08-55.95-40.31 22.92-6.54 43.38-27.81 20.46-21.26 20.46-56.8 0-41.93 29.04-70.96 29.04-29.04 70.96-29.04 41.93 0 70.96 29.04 29.04 29.03 29.04 70.96 0 57.75-41.12 98.87-41.13 41.13-98.88 41.13Zm0-60q33 0 56.5-23.5t23.5-56.5q0-17-11.5-28.5t-28.5-11.5q-17 0-28.5 11.5t-11.5 28.5q0 23-5.5 42t-14.5 36q5 2 10 2h10ZM460-370l-89.23-89.23 342.61-342.61q11-11 27.5-11.5t28.5 11.5l33.23 33.23q12 12 12 28t-12 28L460-370Zm-172.31 82.31Z"/></svg>
@@ -1270,31 +1287,18 @@ body.grabbing, body.grabbing * { cursor: grabbing !important; }
     <!-- Shader Mode: Controls Panel (left side) -->
     <div id="mode-shader-controls">
     <div class="layers-panel">
-      <div class="layers-header">
-        <span>Shader Material</span>
-        <div class="layers-actions">
-          <button id="shader-undo" title="Undo (Ctrl+Z)" disabled>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M280-200v-80h284q63 0 109.5-40T720-420q0-60-46.5-100T564-560H312l104 104-56 56-200-200 200-200 56 56-104 104h252q97 0 166.5 63T800-420q0 94-69.5 157T564-200H280Z"/></svg>
-          </button>
-          <button id="shader-redo" title="Redo (Ctrl+Shift+Z)" disabled>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M396-200q-97 0-166.5-63T160-420q0-94 69.5-157T396-640h252L544-744l56-56 200 200-200 200-56-56 104-104H396q-63 0-109.5 40T240-420q0 60 46.5 100T396-280h284v80H396Z"/></svg>
-          </button>
-          <button id="shader-copy" title="Copy parameters">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/></svg>
-          </button>
-          <button id="shader-paste" title="Paste parameters">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h167q11-35 43-57.5t70-22.5q40 0 71.5 22.5T594-840h166q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560h-80v120H280v-120h-80v560Zm280-560q17 0 28.5-11.5T520-800q0-17-11.5-28.5T480-840q-17 0-28.5 11.5T440-800q0 17 11.5 28.5T480-760Z"/></svg>
-          </button>
-        </div>
-      </div>
       <div style="overflow-y:auto;flex:1">
         <!-- Gradient Stops (Figma-style) -->
         <div class="shader-section" id="gradient-section">
+          <div class="shader-section-title">Color Ramp</div>
           <div class="gradient-mode-row">
             <select id="gradient-mode" class="gradient-mode-select">
               <option value="step" selected>Step</option>
               <option value="linear">Linear</option>
             </select>
+            <button class="gradient-add-btn" id="shader-copy" title="Copy parameters" style="margin-left:auto"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/></svg></button>
+            <button class="gradient-add-btn" id="shader-paste" title="Paste parameters"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h167q11-35 43-57.5t70-22.5q40 0 71.5 22.5T594-840h166q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560h-80v120H280v-120h-80v560Zm280-560q17 0 28.5-11.5T520-800q0-17-11.5-28.5T480-840q-17 0-28.5 11.5T440-800q0 17 11.5 28.5T480-760Z"/></svg></button>
+            <button class="gradient-add-btn" id="gradient-flip" title="Flip gradient"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M280-160 80-360l200-200 56 57-103 103h287v80H233l103 103-56 57Zm400-240-56-57 103-103H440v-80h287L624-743l56-57 200 200-200 200Z"/></svg></button>
           </div>
           <div class="gradient-bar-wrap">
             <div class="gradient-bar" id="gradient-bar"></div>

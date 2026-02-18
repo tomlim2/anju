@@ -540,7 +540,7 @@ export class UI {
       const matcapButton = document.createElement('button');
       matcapButton.className = 'layer-matcap-btn';
       matcapButton.title = 'Load matcap preset';
-      matcapButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M480-480Zm0 360q-75 0-140.5-28.5t-114-77q-48.5-48.5-77-114T120-480q0-75 28.5-140.5t77-114q48.5-48.5 114-77T480-840q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-480q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-120Zm0-80q116 0 198-82t82-198q0-116-82-198t-198-82q-116 0-198 82t-82 198q0 116 82 198t198 82Z"/></svg>';
+      matcapButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M212.31-100Q182-100 161-121q-21-21-21-51.31v-535.38Q140-738 161-759q21-21 51.31-21h125.38L480-922.3 622.31-780h125.38Q778-780 799-759q21 21 21 51.31v535.38Q820-142 799-121q-21 21-51.31 21H212.31Zm0-60h535.38q4.62 0 8.46-3.85 3.85-3.84 3.85-8.46v-535.38q0-4.62-3.85-8.46-3.84-3.85-8.46-3.85H212.31q-4.62 0-8.46 3.85-3.85 3.84-3.85 8.46v535.38q0 4.62 3.85 8.46 3.84 3.85 8.46 3.85ZM270-250h423.07L561.54-425.38 449.23-279.23l-80-102.31L270-250Zm134.77-530h150.46L480-855.23 404.77-780ZM200-160v-560 560Z"/></svg>';
       matcapButton.addEventListener('click', (event) => {
         event.stopPropagation();
         this._picker.open(layerIndex);
@@ -1079,6 +1079,15 @@ export class UI {
       return '#888888';
     };
 
+    // Flip gradient — mirror all stop positions (pos → 100 - pos)
+    document.getElementById('gradient-flip')?.addEventListener('click', () => {
+      toon.saveState();
+      toon.stops.forEach(s => { s.position = 100 - s.position; });
+      this._shaderRender();
+      this._renderGradientUI();
+      toon.saveState(); this._updateUndoButtons();
+    }, { signal: this._ac.signal });
+
     // Add stop button — insert after the selected stop
     addBtn?.addEventListener('click', () => {
       toon.saveState();
@@ -1142,6 +1151,11 @@ export class UI {
     const list = this._gradientList;
     if (!bar || !list) return;
 
+    // Keep stops sorted ascending by position
+    const sel = toon.stops[this._selectedStopIndex];
+    toon.stops.sort((a, b) => a.position - b.position);
+    if (sel) this._selectedStopIndex = toon.stops.indexOf(sel);
+
     this._updateGradientBar();
 
     // Render handles
@@ -1167,6 +1181,7 @@ export class UI {
       const row = document.createElement('div');
       row.className = 'gradient-stop-item' + (i === this._selectedStopIndex ? ' selected' : '');
       row.addEventListener('click', () => { if (this._selectedStopIndex === i) return; this._selectedStopIndex = i; this._renderGradientUI(); });
+      row.addEventListener('focusin', () => { if (this._selectedStopIndex === i) return; this._selectedStopIndex = i; this._renderGradientUI(); });
 
       // Position wrap: [number][%]
       const posWrap = document.createElement('div');
@@ -1180,6 +1195,9 @@ export class UI {
       pos.addEventListener('change', () => {
         toon.saveState();
         toon.stops[i].position = Math.max(0, Math.min(100, Math.round(+pos.value || 0)));
+        const ref = toon.stops[i];
+        toon.stops.sort((a, b) => a.position - b.position);
+        this._selectedStopIndex = toon.stops.indexOf(ref);
         this._shaderRender();
         this._renderGradientUI();
         toon.saveState(); this._updateUndoButtons();
@@ -1270,6 +1288,9 @@ export class UI {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
       document.body.classList.remove('grabbing');
+      const ref = toon.stops[index];
+      toon.stops.sort((a, b) => a.position - b.position);
+      this._selectedStopIndex = toon.stops.indexOf(ref);
       toon.saveState(); this._updateUndoButtons();
       this._renderGradientUI();
     };
