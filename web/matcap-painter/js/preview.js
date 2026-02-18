@@ -7,7 +7,6 @@ import {
   WebGPURenderer,
   SRGBColorSpace,
   Color,
-  DoubleSide,
   Clock,
   AnimationMixer,
   Box3,
@@ -68,7 +67,7 @@ export class Preview {
     this.matcapTexture.colorSpace = SRGBColorSpace;
 
     // Matcap material
-    this.material = new MeshMatcapMaterial({ matcap: this.matcapTexture, flatShading: false, side: DoubleSide });
+    this.material = new MeshMatcapMaterial({ matcap: this.matcapTexture, flatShading: false });
 
     // Resize
     this._resize();
@@ -161,7 +160,10 @@ export class Preview {
   toggleAnimation() {
     this._animEnabled = !this._animEnabled;
     if (this._mixer) {
-      this._mixer._actions.forEach(action => { action.paused = !this._animEnabled; });
+      for (const clip of this._clips) {
+        const action = this._mixer.existingAction(clip);
+        if (action) action.paused = !this._animEnabled;
+      }
     }
     return this._animEnabled;
   }

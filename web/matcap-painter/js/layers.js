@@ -54,6 +54,8 @@ export class LayerSystem {
     if (this.layers.length <= 1) return;
     if (index < 0 || index >= this.layers.length) return;
 
+    const removed = this.layers[index];
+    if (removed._filteredCanvas) removed._filteredCanvas = null;
     this.layers.splice(index, 1);
     if (this.activeIndex >= this.layers.length) {
       this.activeIndex = this.layers.length - 1;
