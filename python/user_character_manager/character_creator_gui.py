@@ -6,12 +6,41 @@ import socket
 import subprocess
 import threading
 import shutil
+import uuid
+
+class ToolTip:
+    """Simple tooltip for tkinter widgets."""
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tip_window = None
+        widget.bind('<Enter>', self.show)
+        widget.bind('<Leave>', self.hide)
+
+    def show(self, event=None):
+        if self.tip_window:
+            return
+        x = self.widget.winfo_rootx() + 20
+        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 4
+        self.tip_window = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        label = tk.Label(tw, text=self.text, background="#ffffe0",
+                         relief=tk.SOLID, borderwidth=1, font=('Arial', 8))
+        label.pack()
+
+    def hide(self, event=None):
+        if self.tip_window:
+            self.tip_window.destroy()
+            self.tip_window = None
+
 
 class CharacterCreatorGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("CINEV Character Creator")
-        self.root.geometry("900x700")
+        self.root.geometry("1600x900")
+        self.root.minsize(1024, 600)
         self.root.configure(bg='white')
 
         # Config file path
@@ -28,6 +57,9 @@ class CharacterCreatorGUI:
         self.vrm_file_var = tk.StringVar()
         self.output_folder_var = tk.StringVar()
 
+        # Assets info data
+        self.assets_data = []
+
         self.create_widgets()
 
         # Load saved configuration (after widgets are created)
@@ -38,43 +70,64 @@ class CharacterCreatorGUI:
         self.project_file_var.trace_add('write', lambda *args: self.save_config())
         self.output_folder_var.trace_add('write', lambda *args: self.save_config())
 
+        # Key bindings
+        self.root.bind('<Escape>', lambda e: self.root.focus_set())
+        self.root.bind('<Control-s>', lambda e: self.assets_auto_save())
+
     def create_widgets(self):
         # Main container
-        main_frame = tk.Frame(self.root, bg='white', padx=20, pady=20)
+        main_frame = tk.Frame(self.root, bg='white', padx=10, pady=10)
         main_frame.pack(fill=tk.BOTH, expand=True)
 
         # Title
         title = tk.Label(main_frame, text="CINEV Character Creator",
                         font=('Arial', 18, 'bold'), bg='white', fg='black')
-        title.pack(pady=(0, 20))
+        title.pack(pady=(0, 10))
 
-        # Paths Section (moved to first)
-        paths_frame = tk.LabelFrame(main_frame, text="1. Configure Paths",
+        # 2-column layout
+        columns_frame = tk.Frame(main_frame, bg='white')
+        columns_frame.pack(fill=tk.BOTH, expand=True)
+        columns_frame.columnconfigure(0, weight=1)
+        columns_frame.columnconfigure(1, weight=1)
+        columns_frame.rowconfigure(0, weight=1)
+
+        # === LEFT PANE ===
+        left_pane = tk.Frame(columns_frame, bg='white', padx=10)
+        left_pane.grid(row=0, column=0, sticky='nsew')
+
+        # Paths Section
+        paths_frame = tk.LabelFrame(left_pane, text="1. Configure Paths",
                                     font=('Arial', 10, 'bold'), bg='white',
                                     fg='black', padx=10, pady=10)
         paths_frame.pack(fill=tk.X, pady=(0, 10))
 
-        # UE Directory
         self.create_path_input(paths_frame, "UE_CINEV Directory:",
                               self.ue_dir_var, self.browse_ue_directory)
-
-        # Project File
         self.create_path_input(paths_frame, "Project File (.uproject):",
                               self.project_file_var, self.browse_project_file)
+        # Output Folder with Open button
+        output_folder_frame = tk.Frame(paths_frame, bg='white')
+        output_folder_frame.pack(fill=tk.X, pady=5)
+        tk.Label(output_folder_frame, text="Output Folder:", width=16, anchor='w',
+                bg='white', fg='black').pack(side=tk.LEFT)
+        tk.Entry(output_folder_frame, textvariable=self.output_folder_var, bg='white', fg='black',
+                relief=tk.SOLID, borderwidth=1).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        tk.Button(output_folder_frame, text="Browse", command=self.browse_output_folder,
+                 bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
+                 padx=10, cursor='hand2').pack(side=tk.LEFT)
+        tk.Button(output_folder_frame, text="Open folder", command=self.open_output_folder,
+                 bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
+                 padx=10, cursor='hand2').pack(side=tk.LEFT, padx=(5, 0))
 
-        # Output Folder
-        self.create_path_input(paths_frame, "Output Folder:",
-                              self.output_folder_var, self.browse_output_folder)
-
-        # UserCharacter folder info label (moved before char_frame)
-        self.user_char_label = tk.Label(main_frame, text="",
+        # UserCharacter folder info label
+        self.user_char_label = tk.Label(left_pane, text="",
                                         bg='#f0f0f0', fg='#666666',
                                         font=('Arial', 8), anchor='w',
                                         relief=tk.SOLID, borderwidth=1, padx=5, pady=5)
         self.user_char_label.pack(fill=tk.X, pady=(0, 10))
 
         # Character Files Section
-        char_frame = tk.LabelFrame(main_frame, text="2. Character Files",
+        char_frame = tk.LabelFrame(left_pane, text="2. Character Files",
                                    font=('Arial', 10, 'bold'), bg='white',
                                    fg='black', padx=10, pady=10)
         char_frame.pack(fill=tk.X, pady=(0, 10))
@@ -82,34 +135,31 @@ class CharacterCreatorGUI:
         # Gender
         gender_frame = tk.Frame(char_frame, bg='white')
         gender_frame.pack(fill=tk.X, pady=5)
-        tk.Label(gender_frame, text="Gender:", width=15, anchor='w',
+        tk.Label(gender_frame, text="Gender:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
-        gender_combo = ttk.Combobox(gender_frame, textvariable=self.gender_var,
-                                   values=["Female", "Male"], state='readonly', width=30)
-        gender_combo.pack(side=tk.LEFT, padx=5)
+        ttk.Combobox(gender_frame, textvariable=self.gender_var,
+                     values=["Female", "Male"], state='readonly', width=30).pack(side=tk.LEFT, padx=5)
 
         # Scaling Method
         scaling_frame = tk.Frame(char_frame, bg='white')
         scaling_frame.pack(fill=tk.X, pady=5)
-        tk.Label(scaling_frame, text="Scaling Method:", width=15, anchor='w',
+        tk.Label(scaling_frame, text="Scaling Method:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
-        scaling_combo = ttk.Combobox(scaling_frame, textvariable=self.scaling_method_var,
-                                    values=["Original", "CineV"], state='readonly', width=30)
-        scaling_combo.pack(side=tk.LEFT, padx=5)
+        ttk.Combobox(scaling_frame, textvariable=self.scaling_method_var,
+                     values=["Original", "CineV"], state='readonly', width=30).pack(side=tk.LEFT, padx=5)
 
         # Model Source Type
         source_frame = tk.Frame(char_frame, bg='white')
         source_frame.pack(fill=tk.X, pady=5)
-        tk.Label(source_frame, text="Model Source:", width=15, anchor='w',
+        tk.Label(source_frame, text="Model Source:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
-        source_combo = ttk.Combobox(source_frame, textvariable=self.model_source_type_var,
-                                    values=["None", "VRM", "VRoid", "Zepeto"], state='readonly', width=30)
-        source_combo.pack(side=tk.LEFT, padx=5)
+        ttk.Combobox(source_frame, textvariable=self.model_source_type_var,
+                     values=["None", "VRM", "VRoid", "Zepeto"], state='readonly', width=30).pack(side=tk.LEFT, padx=5)
 
         # Display Name
         name_frame = tk.Frame(char_frame, bg='white')
         name_frame.pack(fill=tk.X, pady=5)
-        tk.Label(name_frame, text="Display Name:", width=15, anchor='w',
+        tk.Label(name_frame, text="Display Name:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
         tk.Entry(name_frame, textvariable=self.display_name_var,
                 width=33, bg='white', fg='black',
@@ -122,37 +172,29 @@ class CharacterCreatorGUI:
                  cursor='hand2').pack(pady=10)
 
         # Execute Section
-        execute_frame = tk.LabelFrame(main_frame, text="3. Execute",
+        execute_frame = tk.LabelFrame(left_pane, text="3. Execute",
                                      font=('Arial', 10, 'bold'), bg='white',
                                      fg='black', padx=10, pady=10)
         execute_frame.pack(fill=tk.X, pady=(0, 10))
 
-        # JSON File
         self.create_path_input(execute_frame, "JSON File:",
                               self.json_file_var, self.browse_json_file)
-
-        # VRM File
         self.create_path_input(execute_frame, "VRM File:",
                               self.vrm_file_var, self.browse_vrm_file)
 
         # Command display area
         cmd_display_frame = tk.Frame(execute_frame, bg='white')
         cmd_display_frame.pack(fill=tk.X, pady=(10, 5))
-
-        tk.Label(cmd_display_frame, text="Command:", width=20, anchor='w',
+        tk.Label(cmd_display_frame, text="Command:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
-
         self.cmd_display_var = tk.StringVar()
-        cmd_entry = tk.Entry(cmd_display_frame, textvariable=self.cmd_display_var,
-                            bg='#f5f5f5', fg='black', relief=tk.SOLID,
-                            borderwidth=1, state='readonly')
-        cmd_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-
-        tk.Button(cmd_display_frame, text="Copy", command=self.copy_command,
+        tk.Entry(cmd_display_frame, textvariable=self.cmd_display_var,
+                 bg='#f5f5f5', fg='black', relief=tk.SOLID,
+                 borderwidth=1, state='readonly').pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        tk.Button(cmd_display_frame, text="Copy command", command=self.copy_command,
                  bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
                  padx=10, cursor='hand2').pack(side=tk.LEFT)
-
-        tk.Button(cmd_display_frame, text="Update", command=self.update_command_display,
+        tk.Button(cmd_display_frame, text="Refresh command", command=self.update_command_display,
                  bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
                  padx=10, cursor='hand2').pack(side=tk.LEFT, padx=(5, 0))
 
@@ -160,51 +202,497 @@ class CharacterCreatorGUI:
         buttons_frame = tk.Frame(execute_frame, bg='white')
         buttons_frame.pack(pady=10)
 
-        self.execute_btn = tk.Button(buttons_frame, text="CREATE CHARACTER",
-                                     command=self.execute_command, bg='black',
-                                     fg='white', relief=tk.FLAT,
-                                     font=('Arial', 12, 'bold'),
-                                     padx=30, pady=15, cursor='hand2')
-        self.execute_btn.pack(side=tk.LEFT, padx=5)
-
-        self.build_btn = tk.Button(buttons_frame, text="BUILD EDITOR",
-                                   command=self.build_editor, bg='#444444',
-                                   fg='white', relief=tk.FLAT,
-                                   font=('Arial', 12, 'bold'),
-                                   padx=30, pady=15, cursor='hand2')
-        self.build_btn.pack(side=tk.LEFT, padx=5)
-
-        self.zen_btn = tk.Button(buttons_frame, text="ZEN DASHBOARD",
-                                 command=self.start_zen_dashboard, bg='#666666',
-                                 fg='white', relief=tk.FLAT,
-                                 font=('Arial', 12, 'bold'),
-                                 padx=30, pady=15, cursor='hand2')
-        self.zen_btn.pack(side=tk.LEFT, padx=5)
-
-        self.build_and_create_btn = tk.Button(buttons_frame, text="BUILD & CREATE",
+        self.build_and_create_btn = tk.Button(buttons_frame, text="Build & Create",
                                               command=self.build_and_create_character, bg='#0066CC',
                                               fg='white', relief=tk.FLAT,
-                                              font=('Arial', 12, 'bold'),
-                                              padx=30, pady=15, cursor='hand2')
-        self.build_and_create_btn.pack(side=tk.LEFT, padx=5)
+                                              font=('Arial', 11, 'bold'),
+                                              padx=20, pady=10, cursor='hand2')
+        self.build_and_create_btn.pack(side=tk.LEFT, padx=3)
+
+        self.zen_btn = tk.Button(buttons_frame, text="Open Zen Dashboard",
+                                 command=self.start_zen_dashboard, bg='#666666',
+                                 fg='white', relief=tk.FLAT,
+                                 font=('Arial', 11, 'bold'),
+                                 padx=20, pady=10, cursor='hand2')
+        self.zen_btn.pack(side=tk.LEFT, padx=3)
 
         # Output Console
-        output_frame = tk.LabelFrame(main_frame, text="Output",
+        output_frame = tk.LabelFrame(left_pane, text="Output",
                                      font=('Arial', 10, 'bold'), bg='white',
                                      fg='black', padx=10, pady=10)
-        output_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 0))
+        output_frame.pack(fill=tk.BOTH, expand=True)
 
-        self.output_text = scrolledtext.ScrolledText(output_frame, height=12,
+        self.output_text = scrolledtext.ScrolledText(output_frame, height=8,
                                                      bg='white', fg='black',
                                                      relief=tk.SOLID, borderwidth=1,
                                                      font=('Consolas', 9))
         self.output_text.pack(fill=tk.BOTH, expand=True)
 
+        # === RIGHT PANE: assets.info editor ===
+        right_pane = tk.Frame(columns_frame, bg='white', padx=10)
+        right_pane.grid(row=0, column=1, sticky='nsew')
+
+        self.create_assets_editor(right_pane)
+
+        # Tooltips
+        ToolTip(self.build_and_create_btn, "Build editor, then run character creation commandlet")
+        ToolTip(self.zen_btn, "Launch Zen Dashboard to check server status")
+        ToolTip(self.assets_apply_btn, "Save edit form changes to the selected entry")
+        ToolTip(self.assets_delete_btn, "Remove the selected entry from assets.info")
+
+    def create_assets_editor(self, parent):
+        """Create the assets.info editor panel"""
+        editor_frame = tk.LabelFrame(parent, text="assets.info Editor",
+                                     font=('Arial', 10, 'bold'), bg='white',
+                                     fg='black', padx=10, pady=10)
+        editor_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Count label + Refresh
+        count_frame = tk.Frame(editor_frame, bg='white')
+        count_frame.pack(fill=tk.X, pady=(0, 5))
+        tk.Button(count_frame, text="Refresh", command=self.assets_load,
+                 bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
+                 padx=8, cursor='hand2', font=('Arial', 8)).pack(side=tk.LEFT)
+        self.assets_count_label = tk.Label(count_frame, text="", bg='white', fg='#666666',
+                                           font=('Arial', 9))
+        self.assets_count_label.pack(side=tk.RIGHT)
+
+        # Treeview for entries
+        tree_frame = tk.Frame(editor_frame, bg='white')
+        tree_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+
+        columns = ('preset_id', 'display_name', 'character_file', 'scaling', 'category')
+        self.assets_tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=15)
+
+        self.assets_tree.heading('preset_id', text='Preset ID')
+        self.assets_tree.heading('display_name', text='Display Name')
+        self.assets_tree.heading('character_file', text='Character File')
+        self.assets_tree.heading('scaling', text='Scaling')
+        self.assets_tree.heading('category', text='Category')
+
+        self.assets_tree.column('preset_id', width=80, minwidth=60)
+        self.assets_tree.column('display_name', width=100, minwidth=80)
+        self.assets_tree.column('character_file', width=180, minwidth=120)
+        self.assets_tree.column('scaling', width=60, minwidth=50)
+        self.assets_tree.column('category', width=120, minwidth=80)
+
+        scrollbar = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=self.assets_tree.yview)
+        self.assets_tree.configure(yscrollcommand=scrollbar.set)
+
+        self.assets_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.assets_tree.bind('<<TreeviewSelect>>', self.assets_on_select)
+
+        self.selected_asset_idx = None
+
+        # --- Add from .character file ---
+        add_frame = tk.LabelFrame(editor_frame, text="Add from .character",
+                                  font=('Arial', 9, 'bold'), bg='white',
+                                  fg='black', padx=10, pady=10)
+        add_frame.pack(fill=tk.X, pady=(0, 5))
+
+        char_pick_row = tk.Frame(add_frame, bg='white')
+        char_pick_row.pack(fill=tk.X, pady=2)
+
+        self.add_char_file_var = tk.StringVar()
+        tk.Label(char_pick_row, text=".character File:", width=16, anchor='w',
+                bg='white', fg='black', font=('Arial', 9)).pack(side=tk.LEFT)
+        tk.Entry(char_pick_row, textvariable=self.add_char_file_var, bg='white', fg='black',
+                relief=tk.SOLID, borderwidth=1, state='readonly').pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        tk.Button(char_pick_row, text="Browse", command=self.assets_pick_character_file,
+                 bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
+                 padx=10, cursor='hand2').pack(side=tk.LEFT)
+
+        tk.Button(add_frame, text="Add to assets.info",
+                 command=self.assets_add_from_character,
+                 bg='#0066CC', fg='white', relief=tk.FLAT,
+                 padx=20, pady=5, font=('Arial', 9, 'bold'),
+                 cursor='hand2').pack(pady=(8, 2))
+
+        # --- Edit form ---
+        form_frame = tk.LabelFrame(editor_frame, text="Edit Entry",
+                                   font=('Arial', 9, 'bold'), bg='white',
+                                   fg='black', padx=10, pady=10)
+        form_frame.pack(fill=tk.X)
+
+        self.asset_preset_id_var = tk.StringVar()
+        self.asset_gender_var = tk.StringVar()
+        self.asset_display_name_var = tk.StringVar()
+        self.asset_scaling_var = tk.StringVar()
+        self.asset_char_file_var = tk.StringVar()
+        self.asset_category_var = tk.StringVar()
+        self.asset_thumbnail_var = tk.StringVar()
+
+        fields = [
+            ("Preset ID:", self.asset_preset_id_var, None),
+            ("Gender:", self.asset_gender_var, ["", "Female", "Male"]),
+            ("DisplayName:", self.asset_display_name_var, None),
+            ("ScalingMethod:", self.asset_scaling_var, ["", "Original", "CineV"]),
+            ("CharacterFilePath:", self.asset_char_file_var, None),
+            ("CategoryName:", self.asset_category_var, ["CharacterCategory.VRM"]),
+            ("ThumbnailFileName:", self.asset_thumbnail_var, None),
+        ]
+
+        for label_text, var, combo_values in fields:
+            row = tk.Frame(form_frame, bg='white')
+            row.pack(fill=tk.X, pady=2)
+            tk.Label(row, text=label_text, width=16, anchor='w',
+                    bg='white', fg='black', font=('Arial', 9)).pack(side=tk.LEFT)
+            if combo_values is not None:
+                ttk.Combobox(row, textvariable=var, values=combo_values,
+                            width=40).pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+            else:
+                tk.Entry(row, textvariable=var, bg='white', fg='black',
+                        relief=tk.SOLID, borderwidth=1).pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+
+        # Buttons row
+        btn_row = tk.Frame(form_frame, bg='white')
+        btn_row.pack(pady=(10, 5))
+        self.assets_apply_btn = tk.Button(btn_row, text="Apply Changes", command=self.assets_apply_changes,
+                 bg='#0066CC', fg='white', relief=tk.FLAT,
+                 padx=20, pady=5, font=('Arial', 9, 'bold'),
+                 cursor='hand2', state=tk.DISABLED)
+        self.assets_apply_btn.pack(side=tk.LEFT, padx=5)
+        self.assets_delete_btn = tk.Button(btn_row, text="Delete entry", command=self.assets_delete_entry,
+                 bg='#CC0000', fg='white', relief=tk.FLAT,
+                 padx=20, pady=5, font=('Arial', 9, 'bold'),
+                 cursor='hand2', state=tk.DISABLED)
+        self.assets_delete_btn.pack(side=tk.LEFT, padx=5)
+
+    def get_assets_info_path(self):
+        """Get the assets.info file path"""
+        user_char_folder = self.get_user_character_folder()
+        if user_char_folder:
+            return os.path.join(user_char_folder, "assets.info")
+        return None
+
+    def assets_load(self):
+        """Load assets.info file"""
+        path = self.get_assets_info_path()
+        if not path:
+            messagebox.showerror("Error", "Set Project File first to locate UserCharacter folder")
+            return
+        if not os.path.exists(path):
+            messagebox.showerror("Error", f"assets.info not found:\n{path}")
+            return
+
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                self.assets_data = json.load(f)
+            self.assets_refresh_tree()
+            self.log_output(f"Loaded assets.info: {len(self.assets_data)} entries")
+        except Exception as e:
+            self.log_output(f"Error loading assets.info: {str(e)}")
+            messagebox.showerror("Error", "Failed to load assets.info. Check the output console for details.")
+
+    def assets_auto_save(self):
+        """Auto-save assets.info after any change"""
+        path = self.get_assets_info_path()
+        if not path:
+            return
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump(self.assets_data, f, indent=2, ensure_ascii=False)
+            self.log_output(f"Auto-saved assets.info ({len(self.assets_data)} entries)")
+            # Flash count label to confirm save
+            self.assets_count_label.config(text="Saved", fg='#00AA00')
+            self.root.after(2000, lambda: self.assets_count_label.config(
+                text=f"{len(self.assets_data)} entries", fg='#666666'))
+        except Exception as e:
+            self.log_output(f"Auto-save failed: {str(e)}")
+
+    def assets_save(self):
+        """Save assets.info file"""
+        path = self.get_assets_info_path()
+        if not path:
+            messagebox.showerror("Error", "Set Project File first to locate UserCharacter folder")
+            return
+
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump(self.assets_data, f, indent=2, ensure_ascii=False)
+            self.log_output(f"Saved assets.info: {len(self.assets_data)} entries")
+            messagebox.showinfo("Success", f"assets.info saved!\n{path}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save assets.info:\n{str(e)}")
+
+    def assets_refresh_tree(self):
+        """Refresh the treeview with current data"""
+        self.assets_tree.delete(*self.assets_tree.get_children())
+        for i, entry in enumerate(self.assets_data):
+            preset_id = entry.get('Preset_id', '')
+            short_id = '...' + preset_id[-4:] if len(preset_id) > 4 else preset_id
+            self.assets_tree.insert('', tk.END, iid=str(i), values=(
+                short_id,
+                entry.get('DisplayName', ''),
+                entry.get('CharacterFilePath', ''),
+                entry.get('ScalingMethod', ''),
+                entry.get('CategoryName', ''),
+            ))
+        self.assets_count_label.config(text=f"{len(self.assets_data)} entries")
+
+        # Empty state guidance
+        if not self.assets_data:
+            self.assets_tree.insert('', tk.END, iid='empty_placeholder', values=(
+                '', 'No entries yet.', 'Use "Add from .character" above.', '', ''
+            ))
+            self.assets_apply_btn.config(state=tk.DISABLED)
+            self.assets_delete_btn.config(state=tk.DISABLED)
+
+    def assets_on_select(self, event):
+        """Handle treeview selection - populate edit form"""
+        selection = self.assets_tree.selection()
+        if not selection or (len(selection) == 1 and selection[0] == 'empty_placeholder'):
+            return
+        idx = int(selection[0])
+        self.selected_asset_idx = idx
+        entry = self.assets_data[idx]
+
+        self.asset_preset_id_var.set(entry.get('Preset_id', ''))
+        self.asset_gender_var.set(entry.get('Gender', ''))
+        self.asset_display_name_var.set(entry.get('DisplayName', ''))
+        self.asset_scaling_var.set(entry.get('ScalingMethod', ''))
+        self.asset_char_file_var.set(entry.get('CharacterFilePath', ''))
+        self.asset_category_var.set(entry.get('CategoryName', ''))
+        self.asset_thumbnail_var.set(entry.get('ThumbnailFileName', ''))
+
+        # Enable edit buttons
+        self.assets_apply_btn.config(state=tk.NORMAL)
+        self.assets_delete_btn.config(state=tk.NORMAL)
+
+    def assets_apply_changes(self):
+        """Apply edit form changes to selected entry"""
+        if self.selected_asset_idx is None:
+            messagebox.showwarning("Warning", "Select an entry first")
+            return
+        idx = self.selected_asset_idx
+
+        self.assets_data[idx]['Preset_id'] = self.asset_preset_id_var.get()
+        self.assets_data[idx]['Gender'] = self.asset_gender_var.get()
+        self.assets_data[idx]['DisplayName'] = self.asset_display_name_var.get()
+        self.assets_data[idx]['ScalingMethod'] = self.asset_scaling_var.get()
+        self.assets_data[idx]['CharacterFilePath'] = self.asset_char_file_var.get()
+        self.assets_data[idx]['CategoryName'] = self.asset_category_var.get()
+        self.assets_data[idx]['ThumbnailFileName'] = self.asset_thumbnail_var.get()
+
+        self.assets_refresh_tree()
+        self.assets_tree.selection_set(str(idx))
+        self.assets_tree.see(str(idx))
+        self.assets_auto_save()
+
+    def assets_add_entry(self):
+        """Add a new entry to assets data"""
+        new_entry = {
+            "Preset_id": str(uuid.uuid4()),
+            "Gender": "",
+            "DisplayName": "",
+            "ScalingMethod": "",
+            "CharacterFilePath": "",
+            "CategoryName": "CharacterCategory.VRM",
+            "ThumbnailFileName": ""
+        }
+        self.assets_data.append(new_entry)
+        self.assets_refresh_tree()
+        # Select the new entry
+        new_idx = str(len(self.assets_data) - 1)
+        self.assets_tree.selection_set(new_idx)
+        self.assets_tree.see(new_idx)
+        self.assets_on_select(None)
+
+    def assets_pick_character_file(self):
+        """Browse for a .character file (just stores the path)"""
+        filename = filedialog.askopenfilename(
+            title="Select Character File",
+            filetypes=[("Character Files", "*.character"), ("All Files", "*.*")]
+        )
+        if filename:
+            self.add_char_file_var.set(os.path.normpath(filename))
+
+    @staticmethod
+    def read_character_metadata(char_path):
+        """Read metadata JSON embedded in a .character file (after binary header)"""
+        with open(char_path, 'rb') as f:
+            data = f.read()
+        idx = data.find(b'{')
+        if idx < 0:
+            return None
+        # Find the end of the first JSON object
+        depth = 0
+        end = idx
+        for i in range(idx, len(data)):
+            if data[i:i+1] == b'{':
+                depth += 1
+            elif data[i:i+1] == b'}':
+                depth -= 1
+                if depth == 0:
+                    end = i + 1
+                    break
+        json_str = data[idx:end].decode('utf-8', errors='replace')
+        return json.loads(json_str)
+
+    def assets_add_from_character(self):
+        """Add a new entry from .character file, reading metadata directly and requiring matching .png"""
+        char_path = self.add_char_file_var.get()
+        if not char_path:
+            messagebox.showwarning("Warning", "Select a .character file first")
+            return
+
+        user_char_folder = self.get_user_character_folder()
+        if not user_char_folder:
+            messagebox.showerror("Error", "Set Project File first")
+            return
+
+        src_dir = os.path.normpath(os.path.dirname(char_path))
+        basename = os.path.basename(char_path)
+        name_stem = os.path.splitext(basename)[0]
+
+        # Read metadata from .character file
+        try:
+            meta = self.read_character_metadata(char_path)
+        except Exception as e:
+            self.log_output(f"Error reading .character: {str(e)}")
+            messagebox.showerror("Error", "Failed to read .character file. Check the output console for details.")
+            return
+        if not meta:
+            messagebox.showerror("Error", "No metadata found in .character file")
+            return
+
+        # Check for matching PNG (thumb_{name}_01.png)
+        png_name = f"thumb_{name_stem}_01.png"
+        png_path = os.path.join(src_dir, png_name)
+        if not os.path.exists(png_path):
+            messagebox.showerror("Error", f"PNG file not found:\n{png_name}\n\nCannot add entry without matching thumbnail.")
+            return
+
+        # Copy files to UserCharacter folder
+        dest_dir = os.path.normpath(user_char_folder)
+        if src_dir != dest_dir:
+            for src_file in [char_path, png_path]:
+                try:
+                    shutil.copy2(src_file, os.path.join(dest_dir, os.path.basename(src_file)))
+                except Exception as e:
+                    self.log_output(f"Error copying {os.path.basename(src_file)}: {str(e)}")
+                    messagebox.showerror("Error", f"Failed to copy {os.path.basename(src_file)}. Check the output console for details.")
+                    return
+
+        # Create new entry (character metadata uses camelCase keys)
+        new_entry = {
+            "Preset_id": str(uuid.uuid4()),
+            "Gender": meta.get("gender", ""),
+            "DisplayName": meta.get("displayName", ""),
+            "ScalingMethod": meta.get("scalingMethod", ""),
+            "CharacterFilePath": basename,
+            "CategoryName": f"CharacterCategory.{meta.get('format', 'VRM')}",
+            "ThumbnailFileName": png_name
+        }
+        self.assets_data.append(new_entry)
+        self.assets_refresh_tree()
+
+        # Select the new entry
+        new_idx = str(len(self.assets_data) - 1)
+        self.assets_tree.selection_set(new_idx)
+        self.assets_tree.see(new_idx)
+
+        self.log_output(f"Added entry: {basename} (from .character metadata)")
+        self.add_char_file_var.set("")
+        self.assets_auto_save()
+
+    def assets_browse_character_file(self):
+        """Browse for a .character file, move it to UserCharacter folder, and auto-fill from matching JSON"""
+        user_char_folder = self.get_user_character_folder()
+        filename = filedialog.askopenfilename(
+            title="Select Character File",
+            filetypes=[("Character Files", "*.character"), ("All Files", "*.*")]
+        )
+        if not filename:
+            return
+
+        src_path = os.path.normpath(filename)
+        basename = os.path.basename(src_path)
+        src_dir = os.path.normpath(os.path.dirname(src_path))
+
+        # Move to UserCharacter folder if not already there
+        if user_char_folder:
+            dest_dir = os.path.normpath(user_char_folder)
+            if src_dir != dest_dir:
+                dest_path = os.path.join(dest_dir, basename)
+                try:
+                    shutil.copy2(src_path, dest_path)
+                    self.log_output(f"Copied to UserCharacter: {basename}")
+                except Exception as e:
+                    messagebox.showerror("Error", f"Failed to copy file:\n{str(e)}")
+                    return
+
+        # Set just the filename (not full path) as CharacterFilePath
+        self.asset_char_file_var.set(basename)
+
+        # Look for matching JSON and PNG files (same name stem)
+        name_stem = os.path.splitext(basename)[0]
+
+        # JSON auto-fill
+        json_path = os.path.join(src_dir, f"{name_stem}.json")
+        if not os.path.exists(json_path) and user_char_folder:
+            json_path = os.path.join(user_char_folder, f"{name_stem}.json")
+        if os.path.exists(json_path):
+            try:
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    json_data = json.load(f)
+                if json_data.get('Gender'):
+                    self.asset_gender_var.set(json_data['Gender'])
+                if json_data.get('DisplayName'):
+                    self.asset_display_name_var.set(json_data['DisplayName'])
+                if json_data.get('ScalingMethod'):
+                    self.asset_scaling_var.set(json_data['ScalingMethod'])
+                self.log_output(f"Auto-filled from: {os.path.basename(json_path)}")
+            except Exception as e:
+                self.log_output(f"Failed to read JSON: {str(e)}")
+
+        # PNG thumbnail - copy to UserCharacter folder and set filename
+        png_path = os.path.join(src_dir, f"{name_stem}.png")
+        if not os.path.exists(png_path) and user_char_folder:
+            png_path = os.path.join(user_char_folder, f"{name_stem}.png")
+        if os.path.exists(png_path):
+            png_basename = os.path.basename(png_path)
+            if user_char_folder:
+                dest_dir = os.path.normpath(user_char_folder)
+                png_src_dir = os.path.normpath(os.path.dirname(png_path))
+                if png_src_dir != dest_dir:
+                    try:
+                        shutil.copy2(png_path, os.path.join(dest_dir, png_basename))
+                        self.log_output(f"Copied thumbnail: {png_basename}")
+                    except Exception as e:
+                        self.log_output(f"Failed to copy thumbnail: {str(e)}")
+            self.asset_thumbnail_var.set(png_basename)
+            self.log_output(f"Thumbnail set: {png_basename}")
+
+    def assets_delete_by_idx(self, idx):
+        """Delete entry by index"""
+        entry = self.assets_data[idx]
+        name = entry.get('CharacterFilePath', entry.get('DisplayName', f'index {idx}'))
+
+        if messagebox.askyesno("Confirm Delete", f"Delete entry?\n{name}"):
+            self.assets_data.pop(idx)
+            self.selected_asset_idx = None
+            self.assets_refresh_tree()
+            self.assets_auto_save()
+            self.assets_apply_btn.config(state=tk.DISABLED)
+            self.assets_delete_btn.config(state=tk.DISABLED)
+
+    def assets_delete_entry(self):
+        """Delete currently selected entry"""
+        if self.selected_asset_idx is None:
+            messagebox.showwarning("Warning", "Select an entry first")
+            return
+        self.assets_delete_by_idx(self.selected_asset_idx)
+
+    # --- existing methods below (unchanged) ---
+
     def create_path_input(self, parent, label_text, var, browse_command):
         frame = tk.Frame(parent, bg='white')
         frame.pack(fill=tk.X, pady=5)
 
-        tk.Label(frame, text=label_text, width=20, anchor='w',
+        tk.Label(frame, text=label_text, width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
 
         entry = tk.Entry(frame, textvariable=var, bg='white', fg='black',
@@ -230,6 +718,16 @@ class CharacterCreatorGUI:
                         self.update_user_char_folder_info()
             except Exception as e:
                 print(f"Error loading config: {e}")
+
+        # Auto-load assets.info if available
+        path = self.get_assets_info_path()
+        if path and os.path.exists(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    self.assets_data = json.load(f)
+                self.assets_refresh_tree()
+            except Exception:
+                pass
 
     def save_config(self):
         """Save current configuration to file"""
@@ -282,17 +780,17 @@ class CharacterCreatorGUI:
                 try:
                     os.makedirs(folder, exist_ok=True)
                     self.user_char_label.config(
-                        text=f"ℹ Files will be saved to: {folder} (folder created)",
+                        text=f"Files will be saved to: {folder} (folder created)",
                         fg='#00AA00'
                     )
                 except:
                     self.user_char_label.config(
-                        text=f"⚠ UserCharacter folder: {folder} (cannot create)",
+                        text=f"UserCharacter folder: {folder} (cannot create)",
                         fg='#CC0000'
                     )
             else:
                 self.user_char_label.config(
-                    text=f"ℹ Files will be saved to: {folder}",
+                    text=f"Files will be saved to: {folder}",
                     fg='#666666'
                 )
         else:
@@ -327,15 +825,27 @@ class CharacterCreatorGUI:
         if directory:
             self.output_folder_var.set(directory)
 
+    def open_output_folder(self):
+        """Open output folder in Explorer"""
+        folder = self.output_folder_var.get()
+        if not folder:
+            messagebox.showwarning("Warning", "Output Folder is not set")
+            return
+        folder = os.path.normpath(folder)
+        if not os.path.exists(folder):
+            messagebox.showwarning("Warning", f"Folder does not exist:\n{folder}")
+            return
+        os.startfile(folder)
+
     def generate_json(self):
         display_name = self.display_name_var.get().strip()
         if not display_name:
-            messagebox.showerror("Error", "Please enter a Display Name")
+            messagebox.showerror("Error", "Display Name is required")
             return
 
         # Check if project file is selected
         if not self.project_file_var.get():
-            messagebox.showerror("Error", "Please select Project File first")
+            messagebox.showerror("Error", "Select a Project File first")
             return
 
         gender = self.gender_var.get()
@@ -607,14 +1117,14 @@ class CharacterCreatorGUI:
             # Wait for process to complete
             process.wait()
 
-            self.log_output(f"\n✓ Process completed with code {process.returncode}")
+            self.log_output(f"\nProcess completed with code {process.returncode}")
             if process.returncode == 0:
                 self.root.after(0, lambda: messagebox.showinfo("Success", "Character created successfully!"))
             else:
                 self.root.after(0, lambda: messagebox.showwarning("Completed", f"Process exited with code {process.returncode}\nCheck console window for details."))
 
         except Exception as e:
-            self.log_output(f"\n✗ Error: {str(e)}")
+            self.log_output(f"\nError: {str(e)}")
             self.root.after(0, lambda: messagebox.showerror("Error", f"Failed to execute: {str(e)}"))
 
         finally:
@@ -670,14 +1180,14 @@ class CharacterCreatorGUI:
             # Wait for process to complete
             process.wait()
 
-            self.log_output(f"\n✓ Build completed with code {process.returncode}")
+            self.log_output(f"\nBuild completed with code {process.returncode}")
             if process.returncode == 0:
                 self.root.after(0, lambda: messagebox.showinfo("Success", "Build completed successfully!"))
             else:
                 self.root.after(0, lambda: messagebox.showwarning("Completed", f"Build exited with code {process.returncode}\nCheck console window for details."))
 
         except Exception as e:
-            self.log_output(f"\n✗ Error: {str(e)}")
+            self.log_output(f"\nError: {str(e)}")
             self.root.after(0, lambda: messagebox.showerror("Error", f"Build failed: {str(e)}"))
 
         finally:
@@ -838,7 +1348,7 @@ class CharacterCreatorGUI:
 
         finally:
             self.restore_commandlet_source()
-            self.root.after(0, lambda: self.build_and_create_btn.config(state=tk.NORMAL, text="BUILD & CREATE"))
+            self.root.after(0, lambda: self.build_and_create_btn.config(state=tk.NORMAL, text="Build & Create"))
             self.root.after(0, lambda: self.execute_btn.config(state=tk.NORMAL))
             self.root.after(0, lambda: self.build_btn.config(state=tk.NORMAL))
 
