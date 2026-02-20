@@ -19,6 +19,8 @@ class CharacterCreatorGUI:
 
         # Variables
         self.gender_var = tk.StringVar(value="Female")
+        self.scaling_method_var = tk.StringVar(value="Original")
+        self.model_source_type_var = tk.StringVar(value="None")
         self.display_name_var = tk.StringVar()
         self.ue_dir_var = tk.StringVar()
         self.project_file_var = tk.StringVar()
@@ -85,6 +87,24 @@ class CharacterCreatorGUI:
         gender_combo = ttk.Combobox(gender_frame, textvariable=self.gender_var,
                                    values=["Female", "Male"], state='readonly', width=30)
         gender_combo.pack(side=tk.LEFT, padx=5)
+
+        # Scaling Method
+        scaling_frame = tk.Frame(char_frame, bg='white')
+        scaling_frame.pack(fill=tk.X, pady=5)
+        tk.Label(scaling_frame, text="Scaling Method:", width=15, anchor='w',
+                bg='white', fg='black').pack(side=tk.LEFT)
+        scaling_combo = ttk.Combobox(scaling_frame, textvariable=self.scaling_method_var,
+                                    values=["Original", "CineV"], state='readonly', width=30)
+        scaling_combo.pack(side=tk.LEFT, padx=5)
+
+        # Model Source Type
+        source_frame = tk.Frame(char_frame, bg='white')
+        source_frame.pack(fill=tk.X, pady=5)
+        tk.Label(source_frame, text="Model Source:", width=15, anchor='w',
+                bg='white', fg='black').pack(side=tk.LEFT)
+        source_combo = ttk.Combobox(source_frame, textvariable=self.model_source_type_var,
+                                    values=["None", "VRM", "VRoid", "Zepeto"], state='readonly', width=30)
+        source_combo.pack(side=tk.LEFT, padx=5)
 
         # Display Name
         name_frame = tk.Frame(char_frame, bg='white')
@@ -320,10 +340,15 @@ class CharacterCreatorGUI:
 
         gender = self.gender_var.get()
 
+        scaling_method = self.scaling_method_var.get()
+        model_source_type = self.model_source_type_var.get()
+
         # Create JSON data
         json_data = {
             "Gender": gender,
-            "DisplayName": display_name
+            "DisplayName": display_name,
+            "ScalingMethod": scaling_method,
+            "ModelSourceType": model_source_type
         }
 
         # Get UserCharacter folder
