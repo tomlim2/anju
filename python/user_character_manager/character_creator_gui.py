@@ -428,13 +428,14 @@ class CharacterCreatorGUI:
                     self.log_output(f"  3) 새 파일 감지 안됨, 기본값 사용: {char_file}")
 
                 # --- Step 4: assets.info에 엔트리 추가 ---
+                preset_id = str(uuid.uuid4())
                 new_entry = {
-                    "Preset_id": str(uuid.uuid4()),
+                    "Preset_id": preset_id,
+                    "Gender": gender,
+                    "DisplayName": display_name,
                     "CharacterFilePath": char_file,
                     "CategoryName": "CharacterCategory.VRM",
-                    "DisplayName": display_name,
-                    "ScalingMethod": scaling,
-                    "ModelSourceType": source
+                    "ThumbnailFileName": f"{preset_id}.png"
                 }
                 self.assets_data.insert(0, new_entry)
                 added += 1
@@ -818,11 +819,11 @@ class CharacterCreatorGUI:
         idx = self.selected_asset_idx
 
         self.assets_data[idx]['Preset_id'] = self.asset_preset_id_var.get()
+        self.assets_data[idx]['Gender'] = self.assets_data[idx].get('Gender', '')
+        self.assets_data[idx]['DisplayName'] = self.asset_display_name_var.get()
         self.assets_data[idx]['CharacterFilePath'] = self.asset_char_file_var.get()
         self.assets_data[idx]['CategoryName'] = self.asset_category_var.get()
-        self.assets_data[idx]['DisplayName'] = self.asset_display_name_var.get()
-        self.assets_data[idx]['ScalingMethod'] = self.asset_scaling_var.get()
-        self.assets_data[idx]['ModelSourceType'] = self.asset_source_var.get()
+        # ScalingMethod, ModelSourceType → .character 파일에만 기록 (assets.info에는 저장하지 않음)
 
         # Write metadata back to .character file
         char_path = self._get_character_file_path(self.asset_char_file_var.get())
@@ -883,10 +884,14 @@ class CharacterCreatorGUI:
 
     def assets_add_entry(self):
         """Add a new entry to assets data"""
+        preset_id = str(uuid.uuid4())
         new_entry = {
-            "Preset_id": str(uuid.uuid4()),
+            "Preset_id": preset_id,
+            "Gender": "",
+            "DisplayName": "",
             "CharacterFilePath": "",
-            "CategoryName": "CharacterCategory.VRM"
+            "CategoryName": "CharacterCategory.VRM",
+            "ThumbnailFileName": f"{preset_id}.png"
         }
         self.assets_data.append(new_entry)
         self.assets_refresh_tree()
