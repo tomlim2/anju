@@ -38,7 +38,7 @@ class ToolTip:
 class CharacterCreatorGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("CINEV Character Creator")
+        self.root.title("유저 캐릭터 로컬 관리")
         self.root.geometry("1600x900")
         self.root.minsize(1024, 600)
         self.root.configure(bg='white')
@@ -49,13 +49,16 @@ class CharacterCreatorGUI:
         # Variables
         self.gender_var = tk.StringVar(value="Female")
         self.scaling_method_var = tk.StringVar(value="Original")
-        self.model_source_type_var = tk.StringVar(value="None")
+        self.model_source_type_var = tk.StringVar(value="VRM")
         self.display_name_var = tk.StringVar()
         self.ue_dir_var = tk.StringVar()
         self.project_file_var = tk.StringVar()
         self.json_file_var = tk.StringVar()
         self.vrm_file_var = tk.StringVar()
         self.output_folder_var = tk.StringVar()
+
+        # Settings panel toggle state
+        self.settings_visible = False
 
         # Assets info data
         self.assets_data = []
@@ -70,6 +73,9 @@ class CharacterCreatorGUI:
         self.project_file_var.trace_add('write', lambda *args: self.save_config())
         self.output_folder_var.trace_add('write', lambda *args: self.save_config())
 
+        # Auto-fill display name when VRM file changes
+        self.vrm_file_var.trace_add('write', lambda *args: self.on_vrm_file_changed())
+
         # Key bindings
         self.root.bind('<Escape>', lambda e: self.root.focus_set())
         self.root.bind('<Control-s>', lambda e: self.assets_auto_save())
@@ -79,10 +85,32 @@ class CharacterCreatorGUI:
         main_frame = tk.Frame(self.root, bg='white', padx=10, pady=10)
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Title
-        title = tk.Label(main_frame, text="CINEV Character Creator",
+        # Title bar with Settings and Zen Dashboard
+        title_bar = tk.Frame(main_frame, bg='white')
+        title_bar.pack(fill=tk.X, pady=(0, 10))
+
+        title = tk.Label(title_bar, text="유저 캐릭터 로컬 관리",
                         font=('Arial', 18, 'bold'), bg='white', fg='black')
-        title.pack(pady=(0, 10))
+        title.pack(side=tk.LEFT)
+
+        self.settings_btn = tk.Button(title_bar, text="Settings",
+                 command=self.toggle_settings, bg='white', fg='black',
+                 relief=tk.SOLID, borderwidth=1, padx=10, cursor='hand2',
+                 font=('Arial', 9))
+        self.settings_btn.pack(side=tk.RIGHT)
+
+        self.zen_btn = tk.Button(title_bar, text="Zen Dashboard",
+                                 command=self.start_zen_dashboard, bg='#666666',
+                                 fg='white', relief=tk.FLAT,
+                                 font=('Arial', 9, 'bold'),
+                                 padx=10, pady=2, cursor='hand2')
+        self.zen_btn.pack(side=tk.RIGHT, padx=(0, 5))
+
+        # UserCharacter folder summary label
+        self.user_char_summary_label = tk.Label(title_bar, text="",
+                                                 bg='white', fg='#666666',
+                                                 font=('Arial', 8), anchor='e')
+        self.user_char_summary_label.pack(side=tk.RIGHT, padx=(0, 10))
 
         # 2-column layout
         columns_frame = tk.Frame(main_frame, bg='white')
@@ -91,22 +119,28 @@ class CharacterCreatorGUI:
         columns_frame.columnconfigure(1, weight=1)
         columns_frame.rowconfigure(0, weight=1)
 
-        # === LEFT PANE ===
+        # === LEFT PANE: assets.info editor ===
         left_pane = tk.Frame(columns_frame, bg='white', padx=10)
         left_pane.grid(row=0, column=0, sticky='nsew')
 
-        # Paths Section
-        paths_frame = tk.LabelFrame(left_pane, text="1. Configure Paths",
+        self.create_assets_editor(left_pane)
+
+        # === RIGHT PANE: character creation ===
+        right_pane = tk.Frame(columns_frame, bg='white', padx=10)
+        right_pane.grid(row=0, column=1, sticky='nsew')
+
+        # Paths Section (collapsible)
+        self.paths_frame = tk.LabelFrame(right_pane, text="Configure Paths",
                                     font=('Arial', 10, 'bold'), bg='white',
                                     fg='black', padx=10, pady=10)
-        paths_frame.pack(fill=tk.X, pady=(0, 10))
+        # Hidden by default - don't pack
 
-        self.create_path_input(paths_frame, "UE_CINEV Directory:",
+        self.create_path_input(self.paths_frame, "UE_CINEV Directory:",
                               self.ue_dir_var, self.browse_ue_directory)
-        self.create_path_input(paths_frame, "Project File (.uproject):",
+        self.create_path_input(self.paths_frame, "Project File (.uproject):",
                               self.project_file_var, self.browse_project_file)
         # Output Folder with Open button
-        output_folder_frame = tk.Frame(paths_frame, bg='white')
+        output_folder_frame = tk.Frame(self.paths_frame, bg='white')
         output_folder_frame.pack(fill=tk.X, pady=5)
         tk.Label(output_folder_frame, text="Output Folder:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
@@ -119,105 +153,68 @@ class CharacterCreatorGUI:
                  bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
                  padx=10, cursor='hand2').pack(side=tk.LEFT, padx=(5, 0))
 
-        # UserCharacter folder info label
-        self.user_char_label = tk.Label(left_pane, text="",
+        # UserCharacter folder info label (inside settings panel)
+        self.user_char_label = tk.Label(self.paths_frame, text="",
                                         bg='#f0f0f0', fg='#666666',
                                         font=('Arial', 8), anchor='w',
                                         relief=tk.SOLID, borderwidth=1, padx=5, pady=5)
-        self.user_char_label.pack(fill=tk.X, pady=(0, 10))
+        self.user_char_label.pack(fill=tk.X, pady=(5, 0))
 
-        # Character Files Section
-        char_frame = tk.LabelFrame(left_pane, text="2. Character Files",
+        # --- Simplified Registration Flow ---
+        self.reg_frame = reg_frame = tk.LabelFrame(right_pane, text="Register Character",
                                    font=('Arial', 10, 'bold'), bg='white',
                                    fg='black', padx=10, pady=10)
-        char_frame.pack(fill=tk.X, pady=(0, 10))
+        reg_frame.pack(fill=tk.X, pady=(0, 10))
+
+        # VRM File (top)
+        self.create_path_input(reg_frame, "VRM File:",
+                              self.vrm_file_var, self.browse_vrm_file)
 
         # Gender
-        gender_frame = tk.Frame(char_frame, bg='white')
+        gender_frame = tk.Frame(reg_frame, bg='white')
         gender_frame.pack(fill=tk.X, pady=5)
         tk.Label(gender_frame, text="Gender:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
         ttk.Combobox(gender_frame, textvariable=self.gender_var,
                      values=["Female", "Male"], state='readonly', width=30).pack(side=tk.LEFT, padx=5)
 
-        # Scaling Method
-        scaling_frame = tk.Frame(char_frame, bg='white')
+        # Scaling Method (default: Original)
+        scaling_frame = tk.Frame(reg_frame, bg='white')
         scaling_frame.pack(fill=tk.X, pady=5)
         tk.Label(scaling_frame, text="Scaling Method:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
         ttk.Combobox(scaling_frame, textvariable=self.scaling_method_var,
                      values=["Original", "CineV"], state='readonly', width=30).pack(side=tk.LEFT, padx=5)
 
-        # Model Source Type
-        source_frame = tk.Frame(char_frame, bg='white')
+        # Model Source (default: VRM)
+        source_frame = tk.Frame(reg_frame, bg='white')
         source_frame.pack(fill=tk.X, pady=5)
         tk.Label(source_frame, text="Model Source:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
         ttk.Combobox(source_frame, textvariable=self.model_source_type_var,
                      values=["None", "VRM", "VRoid", "Zepeto"], state='readonly', width=30).pack(side=tk.LEFT, padx=5)
 
-        # Display Name
-        name_frame = tk.Frame(char_frame, bg='white')
+        # Display Name (auto-filled from VRM filename, 12 char limit)
+        name_frame = tk.Frame(reg_frame, bg='white')
         name_frame.pack(fill=tk.X, pady=5)
         tk.Label(name_frame, text="Display Name:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
         tk.Entry(name_frame, textvariable=self.display_name_var,
                 width=33, bg='white', fg='black',
                 relief=tk.SOLID, borderwidth=1).pack(side=tk.LEFT, padx=5)
+        tk.Label(name_frame, text="(max 12 chars)", bg='white', fg='#999999',
+                font=('Arial', 8)).pack(side=tk.LEFT)
 
-        # Generate JSON Button
-        tk.Button(char_frame, text="Generate & Save JSON",
-                 command=self.generate_json, bg='black', fg='white',
-                 relief=tk.FLAT, padx=20, pady=8, font=('Arial', 9, 'bold'),
-                 cursor='hand2').pack(pady=10)
-
-        # Execute Section
-        execute_frame = tk.LabelFrame(left_pane, text="3. Execute",
-                                     font=('Arial', 10, 'bold'), bg='white',
-                                     fg='black', padx=10, pady=10)
-        execute_frame.pack(fill=tk.X, pady=(0, 10))
-
-        self.create_path_input(execute_frame, "JSON File:",
-                              self.json_file_var, self.browse_json_file)
-        self.create_path_input(execute_frame, "VRM File:",
-                              self.vrm_file_var, self.browse_vrm_file)
-
-        # Command display area
-        cmd_display_frame = tk.Frame(execute_frame, bg='white')
-        cmd_display_frame.pack(fill=tk.X, pady=(10, 5))
-        tk.Label(cmd_display_frame, text="Command:", width=16, anchor='w',
-                bg='white', fg='black').pack(side=tk.LEFT)
-        self.cmd_display_var = tk.StringVar()
-        tk.Entry(cmd_display_frame, textvariable=self.cmd_display_var,
-                 bg='#f5f5f5', fg='black', relief=tk.SOLID,
-                 borderwidth=1, state='readonly').pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-        tk.Button(cmd_display_frame, text="Copy command", command=self.copy_command,
-                 bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
-                 padx=10, cursor='hand2').pack(side=tk.LEFT)
-        tk.Button(cmd_display_frame, text="Refresh command", command=self.update_command_display,
-                 bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
-                 padx=10, cursor='hand2').pack(side=tk.LEFT, padx=(5, 0))
-
-        # Buttons frame
-        buttons_frame = tk.Frame(execute_frame, bg='white')
-        buttons_frame.pack(pady=10)
-
-        self.build_and_create_btn = tk.Button(buttons_frame, text="Build & Create",
-                                              command=self.build_and_create_character, bg='#0066CC',
-                                              fg='white', relief=tk.FLAT,
-                                              font=('Arial', 11, 'bold'),
-                                              padx=20, pady=10, cursor='hand2')
-        self.build_and_create_btn.pack(side=tk.LEFT, padx=3)
-
-        self.zen_btn = tk.Button(buttons_frame, text="Open Zen Dashboard",
-                                 command=self.start_zen_dashboard, bg='#666666',
-                                 fg='white', relief=tk.FLAT,
-                                 font=('Arial', 11, 'bold'),
-                                 padx=20, pady=10, cursor='hand2')
-        self.zen_btn.pack(side=tk.LEFT, padx=3)
+        # Register button (unified)
+        self.create_btn = tk.Button(reg_frame, text="assets.info에 등록",
+                 command=self.create_character_unified, bg='#0066CC',
+                 fg='white', relief=tk.FLAT,
+                 font=('Arial', 11, 'bold'),
+                 padx=30, pady=10, cursor='hand2')
+        self.create_btn.pack(pady=10)
 
         # Output Console
-        output_frame = tk.LabelFrame(left_pane, text="Output",
+        output_frame = tk.LabelFrame(right_pane, text="Output",
                                      font=('Arial', 10, 'bold'), bg='white',
                                      fg='black', padx=10, pady=10)
         output_frame.pack(fill=tk.BOTH, expand=True)
@@ -228,17 +225,178 @@ class CharacterCreatorGUI:
                                                      font=('Consolas', 9))
         self.output_text.pack(fill=tk.BOTH, expand=True)
 
-        # === RIGHT PANE: assets.info editor ===
-        right_pane = tk.Frame(columns_frame, bg='white', padx=10)
-        right_pane.grid(row=0, column=1, sticky='nsew')
-
-        self.create_assets_editor(right_pane)
-
         # Tooltips
-        ToolTip(self.build_and_create_btn, "Build editor, then run character creation commandlet")
-        ToolTip(self.zen_btn, "Launch Zen Dashboard to check server status")
+        ToolTip(self.create_btn, "Generate JSON, run commandlet, and register to assets.info")
+        ToolTip(self.zen_btn, "Launch Zen Dashboard to check ZenServer status")
         ToolTip(self.assets_apply_btn, "Save edit form changes to the selected entry")
         ToolTip(self.assets_delete_btn, "Remove the selected entry from assets.info")
+
+    def toggle_settings(self):
+        """Toggle the settings/paths panel visibility"""
+        if self.settings_visible:
+            self.paths_frame.pack_forget()
+            self.settings_visible = False
+            self.settings_btn.config(text="Settings")
+        else:
+            # Pack before register frame (first packed child of right_pane)
+            self.paths_frame.pack(fill=tk.X, pady=(0, 10),
+                                  before=self.reg_frame)
+            self.settings_visible = True
+            self.settings_btn.config(text="Settings (hide)")
+
+    def on_vrm_file_changed(self):
+        """Auto-fill display name from VRM filename"""
+        vrm_path = self.vrm_file_var.get()
+        if vrm_path:
+            stem = os.path.splitext(os.path.basename(vrm_path))[0]
+            name = stem[:12]
+            self.display_name_var.set(name)
+
+    def create_character_unified(self):
+        """Unified create: generate JSON + run commandlet + register to assets.info"""
+        # Validate display name
+        display_name = self.display_name_var.get().strip()
+        if not display_name:
+            messagebox.showerror("Error", "Display Name is required")
+            return
+
+        # Validate paths
+        errors = self.validate_paths()
+        if errors:
+            messagebox.showerror("Validation Error", "\n".join(errors))
+            return
+
+        if not self.warn_if_zen_not_running():
+            return
+
+        # Step 1: Generate JSON
+        self.output_text.delete(1.0, tk.END)
+        self.log_output("=== Step 1: Generate JSON ===")
+
+        gender = self.gender_var.get()
+        scaling_method = self.scaling_method_var.get()
+        model_source_type = self.model_source_type_var.get()
+
+        json_data = {
+            "Gender": gender,
+            "DisplayName": display_name,
+            "ScalingMethod": scaling_method,
+            "ModelSourceType": model_source_type
+        }
+
+        output_folder = os.path.normpath(self.output_folder_var.get())
+        if not os.path.exists(output_folder):
+            try:
+                os.makedirs(output_folder, exist_ok=True)
+            except Exception as e:
+                messagebox.showerror("Error", f"Cannot create output folder: {str(e)}")
+                return
+
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        json_filename = os.path.join(output_folder, f"{display_name}_{timestamp}.json")
+
+        try:
+            with open(json_filename, 'w', encoding='utf-8') as f:
+                json.dump(json_data, f, indent=2)
+            self.json_file_var.set(json_filename)
+            self.log_output(f"JSON saved: {json_filename}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save JSON: {str(e)}")
+            return
+
+        # Step 2: Run commandlet
+        self.log_output("\n=== Step 2: Build & Run Commandlet ===")
+        self.create_btn.config(state=tk.DISABLED, text="등록 중...")
+
+        # Store timestamp and display_name for assets registration after commandlet
+        self._pending_timestamp = timestamp
+        self._pending_display_name = display_name
+
+        thread = threading.Thread(target=self._run_unified_commandlet)
+        thread.daemon = True
+        thread.start()
+
+    def _run_unified_commandlet(self):
+        """Run build + commandlet, then register to assets.info"""
+        try:
+            # Patch source before build
+            self.patch_commandlet_source()
+
+            build_bat = os.path.normpath(os.path.join(self.ue_dir_var.get(), "Engine", "Build", "BatchFiles", "Build.bat"))
+            project_file = os.path.normpath(self.project_file_var.get())
+
+            if os.path.exists(build_bat):
+                inner_cmd = f'"{build_bat}" CINEVStudioEditor Win64 Development -Project="{project_file}" -WaitMutex'
+                self.log_output(inner_cmd)
+                self.log_output("")
+
+                process = subprocess.Popen(inner_cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+                self.log_output("Build started (see console window)")
+                process.wait()
+
+                if process.returncode != 0:
+                    self.log_output(f"Build failed with code {process.returncode}")
+                    self.root.after(0, lambda: messagebox.showwarning("Build Failed", f"Build exited with code {process.returncode}"))
+                    return
+                self.log_output("Build succeeded\n")
+
+            # Move files to UserCharacter folder if needed
+            try:
+                self.move_files_to_user_character_folder()
+            except Exception as e:
+                self.log_output(f"Error moving files: {str(e)}")
+                self.root.after(0, lambda: messagebox.showerror("Error", f"Failed to move files:\n{str(e)}"))
+                return
+
+            # Run commandlet
+            exe_path = os.path.normpath(os.path.join(self.ue_dir_var.get(), "Engine", "Binaries", "Win64", "UnrealEditor-Cmd.exe"))
+            json_file = os.path.normpath(self.json_file_var.get())
+            vrm_file = os.path.normpath(self.vrm_file_var.get())
+            output_folder = os.path.normpath(self.output_folder_var.get())
+
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder, exist_ok=True)
+
+            create_cmd = f'"{exe_path}" "{project_file}" -run=CinevCreateUserCharacter -UserCharacterJsonPath="{json_file}" -UserCharacterVrmPath="{vrm_file}" -OutputPath="{output_folder}" -stdout -nopause -unattended -AllowCommandletRendering -RenderOffScreen'
+
+            self.log_output("\n=== Commandlet ===")
+            self.log_output(create_cmd)
+            self.log_output("")
+
+            create_process = subprocess.Popen(create_cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+            self.log_output("Commandlet started (see console window)")
+            create_process.wait()
+
+            rc = create_process.returncode
+            self.log_output(f"\nCommandlet completed (exit code {rc})")
+
+            if rc == 0:
+                # Step 3: Auto-register to assets.info
+                self.log_output("\n=== Step 3: Register to assets.info ===")
+                display_name = self._pending_display_name
+                timestamp = self._pending_timestamp
+
+                new_entry = {
+                    "Preset_id": str(uuid.uuid4()),
+                    "CharacterFilePath": f"{display_name}_{timestamp}.character",
+                    "CategoryName": "CharacterCategory.VRM"
+                }
+                self.assets_data.append(new_entry)
+                self.root.after(0, self.assets_auto_save)
+                self.root.after(0, self.assets_refresh_tree)
+                self.log_output(f"Registered: {new_entry['CharacterFilePath']}")
+                self.root.after(0, lambda: messagebox.showinfo("Success", "Character created and registered!"))
+            else:
+                self.root.after(0, lambda: messagebox.showwarning("Completed", f"Commandlet exited with code {rc}\nCharacter NOT registered to assets.info."))
+
+        except Exception as e:
+            self.log_output(f"\nError: {str(e)}")
+            self.root.after(0, lambda: messagebox.showerror("Error", f"Failed: {str(e)}"))
+
+        finally:
+            self.restore_commandlet_source()
+            self.root.after(0, lambda: self.create_btn.config(state=tk.NORMAL, text="assets.info에 등록"))
 
     def create_assets_editor(self, parent):
         """Create the assets.info editor panel"""
@@ -257,24 +415,20 @@ class CharacterCreatorGUI:
                                            font=('Arial', 9))
         self.assets_count_label.pack(side=tk.RIGHT)
 
-        # Treeview for entries
+        # Treeview for entries (3 columns)
         tree_frame = tk.Frame(editor_frame, bg='white')
         tree_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
 
-        columns = ('preset_id', 'display_name', 'character_file', 'scaling', 'category')
+        columns = ('preset_id', 'character_file', 'category')
         self.assets_tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=15)
 
         self.assets_tree.heading('preset_id', text='Preset ID')
-        self.assets_tree.heading('display_name', text='Display Name')
         self.assets_tree.heading('character_file', text='Character File')
-        self.assets_tree.heading('scaling', text='Scaling')
         self.assets_tree.heading('category', text='Category')
 
-        self.assets_tree.column('preset_id', width=80, minwidth=60)
-        self.assets_tree.column('display_name', width=100, minwidth=80)
-        self.assets_tree.column('character_file', width=180, minwidth=120)
-        self.assets_tree.column('scaling', width=60, minwidth=50)
-        self.assets_tree.column('category', width=120, minwidth=80)
+        self.assets_tree.column('preset_id', width=100, minwidth=80)
+        self.assets_tree.column('character_file', width=220, minwidth=150)
+        self.assets_tree.column('category', width=150, minwidth=100)
 
         scrollbar = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=self.assets_tree.yview)
         self.assets_tree.configure(yscrollcommand=scrollbar.set)
@@ -286,52 +440,21 @@ class CharacterCreatorGUI:
 
         self.selected_asset_idx = None
 
-        # --- Add from .character file ---
-        add_frame = tk.LabelFrame(editor_frame, text="Add from .character",
-                                  font=('Arial', 9, 'bold'), bg='white',
-                                  fg='black', padx=10, pady=10)
-        add_frame.pack(fill=tk.X, pady=(0, 5))
-
-        char_pick_row = tk.Frame(add_frame, bg='white')
-        char_pick_row.pack(fill=tk.X, pady=2)
-
-        self.add_char_file_var = tk.StringVar()
-        tk.Label(char_pick_row, text=".character File:", width=16, anchor='w',
-                bg='white', fg='black', font=('Arial', 9)).pack(side=tk.LEFT)
-        tk.Entry(char_pick_row, textvariable=self.add_char_file_var, bg='white', fg='black',
-                relief=tk.SOLID, borderwidth=1, state='readonly').pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-        tk.Button(char_pick_row, text="Browse", command=self.assets_pick_character_file,
-                 bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
-                 padx=10, cursor='hand2').pack(side=tk.LEFT)
-
-        tk.Button(add_frame, text="Add to assets.info",
-                 command=self.assets_add_from_character,
-                 bg='#0066CC', fg='white', relief=tk.FLAT,
-                 padx=20, pady=5, font=('Arial', 9, 'bold'),
-                 cursor='hand2').pack(pady=(8, 2))
-
         # --- Edit form ---
         form_frame = tk.LabelFrame(editor_frame, text="Edit Entry",
                                    font=('Arial', 9, 'bold'), bg='white',
                                    fg='black', padx=10, pady=10)
         form_frame.pack(fill=tk.X)
 
+        # assets.info fields
         self.asset_preset_id_var = tk.StringVar()
-        self.asset_gender_var = tk.StringVar()
-        self.asset_display_name_var = tk.StringVar()
-        self.asset_scaling_var = tk.StringVar()
         self.asset_char_file_var = tk.StringVar()
         self.asset_category_var = tk.StringVar()
-        self.asset_thumbnail_var = tk.StringVar()
 
         fields = [
             ("Preset ID:", self.asset_preset_id_var, None),
-            ("Gender:", self.asset_gender_var, ["", "Female", "Male"]),
-            ("DisplayName:", self.asset_display_name_var, None),
-            ("ScalingMethod:", self.asset_scaling_var, ["", "Original", "CineV"]),
             ("CharacterFilePath:", self.asset_char_file_var, None),
             ("CategoryName:", self.asset_category_var, ["CharacterCategory.VRM"]),
-            ("ThumbnailFileName:", self.asset_thumbnail_var, None),
         ]
 
         for label_text, var, combo_values in fields:
@@ -345,6 +468,28 @@ class CharacterCreatorGUI:
             else:
                 tk.Entry(row, textvariable=var, bg='white', fg='black',
                         relief=tk.SOLID, borderwidth=1).pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+
+        # .character metadata fields (read from binary)
+        sep = ttk.Separator(form_frame, orient=tk.HORIZONTAL)
+        sep.pack(fill=tk.X, pady=(8, 4))
+        tk.Label(form_frame, text=".character metadata", bg='white', fg='#999999',
+                font=('Arial', 8)).pack(anchor='w')
+
+        self.asset_meta_scaling_var = tk.StringVar()
+        self.asset_meta_source_var = tk.StringVar()
+
+        meta_fields = [
+            ("ScalingMethod:", self.asset_meta_scaling_var, ["Original", "CineV"]),
+            ("ModelSourceType:", self.asset_meta_source_var, ["None", "VRM", "VRoid", "Zepeto"]),
+        ]
+
+        for label_text, var, combo_values in meta_fields:
+            row = tk.Frame(form_frame, bg='white')
+            row.pack(fill=tk.X, pady=2)
+            tk.Label(row, text=label_text, width=16, anchor='w',
+                    bg='white', fg='black', font=('Arial', 9)).pack(side=tk.LEFT)
+            ttk.Combobox(row, textvariable=var, values=combo_values,
+                        width=40).pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
 
         # Buttons row
         btn_row = tk.Frame(form_frame, bg='white')
@@ -425,9 +570,7 @@ class CharacterCreatorGUI:
             short_id = '...' + preset_id[-4:] if len(preset_id) > 4 else preset_id
             self.assets_tree.insert('', tk.END, iid=str(i), values=(
                 short_id,
-                entry.get('DisplayName', ''),
                 entry.get('CharacterFilePath', ''),
-                entry.get('ScalingMethod', ''),
                 entry.get('CategoryName', ''),
             ))
         self.assets_count_label.config(text=f"{len(self.assets_data)} entries")
@@ -435,79 +578,10 @@ class CharacterCreatorGUI:
         # Empty state guidance
         if not self.assets_data:
             self.assets_tree.insert('', tk.END, iid='empty_placeholder', values=(
-                '', 'No entries yet.', 'Use "Add from .character" above.', '', ''
+                '', 'No entries yet.', ''
             ))
             self.assets_apply_btn.config(state=tk.DISABLED)
             self.assets_delete_btn.config(state=tk.DISABLED)
-
-    def assets_on_select(self, event):
-        """Handle treeview selection - populate edit form"""
-        selection = self.assets_tree.selection()
-        if not selection or (len(selection) == 1 and selection[0] == 'empty_placeholder'):
-            return
-        idx = int(selection[0])
-        self.selected_asset_idx = idx
-        entry = self.assets_data[idx]
-
-        self.asset_preset_id_var.set(entry.get('Preset_id', ''))
-        self.asset_gender_var.set(entry.get('Gender', ''))
-        self.asset_display_name_var.set(entry.get('DisplayName', ''))
-        self.asset_scaling_var.set(entry.get('ScalingMethod', ''))
-        self.asset_char_file_var.set(entry.get('CharacterFilePath', ''))
-        self.asset_category_var.set(entry.get('CategoryName', ''))
-        self.asset_thumbnail_var.set(entry.get('ThumbnailFileName', ''))
-
-        # Enable edit buttons
-        self.assets_apply_btn.config(state=tk.NORMAL)
-        self.assets_delete_btn.config(state=tk.NORMAL)
-
-    def assets_apply_changes(self):
-        """Apply edit form changes to selected entry"""
-        if self.selected_asset_idx is None:
-            messagebox.showwarning("Warning", "Select an entry first")
-            return
-        idx = self.selected_asset_idx
-
-        self.assets_data[idx]['Preset_id'] = self.asset_preset_id_var.get()
-        self.assets_data[idx]['Gender'] = self.asset_gender_var.get()
-        self.assets_data[idx]['DisplayName'] = self.asset_display_name_var.get()
-        self.assets_data[idx]['ScalingMethod'] = self.asset_scaling_var.get()
-        self.assets_data[idx]['CharacterFilePath'] = self.asset_char_file_var.get()
-        self.assets_data[idx]['CategoryName'] = self.asset_category_var.get()
-        self.assets_data[idx]['ThumbnailFileName'] = self.asset_thumbnail_var.get()
-
-        self.assets_refresh_tree()
-        self.assets_tree.selection_set(str(idx))
-        self.assets_tree.see(str(idx))
-        self.assets_auto_save()
-
-    def assets_add_entry(self):
-        """Add a new entry to assets data"""
-        new_entry = {
-            "Preset_id": str(uuid.uuid4()),
-            "Gender": "",
-            "DisplayName": "",
-            "ScalingMethod": "",
-            "CharacterFilePath": "",
-            "CategoryName": "CharacterCategory.VRM",
-            "ThumbnailFileName": ""
-        }
-        self.assets_data.append(new_entry)
-        self.assets_refresh_tree()
-        # Select the new entry
-        new_idx = str(len(self.assets_data) - 1)
-        self.assets_tree.selection_set(new_idx)
-        self.assets_tree.see(new_idx)
-        self.assets_on_select(None)
-
-    def assets_pick_character_file(self):
-        """Browse for a .character file (just stores the path)"""
-        filename = filedialog.askopenfilename(
-            title="Select Character File",
-            filetypes=[("Character Files", "*.character"), ("All Files", "*.*")]
-        )
-        if filename:
-            self.add_char_file_var.set(os.path.normpath(filename))
 
     @staticmethod
     def read_character_metadata(char_path):
@@ -517,7 +591,6 @@ class CharacterCreatorGUI:
         idx = data.find(b'{')
         if idx < 0:
             return None
-        # Find the end of the first JSON object
         depth = 0
         end = idx
         for i in range(idx, len(data)):
@@ -531,145 +604,122 @@ class CharacterCreatorGUI:
         json_str = data[idx:end].decode('utf-8', errors='replace')
         return json.loads(json_str)
 
-    def assets_add_from_character(self):
-        """Add a new entry from .character file, reading metadata directly and requiring matching .png"""
-        char_path = self.add_char_file_var.get()
-        if not char_path:
-            messagebox.showwarning("Warning", "Select a .character file first")
-            return
+    @staticmethod
+    def write_character_metadata(char_path, updates):
+        """Update metadata JSON embedded in a .character file"""
+        with open(char_path, 'rb') as f:
+            data = f.read()
+        idx = data.find(b'{')
+        if idx < 0:
+            return False
+        depth = 0
+        end = idx
+        for i in range(idx, len(data)):
+            if data[i:i+1] == b'{':
+                depth += 1
+            elif data[i:i+1] == b'}':
+                depth -= 1
+                if depth == 0:
+                    end = i + 1
+                    break
+        json_str = data[idx:end].decode('utf-8', errors='replace')
+        meta = json.loads(json_str)
+        meta.update(updates)
+        new_json = json.dumps(meta, indent=2, ensure_ascii=False).encode('utf-8')
+        with open(char_path, 'wb') as f:
+            f.write(data[:idx] + new_json + data[end:])
+        return True
 
+    def _get_character_file_path(self, char_filename):
+        """Resolve full path for a .character file in UserCharacter folder"""
         user_char_folder = self.get_user_character_folder()
-        if not user_char_folder:
-            messagebox.showerror("Error", "Set Project File first")
-            return
+        if not user_char_folder or not char_filename:
+            return None
+        full_path = os.path.join(user_char_folder, char_filename)
+        return full_path if os.path.exists(full_path) else None
 
-        src_dir = os.path.normpath(os.path.dirname(char_path))
-        basename = os.path.basename(char_path)
-        name_stem = os.path.splitext(basename)[0]
-
-        # Read metadata from .character file
-        try:
-            meta = self.read_character_metadata(char_path)
-        except Exception as e:
-            self.log_output(f"Error reading .character: {str(e)}")
-            messagebox.showerror("Error", "Failed to read .character file. Check the output console for details.")
+    def assets_on_select(self, event):
+        """Handle treeview selection - populate edit form + .character metadata"""
+        selection = self.assets_tree.selection()
+        if not selection or (len(selection) == 1 and selection[0] == 'empty_placeholder'):
             return
-        if not meta:
-            messagebox.showerror("Error", "No metadata found in .character file")
-            return
+        idx = int(selection[0])
+        self.selected_asset_idx = idx
+        entry = self.assets_data[idx]
 
-        # Check for matching PNG (thumb_{name}_01.png)
-        png_name = f"thumb_{name_stem}_01.png"
-        png_path = os.path.join(src_dir, png_name)
-        if not os.path.exists(png_path):
-            messagebox.showerror("Error", f"PNG file not found:\n{png_name}\n\nCannot add entry without matching thumbnail.")
-            return
+        self.asset_preset_id_var.set(entry.get('Preset_id', ''))
+        self.asset_char_file_var.set(entry.get('CharacterFilePath', ''))
+        self.asset_category_var.set(entry.get('CategoryName', ''))
 
-        # Copy files to UserCharacter folder
-        dest_dir = os.path.normpath(user_char_folder)
-        if src_dir != dest_dir:
-            for src_file in [char_path, png_path]:
+        # Read .character metadata
+        self.asset_meta_scaling_var.set('')
+        self.asset_meta_source_var.set('')
+        char_path = self._get_character_file_path(entry.get('CharacterFilePath', ''))
+        if char_path:
+            try:
+                meta = self.read_character_metadata(char_path)
+                if meta:
+                    self.asset_meta_scaling_var.set(meta.get('scalingMethod', meta.get('ScalingMethod', '')))
+                    self.asset_meta_source_var.set(meta.get('modelSourceType', meta.get('ModelSourceType', '')))
+            except Exception as e:
+                self.log_output(f"Failed to read .character metadata: {str(e)}")
+
+        # Enable edit buttons
+        self.assets_apply_btn.config(state=tk.NORMAL)
+        self.assets_delete_btn.config(state=tk.NORMAL)
+
+    def assets_apply_changes(self):
+        """Apply edit form changes to selected entry + write .character metadata"""
+        if self.selected_asset_idx is None:
+            messagebox.showwarning("Warning", "Select an entry first")
+            return
+        idx = self.selected_asset_idx
+
+        self.assets_data[idx]['Preset_id'] = self.asset_preset_id_var.get()
+        self.assets_data[idx]['CharacterFilePath'] = self.asset_char_file_var.get()
+        self.assets_data[idx]['CategoryName'] = self.asset_category_var.get()
+
+        # Write .character metadata if file exists
+        char_path = self._get_character_file_path(self.asset_char_file_var.get())
+        if char_path:
+            scaling = self.asset_meta_scaling_var.get()
+            source = self.asset_meta_source_var.get()
+            if scaling or source:
                 try:
-                    shutil.copy2(src_file, os.path.join(dest_dir, os.path.basename(src_file)))
+                    updates = {}
+                    if scaling:
+                        updates['scalingMethod'] = scaling
+                    if source:
+                        updates['modelSourceType'] = source
+                    self.write_character_metadata(char_path, updates)
+                    self.log_output(f"Updated .character metadata: {os.path.basename(char_path)}")
                 except Exception as e:
-                    self.log_output(f"Error copying {os.path.basename(src_file)}: {str(e)}")
-                    messagebox.showerror("Error", f"Failed to copy {os.path.basename(src_file)}. Check the output console for details.")
-                    return
+                    self.log_output(f"Failed to write .character metadata: {str(e)}")
 
-        # Create new entry (character metadata uses camelCase keys)
+        self.assets_refresh_tree()
+        self.assets_tree.selection_set(str(idx))
+        self.assets_tree.see(str(idx))
+        self.assets_auto_save()
+
+    def assets_add_entry(self):
+        """Add a new entry to assets data"""
         new_entry = {
             "Preset_id": str(uuid.uuid4()),
-            "Gender": meta.get("gender", ""),
-            "DisplayName": meta.get("displayName", ""),
-            "ScalingMethod": meta.get("scalingMethod", ""),
-            "CharacterFilePath": basename,
-            "CategoryName": f"CharacterCategory.{meta.get('format', 'VRM')}",
-            "ThumbnailFileName": png_name
+            "CharacterFilePath": "",
+            "CategoryName": "CharacterCategory.VRM"
         }
         self.assets_data.append(new_entry)
         self.assets_refresh_tree()
-
         # Select the new entry
         new_idx = str(len(self.assets_data) - 1)
         self.assets_tree.selection_set(new_idx)
         self.assets_tree.see(new_idx)
-
-        self.log_output(f"Added entry: {basename} (from .character metadata)")
-        self.add_char_file_var.set("")
-        self.assets_auto_save()
-
-    def assets_browse_character_file(self):
-        """Browse for a .character file, move it to UserCharacter folder, and auto-fill from matching JSON"""
-        user_char_folder = self.get_user_character_folder()
-        filename = filedialog.askopenfilename(
-            title="Select Character File",
-            filetypes=[("Character Files", "*.character"), ("All Files", "*.*")]
-        )
-        if not filename:
-            return
-
-        src_path = os.path.normpath(filename)
-        basename = os.path.basename(src_path)
-        src_dir = os.path.normpath(os.path.dirname(src_path))
-
-        # Move to UserCharacter folder if not already there
-        if user_char_folder:
-            dest_dir = os.path.normpath(user_char_folder)
-            if src_dir != dest_dir:
-                dest_path = os.path.join(dest_dir, basename)
-                try:
-                    shutil.copy2(src_path, dest_path)
-                    self.log_output(f"Copied to UserCharacter: {basename}")
-                except Exception as e:
-                    messagebox.showerror("Error", f"Failed to copy file:\n{str(e)}")
-                    return
-
-        # Set just the filename (not full path) as CharacterFilePath
-        self.asset_char_file_var.set(basename)
-
-        # Look for matching JSON and PNG files (same name stem)
-        name_stem = os.path.splitext(basename)[0]
-
-        # JSON auto-fill
-        json_path = os.path.join(src_dir, f"{name_stem}.json")
-        if not os.path.exists(json_path) and user_char_folder:
-            json_path = os.path.join(user_char_folder, f"{name_stem}.json")
-        if os.path.exists(json_path):
-            try:
-                with open(json_path, 'r', encoding='utf-8') as f:
-                    json_data = json.load(f)
-                if json_data.get('Gender'):
-                    self.asset_gender_var.set(json_data['Gender'])
-                if json_data.get('DisplayName'):
-                    self.asset_display_name_var.set(json_data['DisplayName'])
-                if json_data.get('ScalingMethod'):
-                    self.asset_scaling_var.set(json_data['ScalingMethod'])
-                self.log_output(f"Auto-filled from: {os.path.basename(json_path)}")
-            except Exception as e:
-                self.log_output(f"Failed to read JSON: {str(e)}")
-
-        # PNG thumbnail - copy to UserCharacter folder and set filename
-        png_path = os.path.join(src_dir, f"{name_stem}.png")
-        if not os.path.exists(png_path) and user_char_folder:
-            png_path = os.path.join(user_char_folder, f"{name_stem}.png")
-        if os.path.exists(png_path):
-            png_basename = os.path.basename(png_path)
-            if user_char_folder:
-                dest_dir = os.path.normpath(user_char_folder)
-                png_src_dir = os.path.normpath(os.path.dirname(png_path))
-                if png_src_dir != dest_dir:
-                    try:
-                        shutil.copy2(png_path, os.path.join(dest_dir, png_basename))
-                        self.log_output(f"Copied thumbnail: {png_basename}")
-                    except Exception as e:
-                        self.log_output(f"Failed to copy thumbnail: {str(e)}")
-            self.asset_thumbnail_var.set(png_basename)
-            self.log_output(f"Thumbnail set: {png_basename}")
+        self.assets_on_select(None)
 
     def assets_delete_by_idx(self, idx):
         """Delete entry by index"""
         entry = self.assets_data[idx]
-        name = entry.get('CharacterFilePath', entry.get('DisplayName', f'index {idx}'))
+        name = entry.get('CharacterFilePath', f'index {idx}')
 
         if messagebox.askyesno("Confirm Delete", f"Delete entry?\n{name}"):
             self.assets_data.pop(idx)
@@ -793,8 +843,11 @@ class CharacterCreatorGUI:
                     text=f"Files will be saved to: {folder}",
                     fg='#666666'
                 )
+            # Update summary label (visible when settings collapsed)
+            self.user_char_summary_label.config(text=f"UserCharacter: {folder}")
         else:
             self.user_char_label.config(text="", fg='#666666')
+            self.user_char_summary_label.config(text="")
 
     def browse_json_file(self):
         user_char_folder = self.get_user_character_folder()
@@ -843,9 +896,9 @@ class CharacterCreatorGUI:
             messagebox.showerror("Error", "Display Name is required")
             return
 
-        # Check if project file is selected
-        if not self.project_file_var.get():
-            messagebox.showerror("Error", "Select a Project File first")
+        # Check if output folder is set
+        if not self.output_folder_var.get():
+            messagebox.showerror("Error", "Set Output Folder first")
             return
 
         gender = self.gender_var.get()
@@ -861,24 +914,21 @@ class CharacterCreatorGUI:
             "ModelSourceType": model_source_type
         }
 
-        # Get UserCharacter folder
-        user_char_folder = self.get_user_character_folder()
-        if not user_char_folder:
-            messagebox.showerror("Error", "Cannot determine UserCharacter folder")
-            return
+        # Use output folder
+        output_folder = os.path.normpath(self.output_folder_var.get())
 
         # Create folder if it doesn't exist
-        if not os.path.exists(user_char_folder):
+        if not os.path.exists(output_folder):
             try:
-                os.makedirs(user_char_folder, exist_ok=True)
+                os.makedirs(output_folder, exist_ok=True)
             except Exception as e:
-                messagebox.showerror("Error", f"Cannot create UserCharacter folder: {str(e)}")
+                messagebox.showerror("Error", f"Cannot create output folder: {str(e)}")
                 return
 
         # Auto-generate filename with timestamp
         from datetime import datetime
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = os.path.join(user_char_folder, f"{display_name}_{timestamp}.json")
+        filename = os.path.join(output_folder, f"{display_name}_{timestamp}.json")
 
         try:
             with open(filename, 'w', encoding='utf-8') as f:
@@ -886,7 +936,7 @@ class CharacterCreatorGUI:
 
             self.json_file_var.set(filename)
             self.log_output(f"JSON file saved: {filename}")
-            messagebox.showinfo("Success", f"JSON file saved to UserCharacter folder!\n\n{filename}")
+            messagebox.showinfo("Success", f"JSON file saved!\n\n{filename}")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save JSON: {str(e)}")
 
@@ -906,11 +956,6 @@ class CharacterCreatorGUI:
             errors.append("Project File is required")
         elif not os.path.exists(self.project_file_var.get()):
             errors.append("Project File does not exist")
-
-        if not self.json_file_var.get():
-            errors.append("JSON File is required")
-        elif not os.path.exists(self.json_file_var.get()):
-            errors.append("JSON File does not exist")
 
         if not self.vrm_file_var.get():
             errors.append("VRM File is required")
@@ -1012,187 +1057,6 @@ class CharacterCreatorGUI:
         self.output_text.see(tk.END)
         self.output_text.update()
 
-    def execute_command(self):
-        # Validate
-        errors = self.validate_paths()
-        if errors:
-            messagebox.showerror("Validation Error", "\n".join(errors))
-            return
-
-        if not self.warn_if_zen_not_running():
-            return
-
-        # Disable button
-        self.execute_btn.config(state=tk.DISABLED, text="RUNNING...")
-        self.output_text.delete(1.0, tk.END)
-
-        # Move files to UserCharacter folder if needed
-        try:
-            self.move_files_to_user_character_folder()
-        except Exception as e:
-            self.log_output(f"Error moving files: {str(e)}")
-            messagebox.showerror("Error", f"Failed to move files to UserCharacter folder:\n{str(e)}")
-            self.execute_btn.config(state=tk.NORMAL, text="CREATE CHARACTER")
-            return
-
-        # Run in thread to prevent UI freeze
-        thread = threading.Thread(target=self.run_command)
-        thread.daemon = True
-        thread.start()
-
-    def run_command(self):
-        try:
-            # Patch source and rebuild
-            self.patch_commandlet_source()
-
-            build_bat = os.path.normpath(os.path.join(self.ue_dir_var.get(), "Engine", "Build", "BatchFiles", "Build.bat"))
-            project_file = os.path.normpath(self.project_file_var.get())
-            if os.path.exists(build_bat):
-                self.log_output("=== Building with patched source ===")
-                build_cmd = f'"{build_bat}" CINEVStudioEditor Win64 Development -Project="{project_file}" -WaitMutex'
-                build_process = subprocess.Popen(build_cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
-                build_process.wait()
-                if build_process.returncode != 0:
-                    self.log_output(f"Build failed with code {build_process.returncode}")
-                    self.root.after(0, lambda: messagebox.showwarning("Build Failed", f"Build exited with code {build_process.returncode}"))
-                    return
-                self.log_output("Build succeeded\n")
-
-            exe_path = os.path.normpath(os.path.join(self.ue_dir_var.get(), "Engine", "Binaries", "Win64", "UnrealEditor-Cmd.exe"))
-
-            # Validate executable exists before attempting spawn
-            if not os.path.exists(exe_path):
-                raise FileNotFoundError(f"UnrealEditor-Cmd.exe not found at: {exe_path}")
-
-            if not os.path.isfile(exe_path):
-                raise ValueError(f"Path exists but is not a file: {exe_path}")
-
-            # Validate all input paths and normalize them
-            project_file = os.path.normpath(self.project_file_var.get())
-            json_file = os.path.normpath(self.json_file_var.get())
-            vrm_file = os.path.normpath(self.vrm_file_var.get())
-            output_folder = os.path.normpath(self.output_folder_var.get())
-
-            if not os.path.exists(project_file):
-                raise FileNotFoundError(f"Project file not found: {project_file}")
-            if not os.path.exists(json_file):
-                raise FileNotFoundError(f"JSON file not found: {json_file}")
-            if not os.path.exists(vrm_file):
-                raise FileNotFoundError(f"VRM file not found: {vrm_file}")
-            if not os.path.exists(output_folder):
-                self.log_output(f"Creating output folder: {output_folder}")
-                os.makedirs(output_folder, exist_ok=True)
-
-            # Log diagnostic info
-            self.log_output("=== Diagnostic Info ===")
-            self.log_output(f"Executable: {exe_path}")
-            self.log_output(f"Executable size: {os.path.getsize(exe_path)} bytes")
-            self.log_output(f"Project: {project_file}")
-            self.log_output(f"JSON: {json_file}")
-            self.log_output(f"VRM: {vrm_file}")
-            self.log_output(f"Output: {output_folder}\n")
-
-            # Build command string
-            inner_cmd = f'"{exe_path}" "{project_file}" -run=CinevCreateUserCharacter -UserCharacterJsonPath="{json_file}" -UserCharacterVrmPath="{vrm_file}" -OutputPath="{output_folder}" -stdout -nopause -unattended -AllowCommandletRendering -RenderOffScreen'
-
-            self.log_output("=== Command String ===")
-            self.log_output(inner_cmd)
-            self.log_output("")
-
-            # Execute with visible console window
-            try:
-                process = subprocess.Popen(
-                    inner_cmd,
-                    creationflags=subprocess.CREATE_NEW_CONSOLE
-                )
-            except FileNotFoundError as e:
-                raise FileNotFoundError(f"Failed to start process - executable not found: {exe_path}\n{str(e)}")
-            except PermissionError as e:
-                raise PermissionError(f"Permission denied executing: {exe_path}\n{str(e)}")
-            except OSError as e:
-                raise OSError(f"Failed to start Unreal Editor process.\nExecutable: {exe_path}\nError: {str(e)}")
-
-            self.log_output("=== Process Started (see console window) ===")
-
-            # Wait for process to complete
-            process.wait()
-
-            self.log_output(f"\nProcess completed with code {process.returncode}")
-            if process.returncode == 0:
-                self.root.after(0, lambda: messagebox.showinfo("Success", "Character created successfully!"))
-            else:
-                self.root.after(0, lambda: messagebox.showwarning("Completed", f"Process exited with code {process.returncode}\nCheck console window for details."))
-
-        except Exception as e:
-            self.log_output(f"\nError: {str(e)}")
-            self.root.after(0, lambda: messagebox.showerror("Error", f"Failed to execute: {str(e)}"))
-
-        finally:
-            self.restore_commandlet_source()
-            self.root.after(0, lambda: self.execute_btn.config(state=tk.NORMAL, text="CREATE CHARACTER"))
-
-    def build_editor(self):
-        """Build the CINEVStudioEditor"""
-        # Validate paths
-        if not self.ue_dir_var.get():
-            messagebox.showerror("Error", "UE_CINEV Directory is required")
-            return
-        if not self.project_file_var.get():
-            messagebox.showerror("Error", "Project File is required")
-            return
-
-        # Check Build.bat exists
-        build_bat = os.path.join(self.ue_dir_var.get(), "Engine", "Build", "BatchFiles", "Build.bat")
-        if not os.path.exists(build_bat):
-            messagebox.showerror("Error", f"Build.bat not found at:\n{build_bat}")
-            return
-
-        # Disable button
-        self.build_btn.config(state=tk.DISABLED, text="BUILDING...")
-        self.output_text.delete(1.0, tk.END)
-
-        # Run in thread
-        thread = threading.Thread(target=self.run_build)
-        thread.daemon = True
-        thread.start()
-
-    def run_build(self):
-        """Run the build command"""
-        try:
-            build_bat = os.path.normpath(os.path.join(self.ue_dir_var.get(), "Engine", "Build", "BatchFiles", "Build.bat"))
-            project_file = os.path.normpath(self.project_file_var.get())
-
-            # Build command
-            inner_cmd = f'"{build_bat}" CINEVStudioEditor Win64 Development -Project="{project_file}" -WaitMutex'
-
-            self.log_output("=== Build Command ===")
-            self.log_output(inner_cmd)
-            self.log_output("")
-
-            # Execute with visible console window
-            process = subprocess.Popen(
-                inner_cmd,
-                creationflags=subprocess.CREATE_NEW_CONSOLE
-            )
-
-            self.log_output("=== Build Started (see console window) ===")
-
-            # Wait for process to complete
-            process.wait()
-
-            self.log_output(f"\nBuild completed with code {process.returncode}")
-            if process.returncode == 0:
-                self.root.after(0, lambda: messagebox.showinfo("Success", "Build completed successfully!"))
-            else:
-                self.root.after(0, lambda: messagebox.showwarning("Completed", f"Build exited with code {process.returncode}\nCheck console window for details."))
-
-        except Exception as e:
-            self.log_output(f"\nError: {str(e)}")
-            self.root.after(0, lambda: messagebox.showerror("Error", f"Build failed: {str(e)}"))
-
-        finally:
-            self.root.after(0, lambda: self.build_btn.config(state=tk.NORMAL, text="BUILD EDITOR"))
-
     def update_command_display(self):
         """Update the command display with current values"""
         exe_path = os.path.normpath(os.path.join(self.ue_dir_var.get(), "Engine", "Binaries", "Win64", "UnrealEditor-Cmd.exe")) if self.ue_dir_var.get() else ""
@@ -1202,15 +1066,7 @@ class CharacterCreatorGUI:
         output_folder = os.path.normpath(self.output_folder_var.get()) if self.output_folder_var.get() else ""
 
         cmd = f'"{exe_path}" "{project_file}" -run=CinevCreateUserCharacter -UserCharacterJsonPath="{json_file}" -UserCharacterVrmPath="{vrm_file}" -OutputPath="{output_folder}" -stdout -nopause -unattended -AllowCommandletRendering -RenderOffScreen'
-        self.cmd_display_var.set(cmd)
-
-    def copy_command(self):
-        """Copy command to clipboard"""
-        self.update_command_display()
-        cmd = self.cmd_display_var.get()
-        self.root.clipboard_clear()
-        self.root.clipboard_append(cmd)
-        self.log_output("Command copied to clipboard!")
+        return cmd
 
     def start_zen_dashboard(self):
         """Start ZenDashboard"""
@@ -1229,124 +1085,6 @@ class CharacterCreatorGUI:
             self.log_output(f"Started ZenDashboard: {zen_exe}")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to start ZenDashboard:\n{str(e)}")
-
-    def build_and_create_character(self):
-        """Build editor first, then create character"""
-        # Validate build paths
-        if not self.ue_dir_var.get():
-            messagebox.showerror("Error", "UE_CINEV Directory is required")
-            return
-        if not self.project_file_var.get():
-            messagebox.showerror("Error", "Project File is required")
-            return
-
-        # Check Build.bat exists
-        build_bat = os.path.join(self.ue_dir_var.get(), "Engine", "Build", "BatchFiles", "Build.bat")
-        if not os.path.exists(build_bat):
-            messagebox.showerror("Error", f"Build.bat not found at:\n{build_bat}")
-            return
-
-        # Validate character creation paths before starting
-        errors = self.validate_paths()
-        if errors:
-            messagebox.showerror("Validation Error", "Character creation will fail:\n" + "\n".join(errors))
-            return
-
-        if not self.warn_if_zen_not_running():
-            return
-
-        # Disable button
-        self.build_and_create_btn.config(state=tk.DISABLED, text="BUILDING...")
-        self.output_text.delete(1.0, tk.END)
-
-        # Run in thread
-        thread = threading.Thread(target=self.run_build_and_create)
-        thread.daemon = True
-        thread.start()
-
-    def run_build_and_create(self):
-        """Run build then create character"""
-        try:
-            # Patch source before build
-            self.patch_commandlet_source()
-
-            build_bat = os.path.normpath(os.path.join(self.ue_dir_var.get(), "Engine", "Build", "BatchFiles", "Build.bat"))
-            project_file = os.path.normpath(self.project_file_var.get())
-
-            # Build command
-            inner_cmd = f'"{build_bat}" CINEVStudioEditor Win64 Development -Project="{project_file}" -WaitMutex'
-
-            self.log_output("=== BUILD PHASE ===")
-            self.log_output(inner_cmd)
-            self.log_output("")
-
-            # Execute build with visible console window
-            process = subprocess.Popen(
-                inner_cmd,
-                creationflags=subprocess.CREATE_NEW_CONSOLE
-            )
-
-            self.log_output("=== Build Started (see console window) ===")
-            self.root.after(0, lambda: self.build_and_create_btn.config(text="BUILDING..."))
-
-            # Wait for build to complete
-            process.wait()
-
-            self.log_output(f"\n Build completed with code {process.returncode}")
-
-            if process.returncode != 0:
-                self.root.after(0, lambda: messagebox.showwarning("Build Failed", f"Build exited with code {process.returncode}\nCharacter creation skipped."))
-                return
-
-            # Build succeeded, now create character
-            self.log_output("\n=== CHARACTER CREATION PHASE ===")
-            self.root.after(0, lambda: self.build_and_create_btn.config(text="CREATING..."))
-
-            # Move files to UserCharacter folder if needed
-            try:
-                self.move_files_to_user_character_folder()
-            except Exception as e:
-                self.log_output(f"Error moving files: {str(e)}")
-                self.root.after(0, lambda: messagebox.showerror("Error", f"Failed to move files:\n{str(e)}"))
-                return
-
-            # Run character creation
-            exe_path = os.path.normpath(os.path.join(self.ue_dir_var.get(), "Engine", "Binaries", "Win64", "UnrealEditor-Cmd.exe"))
-            json_file = os.path.normpath(self.json_file_var.get())
-            vrm_file = os.path.normpath(self.vrm_file_var.get())
-            output_folder = os.path.normpath(self.output_folder_var.get())
-
-            if not os.path.exists(output_folder):
-                os.makedirs(output_folder, exist_ok=True)
-
-            create_cmd = f'"{exe_path}" "{project_file}" -run=CinevCreateUserCharacter -UserCharacterJsonPath="{json_file}" -UserCharacterVrmPath="{vrm_file}" -OutputPath="{output_folder}" -stdout -nopause -unattended -AllowCommandletRendering -RenderOffScreen'
-
-            self.log_output(create_cmd)
-            self.log_output("")
-
-            create_process = subprocess.Popen(
-                create_cmd,
-                creationflags=subprocess.CREATE_NEW_CONSOLE
-            )
-
-            self.log_output("=== Character Creation Started (see console window) ===")
-
-            create_process.wait()
-
-            self.log_output(f"\n Character creation completed with code {create_process.returncode}")
-
-            if create_process.returncode == 0:
-                self.root.after(0, lambda: messagebox.showinfo("Success", "Build & Character creation completed successfully!"))
-            else:
-                self.root.after(0, lambda: messagebox.showwarning("Completed", f"Character creation exited with code {create_process.returncode}"))
-
-        except Exception as e:
-            self.log_output(f"\n Error: {str(e)}")
-            self.root.after(0, lambda: messagebox.showerror("Error", f"Failed: {str(e)}"))
-
-        finally:
-            self.restore_commandlet_source()
-            self.root.after(0, lambda: self.build_and_create_btn.config(state=tk.NORMAL, text="Build & Create"))
 
 
 if __name__ == "__main__":
