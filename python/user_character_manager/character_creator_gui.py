@@ -93,13 +93,13 @@ class CharacterCreatorGUI:
                         font=('Arial', 18, 'bold'), bg='white', fg='black')
         title.pack(side=tk.LEFT)
 
-        self.settings_btn = tk.Button(title_bar, text="Settings",
+        self.settings_btn = tk.Button(title_bar, text="설정",
                  command=self.toggle_settings, bg='white', fg='black',
                  relief=tk.SOLID, borderwidth=1, padx=10, cursor='hand2',
                  font=('Arial', 9))
         self.settings_btn.pack(side=tk.RIGHT)
 
-        self.zen_btn = tk.Button(title_bar, text="Zen Dashboard",
+        self.zen_btn = tk.Button(title_bar, text="Zen 대시보드",
                                  command=self.start_zen_dashboard, bg='#666666',
                                  fg='white', relief=tk.FLAT,
                                  font=('Arial', 9, 'bold'),
@@ -119,37 +119,31 @@ class CharacterCreatorGUI:
         columns_frame.columnconfigure(1, weight=1)
         columns_frame.rowconfigure(0, weight=1)
 
-        # === LEFT PANE: assets.info editor ===
+        # === LEFT PANE: character creation ===
         left_pane = tk.Frame(columns_frame, bg='white', padx=10)
         left_pane.grid(row=0, column=0, sticky='nsew')
 
-        self.create_assets_editor(left_pane)
-
-        # === RIGHT PANE: character creation ===
-        right_pane = tk.Frame(columns_frame, bg='white', padx=10)
-        right_pane.grid(row=0, column=1, sticky='nsew')
-
         # Paths Section (collapsible)
-        self.paths_frame = tk.LabelFrame(right_pane, text="Configure Paths",
+        self.paths_frame = tk.LabelFrame(left_pane, text="경로 설정",
                                     font=('Arial', 10, 'bold'), bg='white',
                                     fg='black', padx=10, pady=10)
         # Hidden by default - don't pack
 
-        self.create_path_input(self.paths_frame, "UE_CINEV Directory:",
+        self.create_path_input(self.paths_frame, "UE_CINEV 경로:",
                               self.ue_dir_var, self.browse_ue_directory)
-        self.create_path_input(self.paths_frame, "Project File (.uproject):",
+        self.create_path_input(self.paths_frame, "프로젝트 파일:",
                               self.project_file_var, self.browse_project_file)
         # Output Folder with Open button
         output_folder_frame = tk.Frame(self.paths_frame, bg='white')
         output_folder_frame.pack(fill=tk.X, pady=5)
-        tk.Label(output_folder_frame, text="Output Folder:", width=16, anchor='w',
+        tk.Label(output_folder_frame, text="출력 폴더:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
         tk.Entry(output_folder_frame, textvariable=self.output_folder_var, bg='white', fg='black',
                 relief=tk.SOLID, borderwidth=1).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-        tk.Button(output_folder_frame, text="Browse", command=self.browse_output_folder,
+        tk.Button(output_folder_frame, text="찾아보기", command=self.browse_output_folder,
                  bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
                  padx=10, cursor='hand2').pack(side=tk.LEFT)
-        tk.Button(output_folder_frame, text="Open folder", command=self.open_output_folder,
+        tk.Button(output_folder_frame, text="폴더 열기", command=self.open_output_folder,
                  bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
                  padx=10, cursor='hand2').pack(side=tk.LEFT, padx=(5, 0))
 
@@ -161,19 +155,19 @@ class CharacterCreatorGUI:
         self.user_char_label.pack(fill=tk.X, pady=(5, 0))
 
         # --- Simplified Registration Flow ---
-        self.reg_frame = reg_frame = tk.LabelFrame(right_pane, text="Register Character",
+        self.reg_frame = reg_frame = tk.LabelFrame(left_pane, text="캐릭터 등록",
                                    font=('Arial', 10, 'bold'), bg='white',
                                    fg='black', padx=10, pady=10)
         reg_frame.pack(fill=tk.X, pady=(0, 10))
 
         # VRM File (top)
-        self.create_path_input(reg_frame, "VRM File:",
+        self.create_path_input(reg_frame, "VRM 파일:",
                               self.vrm_file_var, self.browse_vrm_file)
 
         # Gender
         gender_frame = tk.Frame(reg_frame, bg='white')
         gender_frame.pack(fill=tk.X, pady=5)
-        tk.Label(gender_frame, text="Gender:", width=16, anchor='w',
+        tk.Label(gender_frame, text="성별:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
         ttk.Combobox(gender_frame, textvariable=self.gender_var,
                      values=["Female", "Male"], state='readonly', width=30).pack(side=tk.LEFT, padx=5)
@@ -181,7 +175,7 @@ class CharacterCreatorGUI:
         # Scaling Method (default: Original)
         scaling_frame = tk.Frame(reg_frame, bg='white')
         scaling_frame.pack(fill=tk.X, pady=5)
-        tk.Label(scaling_frame, text="Scaling Method:", width=16, anchor='w',
+        tk.Label(scaling_frame, text="스케일링:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
         ttk.Combobox(scaling_frame, textvariable=self.scaling_method_var,
                      values=["Original", "CineV"], state='readonly', width=30).pack(side=tk.LEFT, padx=5)
@@ -189,7 +183,7 @@ class CharacterCreatorGUI:
         # Model Source (default: VRM)
         source_frame = tk.Frame(reg_frame, bg='white')
         source_frame.pack(fill=tk.X, pady=5)
-        tk.Label(source_frame, text="Model Source:", width=16, anchor='w',
+        tk.Label(source_frame, text="모델 소스:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
         ttk.Combobox(source_frame, textvariable=self.model_source_type_var,
                      values=["None", "VRM", "VRoid", "Zepeto"], state='readonly', width=30).pack(side=tk.LEFT, padx=5)
@@ -197,12 +191,12 @@ class CharacterCreatorGUI:
         # Display Name (auto-filled from VRM filename, 12 char limit)
         name_frame = tk.Frame(reg_frame, bg='white')
         name_frame.pack(fill=tk.X, pady=5)
-        tk.Label(name_frame, text="Display Name:", width=16, anchor='w',
+        tk.Label(name_frame, text="표시 이름:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
         tk.Entry(name_frame, textvariable=self.display_name_var,
                 width=33, bg='white', fg='black',
                 relief=tk.SOLID, borderwidth=1).pack(side=tk.LEFT, padx=5)
-        tk.Label(name_frame, text="(max 12 chars)", bg='white', fg='#999999',
+        tk.Label(name_frame, text="(최대 12자)", bg='white', fg='#999999',
                 font=('Arial', 8)).pack(side=tk.LEFT)
 
         # Register button (unified)
@@ -214,7 +208,7 @@ class CharacterCreatorGUI:
         self.create_btn.pack(pady=10)
 
         # Output Console
-        output_frame = tk.LabelFrame(right_pane, text="Output",
+        output_frame = tk.LabelFrame(left_pane, text="출력",
                                      font=('Arial', 10, 'bold'), bg='white',
                                      fg='black', padx=10, pady=10)
         output_frame.pack(fill=tk.BOTH, expand=True)
@@ -225,24 +219,30 @@ class CharacterCreatorGUI:
                                                      font=('Consolas', 9))
         self.output_text.pack(fill=tk.BOTH, expand=True)
 
+        # === RIGHT PANE: assets.info editor ===
+        right_pane = tk.Frame(columns_frame, bg='white', padx=10)
+        right_pane.grid(row=0, column=1, sticky='nsew')
+
+        self.create_assets_editor(right_pane)
+
         # Tooltips
-        ToolTip(self.create_btn, "Generate JSON, run commandlet, and register to assets.info")
-        ToolTip(self.zen_btn, "Launch Zen Dashboard to check ZenServer status")
-        ToolTip(self.assets_apply_btn, "Save edit form changes to the selected entry")
-        ToolTip(self.assets_delete_btn, "Remove the selected entry from assets.info")
+        ToolTip(self.create_btn, "JSON 생성, 커맨드릿 실행, assets.info 등록")
+        ToolTip(self.zen_btn, "Zen Dashboard를 열어 서버 상태 확인")
+        ToolTip(self.assets_apply_btn, "선택한 항목에 수정사항 저장")
+        ToolTip(self.assets_delete_btn, "선택한 항목을 assets.info에서 삭제")
 
     def toggle_settings(self):
         """Toggle the settings/paths panel visibility"""
         if self.settings_visible:
             self.paths_frame.pack_forget()
             self.settings_visible = False
-            self.settings_btn.config(text="Settings")
+            self.settings_btn.config(text="설정")
         else:
             # Pack before register frame (first packed child of right_pane)
             self.paths_frame.pack(fill=tk.X, pady=(0, 10),
                                   before=self.reg_frame)
             self.settings_visible = True
-            self.settings_btn.config(text="Settings (hide)")
+            self.settings_btn.config(text="설정 (닫기)")
 
     def on_vrm_file_changed(self):
         """Auto-fill display name from VRM filename"""
@@ -400,20 +400,10 @@ class CharacterCreatorGUI:
 
     def create_assets_editor(self, parent):
         """Create the assets.info editor panel"""
-        editor_frame = tk.LabelFrame(parent, text="assets.info Editor",
+        editor_frame = tk.LabelFrame(parent, text="assets.info 편집기",
                                      font=('Arial', 10, 'bold'), bg='white',
                                      fg='black', padx=10, pady=10)
         editor_frame.pack(fill=tk.BOTH, expand=True)
-
-        # Count label + Refresh
-        count_frame = tk.Frame(editor_frame, bg='white')
-        count_frame.pack(fill=tk.X, pady=(0, 5))
-        tk.Button(count_frame, text="Refresh", command=self.assets_load,
-                 bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
-                 padx=8, cursor='hand2', font=('Arial', 8)).pack(side=tk.LEFT)
-        self.assets_count_label = tk.Label(count_frame, text="", bg='white', fg='#666666',
-                                           font=('Arial', 9))
-        self.assets_count_label.pack(side=tk.RIGHT)
 
         # Treeview for entries (3 columns)
         tree_frame = tk.Frame(editor_frame, bg='white')
@@ -422,9 +412,9 @@ class CharacterCreatorGUI:
         columns = ('preset_id', 'character_file', 'category')
         self.assets_tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=15)
 
-        self.assets_tree.heading('preset_id', text='Preset ID')
-        self.assets_tree.heading('character_file', text='Character File')
-        self.assets_tree.heading('category', text='Category')
+        self.assets_tree.heading('preset_id', text='프리셋 ID')
+        self.assets_tree.heading('character_file', text='캐릭터 파일')
+        self.assets_tree.heading('category', text='카테고리')
 
         self.assets_tree.column('preset_id', width=100, minwidth=80)
         self.assets_tree.column('character_file', width=220, minwidth=150)
@@ -440,8 +430,18 @@ class CharacterCreatorGUI:
 
         self.selected_asset_idx = None
 
+        # Count + Refresh (between tree and edit form)
+        count_frame = tk.Frame(editor_frame, bg='white')
+        count_frame.pack(fill=tk.X, pady=(0, 5))
+        self.assets_count_label = tk.Label(count_frame, text="", bg='white', fg='#666666',
+                                           font=('Arial', 9))
+        self.assets_count_label.pack(side=tk.LEFT)
+        tk.Button(count_frame, text="새로고침", command=self.assets_load,
+                 bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
+                 padx=8, cursor='hand2', font=('Arial', 8)).pack(side=tk.RIGHT)
+
         # --- Edit form ---
-        form_frame = tk.LabelFrame(editor_frame, text="Edit Entry",
+        form_frame = tk.LabelFrame(editor_frame, text="항목 편집",
                                    font=('Arial', 9, 'bold'), bg='white',
                                    fg='black', padx=10, pady=10)
         form_frame.pack(fill=tk.X)
@@ -452,9 +452,9 @@ class CharacterCreatorGUI:
         self.asset_category_var = tk.StringVar()
 
         fields = [
-            ("Preset ID:", self.asset_preset_id_var, None),
-            ("CharacterFilePath:", self.asset_char_file_var, None),
-            ("CategoryName:", self.asset_category_var, ["CharacterCategory.VRM"]),
+            ("프리셋 ID:", self.asset_preset_id_var, None),
+            ("캐릭터 파일:", self.asset_char_file_var, None),
+            ("카테고리:", self.asset_category_var, ["CharacterCategory.VRM"]),
         ]
 
         for label_text, var, combo_values in fields:
@@ -472,15 +472,24 @@ class CharacterCreatorGUI:
         # .character metadata fields (read from binary)
         sep = ttk.Separator(form_frame, orient=tk.HORIZONTAL)
         sep.pack(fill=tk.X, pady=(8, 4))
-        tk.Label(form_frame, text=".character metadata", bg='white', fg='#999999',
+        tk.Label(form_frame, text=".character 메타데이터", bg='white', fg='#999999',
                 font=('Arial', 8)).pack(anchor='w')
 
+        self.asset_meta_display_name_var = tk.StringVar()
         self.asset_meta_scaling_var = tk.StringVar()
         self.asset_meta_source_var = tk.StringVar()
 
+        # DisplayName (text entry)
+        dn_row = tk.Frame(form_frame, bg='white')
+        dn_row.pack(fill=tk.X, pady=2)
+        tk.Label(dn_row, text="표시 이름:", width=16, anchor='w',
+                bg='white', fg='black', font=('Arial', 9)).pack(side=tk.LEFT)
+        tk.Entry(dn_row, textvariable=self.asset_meta_display_name_var, bg='white', fg='black',
+                relief=tk.SOLID, borderwidth=1).pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+
         meta_fields = [
-            ("ScalingMethod:", self.asset_meta_scaling_var, ["Original", "CineV"]),
-            ("ModelSourceType:", self.asset_meta_source_var, ["None", "VRM", "VRoid", "Zepeto"]),
+            ("스케일링:", self.asset_meta_scaling_var, ["Original", "CineV"]),
+            ("모델 소스:", self.asset_meta_source_var, ["None", "VRM", "VRoid", "Zepeto"]),
         ]
 
         for label_text, var, combo_values in meta_fields:
@@ -494,16 +503,17 @@ class CharacterCreatorGUI:
         # Buttons row
         btn_row = tk.Frame(form_frame, bg='white')
         btn_row.pack(pady=(10, 5))
-        self.assets_apply_btn = tk.Button(btn_row, text="Apply Changes", command=self.assets_apply_changes,
+        self.assets_apply_btn = tk.Button(btn_row, text="변경사항 적용", command=self.assets_apply_changes,
                  bg='#0066CC', fg='white', relief=tk.FLAT,
                  padx=20, pady=5, font=('Arial', 9, 'bold'),
                  cursor='hand2', state=tk.DISABLED)
         self.assets_apply_btn.pack(side=tk.LEFT, padx=5)
-        self.assets_delete_btn = tk.Button(btn_row, text="Delete entry", command=self.assets_delete_entry,
+        self.assets_delete_btn = tk.Button(btn_row, text="항목 삭제", command=self.assets_delete_entry,
                  bg='#CC0000', fg='white', relief=tk.FLAT,
                  padx=20, pady=5, font=('Arial', 9, 'bold'),
                  cursor='hand2', state=tk.DISABLED)
         self.assets_delete_btn.pack(side=tk.LEFT, padx=5)
+
 
     def get_assets_info_path(self):
         """Get the assets.info file path"""
@@ -526,7 +536,7 @@ class CharacterCreatorGUI:
             with open(path, 'r', encoding='utf-8') as f:
                 self.assets_data = json.load(f)
             self.assets_refresh_tree()
-            self.log_output(f"Loaded assets.info: {len(self.assets_data)} entries")
+            self.log_output(f"Loaded assets.info: {len(self.assets_data)} 개")
         except Exception as e:
             self.log_output(f"Error loading assets.info: {str(e)}")
             messagebox.showerror("Error", "Failed to load assets.info. Check the output console for details.")
@@ -541,9 +551,9 @@ class CharacterCreatorGUI:
                 json.dump(self.assets_data, f, indent=2, ensure_ascii=False)
             self.log_output(f"Auto-saved assets.info ({len(self.assets_data)} entries)")
             # Flash count label to confirm save
-            self.assets_count_label.config(text="Saved", fg='#00AA00')
+            self.assets_count_label.config(text="저장됨", fg='#00AA00')
             self.root.after(2000, lambda: self.assets_count_label.config(
-                text=f"{len(self.assets_data)} entries", fg='#666666'))
+                text=f"{len(self.assets_data)} 개", fg='#666666'))
         except Exception as e:
             self.log_output(f"Auto-save failed: {str(e)}")
 
@@ -557,7 +567,7 @@ class CharacterCreatorGUI:
         try:
             with open(path, 'w', encoding='utf-8') as f:
                 json.dump(self.assets_data, f, indent=2, ensure_ascii=False)
-            self.log_output(f"Saved assets.info: {len(self.assets_data)} entries")
+            self.log_output(f"Saved assets.info: {len(self.assets_data)} 개")
             messagebox.showinfo("Success", f"assets.info saved!\n{path}")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save assets.info:\n{str(e)}")
@@ -573,12 +583,12 @@ class CharacterCreatorGUI:
                 entry.get('CharacterFilePath', ''),
                 entry.get('CategoryName', ''),
             ))
-        self.assets_count_label.config(text=f"{len(self.assets_data)} entries")
+        self.assets_count_label.config(text=f"{len(self.assets_data)} 개")
 
         # Empty state guidance
         if not self.assets_data:
             self.assets_tree.insert('', tk.END, iid='empty_placeholder', values=(
-                '', 'No entries yet.', ''
+                '', '항목 없음', ''
             ))
             self.assets_apply_btn.config(state=tk.DISABLED)
             self.assets_delete_btn.config(state=tk.DISABLED)
@@ -652,6 +662,7 @@ class CharacterCreatorGUI:
         self.asset_category_var.set(entry.get('CategoryName', ''))
 
         # Read .character metadata
+        self.asset_meta_display_name_var.set('')
         self.asset_meta_scaling_var.set('')
         self.asset_meta_source_var.set('')
         char_path = self._get_character_file_path(entry.get('CharacterFilePath', ''))
@@ -659,6 +670,7 @@ class CharacterCreatorGUI:
             try:
                 meta = self.read_character_metadata(char_path)
                 if meta:
+                    self.asset_meta_display_name_var.set(meta.get('displayName', meta.get('DisplayName', '')))
                     self.asset_meta_scaling_var.set(meta.get('scalingMethod', meta.get('ScalingMethod', '')))
                     self.asset_meta_source_var.set(meta.get('modelSourceType', meta.get('ModelSourceType', '')))
             except Exception as e:
@@ -682,11 +694,14 @@ class CharacterCreatorGUI:
         # Write .character metadata if file exists
         char_path = self._get_character_file_path(self.asset_char_file_var.get())
         if char_path:
+            display_name = self.asset_meta_display_name_var.get()
             scaling = self.asset_meta_scaling_var.get()
             source = self.asset_meta_source_var.get()
-            if scaling or source:
+            if display_name or scaling or source:
                 try:
                     updates = {}
+                    if display_name:
+                        updates['displayName'] = display_name
                     if scaling:
                         updates['scalingMethod'] = scaling
                     if source:
@@ -749,7 +764,7 @@ class CharacterCreatorGUI:
                        relief=tk.SOLID, borderwidth=1)
         entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
 
-        tk.Button(frame, text="Browse", command=browse_command,
+        tk.Button(frame, text="찾아보기", command=browse_command,
                  bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
                  padx=10, cursor='hand2').pack(side=tk.LEFT)
 
@@ -843,7 +858,7 @@ class CharacterCreatorGUI:
                     text=f"Files will be saved to: {folder}",
                     fg='#666666'
                 )
-            # Update summary label (visible when settings collapsed)
+            # Update summary label
             self.user_char_summary_label.config(text=f"UserCharacter: {folder}")
         else:
             self.user_char_label.config(text="", fg='#666666')
