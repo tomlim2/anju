@@ -51,6 +51,8 @@ class CharacterCreatorGUI:
         self.ue_dir_var = tk.StringVar()
         self.project_file_var = tk.StringVar()
         self.output_folder_var = tk.StringVar()
+        self.pending_vrm_files = []
+        self._cancel_bulk = False
 
         # Settings panel toggle state
         self.settings_visible = False
@@ -63,10 +65,13 @@ class CharacterCreatorGUI:
         # Load saved configuration (after widgets are created)
         self.load_config()
 
-        # Add trace to auto-save when config changes
-        self.ue_dir_var.trace_add('write', lambda *args: self.save_config())
-        self.project_file_var.trace_add('write', lambda *args: self.save_config())
-        self.output_folder_var.trace_add('write', lambda *args: self.save_config())
+        # Add trace to auto-save and validate when config changes
+        self.ue_dir_var.trace_add('write', lambda *args: (self.save_config(), self._validate_paths_ui()))
+        self.project_file_var.trace_add('write', lambda *args: (self.save_config(), self._validate_paths_ui()))
+        self.output_folder_var.trace_add('write', lambda *args: (self.save_config(), self._validate_paths_ui()))
+
+        # Initial path validation
+        self._validate_paths_ui()
 
 
         # Key bindings
@@ -122,15 +127,16 @@ class CharacterCreatorGUI:
                                     fg='black', padx=10, pady=10)
         # Hidden by default - don't pack
 
-        self.create_path_input(self.paths_frame, "UE_CINEV 경로:",
+        self.ue_dir_label = self.create_path_input(self.paths_frame, "UE_CINEV 경로:",
                               self.ue_dir_var, self.browse_ue_directory)
-        self.create_path_input(self.paths_frame, "프로젝트 파일:",
+        self.project_file_label = self.create_path_input(self.paths_frame, "프로젝트 파일:",
                               self.project_file_var, self.browse_project_file)
         # Output Folder with Open button
         output_folder_frame = tk.Frame(self.paths_frame, bg='white')
         output_folder_frame.pack(fill=tk.X, pady=5)
-        tk.Label(output_folder_frame, text="출력 폴더:", width=16, anchor='w',
-                bg='white', fg='black').pack(side=tk.LEFT)
+        self.output_folder_label = tk.Label(output_folder_frame, text="출력 폴더:", width=16, anchor='w',
+                bg='white', fg='black')
+        self.output_folder_label.pack(side=tk.LEFT)
         tk.Entry(output_folder_frame, textvariable=self.output_folder_var, bg='white', fg='black',
                 relief=tk.SOLID, borderwidth=1).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
         tk.Button(output_folder_frame, text="찾아보기", command=self.browse_output_folder,
@@ -203,8 +209,8 @@ class CharacterCreatorGUI:
         # Register button
         self.bulk_btn = tk.Button(reg_frame, text="assets.info에 등록",
                  command=self.bulk_register, bg='#0066CC',
-                 fg='white', relief=tk.FLAT,
-                 font=('Arial', 11, 'bold'),
+                 fg='white', disabledforeground='#AAAAAA',
+                 relief=tk.FLAT, font=('Arial', 11, 'bold'),
                  padx=30, pady=10, cursor='hand2')
         self.bulk_btn.pack(pady=(8, 5))
 
@@ -270,6 +276,9 @@ class CharacterCreatorGUI:
         sel = list(self.vrm_listbox.curselection())
         if not sel:
             return
+        if len(sel) >= 2:
+            if not messagebox.askyesno("제거 확인", f"{len(sel)}개 파일을 목록에서 제거하시겠습니까?"):
+                return
         for i in reversed(sel):
             self.vrm_listbox.delete(i)
             self.pending_vrm_files.pop(i)
@@ -303,13 +312,21 @@ class CharacterCreatorGUI:
         if not self.warn_if_zen_not_running():
             return
 
-        # Disable button and run in thread
-        self.bulk_btn.config(state=tk.DISABLED, text="실행 중...")
+        # Switch to cancel mode and run in thread
+        self._cancel_bulk = False
+        self.bulk_btn.config(text="취소", bg='#CC0000',
+                             command=self._cancel_bulk_register)
         self.output_text.delete(1.0, tk.END)
 
         thread = threading.Thread(target=self._bulk_register_thread)
         thread.daemon = True
         thread.start()
+
+    def _cancel_bulk_register(self):
+        """Request cancellation of bulk registration"""
+        self._cancel_bulk = True
+        self.bulk_btn.config(state=tk.DISABLED, text="취소 중...")
+        self.log_output("\n=== 취소 요청됨, 현재 작업 완료 후 중단합니다 ===")
 
     def _bulk_register_thread(self):
         """Background thread: build once, then per VRM: JSON → commandlet → verify → add entry"""
@@ -350,6 +367,10 @@ class CharacterCreatorGUI:
             total = len(self.pending_vrm_files)
 
             for i, vrm_path in enumerate(self.pending_vrm_files):
+                if self._cancel_bulk:
+                    self.log_output(f"\n=== 취소됨 ({added}개 등록, {total - i}개 건너뜀) ===")
+                    break
+
                 stem = os.path.splitext(os.path.basename(vrm_path))[0]
                 display_name = stem[:12]
 
@@ -443,7 +464,11 @@ class CharacterCreatorGUI:
 
         finally:
             self.restore_commandlet_source()
-            self.root.after(0, lambda: self.bulk_btn.config(state=tk.NORMAL, text="assets.info에 등록"))
+            def restore_btn():
+                self.bulk_btn.config(text="assets.info에 등록", bg='#0066CC',
+                                     command=self.bulk_register)
+                self._validate_paths_ui()
+            self.root.after(0, restore_btn)
 
     def create_assets_editor(self, parent):
         """Create the assets.info editor panel"""
@@ -570,20 +595,20 @@ class CharacterCreatorGUI:
         """Load assets.info file"""
         path = self.get_assets_info_path()
         if not path:
-            messagebox.showerror("Error", "Set Project File first to locate UserCharacter folder")
+            messagebox.showerror("오류", "프로젝트 파일을 먼저 설정하세요.")
             return
         if not os.path.exists(path):
-            messagebox.showerror("Error", f"assets.info not found:\n{path}")
+            messagebox.showerror("오류", f"assets.info를 찾을 수 없습니다:\n{path}")
             return
 
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 self.assets_data = json.load(f)
             self.assets_refresh_tree()
-            self.log_output(f"Loaded assets.info: {len(self.assets_data)} 개")
+            self.log_output(f"assets.info 로드: {len(self.assets_data)} 개")
         except Exception as e:
-            self.log_output(f"Error loading assets.info: {str(e)}")
-            messagebox.showerror("Error", "Failed to load assets.info. Check the output console for details.")
+            self.log_output(f"assets.info 로드 실패: {str(e)}")
+            messagebox.showerror("오류", "assets.info 로드에 실패했습니다. 출력 콘솔을 확인하세요.")
 
     def assets_auto_save(self):
         """Auto-save assets.info after any change"""
@@ -593,28 +618,28 @@ class CharacterCreatorGUI:
         try:
             with open(path, 'w', encoding='utf-8') as f:
                 json.dump(self.assets_data, f, indent=2, ensure_ascii=False)
-            self.log_output(f"Auto-saved assets.info ({len(self.assets_data)} entries)")
+            self.log_output(f"assets.info 자동 저장 ({len(self.assets_data)}개)")
             # Flash count label to confirm save
             self.assets_count_label.config(text="저장됨", fg='#00AA00')
             self.root.after(2000, lambda: self.assets_count_label.config(
                 text=f"{len(self.assets_data)} 개", fg='#666666'))
         except Exception as e:
-            self.log_output(f"Auto-save failed: {str(e)}")
+            self.log_output(f"자동 저장 실패: {str(e)}")
 
     def assets_save(self):
         """Save assets.info file"""
         path = self.get_assets_info_path()
         if not path:
-            messagebox.showerror("Error", "Set Project File first to locate UserCharacter folder")
+            messagebox.showerror("오류", "프로젝트 파일을 먼저 설정하세요.")
             return
 
         try:
             with open(path, 'w', encoding='utf-8') as f:
                 json.dump(self.assets_data, f, indent=2, ensure_ascii=False)
-            self.log_output(f"Saved assets.info: {len(self.assets_data)} 개")
-            messagebox.showinfo("Success", f"assets.info saved!\n{path}")
+            self.log_output(f"assets.info 저장: {len(self.assets_data)} 개")
+            messagebox.showinfo("완료", f"assets.info 저장 완료!\n{path}")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to save assets.info:\n{str(e)}")
+            messagebox.showerror("오류", f"assets.info 저장 실패:\n{str(e)}")
 
     def assets_refresh_tree(self):
         """Refresh the treeview with current data"""
@@ -635,7 +660,7 @@ class CharacterCreatorGUI:
         # Empty state guidance
         if not self.assets_data:
             self.assets_tree.insert('', tk.END, iid='empty_placeholder', values=(
-                '', '항목 없음', ''
+                '', '항목 없음', '', '', '', ''
             ))
             self.assets_apply_btn.config(state=tk.DISABLED)
             self.assets_delete_btn.config(state=tk.DISABLED)
@@ -788,7 +813,7 @@ class CharacterCreatorGUI:
     def assets_apply_changes(self):
         """Apply edit form changes to selected entry + write .character metadata"""
         if self.selected_asset_idx is None:
-            messagebox.showwarning("Warning", "Select an entry first")
+            messagebox.showwarning("경고", "항목을 먼저 선택하세요.")
             return
         idx = self.selected_asset_idx
 
@@ -902,8 +927,9 @@ class CharacterCreatorGUI:
         frame = tk.Frame(parent, bg='white')
         frame.pack(fill=tk.X, pady=5)
 
-        tk.Label(frame, text=label_text, width=16, anchor='w',
-                bg='white', fg='black').pack(side=tk.LEFT)
+        label = tk.Label(frame, text=label_text, width=16, anchor='w',
+                bg='white', fg='black')
+        label.pack(side=tk.LEFT)
 
         entry = tk.Entry(frame, textvariable=var, bg='white', fg='black',
                        relief=tk.SOLID, borderwidth=1)
@@ -912,6 +938,8 @@ class CharacterCreatorGUI:
         tk.Button(frame, text="찾아보기", command=browse_command,
                  bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
                  padx=10, cursor='hand2').pack(side=tk.LEFT)
+
+        return label
 
     def load_config(self):
         """Load saved configuration from file"""
@@ -952,6 +980,37 @@ class CharacterCreatorGUI:
         except Exception as e:
             print(f"Error saving config: {e}")
 
+    def _validate_paths_ui(self):
+        """Check if all required paths are set and update UI accordingly"""
+        ue_dir = self.ue_dir_var.get()
+        project_file = self.project_file_var.get()
+        output_folder = self.output_folder_var.get()
+
+        # Validate each path individually
+        ue_ok = bool(ue_dir) and os.path.exists(ue_dir)
+        if ue_ok:
+            exe = os.path.join(ue_dir, "Engine", "Binaries", "Win64", "UnrealEditor-Cmd.exe")
+            ue_ok = os.path.exists(exe)
+        proj_ok = bool(project_file) and os.path.exists(project_file)
+        out_ok = bool(output_folder)
+
+        # Update label colors
+        self.ue_dir_label.config(fg='black' if ue_ok else '#CC0000')
+        self.project_file_label.config(fg='black' if proj_ok else '#CC0000')
+        self.output_folder_label.config(fg='black' if out_ok else '#CC0000')
+
+        valid = ue_ok and proj_ok and out_ok
+        if valid:
+            self.bulk_btn.config(state=tk.NORMAL)
+            self.user_char_summary_label.config(
+                text=f"UserCharacter: {self.get_user_character_folder() or ''}",
+                fg='#666666')
+        else:
+            self.bulk_btn.config(state=tk.DISABLED)
+            self.user_char_summary_label.config(
+                text="설정에서 경로를 입력해주세요",
+                fg='#CC0000')
+
     def browse_ue_directory(self):
         directory = filedialog.askdirectory(title="Select UE_CINEV Directory")
         if directory:
@@ -990,17 +1049,17 @@ class CharacterCreatorGUI:
                 try:
                     os.makedirs(folder, exist_ok=True)
                     self.user_char_label.config(
-                        text=f"Files will be saved to: {folder} (folder created)",
+                        text=f"저장 경로: {folder} (폴더 생성됨)",
                         fg='#00AA00'
                     )
-                except:
+                except Exception:
                     self.user_char_label.config(
-                        text=f"UserCharacter folder: {folder} (cannot create)",
+                        text=f"폴더 생성 불가: {folder}",
                         fg='#CC0000'
                     )
             else:
                 self.user_char_label.config(
-                    text=f"Files will be saved to: {folder}",
+                    text=f"저장 경로: {folder}",
                     fg='#666666'
                 )
             # Update summary label
@@ -1018,11 +1077,11 @@ class CharacterCreatorGUI:
         """Open output folder in Explorer"""
         folder = self.output_folder_var.get()
         if not folder:
-            messagebox.showwarning("Warning", "Output Folder is not set")
+            messagebox.showwarning("경고", "출력 폴더가 설정되지 않았습니다.")
             return
         folder = os.path.normpath(folder)
         if not os.path.exists(folder):
-            messagebox.showwarning("Warning", f"Folder does not exist:\n{folder}")
+            messagebox.showwarning("경고", f"폴더가 존재하지 않습니다:\n{folder}")
             return
         os.startfile(folder)
 
@@ -1045,9 +1104,9 @@ class CharacterCreatorGUI:
         if self.is_zen_server_running():
             return True
         messagebox.showerror(
-            "ZenServer Not Running",
-            "ZenServer (port 8558) is not running.\n"
-            "Start ZenServer first before running the commandlet."
+            "ZenServer 미실행",
+            "ZenServer (포트 8558)가 실행되고 있지 않습니다.\n"
+            "커맨드렛 실행 전 ZenServer를 먼저 시작하세요."
         )
         return False
 
@@ -1098,20 +1157,20 @@ class CharacterCreatorGUI:
     def start_zen_dashboard(self):
         """Start ZenDashboard"""
         if not self.ue_dir_var.get():
-            messagebox.showerror("Error", "UE_CINEV Directory is required")
+            messagebox.showerror("오류", "UE_CINEV 경로가 설정되지 않았습니다.")
             return
 
         zen_exe = os.path.normpath(os.path.join(self.ue_dir_var.get(), "Engine", "Binaries", "Win64", "ZenDashboard.exe"))
 
         if not os.path.exists(zen_exe):
-            messagebox.showerror("Error", f"ZenDashboard.exe not found at:\n{zen_exe}")
+            messagebox.showerror("오류", f"ZenDashboard.exe를 찾을 수 없습니다:\n{zen_exe}")
             return
 
         try:
             subprocess.Popen(zen_exe)
-            self.log_output(f"Started ZenDashboard: {zen_exe}")
+            self.log_output(f"ZenDashboard 실행: {zen_exe}")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to start ZenDashboard:\n{str(e)}")
+            messagebox.showerror("오류", f"ZenDashboard 실행 실패:\n{str(e)}")
 
 
 if __name__ == "__main__":
