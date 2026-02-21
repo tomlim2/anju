@@ -1255,10 +1255,8 @@ class CharacterCreatorGUI:
         if not self.warn_if_zen_not_running():
             return
 
-        # Disable buttons
+        # Disable button
         self.build_and_create_btn.config(state=tk.DISABLED, text="BUILDING...")
-        self.execute_btn.config(state=tk.DISABLED)
-        self.build_btn.config(state=tk.DISABLED)
         self.output_text.delete(1.0, tk.END)
 
         # Run in thread
@@ -1349,8 +1347,6 @@ class CharacterCreatorGUI:
         finally:
             self.restore_commandlet_source()
             self.root.after(0, lambda: self.build_and_create_btn.config(state=tk.NORMAL, text="Build & Create"))
-            self.root.after(0, lambda: self.execute_btn.config(state=tk.NORMAL))
-            self.root.after(0, lambda: self.build_btn.config(state=tk.NORMAL))
 
 
 if __name__ == "__main__":
