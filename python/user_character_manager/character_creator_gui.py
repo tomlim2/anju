@@ -385,19 +385,10 @@ class CharacterCreatorGUI:
                     "ScalingMethod": scaling,
                     "ModelSourceType": source
                 }
-                json_file = os.path.join(user_char_folder, f"{display_name}_{timestamp}.json")
+                json_file = os.path.join(output_folder, f"{display_name}_{timestamp}.json")
                 with open(json_file, 'w', encoding='utf-8') as f:
                     json.dump(json_data, f, indent=2)
                 self.log_output(f"  1) JSON 생성: {os.path.basename(json_file)}")
-
-                # Move VRM to UserCharacter folder if needed
-                vrm_dir = os.path.dirname(vrm_path)
-                if os.path.normpath(vrm_dir) != os.path.normpath(user_char_folder):
-                    vrm_dest = os.path.join(user_char_folder, os.path.basename(vrm_path))
-                    if not os.path.exists(vrm_dest):
-                        shutil.copy2(vrm_path, vrm_dest)
-                        self.log_output(f"     VRM 복사: {os.path.basename(vrm_path)}")
-                    vrm_path = vrm_dest
 
                 # --- Step 2: 커맨드렛 실행 ---
                 # Snapshot output folder before commandlet
@@ -417,11 +408,25 @@ class CharacterCreatorGUI:
                 new_characters = [f for f in new_files if f.endswith('.character')]
                 new_thumbnails = [f for f in new_files if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
 
+                thumb_file = ""
                 if new_characters:
                     char_file = new_characters[0]
-                    self.log_output(f"  3) 캐릭터 생성됨: {char_file}")
-                    if new_thumbnails:
-                        self.log_output(f"     썸네일 생성됨: {', '.join(new_thumbnails)}")
+                    # .character를 UserCharacter 폴더로 이동
+                    src = os.path.join(output_folder, char_file)
+                    dst = os.path.join(user_char_folder, char_file)
+                    shutil.move(src, dst)
+                    self.log_output(f"  3) 캐릭터 이동: {char_file} → UserCharacter/")
+                    # thumb_{name}_01.png만 이동
+                    char_stem = os.path.splitext(char_file)[0]
+                    thumb_name = f"thumb_{char_stem}_01.png"
+                    thumb_src = os.path.join(output_folder, thumb_name)
+                    if os.path.exists(thumb_src):
+                        thumb_dst = os.path.join(user_char_folder, thumb_name)
+                        shutil.move(thumb_src, thumb_dst)
+                        thumb_file = thumb_name
+                        self.log_output(f"     썸네일 이동: {thumb_name}")
+                    else:
+                        self.log_output(f"     썸네일 없음: {thumb_name}")
                 else:
                     # Fallback: use display_name
                     char_file = f"{display_name}.character"
@@ -435,7 +440,7 @@ class CharacterCreatorGUI:
                     "DisplayName": display_name,
                     "CharacterFilePath": char_file,
                     "CategoryName": "CharacterCategory.VRM",
-                    "ThumbnailFileName": f"{preset_id}.png"
+                    "ThumbnailFileName": thumb_file
                 }
                 self.assets_data.insert(0, new_entry)
                 added += 1
