@@ -48,13 +48,8 @@ class CharacterCreatorGUI:
 
         # Variables
         self.gender_var = tk.StringVar(value="Female")
-        self.scaling_method_var = tk.StringVar(value="Original")
-        self.model_source_type_var = tk.StringVar(value="VRM")
-        self.display_name_var = tk.StringVar()
         self.ue_dir_var = tk.StringVar()
         self.project_file_var = tk.StringVar()
-        self.json_file_var = tk.StringVar()
-        self.vrm_file_var = tk.StringVar()
         self.output_folder_var = tk.StringVar()
 
         # Settings panel toggle state
@@ -73,8 +68,6 @@ class CharacterCreatorGUI:
         self.project_file_var.trace_add('write', lambda *args: self.save_config())
         self.output_folder_var.trace_add('write', lambda *args: self.save_config())
 
-        # Auto-fill display name when VRM file changes
-        self.vrm_file_var.trace_add('write', lambda *args: self.on_vrm_file_changed())
 
         # Key bindings
         self.root.bind('<Escape>', lambda e: self.root.focus_set())
@@ -154,58 +147,62 @@ class CharacterCreatorGUI:
                                         relief=tk.SOLID, borderwidth=1, padx=5, pady=5)
         self.user_char_label.pack(fill=tk.X, pady=(5, 0))
 
-        # --- Simplified Registration Flow ---
-        self.reg_frame = reg_frame = tk.LabelFrame(left_pane, text="캐릭터 등록",
+        # --- Bulk Registration ---
+        self.reg_frame = reg_frame = tk.LabelFrame(left_pane, text="일괄 등록",
                                    font=('Arial', 10, 'bold'), bg='white',
                                    fg='black', padx=10, pady=10)
         reg_frame.pack(fill=tk.X, pady=(0, 10))
 
-        # VRM File (top)
-        self.create_path_input(reg_frame, "VRM 파일:",
-                              self.vrm_file_var, self.browse_vrm_file)
+        # VRM file selection
+        pick_frame = tk.Frame(reg_frame, bg='white')
+        pick_frame.pack(fill=tk.X, pady=(0, 5))
+        tk.Button(pick_frame, text="VRM 파일 선택",
+                 command=self.pick_vrm_files, bg='white', fg='black',
+                 relief=tk.SOLID, borderwidth=1, padx=10, cursor='hand2',
+                 font=('Arial', 9)).pack(side=tk.LEFT)
+        self.vrm_count_label = tk.Label(pick_frame, text="선택된 파일 없음",
+                                         bg='white', fg='#999999', font=('Arial', 9))
+        self.vrm_count_label.pack(side=tk.LEFT, padx=(10, 0))
+
+        # Selected files list
+        self.vrm_listbox = tk.Listbox(reg_frame, height=5, bg='white', fg='black',
+                                       relief=tk.SOLID, borderwidth=1,
+                                       font=('Consolas', 9), selectmode=tk.EXTENDED)
+        self.vrm_listbox.pack(fill=tk.X, pady=(0, 5))
 
         # Gender
         gender_frame = tk.Frame(reg_frame, bg='white')
-        gender_frame.pack(fill=tk.X, pady=5)
+        gender_frame.pack(fill=tk.X, pady=3)
         tk.Label(gender_frame, text="성별:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
         ttk.Combobox(gender_frame, textvariable=self.gender_var,
                      values=["Female", "Male"], state='readonly', width=30).pack(side=tk.LEFT, padx=5)
 
-        # Scaling Method (default: Original)
+        # Scaling Method
         scaling_frame = tk.Frame(reg_frame, bg='white')
-        scaling_frame.pack(fill=tk.X, pady=5)
+        scaling_frame.pack(fill=tk.X, pady=3)
         tk.Label(scaling_frame, text="스케일링:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
+        self.scaling_method_var = tk.StringVar(value="Original")
         ttk.Combobox(scaling_frame, textvariable=self.scaling_method_var,
                      values=["Original", "CineV"], state='readonly', width=30).pack(side=tk.LEFT, padx=5)
 
-        # Model Source (default: VRM)
+        # Model Source
         source_frame = tk.Frame(reg_frame, bg='white')
-        source_frame.pack(fill=tk.X, pady=5)
+        source_frame.pack(fill=tk.X, pady=3)
         tk.Label(source_frame, text="모델 소스:", width=16, anchor='w',
                 bg='white', fg='black').pack(side=tk.LEFT)
-        ttk.Combobox(source_frame, textvariable=self.model_source_type_var,
+        self.model_source_var = tk.StringVar(value="VRM")
+        ttk.Combobox(source_frame, textvariable=self.model_source_var,
                      values=["None", "VRM", "VRoid", "Zepeto"], state='readonly', width=30).pack(side=tk.LEFT, padx=5)
 
-        # Display Name (auto-filled from VRM filename, 12 char limit)
-        name_frame = tk.Frame(reg_frame, bg='white')
-        name_frame.pack(fill=tk.X, pady=5)
-        tk.Label(name_frame, text="표시 이름:", width=16, anchor='w',
-                bg='white', fg='black').pack(side=tk.LEFT)
-        tk.Entry(name_frame, textvariable=self.display_name_var,
-                width=33, bg='white', fg='black',
-                relief=tk.SOLID, borderwidth=1).pack(side=tk.LEFT, padx=5)
-        tk.Label(name_frame, text="(최대 12자)", bg='white', fg='#999999',
-                font=('Arial', 8)).pack(side=tk.LEFT)
-
-        # Register button (unified)
-        self.create_btn = tk.Button(reg_frame, text="assets.info에 등록",
-                 command=self.create_character_unified, bg='#0066CC',
+        # Register button
+        self.bulk_btn = tk.Button(reg_frame, text="assets.info에 등록",
+                 command=self.bulk_register, bg='#0066CC',
                  fg='white', relief=tk.FLAT,
                  font=('Arial', 11, 'bold'),
                  padx=30, pady=10, cursor='hand2')
-        self.create_btn.pack(pady=10)
+        self.bulk_btn.pack(pady=(8, 5))
 
         # Output Console
         output_frame = tk.LabelFrame(left_pane, text="출력",
@@ -226,7 +223,7 @@ class CharacterCreatorGUI:
         self.create_assets_editor(right_pane)
 
         # Tooltips
-        ToolTip(self.create_btn, "JSON 생성, 커맨드릿 실행, assets.info 등록")
+        ToolTip(self.bulk_btn, "VRM 파일 여러 개 선택하여 assets.info에 일괄 등록")
         ToolTip(self.zen_btn, "Zen Dashboard를 열어 서버 상태 확인")
         ToolTip(self.assets_apply_btn, "선택한 항목에 수정사항 저장")
         ToolTip(self.assets_delete_btn, "선택한 항목을 assets.info에서 삭제")
@@ -244,159 +241,58 @@ class CharacterCreatorGUI:
             self.settings_visible = True
             self.settings_btn.config(text="설정 (닫기)")
 
-    def on_vrm_file_changed(self):
-        """Auto-fill display name from VRM filename"""
-        vrm_path = self.vrm_file_var.get()
-        if vrm_path:
-            stem = os.path.splitext(os.path.basename(vrm_path))[0]
-            name = stem[:12]
-            self.display_name_var.set(name)
+    def pick_vrm_files(self):
+        """Select multiple VRM files and show them in the list"""
+        user_char_folder = self.get_user_character_folder()
+        initial_dir = user_char_folder if user_char_folder and os.path.exists(user_char_folder) else None
 
-    def create_character_unified(self):
-        """Unified create: generate JSON + run commandlet + register to assets.info"""
-        # Validate display name
-        display_name = self.display_name_var.get().strip()
-        if not display_name:
-            messagebox.showerror("Error", "Display Name is required")
+        filenames = filedialog.askopenfilenames(
+            title="VRM 파일 선택 (여러 개 가능)",
+            initialdir=initial_dir,
+            filetypes=[("VRM Files", "*.vrm"), ("All Files", "*.*")]
+        )
+        if not filenames:
             return
 
-        # Validate paths
-        errors = self.validate_paths()
-        if errors:
-            messagebox.showerror("Validation Error", "\n".join(errors))
+        self.pending_vrm_files = [os.path.normpath(f) for f in filenames]
+        self.vrm_listbox.delete(0, tk.END)
+        for f in self.pending_vrm_files:
+            stem = os.path.splitext(os.path.basename(f))[0]
+            self.vrm_listbox.insert(tk.END, f"{stem[:12]}  ←  {os.path.basename(f)}")
+        self.vrm_count_label.config(text=f"{len(self.pending_vrm_files)}개 선택됨", fg='black')
+
+    def bulk_register(self):
+        """Register selected VRM files to assets.info"""
+        if not hasattr(self, 'pending_vrm_files') or not self.pending_vrm_files:
+            messagebox.showwarning("경고", "먼저 VRM 파일을 선택하세요.")
             return
 
-        if not self.warn_if_zen_not_running():
-            return
-
-        # Step 1: Generate JSON
         self.output_text.delete(1.0, tk.END)
-        self.log_output("=== Step 1: Generate JSON ===")
+        added = 0
 
-        gender = self.gender_var.get()
-        scaling_method = self.scaling_method_var.get()
-        model_source_type = self.model_source_type_var.get()
+        for vrm_path in self.pending_vrm_files:
+            stem = os.path.splitext(os.path.basename(vrm_path))[0]
+            display_name = stem[:12]
 
-        json_data = {
-            "Gender": gender,
-            "DisplayName": display_name,
-            "ScalingMethod": scaling_method,
-            "ModelSourceType": model_source_type
-        }
+            new_entry = {
+                "Preset_id": str(uuid.uuid4()),
+                "CharacterFilePath": f"{display_name}.character",
+                "CategoryName": "CharacterCategory.VRM"
+            }
+            self.assets_data.append(new_entry)
+            added += 1
+            self.log_output(f"등록: {display_name} ({os.path.basename(vrm_path)})")
 
-        output_folder = os.path.normpath(self.output_folder_var.get())
-        if not os.path.exists(output_folder):
-            try:
-                os.makedirs(output_folder, exist_ok=True)
-            except Exception as e:
-                messagebox.showerror("Error", f"Cannot create output folder: {str(e)}")
-                return
+        self.assets_refresh_tree()
+        self.assets_auto_save()
+        self.log_output(f"\n총 {added}개 등록 완료")
 
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        json_filename = os.path.join(output_folder, f"{display_name}_{timestamp}.json")
+        # Clear selection
+        self.pending_vrm_files = []
+        self.vrm_listbox.delete(0, tk.END)
+        self.vrm_count_label.config(text="선택된 파일 없음", fg='#999999')
 
-        try:
-            with open(json_filename, 'w', encoding='utf-8') as f:
-                json.dump(json_data, f, indent=2)
-            self.json_file_var.set(json_filename)
-            self.log_output(f"JSON saved: {json_filename}")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to save JSON: {str(e)}")
-            return
-
-        # Step 2: Run commandlet
-        self.log_output("\n=== Step 2: Build & Run Commandlet ===")
-        self.create_btn.config(state=tk.DISABLED, text="등록 중...")
-
-        # Store timestamp and display_name for assets registration after commandlet
-        self._pending_timestamp = timestamp
-        self._pending_display_name = display_name
-
-        thread = threading.Thread(target=self._run_unified_commandlet)
-        thread.daemon = True
-        thread.start()
-
-    def _run_unified_commandlet(self):
-        """Run build + commandlet, then register to assets.info"""
-        try:
-            # Patch source before build
-            self.patch_commandlet_source()
-
-            build_bat = os.path.normpath(os.path.join(self.ue_dir_var.get(), "Engine", "Build", "BatchFiles", "Build.bat"))
-            project_file = os.path.normpath(self.project_file_var.get())
-
-            if os.path.exists(build_bat):
-                inner_cmd = f'"{build_bat}" CINEVStudioEditor Win64 Development -Project="{project_file}" -WaitMutex'
-                self.log_output(inner_cmd)
-                self.log_output("")
-
-                process = subprocess.Popen(inner_cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
-                self.log_output("Build started (see console window)")
-                process.wait()
-
-                if process.returncode != 0:
-                    self.log_output(f"Build failed with code {process.returncode}")
-                    self.root.after(0, lambda: messagebox.showwarning("Build Failed", f"Build exited with code {process.returncode}"))
-                    return
-                self.log_output("Build succeeded\n")
-
-            # Move files to UserCharacter folder if needed
-            try:
-                self.move_files_to_user_character_folder()
-            except Exception as e:
-                self.log_output(f"Error moving files: {str(e)}")
-                self.root.after(0, lambda: messagebox.showerror("Error", f"Failed to move files:\n{str(e)}"))
-                return
-
-            # Run commandlet
-            exe_path = os.path.normpath(os.path.join(self.ue_dir_var.get(), "Engine", "Binaries", "Win64", "UnrealEditor-Cmd.exe"))
-            json_file = os.path.normpath(self.json_file_var.get())
-            vrm_file = os.path.normpath(self.vrm_file_var.get())
-            output_folder = os.path.normpath(self.output_folder_var.get())
-
-            if not os.path.exists(output_folder):
-                os.makedirs(output_folder, exist_ok=True)
-
-            create_cmd = f'"{exe_path}" "{project_file}" -run=CinevCreateUserCharacter -UserCharacterJsonPath="{json_file}" -UserCharacterVrmPath="{vrm_file}" -OutputPath="{output_folder}" -stdout -nopause -unattended -AllowCommandletRendering -RenderOffScreen'
-
-            self.log_output("\n=== Commandlet ===")
-            self.log_output(create_cmd)
-            self.log_output("")
-
-            create_process = subprocess.Popen(create_cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
-            self.log_output("Commandlet started (see console window)")
-            create_process.wait()
-
-            rc = create_process.returncode
-            self.log_output(f"\nCommandlet completed (exit code {rc})")
-
-            if rc == 0:
-                # Step 3: Auto-register to assets.info
-                self.log_output("\n=== Step 3: Register to assets.info ===")
-                display_name = self._pending_display_name
-                timestamp = self._pending_timestamp
-
-                new_entry = {
-                    "Preset_id": str(uuid.uuid4()),
-                    "CharacterFilePath": f"{display_name}_{timestamp}.character",
-                    "CategoryName": "CharacterCategory.VRM"
-                }
-                self.assets_data.append(new_entry)
-                self.root.after(0, self.assets_auto_save)
-                self.root.after(0, self.assets_refresh_tree)
-                self.log_output(f"Registered: {new_entry['CharacterFilePath']}")
-                self.root.after(0, lambda: messagebox.showinfo("Success", "Character created and registered!"))
-            else:
-                self.root.after(0, lambda: messagebox.showwarning("Completed", f"Commandlet exited with code {rc}\nCharacter NOT registered to assets.info."))
-
-        except Exception as e:
-            self.log_output(f"\nError: {str(e)}")
-            self.root.after(0, lambda: messagebox.showerror("Error", f"Failed: {str(e)}"))
-
-        finally:
-            self.restore_commandlet_source()
-            self.root.after(0, lambda: self.create_btn.config(state=tk.NORMAL, text="assets.info에 등록"))
+        messagebox.showinfo("완료", f"{added}개 캐릭터가 assets.info에 등록되었습니다.")
 
     def create_assets_editor(self, parent):
         """Create the assets.info editor panel"""
@@ -410,7 +306,8 @@ class CharacterCreatorGUI:
         tree_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
 
         columns = ('preset_id', 'character_file', 'category')
-        self.assets_tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=15)
+        self.assets_tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=15,
+                                        selectmode='extended')
 
         self.assets_tree.heading('preset_id', text='프리셋 ID')
         self.assets_tree.heading('character_file', text='캐릭터 파일')
@@ -430,7 +327,7 @@ class CharacterCreatorGUI:
 
         self.selected_asset_idx = None
 
-        # Count + Refresh (between tree and edit form)
+        # Count + Move + Refresh (between tree and edit form)
         count_frame = tk.Frame(editor_frame, bg='white')
         count_frame.pack(fill=tk.X, pady=(0, 5))
         self.assets_count_label = tk.Label(count_frame, text="", bg='white', fg='#666666',
@@ -439,6 +336,14 @@ class CharacterCreatorGUI:
         tk.Button(count_frame, text="새로고침", command=self.assets_load,
                  bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
                  padx=8, cursor='hand2', font=('Arial', 8)).pack(side=tk.RIGHT)
+        self.move_down_btn = tk.Button(count_frame, text="▼", command=self.assets_move_down,
+                 bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
+                 padx=6, cursor='hand2', font=('Arial', 9), state=tk.DISABLED)
+        self.move_down_btn.pack(side=tk.RIGHT, padx=(0, 3))
+        self.move_up_btn = tk.Button(count_frame, text="▲", command=self.assets_move_up,
+                 bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
+                 padx=6, cursor='hand2', font=('Arial', 9), state=tk.DISABLED)
+        self.move_up_btn.pack(side=tk.RIGHT, padx=(0, 3))
 
         # --- Edit form ---
         form_frame = tk.LabelFrame(editor_frame, text="항목 편집",
@@ -472,8 +377,6 @@ class CharacterCreatorGUI:
         # .character metadata fields (read from binary)
         sep = ttk.Separator(form_frame, orient=tk.HORIZONTAL)
         sep.pack(fill=tk.X, pady=(8, 4))
-        tk.Label(form_frame, text=".character 메타데이터", bg='white', fg='#999999',
-                font=('Arial', 8)).pack(anchor='w')
 
         self.asset_meta_display_name_var = tk.StringVar()
         self.asset_meta_scaling_var = tk.StringVar()
@@ -577,7 +480,7 @@ class CharacterCreatorGUI:
         self.assets_tree.delete(*self.assets_tree.get_children())
         for i, entry in enumerate(self.assets_data):
             preset_id = entry.get('Preset_id', '')
-            short_id = '...' + preset_id[-4:] if len(preset_id) > 4 else preset_id
+            short_id = preset_id[:8] + '...' if len(preset_id) > 12 else preset_id
             self.assets_tree.insert('', tk.END, iid=str(i), values=(
                 short_id,
                 entry.get('CharacterFilePath', ''),
@@ -592,6 +495,8 @@ class CharacterCreatorGUI:
             ))
             self.assets_apply_btn.config(state=tk.DISABLED)
             self.assets_delete_btn.config(state=tk.DISABLED)
+            self.move_up_btn.config(state=tk.DISABLED)
+            self.move_down_btn.config(state=tk.DISABLED)
 
     @staticmethod
     def read_character_metadata(char_path):
@@ -648,12 +553,21 @@ class CharacterCreatorGUI:
         full_path = os.path.join(user_char_folder, char_filename)
         return full_path if os.path.exists(full_path) else None
 
+    def _get_selected_indices(self):
+        """Get sorted list of selected indices from treeview"""
+        selection = self.assets_tree.selection()
+        if not selection:
+            return []
+        return sorted(int(s) for s in selection if s != 'empty_placeholder')
+
     def assets_on_select(self, event):
         """Handle treeview selection - populate edit form + .character metadata"""
-        selection = self.assets_tree.selection()
-        if not selection or (len(selection) == 1 and selection[0] == 'empty_placeholder'):
+        indices = self._get_selected_indices()
+        if not indices:
             return
-        idx = int(selection[0])
+
+        # Use last selected for edit form
+        idx = indices[-1]
         self.selected_asset_idx = idx
         entry = self.assets_data[idx]
 
@@ -676,9 +590,12 @@ class CharacterCreatorGUI:
             except Exception as e:
                 self.log_output(f"Failed to read .character metadata: {str(e)}")
 
-        # Enable edit buttons
-        self.assets_apply_btn.config(state=tk.NORMAL)
+        # Enable buttons
+        self.assets_apply_btn.config(state=tk.NORMAL if len(indices) == 1 else tk.DISABLED)
         self.assets_delete_btn.config(state=tk.NORMAL)
+        min_idx, max_idx = indices[0], indices[-1]
+        self.move_up_btn.config(state=tk.NORMAL if min_idx > 0 else tk.DISABLED)
+        self.move_down_btn.config(state=tk.NORMAL if max_idx < len(self.assets_data) - 1 else tk.DISABLED)
 
     def assets_apply_changes(self):
         """Apply edit form changes to selected entry + write .character metadata"""
@@ -716,6 +633,36 @@ class CharacterCreatorGUI:
         self.assets_tree.see(str(idx))
         self.assets_auto_save()
 
+    def assets_move_up(self):
+        """Move selected entries up by one"""
+        indices = self._get_selected_indices()
+        if not indices or indices[0] <= 0:
+            return
+        for idx in indices:
+            self.assets_data[idx], self.assets_data[idx - 1] = self.assets_data[idx - 1], self.assets_data[idx]
+        new_indices = [i - 1 for i in indices]
+        self.assets_refresh_tree()
+        for i in new_indices:
+            self.assets_tree.selection_add(str(i))
+        self.assets_tree.see(str(new_indices[0]))
+        self.selected_asset_idx = new_indices[-1]
+        self.assets_auto_save()
+
+    def assets_move_down(self):
+        """Move selected entries down by one"""
+        indices = self._get_selected_indices()
+        if not indices or indices[-1] >= len(self.assets_data) - 1:
+            return
+        for idx in reversed(indices):
+            self.assets_data[idx], self.assets_data[idx + 1] = self.assets_data[idx + 1], self.assets_data[idx]
+        new_indices = [i + 1 for i in indices]
+        self.assets_refresh_tree()
+        for i in new_indices:
+            self.assets_tree.selection_add(str(i))
+        self.assets_tree.see(str(new_indices[-1]))
+        self.selected_asset_idx = new_indices[-1]
+        self.assets_auto_save()
+
     def assets_add_entry(self):
         """Add a new entry to assets data"""
         new_entry = {
@@ -731,25 +678,30 @@ class CharacterCreatorGUI:
         self.assets_tree.see(new_idx)
         self.assets_on_select(None)
 
-    def assets_delete_by_idx(self, idx):
-        """Delete entry by index"""
-        entry = self.assets_data[idx]
-        name = entry.get('CharacterFilePath', f'index {idx}')
+    def assets_delete_entry(self):
+        """Delete all selected entries"""
+        indices = self._get_selected_indices()
+        if not indices:
+            messagebox.showwarning("경고", "항목을 선택하세요.")
+            return
 
-        if messagebox.askyesno("Confirm Delete", f"Delete entry?\n{name}"):
-            self.assets_data.pop(idx)
+        count = len(indices)
+        if count == 1:
+            name = self.assets_data[indices[0]].get('CharacterFilePath', '')
+            msg = f"삭제하시겠습니까?\n{name}"
+        else:
+            msg = f"{count}개 항목을 삭제하시겠습니까?"
+
+        if messagebox.askyesno("삭제 확인", msg):
+            for idx in reversed(indices):
+                self.assets_data.pop(idx)
             self.selected_asset_idx = None
             self.assets_refresh_tree()
             self.assets_auto_save()
             self.assets_apply_btn.config(state=tk.DISABLED)
             self.assets_delete_btn.config(state=tk.DISABLED)
-
-    def assets_delete_entry(self):
-        """Delete currently selected entry"""
-        if self.selected_asset_idx is None:
-            messagebox.showwarning("Warning", "Select an entry first")
-            return
-        self.assets_delete_by_idx(self.selected_asset_idx)
+            self.move_up_btn.config(state=tk.DISABLED)
+            self.move_down_btn.config(state=tk.DISABLED)
 
     # --- existing methods below (unchanged) ---
 
