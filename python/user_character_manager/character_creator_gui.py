@@ -160,6 +160,10 @@ class CharacterCreatorGUI:
                  command=self.pick_vrm_files, bg='white', fg='black',
                  relief=tk.SOLID, borderwidth=1, padx=10, cursor='hand2',
                  font=('Arial', 9)).pack(side=tk.LEFT)
+        tk.Button(pick_frame, text="선택 제거",
+                 command=self.remove_selected_vrm, bg='white', fg='black',
+                 relief=tk.SOLID, borderwidth=1, padx=10, cursor='hand2',
+                 font=('Arial', 9)).pack(side=tk.LEFT, padx=(5, 0))
         self.vrm_count_label = tk.Label(pick_frame, text="선택된 파일 없음",
                                          bg='white', fg='#999999', font=('Arial', 9))
         self.vrm_count_label.pack(side=tk.LEFT, padx=(10, 0))
@@ -261,38 +265,185 @@ class CharacterCreatorGUI:
             self.vrm_listbox.insert(tk.END, f"{stem[:12]}  ←  {os.path.basename(f)}")
         self.vrm_count_label.config(text=f"{len(self.pending_vrm_files)}개 선택됨", fg='black')
 
+    def remove_selected_vrm(self):
+        """Remove selected items from VRM listbox"""
+        sel = list(self.vrm_listbox.curselection())
+        if not sel:
+            return
+        for i in reversed(sel):
+            self.vrm_listbox.delete(i)
+            self.pending_vrm_files.pop(i)
+        count = len(self.pending_vrm_files)
+        self.vrm_count_label.config(
+            text=f"{count}개 선택됨" if count else "선택된 파일 없음",
+            fg='black' if count else '#999999')
+
     def bulk_register(self):
-        """Register selected VRM files to assets.info"""
+        """Register selected VRM files: build once, run commandlet per VRM, then add to assets.info"""
         if not hasattr(self, 'pending_vrm_files') or not self.pending_vrm_files:
             messagebox.showwarning("경고", "먼저 VRM 파일을 선택하세요.")
             return
 
+        # Validate paths
+        errors = []
+        if not self.ue_dir_var.get() or not os.path.exists(self.ue_dir_var.get()):
+            errors.append("UE_CINEV 경로가 올바르지 않습니다.")
+        else:
+            exe_path = os.path.join(self.ue_dir_var.get(), "Engine", "Binaries", "Win64", "UnrealEditor-Cmd.exe")
+            if not os.path.exists(exe_path):
+                errors.append("UnrealEditor-Cmd.exe를 찾을 수 없습니다.")
+        if not self.project_file_var.get() or not os.path.exists(self.project_file_var.get()):
+            errors.append("프로젝트 파일 경로가 올바르지 않습니다.")
+        if not self.output_folder_var.get():
+            errors.append("출력 폴더가 설정되지 않았습니다.")
+        if errors:
+            messagebox.showerror("경로 오류", "\n".join(errors))
+            return
+
+        if not self.warn_if_zen_not_running():
+            return
+
+        # Disable button and run in thread
+        self.bulk_btn.config(state=tk.DISABLED, text="실행 중...")
         self.output_text.delete(1.0, tk.END)
-        added = 0
 
-        for vrm_path in self.pending_vrm_files:
-            stem = os.path.splitext(os.path.basename(vrm_path))[0]
-            display_name = stem[:12]
+        thread = threading.Thread(target=self._bulk_register_thread)
+        thread.daemon = True
+        thread.start()
 
-            new_entry = {
-                "Preset_id": str(uuid.uuid4()),
-                "CharacterFilePath": f"{display_name}.character",
-                "CategoryName": "CharacterCategory.VRM"
-            }
-            self.assets_data.append(new_entry)
-            added += 1
-            self.log_output(f"등록: {display_name} ({os.path.basename(vrm_path)})")
+    def _bulk_register_thread(self):
+        """Background thread: build once, then per VRM: JSON → commandlet → verify → add entry"""
+        try:
+            # Patch source and build once
+            self.patch_commandlet_source()
 
-        self.assets_refresh_tree()
-        self.assets_auto_save()
-        self.log_output(f"\n총 {added}개 등록 완료")
+            build_bat = os.path.normpath(os.path.join(self.ue_dir_var.get(), "Engine", "Build", "BatchFiles", "Build.bat"))
+            project_file = os.path.normpath(self.project_file_var.get())
+            if os.path.exists(build_bat):
+                self.log_output("=== 패치된 소스로 빌드 중 ===")
+                build_cmd = f'"{build_bat}" CINEVStudioEditor Win64 Development -Project="{project_file}" -WaitMutex'
+                build_process = subprocess.Popen(build_cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+                build_process.wait()
+                if build_process.returncode != 0:
+                    self.log_output(f"빌드 실패 (코드 {build_process.returncode})")
+                    self.root.after(0, lambda: messagebox.showwarning("빌드 실패", f"빌드 종료 코드: {build_process.returncode}"))
+                    return
+                self.log_output("빌드 성공\n")
 
-        # Clear selection
-        self.pending_vrm_files = []
-        self.vrm_listbox.delete(0, tk.END)
-        self.vrm_count_label.config(text="선택된 파일 없음", fg='#999999')
+            exe_path = os.path.normpath(os.path.join(self.ue_dir_var.get(), "Engine", "Binaries", "Win64", "UnrealEditor-Cmd.exe"))
+            output_folder = os.path.normpath(self.output_folder_var.get())
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder, exist_ok=True)
 
-        messagebox.showinfo("완료", f"{added}개 캐릭터가 assets.info에 등록되었습니다.")
+            user_char_folder = self.get_user_character_folder()
+            if not user_char_folder:
+                self.log_output("UserCharacter 폴더를 찾을 수 없습니다.")
+                return
+            os.makedirs(user_char_folder, exist_ok=True)
+
+            gender = self.gender_var.get()
+            scaling = self.scaling_method_var.get() if hasattr(self, 'scaling_method_var') else "Original"
+            source = self.model_source_var.get() if hasattr(self, 'model_source_var') else "VRM"
+
+            added = 0
+            failed = 0
+            total = len(self.pending_vrm_files)
+
+            for i, vrm_path in enumerate(self.pending_vrm_files):
+                stem = os.path.splitext(os.path.basename(vrm_path))[0]
+                display_name = stem[:12]
+
+                self.log_output(f"\n=== [{i+1}/{total}] {display_name} ===")
+
+                # --- Step 1: JSON 생성 ---
+                from datetime import datetime
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                json_data = {
+                    "Gender": gender,
+                    "DisplayName": display_name,
+                    "ScalingMethod": scaling,
+                    "ModelSourceType": source
+                }
+                json_file = os.path.join(user_char_folder, f"{display_name}_{timestamp}.json")
+                with open(json_file, 'w', encoding='utf-8') as f:
+                    json.dump(json_data, f, indent=2)
+                self.log_output(f"  1) JSON 생성: {os.path.basename(json_file)}")
+
+                # Move VRM to UserCharacter folder if needed
+                vrm_dir = os.path.dirname(vrm_path)
+                if os.path.normpath(vrm_dir) != os.path.normpath(user_char_folder):
+                    vrm_dest = os.path.join(user_char_folder, os.path.basename(vrm_path))
+                    if not os.path.exists(vrm_dest):
+                        shutil.copy2(vrm_path, vrm_dest)
+                        self.log_output(f"     VRM 복사: {os.path.basename(vrm_path)}")
+                    vrm_path = vrm_dest
+
+                # --- Step 2: 커맨드렛 실행 ---
+                # Snapshot output folder before commandlet
+                before_files = set(os.listdir(output_folder))
+
+                cmd = f'"{exe_path}" "{project_file}" -run=CinevCreateUserCharacter -UserCharacterJsonPath="{json_file}" -UserCharacterVrmPath="{vrm_path}" -OutputPath="{output_folder}" -stdout -nopause -unattended -AllowCommandletRendering -RenderOffScreen'
+                self.log_output(f"  2) 커맨드렛 실행 중...\n     {cmd}")
+
+                process = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+                process.wait()
+
+                self.log_output(f"     종료 코드: {process.returncode}")
+
+                # --- Step 3: 캐릭터 및 썸네일 확인 ---
+                after_files = set(os.listdir(output_folder))
+                new_files = after_files - before_files
+                new_characters = [f for f in new_files if f.endswith('.character')]
+                new_thumbnails = [f for f in new_files if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+
+                if new_characters:
+                    char_file = new_characters[0]
+                    self.log_output(f"  3) 캐릭터 생성됨: {char_file}")
+                    if new_thumbnails:
+                        self.log_output(f"     썸네일 생성됨: {', '.join(new_thumbnails)}")
+                else:
+                    # Fallback: use display_name
+                    char_file = f"{display_name}.character"
+                    self.log_output(f"  3) 새 파일 감지 안됨, 기본값 사용: {char_file}")
+
+                # --- Step 4: assets.info에 엔트리 추가 ---
+                new_entry = {
+                    "Preset_id": str(uuid.uuid4()),
+                    "CharacterFilePath": char_file,
+                    "CategoryName": "CharacterCategory.VRM",
+                    "DisplayName": display_name,
+                    "ScalingMethod": scaling,
+                    "ModelSourceType": source
+                }
+                self.assets_data.insert(0, new_entry)
+                added += 1
+                self.log_output(f"  4) assets.info 등록 완료")
+
+                # Save after each cycle
+                self.root.after(0, self.assets_auto_save)
+
+            # Update UI on main thread
+            result_msg = f"{added}개 등록 완료"
+            if failed:
+                result_msg += f", {failed}개 실패"
+
+            def finish():
+                self.assets_refresh_tree()
+                self.pending_vrm_files = []
+                self.vrm_listbox.delete(0, tk.END)
+                self.vrm_count_label.config(text="선택된 파일 없음", fg='#999999')
+                messagebox.showinfo("완료", result_msg)
+
+            self.root.after(0, finish)
+            self.log_output(f"\n=== {result_msg} ===")
+
+        except Exception as e:
+            self.log_output(f"\n오류: {str(e)}")
+            self.root.after(0, lambda: messagebox.showerror("오류", f"실행 실패: {str(e)}"))
+
+        finally:
+            self.restore_commandlet_source()
+            self.root.after(0, lambda: self.bulk_btn.config(state=tk.NORMAL, text="assets.info에 등록"))
 
     def create_assets_editor(self, parent):
         """Create the assets.info editor panel"""
@@ -305,17 +456,23 @@ class CharacterCreatorGUI:
         tree_frame = tk.Frame(editor_frame, bg='white')
         tree_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
 
-        columns = ('preset_id', 'character_file', 'category')
+        columns = ('preset_id', 'character_file', 'category', 'display_name', 'scaling', 'source')
         self.assets_tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=15,
                                         selectmode='extended')
 
         self.assets_tree.heading('preset_id', text='프리셋 ID')
         self.assets_tree.heading('character_file', text='캐릭터 파일')
         self.assets_tree.heading('category', text='카테고리')
+        self.assets_tree.heading('display_name', text='표시 이름')
+        self.assets_tree.heading('scaling', text='스케일링')
+        self.assets_tree.heading('source', text='출처')
 
-        self.assets_tree.column('preset_id', width=100, minwidth=80)
-        self.assets_tree.column('character_file', width=220, minwidth=150)
-        self.assets_tree.column('category', width=150, minwidth=100)
+        self.assets_tree.column('preset_id', width=90, minwidth=70)
+        self.assets_tree.column('character_file', width=160, minwidth=100)
+        self.assets_tree.column('category', width=130, minwidth=80)
+        self.assets_tree.column('display_name', width=100, minwidth=60)
+        self.assets_tree.column('scaling', width=70, minwidth=50)
+        self.assets_tree.column('source', width=60, minwidth=40)
 
         scrollbar = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=self.assets_tree.yview)
         self.assets_tree.configure(yscrollcommand=scrollbar.set)
@@ -355,11 +512,24 @@ class CharacterCreatorGUI:
         self.asset_preset_id_var = tk.StringVar()
         self.asset_char_file_var = tk.StringVar()
         self.asset_category_var = tk.StringVar()
+        self.asset_display_name_var = tk.StringVar()
+        self.asset_scaling_var = tk.StringVar()
+        self.asset_source_var = tk.StringVar()
+
+        # Change detection traces
+        self._populating_form = False
+        self._char_meta_original = {}
+        for var in (self.asset_preset_id_var, self.asset_char_file_var, self.asset_category_var,
+                    self.asset_display_name_var, self.asset_scaling_var, self.asset_source_var):
+            var.trace_add('write', self._on_form_field_changed)
 
         fields = [
             ("프리셋 ID:", self.asset_preset_id_var, None),
             ("캐릭터 파일:", self.asset_char_file_var, None),
             ("카테고리:", self.asset_category_var, ["CharacterCategory.VRM"]),
+            ("표시 이름:", self.asset_display_name_var, None),
+            ("스케일링:", self.asset_scaling_var, ["Original", "CineV"]),
+            ("출처:", self.asset_source_var, ["None", "VRM", "VRoid", "Zepeto"]),
         ]
 
         for label_text, var, combo_values in fields:
@@ -373,35 +543,6 @@ class CharacterCreatorGUI:
             else:
                 tk.Entry(row, textvariable=var, bg='white', fg='black',
                         relief=tk.SOLID, borderwidth=1).pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
-
-        # .character metadata fields (read from binary)
-        sep = ttk.Separator(form_frame, orient=tk.HORIZONTAL)
-        sep.pack(fill=tk.X, pady=(8, 4))
-
-        self.asset_meta_display_name_var = tk.StringVar()
-        self.asset_meta_scaling_var = tk.StringVar()
-        self.asset_meta_source_var = tk.StringVar()
-
-        # DisplayName (text entry)
-        dn_row = tk.Frame(form_frame, bg='white')
-        dn_row.pack(fill=tk.X, pady=2)
-        tk.Label(dn_row, text="표시 이름:", width=16, anchor='w',
-                bg='white', fg='black', font=('Arial', 9)).pack(side=tk.LEFT)
-        tk.Entry(dn_row, textvariable=self.asset_meta_display_name_var, bg='white', fg='black',
-                relief=tk.SOLID, borderwidth=1).pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
-
-        meta_fields = [
-            ("스케일링:", self.asset_meta_scaling_var, ["Original", "CineV"]),
-            ("모델 소스:", self.asset_meta_source_var, ["None", "VRM", "VRoid", "Zepeto"]),
-        ]
-
-        for label_text, var, combo_values in meta_fields:
-            row = tk.Frame(form_frame, bg='white')
-            row.pack(fill=tk.X, pady=2)
-            tk.Label(row, text=label_text, width=16, anchor='w',
-                    bg='white', fg='black', font=('Arial', 9)).pack(side=tk.LEFT)
-            ttk.Combobox(row, textvariable=var, values=combo_values,
-                        width=40).pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
 
         # Buttons row
         btn_row = tk.Frame(form_frame, bg='white')
@@ -485,6 +626,9 @@ class CharacterCreatorGUI:
                 short_id,
                 entry.get('CharacterFilePath', ''),
                 entry.get('CategoryName', ''),
+                entry.get('DisplayName', ''),
+                entry.get('ScalingMethod', ''),
+                entry.get('ModelSourceType', ''),
             ))
         self.assets_count_label.config(text=f"{len(self.assets_data)} 개")
 
@@ -561,7 +705,7 @@ class CharacterCreatorGUI:
         return sorted(int(s) for s in selection if s != 'empty_placeholder')
 
     def assets_on_select(self, event):
-        """Handle treeview selection - populate edit form + .character metadata"""
+        """Handle treeview selection - populate edit form, read .character for metadata"""
         indices = self._get_selected_indices()
         if not indices:
             return
@@ -571,31 +715,75 @@ class CharacterCreatorGUI:
         self.selected_asset_idx = idx
         entry = self.assets_data[idx]
 
+        # Suppress change detection while populating
+        self._populating_form = True
+
         self.asset_preset_id_var.set(entry.get('Preset_id', ''))
         self.asset_char_file_var.set(entry.get('CharacterFilePath', ''))
         self.asset_category_var.set(entry.get('CategoryName', ''))
 
-        # Read .character metadata
-        self.asset_meta_display_name_var.set('')
-        self.asset_meta_scaling_var.set('')
-        self.asset_meta_source_var.set('')
+        # Read DisplayName, ScalingMethod, ModelSourceType from .character file
+        self.asset_display_name_var.set('')
+        self.asset_scaling_var.set('')
+        self.asset_source_var.set('')
+        self._char_meta_original = {}
         char_path = self._get_character_file_path(entry.get('CharacterFilePath', ''))
         if char_path:
             try:
                 meta = self.read_character_metadata(char_path)
                 if meta:
-                    self.asset_meta_display_name_var.set(meta.get('displayName', meta.get('DisplayName', '')))
-                    self.asset_meta_scaling_var.set(meta.get('scalingMethod', meta.get('ScalingMethod', '')))
-                    self.asset_meta_source_var.set(meta.get('modelSourceType', meta.get('ModelSourceType', '')))
+                    dn = meta.get('displayName', meta.get('DisplayName', ''))
+                    sc = meta.get('scalingMethod', meta.get('ScalingMethod', ''))
+                    sr = meta.get('modelSourceType', meta.get('ModelSourceType', ''))
+                    self.asset_display_name_var.set(dn)
+                    self.asset_scaling_var.set(sc)
+                    self.asset_source_var.set(sr)
+                    self._char_meta_original = {'DisplayName': dn, 'ScalingMethod': sc, 'ModelSourceType': sr}
             except Exception as e:
-                self.log_output(f"Failed to read .character metadata: {str(e)}")
+                self.log_output(f".character 읽기 실패: {str(e)}")
+        else:
+            # Fallback: show from assets.info
+            self.asset_display_name_var.set(entry.get('DisplayName', ''))
+            self.asset_scaling_var.set(entry.get('ScalingMethod', ''))
+            self.asset_source_var.set(entry.get('ModelSourceType', ''))
+
+        self._populating_form = False
+
+        # Enable apply button if .character metadata differs from assets.info
+        meta_mismatch = False
+        if self._char_meta_original and len(indices) == 1:
+            meta_mismatch = (
+                self._char_meta_original.get('DisplayName', '') != entry.get('DisplayName', '') or
+                self._char_meta_original.get('ScalingMethod', '') != entry.get('ScalingMethod', '') or
+                self._char_meta_original.get('ModelSourceType', '') != entry.get('ModelSourceType', '')
+            )
 
         # Enable buttons
-        self.assets_apply_btn.config(state=tk.NORMAL if len(indices) == 1 else tk.DISABLED)
+        self.assets_apply_btn.config(state=tk.NORMAL if meta_mismatch else tk.DISABLED)
         self.assets_delete_btn.config(state=tk.NORMAL)
         min_idx, max_idx = indices[0], indices[-1]
         self.move_up_btn.config(state=tk.NORMAL if min_idx > 0 else tk.DISABLED)
         self.move_down_btn.config(state=tk.NORMAL if max_idx < len(self.assets_data) - 1 else tk.DISABLED)
+
+    def _on_form_field_changed(self, *args):
+        """Enable apply button when form values differ from original"""
+        if getattr(self, '_populating_form', False):
+            return
+        if self.selected_asset_idx is None:
+            return
+        idx = self.selected_asset_idx
+        entry = self.assets_data[idx]
+        orig_meta = getattr(self, '_char_meta_original', {})
+
+        changed = (
+            self.asset_preset_id_var.get() != entry.get('Preset_id', '') or
+            self.asset_char_file_var.get() != entry.get('CharacterFilePath', '') or
+            self.asset_category_var.get() != entry.get('CategoryName', '') or
+            self.asset_display_name_var.get() != orig_meta.get('DisplayName', '') or
+            self.asset_scaling_var.get() != orig_meta.get('ScalingMethod', '') or
+            self.asset_source_var.get() != orig_meta.get('ModelSourceType', '')
+        )
+        self.assets_apply_btn.config(state=tk.NORMAL if changed else tk.DISABLED)
 
     def assets_apply_changes(self):
         """Apply edit form changes to selected entry + write .character metadata"""
@@ -607,31 +795,36 @@ class CharacterCreatorGUI:
         self.assets_data[idx]['Preset_id'] = self.asset_preset_id_var.get()
         self.assets_data[idx]['CharacterFilePath'] = self.asset_char_file_var.get()
         self.assets_data[idx]['CategoryName'] = self.asset_category_var.get()
+        self.assets_data[idx]['DisplayName'] = self.asset_display_name_var.get()
+        self.assets_data[idx]['ScalingMethod'] = self.asset_scaling_var.get()
+        self.assets_data[idx]['ModelSourceType'] = self.asset_source_var.get()
 
-        # Write .character metadata if file exists
+        # Write metadata back to .character file
         char_path = self._get_character_file_path(self.asset_char_file_var.get())
         if char_path:
-            display_name = self.asset_meta_display_name_var.get()
-            scaling = self.asset_meta_scaling_var.get()
-            source = self.asset_meta_source_var.get()
-            if display_name or scaling or source:
-                try:
-                    updates = {}
-                    if display_name:
-                        updates['displayName'] = display_name
-                    if scaling:
-                        updates['scalingMethod'] = scaling
-                    if source:
-                        updates['modelSourceType'] = source
-                    self.write_character_metadata(char_path, updates)
-                    self.log_output(f"Updated .character metadata: {os.path.basename(char_path)}")
-                except Exception as e:
-                    self.log_output(f"Failed to write .character metadata: {str(e)}")
+            try:
+                updates = {
+                    'displayName': self.asset_display_name_var.get(),
+                    'scalingMethod': self.asset_scaling_var.get(),
+                    'modelSourceType': self.asset_source_var.get(),
+                }
+                self.write_character_metadata(char_path, updates)
+                self.log_output(f".character 업데이트: {os.path.basename(char_path)}")
+            except Exception as e:
+                self.log_output(f".character 쓰기 실패: {str(e)}")
+
+        # Update original values
+        self._char_meta_original = {
+            'DisplayName': self.asset_display_name_var.get(),
+            'ScalingMethod': self.asset_scaling_var.get(),
+            'ModelSourceType': self.asset_source_var.get(),
+        }
 
         self.assets_refresh_tree()
         self.assets_tree.selection_set(str(idx))
         self.assets_tree.see(str(idx))
         self.assets_auto_save()
+        self.assets_apply_btn.config(state=tk.DISABLED)
 
     def assets_move_up(self):
         """Move selected entries up by one"""
@@ -816,30 +1009,6 @@ class CharacterCreatorGUI:
             self.user_char_label.config(text="", fg='#666666')
             self.user_char_summary_label.config(text="")
 
-    def browse_json_file(self):
-        user_char_folder = self.get_user_character_folder()
-        initial_dir = user_char_folder if user_char_folder and os.path.exists(user_char_folder) else None
-
-        filename = filedialog.askopenfilename(
-            title="Select JSON File",
-            initialdir=initial_dir,
-            filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")]
-        )
-        if filename:
-            self.json_file_var.set(filename)
-
-    def browse_vrm_file(self):
-        user_char_folder = self.get_user_character_folder()
-        initial_dir = user_char_folder if user_char_folder and os.path.exists(user_char_folder) else None
-
-        filename = filedialog.askopenfilename(
-            title="Select VRM File (must be in UserCharacter folder)",
-            initialdir=initial_dir,
-            filetypes=[("VRM Files", "*.vrm"), ("All Files", "*.*")]
-        )
-        if filename:
-            self.vrm_file_var.set(filename)
-
     def browse_output_folder(self):
         directory = filedialog.askdirectory(title="Select Output Folder")
         if directory:
@@ -856,104 +1025,6 @@ class CharacterCreatorGUI:
             messagebox.showwarning("Warning", f"Folder does not exist:\n{folder}")
             return
         os.startfile(folder)
-
-    def generate_json(self):
-        display_name = self.display_name_var.get().strip()
-        if not display_name:
-            messagebox.showerror("Error", "Display Name is required")
-            return
-
-        # Check if output folder is set
-        if not self.output_folder_var.get():
-            messagebox.showerror("Error", "Set Output Folder first")
-            return
-
-        gender = self.gender_var.get()
-
-        scaling_method = self.scaling_method_var.get()
-        model_source_type = self.model_source_type_var.get()
-
-        # Create JSON data
-        json_data = {
-            "Gender": gender,
-            "DisplayName": display_name,
-            "ScalingMethod": scaling_method,
-            "ModelSourceType": model_source_type
-        }
-
-        # Use output folder
-        output_folder = os.path.normpath(self.output_folder_var.get())
-
-        # Create folder if it doesn't exist
-        if not os.path.exists(output_folder):
-            try:
-                os.makedirs(output_folder, exist_ok=True)
-            except Exception as e:
-                messagebox.showerror("Error", f"Cannot create output folder: {str(e)}")
-                return
-
-        # Auto-generate filename with timestamp
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = os.path.join(output_folder, f"{display_name}_{timestamp}.json")
-
-        try:
-            with open(filename, 'w', encoding='utf-8') as f:
-                json.dump(json_data, f, indent=2)
-
-            self.json_file_var.set(filename)
-            self.log_output(f"JSON file saved: {filename}")
-            messagebox.showinfo("Success", f"JSON file saved!\n\n{filename}")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to save JSON: {str(e)}")
-
-    def validate_paths(self):
-        errors = []
-
-        if not self.ue_dir_var.get():
-            errors.append("UE_CINEV Directory is required")
-        elif not os.path.exists(self.ue_dir_var.get()):
-            errors.append("UE_CINEV Directory does not exist")
-        else:
-            exe_path = os.path.join(self.ue_dir_var.get(), "Engine", "Binaries", "Win64", "UnrealEditor-Cmd.exe")
-            if not os.path.exists(exe_path):
-                errors.append("UnrealEditor-Cmd.exe not found in UE directory")
-
-        if not self.project_file_var.get():
-            errors.append("Project File is required")
-        elif not os.path.exists(self.project_file_var.get()):
-            errors.append("Project File does not exist")
-
-        if not self.vrm_file_var.get():
-            errors.append("VRM File is required")
-        elif not os.path.exists(self.vrm_file_var.get()):
-            errors.append("VRM File does not exist")
-
-        if not self.output_folder_var.get():
-            errors.append("Output Folder is required")
-
-        return errors
-
-    def move_files_to_user_character_folder(self):
-        """Move JSON and VRM files to UserCharacter folder if not already there"""
-        user_char_folder = self.get_user_character_folder()
-        if not user_char_folder:
-            return
-
-        # Create folder if doesn't exist
-        if not os.path.exists(user_char_folder):
-            os.makedirs(user_char_folder, exist_ok=True)
-
-        # Move JSON file if needed
-        json_path = self.json_file_var.get()
-        if json_path:
-            json_dir = os.path.dirname(json_path)
-            if os.path.normpath(json_dir) != os.path.normpath(user_char_folder):
-                json_filename = os.path.basename(json_path)
-                new_json_path = os.path.join(user_char_folder, json_filename)
-                self.log_output(f"Moving JSON to UserCharacter folder: {json_filename}")
-                shutil.move(json_path, new_json_path)
-                self.json_file_var.set(new_json_path)
 
     # --- ZenServer check ---
     def is_zen_server_running(self, port=8558, timeout=1.0):
@@ -1023,17 +1094,6 @@ class CharacterCreatorGUI:
         self.output_text.insert(tk.END, message + "\n")
         self.output_text.see(tk.END)
         self.output_text.update()
-
-    def update_command_display(self):
-        """Update the command display with current values"""
-        exe_path = os.path.normpath(os.path.join(self.ue_dir_var.get(), "Engine", "Binaries", "Win64", "UnrealEditor-Cmd.exe")) if self.ue_dir_var.get() else ""
-        project_file = os.path.normpath(self.project_file_var.get()) if self.project_file_var.get() else ""
-        json_file = os.path.normpath(self.json_file_var.get()) if self.json_file_var.get() else ""
-        vrm_file = os.path.normpath(self.vrm_file_var.get()) if self.vrm_file_var.get() else ""
-        output_folder = os.path.normpath(self.output_folder_var.get()) if self.output_folder_var.get() else ""
-
-        cmd = f'"{exe_path}" "{project_file}" -run=CinevCreateUserCharacter -UserCharacterJsonPath="{json_file}" -UserCharacterVrmPath="{vrm_file}" -OutputPath="{output_folder}" -stdout -nopause -unattended -AllowCommandletRendering -RenderOffScreen'
-        return cmd
 
     def start_zen_dashboard(self):
         """Start ZenDashboard"""
