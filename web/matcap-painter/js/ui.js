@@ -934,6 +934,12 @@ export class UI {
       const len = Math.sqrt(lx * lx + ly * ly + lz * lz);
       toon.lightDir = [lx / len, ly / len, lz / len];
 
+      // Post Process
+      const ppChoices = ['none', 'none', 'none', 'blur', 'pixelize'];
+      toon.postProcess = ppChoices[randInt(0, ppChoices.length - 1)];
+      if (toon.postProcess === 'blur') toon.postProcessStrength = randInt(1, 10);
+      else if (toon.postProcess === 'pixelize') toon.postProcessStrength = randInt(4, 24);
+
       scheduleRender();
       toon.saveState();
       this._refreshShaderUI();
@@ -960,6 +966,8 @@ export class UI {
       toon.lightDir = [-0.34, 0.54, 0.77];
       const len = Math.sqrt(0.34 * 0.34 + 0.54 * 0.54 + 0.77 * 0.77);
       toon.lightDir = toon.lightDir.map(v => v / len);
+      toon.postProcess = 'none';
+      toon.postProcessStrength = 4;
       scheduleRender();
       toon.saveState();
       this._refreshShaderUI();
@@ -993,6 +1001,38 @@ export class UI {
     this._specChip.onCommit = () => { saveAndRender(); };
     bindPair('spec-power', 'spec-power-val', () => toon.specPower, (v) => { toon.specPower = v; });
     bindPair('spec-threshold', 'spec-threshold-val', () => toon.specThreshold * 100, (v) => { toon.specThreshold = v / 100; });
+
+    // Post Process
+    const ppMode = document.getElementById('post-process-mode');
+    const ppRow = document.getElementById('post-process-strength-row');
+    const ppSlider = document.getElementById('post-process-strength');
+    const ppVal = document.getElementById('post-process-strength-val');
+
+    const updatePPRange = (mode) => {
+      if (mode === 'blur') {
+        ppSlider.min = 1; ppSlider.max = 20;
+        if (+ppSlider.value > 20) { ppSlider.value = 4; ppVal.value = 4; }
+      } else if (mode === 'pixelize') {
+        ppSlider.min = 2; ppSlider.max = 64;
+        if (+ppSlider.value < 2) { ppSlider.value = 8; ppVal.value = 8; }
+      }
+    };
+
+    ppMode?.addEventListener('change', (e) => {
+      toon.saveState();
+      toon.postProcess = e.target.value;
+      ppRow.style.display = e.target.value === 'none' ? 'none' : '';
+      updatePPRange(e.target.value);
+      if (e.target.value !== 'none') {
+        toon.postProcessStrength = +ppSlider.value;
+      }
+      scheduleRender(); saveAndRender();
+    }, listenerOptions);
+
+    bindPair('post-process-strength', 'post-process-strength-val',
+      () => toon.postProcessStrength,
+      (v) => { toon.postProcessStrength = v; }
+    );
 
     // FOV
     bindPair('shader-fov', 'shader-fov-val', () => toon.fov, (v) => { toon.fov = v; });
@@ -1067,6 +1107,13 @@ export class UI {
     if (this._specChip) this._specChip.value = toon.specColor;
     setPair('spec-power', 'spec-power-val', toon.specPower);
     setPair('spec-threshold', 'spec-threshold-val', Math.round(toon.specThreshold * 100));
+
+    // Post Process
+    const ppMode = document.getElementById('post-process-mode');
+    const ppRow = document.getElementById('post-process-strength-row');
+    if (ppMode) ppMode.value = toon.postProcess;
+    if (ppRow) ppRow.style.display = toon.postProcess === 'none' ? 'none' : '';
+    setPair('post-process-strength', 'post-process-strength-val', toon.postProcessStrength);
 
     // FOV
     setPair('shader-fov', 'shader-fov-val', toon.fov);

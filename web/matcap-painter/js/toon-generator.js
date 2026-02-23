@@ -44,6 +44,10 @@ export class ToonGenerator {
     // Light direction
     this.lightDir = normalize([-0.34, 0.54, 0.77]);
 
+    // Post Process
+    this.postProcess = 'none'; // 'none', 'blur', 'pixelize'
+    this.postProcessStrength = 4;
+
     // FOV (0 = orthographic, >0 = perspective)
     this.fov = 0;
 
@@ -88,6 +92,7 @@ export class ToonGenerator {
       stops: this.stops.map(s => ({ position: s.position, color: s.color })),
       outlineEnabled: this.outlineEnabled, outlineColor: this.outlineColor, outlineWidth: this.outlineWidth,
       specEnabled: this.specEnabled, specColor: this.specColor, specPower: this.specPower, specThreshold: this.specThreshold,
+      postProcess: this.postProcess, postProcessStrength: this.postProcessStrength,
       fov: this.fov,
       lightDir: this.lightDir.map(v => Math.round(v * 100)),
     };
@@ -104,6 +109,8 @@ export class ToonGenerator {
     if (data.specColor) this.specColor = data.specColor;
     if (data.specPower !== undefined) this.specPower = data.specPower;
     if (data.specThreshold !== undefined) this.specThreshold = data.specThreshold;
+    if (data.postProcess) this.postProcess = data.postProcess;
+    if (data.postProcessStrength !== undefined) this.postProcessStrength = data.postProcessStrength;
     if (data.fov !== undefined) this.fov = data.fov;
     if (Array.isArray(data.lightDir) && data.lightDir.length === 3) {
       const [x, y, z] = data.lightDir.map(v => v / 100);
@@ -241,6 +248,45 @@ export class ToonGenerator {
     }
 
     this._ctx.putImageData(imageData, 0, 0);
+    this._applyPostProcess();
     if (this._onChange) this._onChange();
+  }
+
+  _applyPostProcess() {
+    if (this.postProcess === 'none') return;
+
+    const canvas = this._canvas;
+    const ctx = this._ctx;
+
+    if (!this._tempCanvas) {
+      this._tempCanvas = document.createElement('canvas');
+    }
+    const temp = this._tempCanvas;
+
+    if (this.postProcess === 'blur') {
+      temp.width = SIZE;
+      temp.height = SIZE;
+      const tctx = temp.getContext('2d');
+      tctx.drawImage(canvas, 0, 0);
+      ctx.clearRect(0, 0, SIZE, SIZE);
+      ctx.filter = `blur(${this.postProcessStrength}px)`;
+      ctx.drawImage(temp, 0, 0);
+      ctx.filter = 'none';
+    }
+
+    if (this.postProcess === 'pixelize') {
+      const pixelSize = Math.max(2, this.postProcessStrength);
+      const smallW = Math.ceil(SIZE / pixelSize);
+      const smallH = Math.ceil(SIZE / pixelSize);
+      temp.width = smallW;
+      temp.height = smallH;
+      const tctx = temp.getContext('2d');
+      tctx.imageSmoothingEnabled = true;
+      tctx.drawImage(canvas, 0, 0, smallW, smallH);
+      ctx.clearRect(0, 0, SIZE, SIZE);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(temp, 0, 0, SIZE, SIZE);
+      ctx.imageSmoothingEnabled = true;
+    }
   }
 }

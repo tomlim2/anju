@@ -1384,6 +1384,23 @@ body.grabbing, body.grabbing * { cursor: grabbing !important; }
           </div>
         </div>
 
+        <!-- Post Process -->
+        <div class="shader-section">
+          <div class="shader-section-title">Post Process</div>
+          <div class="shader-effect-group">
+            <select id="post-process-mode" class="gradient-mode-select">
+              <option value="none" selected>None</option>
+              <option value="blur">Blur</option>
+              <option value="pixelize">Pixelize</option>
+            </select>
+            <div class="hsv-row" id="post-process-strength-row" style="display:none">
+              <span class="hsv-label">Amt</span>
+              <input class="hsv-slider" id="post-process-strength" type="range" min="1" max="20" value="4">
+              <input type="number" class="hsv-val" id="post-process-strength-val" value="4" min="1" max="20">
+            </div>
+          </div>
+        </div>
+
         <!-- Camera -->
         <div class="shader-section">
           <div class="shader-section-title">Camera</div>
