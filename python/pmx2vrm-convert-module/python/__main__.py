@@ -69,6 +69,7 @@ def main():
     print(f"  Bones:        {len(pmx_data['bones'])}")
     print(f"  Materials:    {len(pmx_data['materials'])}")
     print(f"  Textures:     {len(pmx_data['textures'])}")
+    print(f"  Morphs:       {len(pmx_data['morphs'])} (vertex)")
     print(f"  Rigid bodies: {len(pmx_data['rigid_bodies'])}")
     print(f"  Joints:       {len(pmx_data['joints_phys'])}")
 
@@ -78,8 +79,20 @@ def main():
 
     # 3. Map bones to VRM humanoid
     print("Mapping bones to VRM humanoid...")
-    humanoid_bones = bone_mapping.map_bones(pmx_data["bones"])
+    humanoid_bones = bone_mapping.map_bones(
+        pmx_data["bones"],
+        pmx_data["skinned_bone_indices"],
+    )
     print(f"  Mapped {len(humanoid_bones)} humanoid bones")
+    print(f"  Skinned bones in model: {len(pmx_data['skinned_bone_indices'])} / {len(pmx_data['bones'])}")
+    skinnless = [
+        b["name"] for i, b in enumerate(pmx_data["bones"])
+        if i not in pmx_data["skinned_bone_indices"]
+        and any(e["node"] == i for e in humanoid_bones)
+    ]
+    if skinnless:
+        print(f"  Warning: humanoid bone(s) with no skinning: {skinnless}")
+
 
     # 4. Convert physics to spring bones
     if args.no_spring:

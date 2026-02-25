@@ -104,9 +104,10 @@ def is_humanoid(pmx_bytes):
     mapped = set()
     for name in bone_names:
         lookup = PMX_BONE_REPLACEMENTS.get(name, name)
-        vrm_name = PMX_TO_VRM_HUMANOID.get(lookup)
-        if vrm_name and vrm_name in VRM_REQUIRED_BONES:
-            mapped.add(vrm_name)
+        vrm_names = PMX_TO_VRM_HUMANOID.get(lookup, [])
+        for vrm_name in vrm_names:
+            if vrm_name in VRM_REQUIRED_BONES:
+                mapped.add(vrm_name)
 
     return len(mapped) >= len(VRM_REQUIRED_BONES), mapped
 

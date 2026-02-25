@@ -6,6 +6,28 @@ IMPORTANT:
   - "violentUssageName" (double-s) is the correct VRM 0.x spelling.
 """
 
+# PMX morph name (Japanese/English) → VRM 0.x preset name.
+# Only canonical presets listed; anything not matched becomes "unknown".
+_PMX_VRM_PRESET: dict[str, str] = {
+    # Mouth / lip-sync
+    "あ": "a",  "ああ": "a",  "a": "a",
+    "い": "i",  "いい": "i",  "i": "i",
+    "う": "u",  "うう": "u",  "u": "u",
+    "え": "e",  "ええ": "e",  "e": "e",
+    "お": "o",  "おお": "o",  "o": "o",
+    # Blink
+    "まばたき": "blink",    "瞬き": "blink",      "blink": "blink",
+    "左ウィンク": "blink_l", "ウィンク左": "blink_l", "wink_left": "blink_l",
+    "右ウィンク": "blink_r", "ウィンク右": "blink_r", "wink_right": "blink_r",
+    # Expressions
+    "笑い": "joy",     "にこ": "joy",     "joy": "joy",
+    "怒り": "angry",   "angry": "angry",
+    "悲しい": "sorrow", "悲し": "sorrow", "sorrow": "sorrow",
+    "楽しい": "fun",   "喜び": "fun",    "fun": "fun",
+    # Neutral
+    "通常": "neutral",  "neutral": "neutral",
+}
+
 
 def build(gltf_data, humanoid_bones, secondary_animation, materials_info):
     """Build VRM 0.x extension and inject into glTF JSON.
@@ -97,7 +119,7 @@ def build(gltf_data, humanoid_bones, secondary_animation, materials_info):
                 "yRange": 10,
             },
         },
-        "blendShapeMaster": {"blendShapeGroups": []},
+        "blendShapeMaster": _build_blend_shape_master(gltf_json),
         "secondaryAnimation": secondary_animation,
         "materialProperties": vrm_mat_props,
     }
@@ -106,3 +128,38 @@ def build(gltf_data, humanoid_bones, secondary_animation, materials_info):
     gltf_json["extensionsUsed"] = ["VRM"]
 
     return gltf_data
+
+
+def _build_blend_shape_master(gltf_json: dict) -> dict:
+    """Build VRM 0.x blendShapeMaster from glTF mesh morph target names.
+
+    Reads targetNames from meshes[0].extras (set by gltf_builder).
+    Maps known Japanese/English names to VRM preset names;
+    everything else gets presetName="unknown".
+    """
+    target_names: list[str] = []
+    meshes = gltf_json.get("meshes", [])
+    if meshes and meshes[0].get("extras"):
+        target_names = meshes[0]["extras"].get("targetNames", [])
+
+    used_presets: set[str] = set()
+    groups = []
+
+    for morph_idx, name in enumerate(target_names):
+        preset = _PMX_VRM_PRESET.get(name, "unknown")
+        # Each VRM preset slot may only be filled once; extras become "unknown"
+        if preset != "unknown":
+            if preset in used_presets:
+                preset = "unknown"
+            else:
+                used_presets.add(preset)
+
+        groups.append({
+            "name": name,
+            "presetName": preset,
+            "binds": [{"mesh": 0, "index": morph_idx, "weight": 100}],
+            "materialValues": [],
+            "isBinary": False,
+        })
+
+    return {"blendShapeGroups": groups}

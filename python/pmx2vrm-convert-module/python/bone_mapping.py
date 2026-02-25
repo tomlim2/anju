@@ -1,76 +1,93 @@
 """PMX Japanese bone name to VRM humanoid bone mapping.
 
-Reference: VRM4U/Source/VRM4U/Private/VrmUtil.cpp lines 110-274
+Reference: VRM4U/Source/VRM4U/Private/VrmUtil.cpp
+  - table_ue4_pmx  (UE4 bone → PMX Japanese bone name)
+  - table_ue4_vrm  (UE4 bone → VRM humanoid bone name)
+  Combined these two tables gives the PMX → VRM mapping used here.
+
+Key VRM4U behaviour for the spine:
+  spine_01 → 上半身 → spine
+  spine_02 → 上半身 → chest    (same node as spine!)
+  spine_03 → 上半身2 → upperChest
+So 上半身 maps to BOTH spine and chest (same glTF node index),
+and 上半身2 maps to upperChest (NOT chest).
 """
 
-# PMX bone names (Japanese) → VRM humanoid bone names
+# PMX bone names (Japanese) → list of VRM humanoid bone names.
+# A list allows one PMX bone to fill multiple VRM humanoid slots
+# (e.g. 上半身 fills both "spine" and "chest" on the same node,
+#  matching VRM4U's spine_01+spine_02 double-mapping).
 PMX_TO_VRM_HUMANOID = {
     # Torso
-    "センター": "hips",
-    "上半身": "spine",
-    "上半身2": "chest",
-    "上半身3": "upperChest",
-    "首": "neck",
-    "頭": "head",
+    # VRM4U: spine_01→spine and spine_02→chest BOTH point to 上半身
+    "センター": ["hips"],
+    "上半身":   ["spine", "chest"],   # same node fills both slots (VRM4U spine_01+02)
+    "上半身2":  ["upperChest"],       # VRM4U spine_03→upperChest (was wrongly "chest")
+    # 上半身3 has no VRM4U equivalent; omitted intentionally
+    "首": ["neck"],
+    "頭": ["head"],
     # Left arm
-    "左肩": "leftShoulder",
-    "左腕": "leftUpperArm",
-    "左ひじ": "leftLowerArm",
-    "左手首": "leftHand",
+    "左肩": ["leftShoulder"],
+    "左腕": ["leftUpperArm"],
+    "左ひじ": ["leftLowerArm"],
+    "左手首": ["leftHand"],
     # Right arm
-    "右肩": "rightShoulder",
-    "右腕": "rightUpperArm",
-    "右ひじ": "rightLowerArm",
-    "右手首": "rightHand",
+    "右肩": ["rightShoulder"],
+    "右腕": ["rightUpperArm"],
+    "右ひじ": ["rightLowerArm"],
+    "右手首": ["rightHand"],
     # Left leg
-    "左足": "leftUpperLeg",
-    "左ひざ": "leftLowerLeg",
-    "左足首": "leftFoot",
-    "左つま先": "leftToes",
+    "左足": ["leftUpperLeg"],
+    "左ひざ": ["leftLowerLeg"],
+    "左足首": ["leftFoot"],
+    "左つま先": ["leftToes"],
     # Right leg
-    "右足": "rightUpperLeg",
-    "右ひざ": "rightLowerLeg",
-    "右足首": "rightFoot",
-    "右つま先": "rightToes",
+    "右足": ["rightUpperLeg"],
+    "右ひざ": ["rightLowerLeg"],
+    "右足首": ["rightFoot"],
+    "右つま先": ["rightToes"],
     # Eyes
-    "左目": "leftEye",
-    "右目": "rightEye",
+    "左目": ["leftEye"],
+    "右目": ["rightEye"],
     # Left hand fingers
-    "左親指０": "leftThumbProximal",
-    "左親指１": "leftThumbIntermediate",
-    "左親指２": "leftThumbDistal",
-    "左人指１": "leftIndexProximal",
-    "左人指２": "leftIndexIntermediate",
-    "左人指３": "leftIndexDistal",
-    "左中指１": "leftMiddleProximal",
-    "左中指２": "leftMiddleIntermediate",
-    "左中指３": "leftMiddleDistal",
-    "左薬指１": "leftRingProximal",
-    "左薬指２": "leftRingIntermediate",
-    "左薬指３": "leftRingDistal",
-    "左小指１": "leftLittleProximal",
-    "左小指２": "leftLittleIntermediate",
-    "左小指３": "leftLittleDistal",
+    "左親指０": ["leftThumbProximal"],
+    "左親指１": ["leftThumbIntermediate"],
+    "左親指２": ["leftThumbDistal"],
+    "左人指１": ["leftIndexProximal"],
+    "左人指２": ["leftIndexIntermediate"],
+    "左人指３": ["leftIndexDistal"],
+    "左中指１": ["leftMiddleProximal"],
+    "左中指２": ["leftMiddleIntermediate"],
+    "左中指３": ["leftMiddleDistal"],
+    "左薬指１": ["leftRingProximal"],
+    "左薬指２": ["leftRingIntermediate"],
+    "左薬指３": ["leftRingDistal"],
+    "左小指１": ["leftLittleProximal"],
+    "左小指２": ["leftLittleIntermediate"],
+    "左小指３": ["leftLittleDistal"],
     # Right hand fingers
-    "右親指０": "rightThumbProximal",
-    "右親指１": "rightThumbIntermediate",
-    "右親指２": "rightThumbDistal",
-    "右人指１": "rightIndexProximal",
-    "右人指２": "rightIndexIntermediate",
-    "右人指３": "rightIndexDistal",
-    "右中指１": "rightMiddleProximal",
-    "右中指２": "rightMiddleIntermediate",
-    "右中指３": "rightMiddleDistal",
-    "右薬指１": "rightRingProximal",
-    "右薬指２": "rightRingIntermediate",
-    "右薬指３": "rightRingDistal",
-    "右小指１": "rightLittleProximal",
-    "右小指２": "rightLittleIntermediate",
-    "右小指３": "rightLittleDistal",
+    "右親指０": ["rightThumbProximal"],
+    "右親指１": ["rightThumbIntermediate"],
+    "右親指２": ["rightThumbDistal"],
+    "右人指１": ["rightIndexProximal"],
+    "右人指２": ["rightIndexIntermediate"],
+    "右人指３": ["rightIndexDistal"],
+    "右中指１": ["rightMiddleProximal"],
+    "右中指２": ["rightMiddleIntermediate"],
+    "右中指３": ["rightMiddleDistal"],
+    "右薬指１": ["rightRingProximal"],
+    "右薬指２": ["rightRingIntermediate"],
+    "右薬指３": ["rightRingDistal"],
+    "右小指１": ["rightLittleProximal"],
+    "右小指２": ["rightLittleIntermediate"],
+    "右小指３": ["rightLittleDistal"],
 }
 
 # Alternative PMX bone names (D-bones, groove, waist)
-# Reference: VRM4U/Source/VRM4U/Private/VrmUtil.cpp lines 186-215
+# Reference: VRM4U/Source/VRM4U/Private/VrmUtil.cpp GetReplacedPMXBone()
+# VRM4U checks both the standard name AND its D-bone variant;
+# we instead normalise D-bone names to their standard equivalents upfront.
+# グルーブ→センター is an extension not present in VRM4U (safe to keep).
 PMX_BONE_REPLACEMENTS = {
     "左足D": "左足",
     "左ひざD": "左ひざ",
@@ -122,32 +139,57 @@ VRM_REQUIRED_BONES = {
 }
 
 
-def map_bones(bones):
+def map_bones(bones, skinned_bone_indices=None):
     """Map PMX bones to VRM humanoid bones.
 
     Args:
         bones: List of bone dicts with 'name' field (PMX Japanese names).
+        skinned_bone_indices: Optional set of bone indices that actually
+            drive vertices (weight > 0).  When provided, the bone with real
+            skinning data is preferred over a name-only match when multiple
+            PMX bones compete for the same VRM slot (e.g. 左足 vs 左足D).
 
     Returns:
         List of dicts: [{"bone": "hips", "node": 0, "useDefaultValues": True}, ...]
+
+    Selection priority per VRM slot (highest first):
+        1. Bone with skinning data  (node_index in skinned_bone_indices)
+        2. First name match in bone list order (fallback)
     """
-    humanoid_bones = []
-    mapped = set()
+    from collections import defaultdict
+
+    # Pass 1: collect all candidates per VRM slot
+    # candidates[vrm_name] = list of (node_index, has_skin)
+    candidates = defaultdict(list)
 
     for node_index, bone in enumerate(bones):
         name = bone["name"]
-
-        # Try replacement names first (D-bones -> standard names)
         lookup_name = PMX_BONE_REPLACEMENTS.get(name, name)
+        vrm_names = PMX_TO_VRM_HUMANOID.get(lookup_name, [])
+        has_skin = (skinned_bone_indices is None) or (node_index in skinned_bone_indices)
+        for vrm_name in vrm_names:
+            candidates[vrm_name].append((node_index, has_skin))
 
-        vrm_name = PMX_TO_VRM_HUMANOID.get(lookup_name)
-        if vrm_name is not None and vrm_name not in mapped:
-            humanoid_bones.append({
-                "bone": vrm_name,
-                "node": node_index,
-                "useDefaultValues": True,
-            })
-            mapped.add(vrm_name)
+    # Pass 2: for each VRM slot, pick the best candidate and emit one entry.
+    # Iterate in canonical VRM order so the output list is stable.
+    humanoid_bones = []
+    mapped = set()
+
+    for vrm_name in VRM_HUMANOID_BONE_LIST:
+        if vrm_name not in candidates or vrm_name in mapped:
+            continue
+        cands = candidates[vrm_name]
+        # Prefer skinned bone; among ties, first occurrence (lowest node index)
+        skinned = [c for c in cands if c[1]]
+        node_index, _ = skinned[0] if skinned else cands[0]
+        if skinned_bone_indices is not None and not skinned:
+            print(f"  Note: '{vrm_name}' mapped to node {node_index} (no skinning data found)")
+        humanoid_bones.append({
+            "bone": vrm_name,
+            "node": node_index,
+            "useDefaultValues": True,
+        })
+        mapped.add(vrm_name)
 
     missing = VRM_REQUIRED_BONES - mapped
     if missing:

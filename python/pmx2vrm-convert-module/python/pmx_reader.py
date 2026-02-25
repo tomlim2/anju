@@ -1,8 +1,15 @@
 """Custom PMX 2.0 binary reader with coordinate transformation.
 
 Handles extended UV (unlike pymeshio) and normalizes data for glTF/VRM.
-Coordinate transform: PMX left-hand (X right, Y up, Z front)
-    -> glTF right-hand (X right, Y up, Z back): Z-flip + winding reversal.
+Coordinate transform: PMX left-hand (X right, Y up, +Z toward viewer/front)
+    -> glTF right-hand, VRM/Unity convention (+Z forward):
+    Negate X (left-hand -> right-hand) + winding reversal.
+
+Why X-negate instead of Z-negate:
+    Z-negate alone results in character facing -Z (wrong for VRM/Unity).
+    Z-negate + Y-180 = X-negate, so we bake both steps into one X-flip.
+    This makes the character face +Z in glTF space as VRM/Unity expects,
+    without relying on node-level rotations that many runtimes ignore.
 """
 
 import os
@@ -308,21 +315,26 @@ class PmxReader:
                 "parent_index": parent_index,
             })
 
-        # --- Morphs (skip) ---
+        # --- Morphs ---
+        # Collect vertex morphs (type 1); parse-and-discard all others so the
+        # binary cursor stays aligned for subsequent sections.
         num_morphs = r.read_int32()
+        morphs_raw = []
         for _ in range(num_morphs):
-            self._read_text()  # name
-            self._read_text()  # english name
+            morph_name = self._read_text()
+            morph_english = self._read_text()
             r.read_uint8()  # panel
             morph_type = r.read_uint8()
             offset_count = r.read_int32()
+            vertex_offsets = []  # only populated for type 1
             for _ in range(offset_count):
                 if morph_type == 0:  # group
                     self._read_morph_index()
                     r.read_float()
-                elif morph_type == 1:  # vertex
-                    self._read_unsigned_index(self._vertex_index_size)
-                    r.read_vec3()
+                elif morph_type == 1:  # vertex  <-- what we want
+                    vi = self._read_unsigned_index(self._vertex_index_size)
+                    dx, dy, dz = r.read_vec3()
+                    vertex_offsets.append((int(vi), dx, dy, dz))
                 elif morph_type == 2:  # bone
                     self._read_bone_index()
                     r.read_vec3()
@@ -350,6 +362,12 @@ class PmxReader:
                     r.read_uint8()
                     r.read_vec3()
                     r.read_vec3()
+            if morph_type == 1 and vertex_offsets:
+                morphs_raw.append({
+                    "name": morph_name,
+                    "english_name": morph_english,
+                    "offsets": vertex_offsets,  # list of (vi, dx, dy, dz) in PMX space
+                })
 
         # --- Display slots (skip) ---
         num_display_slots = r.read_int32()
@@ -442,6 +460,7 @@ class PmxReader:
             "texture_paths": texture_paths,
             "materials": materials,
             "bones_raw": bones,
+            "morphs_raw": morphs_raw,
             "rigid_bodies_raw": rigid_bodies,
             "joints_raw": joints,
         }
@@ -468,13 +487,15 @@ def read(pmx_path, scale=0.08):
     raw = reader.read()
 
     # --- Apply coordinate transform + scale ---
+    # X-negate converts PMX left-hand to glTF right-hand AND keeps the
+    # character facing +Z (VRM/Unity forward), all in one step.
     positions = raw["positions_raw"].copy()
-    positions[:, 0] *= scale
+    positions[:, 0] *= -scale  # X-flip (coord system + facing correction)
     positions[:, 1] *= scale
-    positions[:, 2] *= -scale  # Z-flip
+    positions[:, 2] *= scale   # Z unchanged
 
     normals = raw["normals_raw"].copy()
-    normals[:, 2] *= -1  # Z-flip (no scale for normals)
+    normals[:, 0] *= -1  # X-flip (no scale for normals)
 
     uvs = raw["uvs_raw"]
 
@@ -485,6 +506,11 @@ def read(pmx_path, scale=0.08):
     weight_sums = skin_weights.sum(axis=1, keepdims=True)
     weight_sums = np.where(weight_sums == 0, 1.0, weight_sums)
     skin_weights = skin_weights / weight_sums
+
+    # Bones that actually drive vertices (normalized weight > 0)
+    # Used by bone_mapping to choose between D-bone / standard bone pairs.
+    skinned_bone_mask = skin_weights > 0
+    skinned_bone_indices = set(joint_indices[skinned_bone_mask].tolist())
 
     # Winding reversal: (a,b,c) -> (a,c,b)
     num_tris = len(raw["indices_raw"]) // 3
@@ -498,7 +524,7 @@ def read(pmx_path, scale=0.08):
             "name": b["name"],
             "english_name": b["english_name"],
             "position": np.array(
-                [pos[0] * scale, pos[1] * scale, -pos[2] * scale],
+                [-pos[0] * scale, pos[1] * scale, pos[2] * scale],
                 dtype=np.float32,
             ),
             "parent_index": b["parent_index"],
@@ -543,8 +569,8 @@ def read(pmx_path, scale=0.08):
             "no_collision_group": rb["no_collision_group"],
             "shape_type": rb["shape_type"],
             "shape_size": [ss[0] * scale, ss[1] * scale, ss[2] * scale],
-            "shape_position": [sp[0] * scale, sp[1] * scale, -sp[2] * scale],
-            "shape_rotation": rb["shape_rotation"],
+            "shape_position": [-sp[0] * scale, sp[1] * scale, sp[2] * scale],
+            "shape_rotation": rb["shape_rotation"],  # Euler; only position used for VRM sphere colliders
             "mass": rb["mass"],
             "linear_damping": rb["linear_damping"],
             "angular_damping": rb["angular_damping"],
@@ -561,10 +587,24 @@ def read(pmx_path, scale=0.08):
             "name": j["name"],
             "rigidbody_index_a": j["rigidbody_index_a"],
             "rigidbody_index_b": j["rigidbody_index_b"],
-            "position": [jp[0] * scale, jp[1] * scale, -jp[2] * scale],
+            "position": [-jp[0] * scale, jp[1] * scale, jp[2] * scale],
             "rotation": j["rotation"],
             "spring_constant_translation": j["spring_constant_translation"],
             "spring_constant_rotation": j["spring_constant_rotation"],
+        })
+
+    # Morphs: apply same X-negate + scale transform as vertex positions.
+    # Offsets are deltas so we transform them identically (scale only, no translation).
+    morphs = []
+    for m in raw.get("morphs_raw", []):
+        transformed = [
+            (vi, -dx * scale, dy * scale, dz * scale)
+            for vi, dx, dy, dz in m["offsets"]
+        ]
+        morphs.append({
+            "name": m["name"],
+            "english_name": m["english_name"],
+            "offsets": transformed,  # list of (vi, dx, dy, dz) in glTF space
         })
 
     return {
@@ -576,8 +616,10 @@ def read(pmx_path, scale=0.08):
         "indices": indices,
         "materials": materials,
         "bones": bones,
+        "skinned_bone_indices": skinned_bone_indices,  # set of bone indices with >0 weight
         "textures": textures,
         "texture_mimes": texture_mimes,
+        "morphs": morphs,
         "rigid_bodies": rigid_bodies,
         "joints_phys": joints_phys,
         "pmx_dir": pmx_dir,

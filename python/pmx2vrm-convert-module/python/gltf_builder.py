@@ -68,7 +68,8 @@ def build(pmx_data):
     mesh_node_idx = num_bones
     nodes.append({"name": "mesh", "mesh": 0, "skin": 0})
 
-    # Scene root node
+    # Scene root node (identity transform — facing correction is baked into
+    # vertex/bone positions in pmx_reader via X-negate, so no rotation needed here).
     scene_root_idx = num_bones + 1
     nodes.append({
         "name": "root",
@@ -213,16 +214,81 @@ def build(pmx_data):
         "skeleton": root_bones[0] if root_bones else 0,
     }
 
+    # ---- Morph targets (sparse accessors) ----
+    # Each vertex morph becomes one glTF morph target using a sparse accessor:
+    # base data = all-zero (no bufferView needed), non-zero entries stored sparsely.
+    morphs = pmx_data.get("morphs", [])
+    target_names = []
+    morph_acc_indices = []  # accessor index per morph (None = all-zero, skip)
+
+    for morph in morphs:
+        offsets = morph["offsets"]
+        if not offsets:
+            continue
+
+        vis = np.array([o[0] for o in offsets], dtype=np.uint32)
+        vals = np.array([[o[1], o[2], o[3]] for o in offsets], dtype=np.float32)
+
+        # Drop truly zero offsets to minimise file size
+        nonzero = np.any(vals != 0.0, axis=1)
+        vis = vis[nonzero]
+        vals = vals[nonzero]
+        if len(vis) == 0:
+            continue
+
+        # Remove duplicate vertex indices (keep last, matching PMX behaviour)
+        _, unique_inv = np.unique(vis, return_index=True)
+        vis = vis[unique_inv]
+        vals = vals[unique_inv]
+
+        # Sort by index (required by glTF sparse spec)
+        order = np.argsort(vis)
+        vis = vis[order]
+        vals = vals[order]
+
+        idx_bv = add_bv(vis.tobytes())   # UNSIGNED_INT indices
+        val_bv = add_bv(vals.tobytes())  # FLOAT VEC3 values
+
+        acc = {
+            "componentType": FLOAT,
+            "count": num_verts,
+            "type": "VEC3",
+            "sparse": {
+                "count": int(len(vis)),
+                "indices": {
+                    "bufferView": idx_bv,
+                    "componentType": UNSIGNED_INT,
+                },
+                "values": {
+                    "bufferView": val_bv,
+                },
+            },
+        }
+        acc_idx = len(accessors)
+        accessors.append(acc)
+        target_names.append(morph["name"])
+        morph_acc_indices.append(acc_idx)
+
+    # Attach targets to every primitive (all share the same vertex buffer)
+    if morph_acc_indices:
+        morph_targets = [{"POSITION": ai} for ai in morph_acc_indices]
+        for prim in primitives:
+            prim["targets"] = morph_targets
+
     # Buffer
     buffer_obj = {"byteLength": len(buf)}
 
     # Assemble glTF JSON
+    mesh_obj = {"name": "mesh", "primitives": primitives}
+    if target_names:
+        mesh_obj["extras"] = {"targetNames": target_names}
+
     gltf_json = {
         "asset": {"version": "2.0", "generator": "truepmx2vrm"},
         "scene": 0,
         "scenes": [{"nodes": [scene_root_idx]}],
         "nodes": nodes,
-        "meshes": [{"name": "mesh", "primitives": primitives}],
+        "meshes": [mesh_obj],
         "skins": [skin],
         "accessors": accessors,
         "bufferViews": buffer_views,
