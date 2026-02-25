@@ -44,46 +44,62 @@ def _sphere_radius(rb):
 # geometry.  VRM spring bones use thin line-segment collision, so the raw
 # PMX radii are far too large.  These empirical factors bring the values
 # into the typical VRM range.
-_COLLIDER_RADIUS_SCALE = 0.3   # static RB → VRM collider sphere
-_HIT_RADIUS_SCALE      = 0.25  # dynamic RB → VRM boneGroup hitRadius
+_COLLIDER_RADIUS_SCALE = 0.5   # static RB → VRM collider sphere
+_HIT_RADIUS_SCALE      = 0.4   # dynamic RB → VRM boneGroup hitRadius
+
+
+def _rotation_limit_range(joint):
+    """Average rotation limit range (radians) from a joint. 0 = locked."""
+    if joint is None:
+        return 0.0
+    rmin = joint.get("rotation_limit_min", [0, 0, 0])
+    rmax = joint.get("rotation_limit_max", [0, 0, 0])
+    return sum(abs(rmax[i] - rmin[i]) for i in range(3)) / 3.0
 
 
 def _map_params(rb, joint=None):
     """Extract VRM spring parameters from a single rigid body (+ optional joint).
 
+    Key insight: MMD uses Bullet Physics hard constraints (rotation limits),
+    VRM uses soft springs.  Tight rotation limits in PMX mean the part should
+    barely move → high stiffiness, near-zero gravity.  Wide limits mean
+    flowing motion → lower stiffiness, more gravity.
+
     Stiffiness derivation (priority order):
       1. spring_constant_rotation magnitude / 200  (if non-zero)
       2. rotation_limit range → tighter limits = higher stiffiness
-      3. fallback: angular_damping as proxy (common in Chinese PMX models)
+      3. fallback: angular_damping as proxy
     """
-    drag_force   = max(0.0, min(1.0, rb["linear_damping"]))
-    gravity_power = max(0.0, min(2.0, rb["mass"] * 0.5))
-    hit_radius   = max(0.0, _sphere_radius(rb))
+    drag_force = max(0.0, min(1.0, rb["linear_damping"]))
+    hit_radius = max(0.0, _sphere_radius(rb))
 
+    # Rotation limit range determines both stiffiness AND gravity
+    avg_range = _rotation_limit_range(joint)
+
+    # --- Stiffiness ---
     stiffiness = 0.0
     if joint is not None:
-        # Method 1: explicit spring constant
         scr = joint.get("spring_constant_rotation", [0, 0, 0])
         mag = math.sqrt(sum(v * v for v in scr))
         if mag > 1.0:
             stiffiness = max(0.0, min(4.0, mag / 200.0))
+        elif avg_range > 0.001:
+            stiffiness = max(0.2, min(4.0, math.pi / avg_range * 0.5))
         else:
-            # Method 2: derive from rotation limit range
-            # Narrower limits → stiffer spring. Full range (pi) → 0, locked (0) → 4
-            rmin = joint.get("rotation_limit_min", [0, 0, 0])
-            rmax = joint.get("rotation_limit_max", [0, 0, 0])
-            ranges = [abs(rmax[i] - rmin[i]) for i in range(3)]
-            avg_range = sum(ranges) / 3.0
-            if avg_range > 0.001:
-                # pi range → stiff 0.2, tiny range → stiff 4.0
-                stiffiness = max(0.2, min(4.0, math.pi / avg_range * 0.5))
-            else:
-                # Locked joint or zero range
-                stiffiness = 4.0
+            stiffiness = 4.0
 
-    # Method 3: fallback from angular_damping if still zero
     if stiffiness < 0.01:
         stiffiness = max(0.2, min(2.0, rb["angular_damping"] * 1.5))
+
+    # --- Gravity ---
+    # Tight limits → gravity ≈ 0 (part stays at rest pose)
+    # Wide limits (>0.5 rad avg) → gravity scales with mass
+    if avg_range < 0.1:
+        gravity_power = 0.0
+    elif avg_range < 0.5:
+        gravity_power = max(0.0, min(0.5, rb["mass"] * 0.1))
+    else:
+        gravity_power = max(0.0, min(1.0, rb["mass"] * 0.2))
 
     return drag_force, stiffiness, gravity_power, hit_radius
 
@@ -135,27 +151,66 @@ def convert(rigid_bodies, joints, bones):
         directed_children[a].append(b)
         edge_joint[(a, b)] = j
 
-    # ---- Step 3: BFS chains — anchor (static) → ordered dynamic sequence ----
-    # Each entry: (anchor_rb_idx_or_-1, [ordered_dynamic_rb_indices])
+    # ---- Step 3: Build chains following bone hierarchy (not joint graph) ----
+    # Previous BFS through joints merged separate cloth strands into one
+    # massive group (50+ bones).  Instead, build a bone→RB lookup and walk
+    # the bone parent→child tree so each strand stays independent.
+
+    # bone_index → dynamic RB index
+    bone_to_dyn_rb = {}
+    for rb_idx in dynamic_set:
+        bi = rigid_bodies[rb_idx]["bone_index"]
+        if 0 <= bi < num_bon:
+            bone_to_dyn_rb[bi] = rb_idx
+
+    # bone_index → [child_bone_indices] from the skeleton
+    bone_children = defaultdict(list)
+    for bi, bone in enumerate(bones):
+        par = bone["parent_index"]
+        if 0 <= par < num_bon and par != bi:
+            bone_children[par].append(bi)
+
+    def _walk_bone_chain(start_bone):
+        """Walk bone hierarchy depth-first, collecting dynamic RBs."""
+        chain = []
+        stack = [start_bone]
+        while stack:
+            bi = stack.pop()
+            if bi in bone_to_dyn_rb:
+                rb_idx = bone_to_dyn_rb[bi]
+                if rb_idx not in visited:
+                    visited.add(rb_idx)
+                    chain.append(rb_idx)
+                    # Continue to children of this bone
+                    for child_bi in bone_children[bi]:
+                        stack.append(child_bi)
+        return chain
+
     visited = set()
     chains  = []   # list of (anchor_rb, [rb0, rb1, ...]) root→tip order
 
     for anchor in sorted(static_set):
+        anchor_bone = rigid_bodies[anchor]["bone_index"]
+        if anchor_bone < 0 or anchor_bone >= num_bon:
+            continue
+        # Each child bone of the anchor starts its own chain
+        for child_bone in bone_children[anchor_bone]:
+            if child_bone not in bone_to_dyn_rb:
+                continue
+            if bone_to_dyn_rb[child_bone] in visited:
+                continue
+            chain = _walk_bone_chain(child_bone)
+            if chain:
+                chains.append((anchor, chain))
+
+    # Also check direct joint connections for anchors whose children aren't
+    # in the bone hierarchy (some PMX models attach RBs to non-child bones)
+    for anchor in sorted(static_set):
         for first_dyn in directed_children[anchor]:
             if first_dyn not in dynamic_set or first_dyn in visited:
                 continue
-            # BFS preserving directed order
-            chain = []
-            queue = deque([first_dyn])
-            while queue:
-                cur = queue.popleft()
-                if cur in visited or cur not in dynamic_set:
-                    continue
-                visited.add(cur)
-                chain.append(cur)
-                for nxt in directed_children[cur]:
-                    if nxt in dynamic_set and nxt not in visited:
-                        queue.append(nxt)
+            dyn_bone = rigid_bodies[first_dyn]["bone_index"]
+            chain = _walk_bone_chain(dyn_bone)
             if chain:
                 chains.append((anchor, chain))
 
@@ -181,6 +236,13 @@ def convert(rigid_bodies, joints, bones):
         if not bone_indices:
             continue
 
+        # Trim bones below ground (Y < 0.05m).  PMX models often have
+        # physics anchor bones extending underground; these cause spring
+        # tips to stick to the floor.
+        bone_indices = [bi for bi in bone_indices if bones[bi]["position"][1] > 0.05]
+        if not bone_indices:
+            continue
+
         # Anchor (center) bone — the bone the static/kinematic RB is attached to
         center_bone = -1
         if anchor_rb >= 0:
@@ -199,6 +261,33 @@ def convert(rigid_bodies, joints, bones):
 
         # hitRadius: take max across chain, scaled down for VRM line-segment collision
         hit_radius = max(_sphere_radius(rigid_bodies[i]) for i in dyn_chain) * _HIT_RADIUS_SCALE
+
+        # Detect chain direction from bone positions: average Y displacement
+        # Downward chains (skirt, hair) get gravity; upward/lateral (wings) don't
+        chain_len = len(bone_indices)
+        avg_y = 0.0
+        if chain_len >= 2:
+            y_sum = sum(bones[bi]["position"][1] for bi in bone_indices)
+            anchor_y = bones[bone_indices[0]]["position"][1]
+            avg_y = (y_sum / chain_len) - anchor_y  # negative = hangs down
+
+        hangs_down = avg_y < -0.01  # chain extends downward
+
+        if chain_len >= 6:
+            stiffiness = min(stiffiness, 2.0)
+            drag_force = max(drag_force, 0.8)
+            if hangs_down:
+                gravity_power = max(gravity_power, 0.15)
+            else:
+                gravity_power = 0.0
+        elif chain_len >= 4:
+            stiffiness = min(stiffiness, 3.5)
+            drag_force = max(drag_force, 0.8)
+            if hangs_down:
+                gravity_power = max(gravity_power, 0.02)
+            else:
+                gravity_power = 0.0
+        # Short chains (1-3): keep _map_params values (stiff, low/no gravity)
 
         bone_groups.append({
             "stiffiness":   round(stiffiness,    4),  # Double-i: VRM 0.x spec typo!
@@ -251,7 +340,12 @@ def convert(rigid_bodies, joints, bones):
     # spring bone and including any ancestor that has a collider.
     #
     # Additionally, head/chest/upperChest always get included (hair, cloth etc.)
-    body_bones = {"頭", "上半身", "上半身2", "首"}
+    body_bones = {
+        "頭", "上半身", "上半身2", "首",          # upper body
+        "下半身",                                  # hip / pelvis
+        "右足", "左足", "右足D", "左足D",          # thighs
+        "右ひざ", "左ひざ", "右ひざD", "左ひざD",  # knees
+    }
 
     for bg in bone_groups:
         relevant = set()
