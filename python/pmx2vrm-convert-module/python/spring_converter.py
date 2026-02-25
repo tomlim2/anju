@@ -40,14 +40,21 @@ def _sphere_radius(rb):
         return max(sz) * 0.5
 
 
+# PMX rigid bodies are Bullet Physics collision volumes that enclose mesh
+# geometry.  VRM spring bones use thin line-segment collision, so the raw
+# PMX radii are far too large.  These empirical factors bring the values
+# into the typical VRM range.
+_COLLIDER_RADIUS_SCALE = 0.3   # static RB → VRM collider sphere
+_HIT_RADIUS_SCALE      = 0.25  # dynamic RB → VRM boneGroup hitRadius
+
+
 def _map_params(rb, joint=None):
     """Extract VRM spring parameters from a single rigid body (+ optional joint).
 
-    Mirrors VRM4U CreateSwingHead/Tail parameter assignments:
-      LinearDamping  = 10 * spring.dragForce   → dragForce = ld / 10
-      stiffness      = joint spring_constant_rotation magnitude / 200
-      gravityPower   = mass * 0.5
-      hitRadius      = shape sphere radius
+    Stiffiness derivation (priority order):
+      1. spring_constant_rotation magnitude / 200  (if non-zero)
+      2. rotation_limit range → tighter limits = higher stiffiness
+      3. fallback: angular_damping as proxy (common in Chinese PMX models)
     """
     drag_force   = max(0.0, min(1.0, rb["linear_damping"]))
     gravity_power = max(0.0, min(2.0, rb["mass"] * 0.5))
@@ -55,9 +62,28 @@ def _map_params(rb, joint=None):
 
     stiffiness = 0.0
     if joint is not None:
+        # Method 1: explicit spring constant
         scr = joint.get("spring_constant_rotation", [0, 0, 0])
         mag = math.sqrt(sum(v * v for v in scr))
-        stiffiness = max(0.0, min(4.0, mag / 200.0))
+        if mag > 1.0:
+            stiffiness = max(0.0, min(4.0, mag / 200.0))
+        else:
+            # Method 2: derive from rotation limit range
+            # Narrower limits → stiffer spring. Full range (pi) → 0, locked (0) → 4
+            rmin = joint.get("rotation_limit_min", [0, 0, 0])
+            rmax = joint.get("rotation_limit_max", [0, 0, 0])
+            ranges = [abs(rmax[i] - rmin[i]) for i in range(3)]
+            avg_range = sum(ranges) / 3.0
+            if avg_range > 0.001:
+                # pi range → stiff 0.2, tiny range → stiff 4.0
+                stiffiness = max(0.2, min(4.0, math.pi / avg_range * 0.5))
+            else:
+                # Locked joint or zero range
+                stiffiness = 4.0
+
+    # Method 3: fallback from angular_damping if still zero
+    if stiffiness < 0.01:
+        stiffiness = max(0.2, min(2.0, rb["angular_damping"] * 1.5))
 
     return drag_force, stiffiness, gravity_power, hit_radius
 
@@ -171,8 +197,8 @@ def convert(rigid_bodies, joints, bones):
 
         drag_force, stiffiness, gravity_power, hit_radius = _map_params(rep_rb, rep_joint)
 
-        # hitRadius: take max across chain (VRM4U uses per-body radius for capsule shapes)
-        hit_radius = max(_sphere_radius(rigid_bodies[i]) for i in dyn_chain)
+        # hitRadius: take max across chain, scaled down for VRM line-segment collision
+        hit_radius = max(_sphere_radius(rigid_bodies[i]) for i in dyn_chain) * _HIT_RADIUS_SCALE
 
         bone_groups.append({
             "stiffiness":   round(stiffiness,    4),  # Double-i: VRM 0.x spec typo!
@@ -196,7 +222,7 @@ def convert(rigid_bodies, joints, bones):
         if bi < 0 or bi >= num_bon:
             continue
 
-        radius   = _sphere_radius(rb)
+        radius   = _sphere_radius(rb) * _COLLIDER_RADIUS_SCALE
         bone_pos = bones[bi]["position"]
         offset_x = float(rb["shape_position"][0] - bone_pos[0])
         offset_y = float(rb["shape_position"][1] - bone_pos[1])

@@ -444,6 +444,8 @@ class PmxReader:
                 "rigidbody_index_b": rb_b,
                 "position": list(position),
                 "rotation": list(rotation),
+                "rotation_limit_min": list(rotation_limit_min),
+                "rotation_limit_max": list(rotation_limit_max),
                 "spring_constant_translation": list(spring_constant_translation),
                 "spring_constant_rotation": list(spring_constant_rotation),
             })
