@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MMD Player</title>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.core.js",
+      "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.webgpu.js",
+      "three/tsl": "https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.tsl.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.172.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <style>
+    :root {
+      --bg: #1a1a1a;
+      --panel: #232323;
+      --surface: #2a2a2a;
+      --border: #2f2f2f;
+      --text: #d4d4d4;
+      --text-dim: #999;
+      --accent: #5b9bd5;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Drop zone overlay */
+    #drop-zone {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    #drop-zone .drop-prompt {
+      text-align: center;
+      color: var(--text-dim);
+      pointer-events: none;
+    }
+
+    #drop-zone .drop-prompt h2 {
+      font-size: 20px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    #drop-zone .drop-prompt p {
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .open-buttons {
+      margin-top: 16px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      pointer-events: auto;
+    }
+
+    .open-buttons button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 20px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .open-buttons button:hover {
+      background: var(--panel);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    #drop-zone.active {
+      background: rgba(91, 155, 213, 0.08);
+      border: 2px dashed var(--accent);
+      pointer-events: auto;
+    }
+
+    #drop-zone.active .drop-prompt h2 {
+      color: var(--accent);
+    }
+
+    /* Status bar */
+    #status {
+      position: fixed;
+      bottom: 12px;
+      left: 12px;
+      font-size: 12px;
+      color: var(--text-dim);
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    /* Controls bar */
+    #controls {
+      position: fixed;
+      bottom: 12px;
+      right: 12px;
+      display: flex;
+      gap: 8px;
+      z-index: 20;
+    }
+
+    #controls button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    #controls button:hover {
+      background: var(--panel);
+    }
+
+    /* WebGPU fallback */
+    .fallback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .fallback h2 {
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+
+    .fallback p {
+      color: var(--text-dim);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div id="drop-zone">
+    <div class="drop-prompt">
+      <h2>MMD Player</h2>
+      <p>Drop PMX model folder here<br>VMD and audio files also supported</p>
+      <div class="open-buttons">
+        <button id="btn-open-mmd">Open MMD</button>
+        <button id="btn-open-vmd">Open VMD</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="status"></div>
+
+  <div id="controls">
+    <button id="btn-open-mmd-small">Open MMD</button>
+    <button id="btn-open-vmd-small">Open VMD</button>
+    <button id="btn-play" style="display:none">Pause</button>
+  </div>
+
+  <input type="file" id="input-mmd" webkitdirectory multiple hidden>
+  <input type="file" id="input-vmd" accept=".vmd" hidden>
+
+  <script>
+    if (!navigator.gpu) {
+      document.body.innerHTML = '<div class="fallback"><div><h2>WebGPU Required</h2><p>This app requires WebGPU, available in Chrome/Edge 113+ and Safari 18+.</p></div></div>';
+    } else {
+      const s = document.createElement('script');
+      s.type = 'module';
+      s.src = 'js/main.js';
+      document.body.appendChild(s);
+    }
+  </script>
+</body>
+</html>
