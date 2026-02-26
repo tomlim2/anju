@@ -288,5 +288,51 @@ export class ToonGenerator {
       ctx.drawImage(temp, 0, 0, SIZE, SIZE);
       ctx.imageSmoothingEnabled = true;
     }
+
+    if (this.postProcess === 'glitch') {
+      const imageData = ctx.getImageData(0, 0, SIZE, SIZE);
+      const src = new Uint8ClampedArray(imageData.data);
+      const dst = imageData.data;
+      const strength = this.postProcessStrength;
+      const sliceCount = 3 + strength * 2;
+      const maxShift = Math.round(strength * 8);
+
+      // Seed-free deterministic hash from strength for consistent look
+      let seed = (strength * 9973 + 7) | 0;
+      const rand = () => { seed = (seed * 16807 + 0) % 2147483647; return (seed & 0x7fffffff) / 2147483647; };
+
+      // RGB channel shift
+      const rShift = Math.round((rand() - 0.5) * maxShift);
+      const gShift = Math.round((rand() - 0.5) * maxShift);
+      for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+          const i = (y * SIZE + x) * 4;
+          const rx = Math.min(SIZE - 1, Math.max(0, x + rShift));
+          const gx = Math.min(SIZE - 1, Math.max(0, x + gShift));
+          dst[i]     = src[(y * SIZE + rx) * 4];
+          dst[i + 1] = src[(y * SIZE + gx) * 4 + 1];
+          // blue and alpha stay
+        }
+      }
+
+      // Horizontal slice displacement
+      for (let s = 0; s < sliceCount; s++) {
+        const y0 = Math.floor(rand() * SIZE);
+        const h = Math.floor(rand() * (8 + strength * 4)) + 2;
+        const shift = Math.round((rand() - 0.5) * maxShift * 2);
+        for (let y = y0; y < Math.min(SIZE, y0 + h); y++) {
+          for (let x = 0; x < SIZE; x++) {
+            const sx = Math.min(SIZE - 1, Math.max(0, x + shift));
+            const di = (y * SIZE + x) * 4;
+            const si = (y * SIZE + sx) * 4;
+            dst[di]     = dst[si] || 0;
+            dst[di + 1] = dst[si + 1] || 0;
+            dst[di + 2] = dst[si + 2] || 0;
+          }
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+    }
   }
 }

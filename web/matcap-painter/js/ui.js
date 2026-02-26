@@ -935,10 +935,11 @@ export class UI {
       toon.lightDir = [lx / len, ly / len, lz / len];
 
       // Post Process
-      const ppChoices = ['none', 'none', 'none', 'blur', 'pixelize'];
+      const ppChoices = ['none', 'none', 'none', 'blur', 'pixelize', 'glitch'];
       toon.postProcess = ppChoices[randInt(0, ppChoices.length - 1)];
       if (toon.postProcess === 'blur') toon.postProcessStrength = randInt(1, 10);
       else if (toon.postProcess === 'pixelize') toon.postProcessStrength = randInt(4, 24);
+      else if (toon.postProcess === 'glitch') toon.postProcessStrength = randInt(2, 12);
 
       scheduleRender();
       toon.saveState();
@@ -1012,6 +1013,9 @@ export class UI {
       if (mode === 'blur') {
         ppSlider.min = 1; ppSlider.max = 20;
         if (+ppSlider.value > 20) { ppSlider.value = 4; ppVal.value = 4; }
+      } else if (mode === 'glitch') {
+        ppSlider.min = 1; ppSlider.max = 20;
+        if (+ppSlider.value > 20) { ppSlider.value = 5; ppVal.value = 5; }
       } else if (mode === 'pixelize') {
         ppSlider.min = 2; ppSlider.max = 64;
         if (+ppSlider.value < 2) { ppSlider.value = 8; ppVal.value = 8; }
