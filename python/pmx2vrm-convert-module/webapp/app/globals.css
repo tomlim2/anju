@@ -1,0 +1,34 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --text: #1a1a1a;
+  --text-secondary: #666;
+  --text-tertiary: #999;
+  --bg: #fff;
+  --bg-secondary: #f8f8f8;
+  --border: #e0e0e0;
+  --blue: #0066cc;
+  --blue-light: #e8f0fe;
+  --green: #1a7f37;
+  --green-light: #dff2e1;
+  --red: #d1242f;
+  --red-light: #ffe2e0;
+  --orange: #bf6a02;
+  --orange-light: #fff4e5;
+  --mono: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  --sans: 'Inter', 'Noto Sans KR', -apple-system, sans-serif;
+}
+
+body {
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
