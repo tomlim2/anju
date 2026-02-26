@@ -128,7 +128,7 @@ export const VRM_HUMANOID_BONE_LIST: string[] = [
 
 /** Required humanoid bones for valid VRM (17 bones). */
 export const VRM_REQUIRED_BONES = new Set<string>([
-  "hips", "spine", "chest", "neck", "head",
+  "hips", "spine", "neck", "head",
   "leftUpperArm", "leftLowerArm", "leftHand",
   "rightUpperArm", "rightLowerArm", "rightHand",
   "leftUpperLeg", "leftLowerLeg", "leftFoot",
@@ -146,13 +146,25 @@ export function mapBones(
   bones: PmxBone[],
   skinnedBoneIndices?: Set<number>,
 ): HumanoidBoneEntry[] {
+  // Dynamic spine chain: adjust mapping based on how many spine bones exist
+  const effectiveNames = new Set(
+    bones.map(b => PMX_BONE_REPLACEMENTS.get(b.name) ?? b.name),
+  );
+  const hasUpperBody3 = effectiveNames.has("上半身3");
+
+  const mapping = new Map(PMX_TO_VRM_HUMANOID);
+  if (!hasUpperBody3) {
+    // 2-bone spine: 上半身→spine, 上半身2→upperChest (skip chest)
+    mapping.set("上半身2", ["upperChest"]);
+  }
+
   // Pass 1: collect all candidates per VRM slot
   const candidates = new Map<string, { nodeIndex: number; hasSkin: boolean }[]>();
 
   for (let nodeIndex = 0; nodeIndex < bones.length; nodeIndex++) {
     const name = bones[nodeIndex].name;
     const lookupName = PMX_BONE_REPLACEMENTS.get(name) ?? name;
-    const vrmNames = PMX_TO_VRM_HUMANOID.get(lookupName) ?? [];
+    const vrmNames = mapping.get(lookupName) ?? [];
     const hasSkin = skinnedBoneIndices == null || skinnedBoneIndices.has(nodeIndex);
 
     for (const vrmName of vrmNames) {

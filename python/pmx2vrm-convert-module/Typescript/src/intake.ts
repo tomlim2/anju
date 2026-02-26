@@ -215,7 +215,7 @@ export async function process_(
 
   for (const r of results) {
     const tag = r.humanoid ? "humanoid" : "SKIP";
-    console.log(`  ${r.name} — ${tag} (${r.mappedCount}/17 required bones)`);
+    console.log(`  ${r.name} — ${tag} (${r.mappedCount}/${VRM_REQUIRED_BONES.size} required bones)`);
   }
 
   if (humanoids.length === 0) {

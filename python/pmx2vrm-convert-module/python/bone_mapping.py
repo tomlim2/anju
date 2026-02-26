@@ -5,25 +5,23 @@ Reference: VRM4U/Source/VRM4U/Private/VrmUtil.cpp
   - table_ue4_vrm  (UE4 bone → VRM humanoid bone name)
   Combined these two tables gives the PMX → VRM mapping used here.
 
-Key VRM4U behaviour for the spine:
-  spine_01 → 上半身 → spine
-  spine_02 → 上半身 → chest    (same node as spine!)
-  spine_03 → 上半身2 → upperChest
-So 上半身 maps to BOTH spine and chest (same glTF node index),
-and 上半身2 maps to upperChest (NOT chest).
+Spine chain: hips -> spine -> chest -> upperChest -> neck
+  センター  -> hips
+  上半身   -> spine
+  上半身2  -> chest
+  上半身3  -> upperChest  (rare, most models stop at 上半身2)
+
+Note: VRM4U maps 上半身 to both spine and chest by creating two UE bones
+from one PMX bone. We can't do that in direct PMX->VRM, so each PMX bone
+maps to exactly one VRM humanoid bone.
 """
 
-# PMX bone names (Japanese) → list of VRM humanoid bone names.
-# A list allows one PMX bone to fill multiple VRM humanoid slots
-# (e.g. 上半身 fills both "spine" and "chest" on the same node,
-#  matching VRM4U's spine_01+spine_02 double-mapping).
 PMX_TO_VRM_HUMANOID = {
     # Torso
-    # VRM4U: spine_01→spine and spine_02→chest BOTH point to 上半身
     "センター": ["hips"],
-    "上半身":   ["spine", "chest"],   # same node fills both slots (VRM4U spine_01+02)
-    "上半身2":  ["upperChest"],       # VRM4U spine_03→upperChest (was wrongly "chest")
-    # 上半身3 has no VRM4U equivalent; omitted intentionally
+    "上半身":   ["spine"],
+    "上半身2":  ["chest"],
+    "上半身3":  ["upperChest"],
     "首": ["neck"],
     "頭": ["head"],
     # Left arm
@@ -131,7 +129,7 @@ VRM_HUMANOID_BONE_LIST = [
 
 # Required humanoid bones for valid VRM
 VRM_REQUIRED_BONES = {
-    "hips", "spine", "chest", "neck", "head",
+    "hips", "spine", "neck", "head",
     "leftUpperArm", "leftLowerArm", "leftHand",
     "rightUpperArm", "rightLowerArm", "rightHand",
     "leftUpperLeg", "leftLowerLeg", "leftFoot",
@@ -158,6 +156,15 @@ def map_bones(bones, skinned_bone_indices=None):
     """
     from collections import defaultdict
 
+    # Dynamic spine chain: adjust mapping based on how many spine bones exist
+    effective_names = {PMX_BONE_REPLACEMENTS.get(b["name"], b["name"]) for b in bones}
+    has_upper_body_3 = "上半身3" in effective_names
+
+    mapping = dict(PMX_TO_VRM_HUMANOID)
+    if not has_upper_body_3:
+        # 2-bone spine: 上半身→spine, 上半身2→upperChest (skip chest)
+        mapping["上半身2"] = ["upperChest"]
+
     # Pass 1: collect all candidates per VRM slot
     # candidates[vrm_name] = list of (node_index, has_skin)
     candidates = defaultdict(list)
@@ -165,7 +172,7 @@ def map_bones(bones, skinned_bone_indices=None):
     for node_index, bone in enumerate(bones):
         name = bone["name"]
         lookup_name = PMX_BONE_REPLACEMENTS.get(name, name)
-        vrm_names = PMX_TO_VRM_HUMANOID.get(lookup_name, [])
+        vrm_names = mapping.get(lookup_name, [])
         has_skin = (skinned_bone_indices is None) or (node_index in skinned_bone_indices)
         for vrm_name in vrm_names:
             candidates[vrm_name].append((node_index, has_skin))
