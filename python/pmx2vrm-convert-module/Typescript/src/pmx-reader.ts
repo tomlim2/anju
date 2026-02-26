@@ -875,9 +875,18 @@ export async function read(pmxPath: string, scale = 0.08): Promise<PmxData> {
   }));
 
   // Joints: apply coordinate transform + scale
+  // Only pass fields used by spring converter (match Python pipeline).
+  // rotation_limit_min/max are intentionally excluded — the spring converter
+  // uses spring_constant_rotation as the primary stiffiness source, and
+  // including rotation limits produces overly aggressive gravity values.
   const jointsPhys: PmxJoint[] = raw.joints.map(j => ({
-    ...j,
+    name: j.name,
+    rigidbody_index_a: j.rigidbody_index_a,
+    rigidbody_index_b: j.rigidbody_index_b,
     position: [-j.position[0] * scale, j.position[1] * scale, j.position[2] * scale],
+    rotation: j.rotation,
+    spring_constant_translation: j.spring_constant_translation,
+    spring_constant_rotation: j.spring_constant_rotation,
   }));
 
   // Morphs: apply same X-negate + scale as vertex positions

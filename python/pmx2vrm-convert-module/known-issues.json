@@ -1,0 +1,60 @@
+{
+  "fixed": [
+    {
+      "id": "zip-encoding",
+      "type": "error",
+      "message": "ENOENT: no such file or directory, open '...\\????.txt'",
+      "cause": "JSZip decoded Shift-JIS zip filenames as CP437, producing garbled paths that Windows can't handle",
+      "fix": "Use custom decodeFileName in JSZip.loadAsync() that tries UTF-8 → Shift-JIS → GBK → EUC-KR → Big5",
+      "commit": "9fe2d23",
+      "files": ["Typescript/src/intake.ts"]
+    },
+    {
+      "id": "tga-unsupported",
+      "type": "warning",
+      "message": "Failed to load texture '颜赤.tga': Input file contains unsupported image format",
+      "cause": "sharp does not support TGA format",
+      "fix": "Added custom TGA decoder (uncompressed + RLE, BGR→RGBA, vertical flip)",
+      "commit": "9fe2d23",
+      "files": ["Typescript/src/pmx-reader.ts"]
+    },
+    {
+      "id": "bmp-unsupported",
+      "type": "warning",
+      "message": "Failed to load texture '31.bmp': Input file contains unsupported image format",
+      "cause": "sharp fails on some BMP variants common in MMD models",
+      "fix": "Added BMP fallback decoder (24/32/8-bit, row padding, BGR→RGBA)",
+      "commit": "9fe2d23",
+      "files": ["Typescript/src/pmx-reader.ts"]
+    },
+    {
+      "id": "duplicate-node-index",
+      "type": "warning",
+      "message": "humanoid.humanBones[8]: Duplicate node index 12 (bone: 'chest')",
+      "cause": "上半身 mapped to both spine and chest, sharing the same glTF node index",
+      "fix": "Each PMX bone maps to exactly one VRM humanoid bone. Dynamic spine chain: 1 bone→spine, 2 bones→spine+upperChest, 3 bones→spine+chest+upperChest",
+      "commit": "6c55c18",
+      "files": ["Typescript/src/bone-mapping.ts", "python/bone_mapping.py"]
+    },
+    {
+      "id": "spring-value-mismatch",
+      "type": "bug",
+      "message": "TypeScript spring values (stiffiness, gravityPower) differ from Python output",
+      "cause": "TypeScript joints included rotation_limit_min/max via spread operator, Python did not. This caused _rotation_limit_range to compute non-zero avg_range in TS, producing different gravity and stiffiness values",
+      "fix": "Explicitly list joint fields in TS to match Python (exclude rotation_limit_min/max)",
+      "commit": "pending",
+      "files": ["Typescript/src/pmx-reader.ts"]
+    }
+  ],
+  "known_limitations": [
+    {
+      "id": "chest-not-required",
+      "description": "chest removed from VRM_REQUIRED_BONES (16 required instead of 17). Models with only 2 spine bones map to spine+upperChest, skipping chest.",
+      "commit": "6c55c18"
+    },
+    {
+      "id": "texture-format-coverage",
+      "description": "Supported: PNG, JPEG, WebP, TIFF, GIF (via sharp), TGA, BMP (custom decoders). Unsupported: DDS, SPA, SPH (sphere maps)."
+    }
+  ]
+}
