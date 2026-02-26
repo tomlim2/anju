@@ -601,6 +601,168 @@ class PmxReader {
   }
 }
 
+// ── Texture loader ──
+
+/**
+ * Parse TGA (uncompressed and RLE) into raw RGBA pixels.
+ * Covers the formats commonly used in MMD models.
+ */
+function decodeTga(buf: Buffer): { width: number; height: number; data: Buffer } {
+  const idLen = buf[0];
+  const colorMapType = buf[1];
+  const imageType = buf[2];
+  const width = buf.readUInt16LE(12);
+  const height = buf.readUInt16LE(14);
+  const bpp = buf[16];
+  const descriptor = buf[17];
+
+  const headerSize = 18 + idLen + (colorMapType ? buf.readUInt16LE(5) * Math.ceil(buf[7] / 8) : 0);
+  const channels = bpp / 8;
+  const pixelCount = width * height;
+  const pixels = Buffer.alloc(pixelCount * 4);
+
+  let src = headerSize;
+
+  function writePixel(dst: number, offset: number) {
+    if (channels >= 3) {
+      // TGA stores BGR(A)
+      pixels[dst] = buf[offset + 2];
+      pixels[dst + 1] = buf[offset + 1];
+      pixels[dst + 2] = buf[offset];
+      pixels[dst + 3] = channels === 4 ? buf[offset + 3] : 255;
+    } else if (channels === 1) {
+      pixels[dst] = buf[offset];
+      pixels[dst + 1] = buf[offset];
+      pixels[dst + 2] = buf[offset];
+      pixels[dst + 3] = 255;
+    }
+  }
+
+  if (imageType === 2 || imageType === 3) {
+    // Uncompressed
+    for (let i = 0; i < pixelCount; i++) {
+      writePixel(i * 4, src);
+      src += channels;
+    }
+  } else if (imageType === 10 || imageType === 11) {
+    // RLE compressed
+    let pi = 0;
+    while (pi < pixelCount) {
+      const header = buf[src++];
+      const count = (header & 0x7F) + 1;
+      if (header & 0x80) {
+        // Run-length packet
+        for (let j = 0; j < count && pi < pixelCount; j++, pi++) {
+          writePixel(pi * 4, src);
+        }
+        src += channels;
+      } else {
+        // Raw packet
+        for (let j = 0; j < count && pi < pixelCount; j++, pi++) {
+          writePixel(pi * 4, src);
+          src += channels;
+        }
+      }
+    }
+  } else {
+    throw new Error(`Unsupported TGA image type: ${imageType}`);
+  }
+
+  // Flip vertically if origin is bottom-left (bit 5 of descriptor = 0)
+  const topDown = (descriptor & 0x20) !== 0;
+  if (!topDown) {
+    const rowBytes = width * 4;
+    const tmp = Buffer.alloc(rowBytes);
+    for (let y = 0; y < Math.floor(height / 2); y++) {
+      const topOff = y * rowBytes;
+      const botOff = (height - 1 - y) * rowBytes;
+      pixels.copy(tmp, 0, topOff, topOff + rowBytes);
+      pixels.copy(pixels, topOff, botOff, botOff + rowBytes);
+      tmp.copy(pixels, botOff);
+    }
+  }
+
+  return { width, height, data: pixels };
+}
+
+/**
+ * Parse BMP into raw RGBA pixels.
+ * Handles 24-bit and 32-bit uncompressed BMPs (common in MMD).
+ */
+function decodeBmp(buf: Buffer): { width: number; height: number; data: Buffer } {
+  if (buf[0] !== 0x42 || buf[1] !== 0x4D) throw new Error("Not a BMP file");
+
+  const dataOffset = buf.readUInt32LE(10);
+  const width = buf.readInt32LE(18);
+  const rawHeight = buf.readInt32LE(22);
+  const height = Math.abs(rawHeight);
+  const bpp = buf.readUInt16LE(28);
+  const compression = buf.readUInt32LE(30);
+
+  if (compression !== 0 && compression !== 3) {
+    throw new Error(`Unsupported BMP compression: ${compression}`);
+  }
+  if (bpp !== 24 && bpp !== 32 && bpp !== 8) {
+    throw new Error(`Unsupported BMP bpp: ${bpp}`);
+  }
+
+  const pixels = Buffer.alloc(width * height * 4);
+  const channels = bpp / 8;
+  const rowSize = Math.ceil((width * channels) / 4) * 4; // rows padded to 4 bytes
+  const bottomUp = rawHeight > 0;
+
+  for (let y = 0; y < height; y++) {
+    const srcY = bottomUp ? (height - 1 - y) : y;
+    const rowStart = dataOffset + srcY * rowSize;
+    for (let x = 0; x < width; x++) {
+      const dst = (y * width + x) * 4;
+      const src = rowStart + x * channels;
+      if (channels >= 3) {
+        // BMP stores BGR(A)
+        pixels[dst] = buf[src + 2];
+        pixels[dst + 1] = buf[src + 1];
+        pixels[dst + 2] = buf[src];
+        pixels[dst + 3] = channels === 4 ? buf[src + 3] : 255;
+      } else {
+        // 8-bit grayscale
+        pixels[dst] = buf[src];
+        pixels[dst + 1] = buf[src];
+        pixels[dst + 2] = buf[src];
+        pixels[dst + 3] = 255;
+      }
+    }
+  }
+
+  return { width, height, data: pixels };
+}
+
+/**
+ * Load a texture file and convert to PNG.
+ * Supports all sharp-native formats plus TGA and BMP fallback.
+ */
+async function loadTextureAsPng(filePath: string): Promise<Buffer> {
+  const ext = path.extname(filePath).toLowerCase();
+
+  if (ext === ".tga") {
+    const raw = await readFile(filePath);
+    const { width, height, data } = decodeTga(Buffer.from(raw));
+    return sharp(data, { raw: { width, height, channels: 4 } }).png().toBuffer();
+  }
+
+  // Try sharp first (PNG, JPEG, WebP, TIFF, GIF, etc.)
+  try {
+    return await sharp(filePath).png().toBuffer();
+  } catch {
+    // Fallback: try BMP decoder for formats sharp can't handle
+    if (ext === ".bmp") {
+      const raw = await readFile(filePath);
+      const { width, height, data } = decodeBmp(Buffer.from(raw));
+      return sharp(data, { raw: { width, height, channels: 4 } }).png().toBuffer();
+    }
+    throw new Error(`Unsupported image format: ${ext}`);
+  }
+}
+
 // ── Public API ──
 
 /**
@@ -691,7 +853,7 @@ export async function read(pmxPath: string, scale = 0.08): Promise<PmxData> {
   for (const texPath of raw.texture_paths) {
     const fullPath = path.join(pmxDir, texPath.replace(/\\/g, path.sep).replace(/\//g, path.sep));
     try {
-      const pngBuffer = await sharp(fullPath).png().toBuffer();
+      const pngBuffer = await loadTextureAsPng(fullPath);
       textures.push(new Uint8Array(pngBuffer));
       textureMimes.push("image/png");
     } catch (e: any) {

@@ -28,30 +28,32 @@ import { build as buildVrm } from "./vrm-builder.js";
 import { writeGlb } from "./index.js";
 
 // Encodings to try when zip filenames are not UTF-8
-const FALLBACK_ENCODINGS = ["gbk", "shiftjis", "euc-kr", "big5"];
+const FALLBACK_ENCODINGS = ["shiftjis", "gbk", "euc-kr", "big5"];
 
-function decodeZipFilename(rawName: string): string {
-  // Python's zipfile decodes non-UTF-8 names as CP437.
-  // JSZip does something similar. We try to re-encode as CP437 then decode CJK.
-  let rawBytes: Buffer;
+/**
+ * Custom filename decoder for JSZip.loadAsync().
+ * Receives raw bytes from the zip central directory and decodes them properly.
+ * Tries UTF-8 first (modern zips), then Shift-JIS (most common for MMD), then other CJK.
+ */
+function smartDecodeFilename(bytes: Uint8Array): string {
   try {
-    rawBytes = iconv.encode(rawName, "cp437");
-  } catch {
-    return rawName;
-  }
+    const utf8 = new TextDecoder("utf-8", { fatal: true });
+    return utf8.decode(bytes);
+  } catch {}
 
   for (const enc of FALLBACK_ENCODINGS) {
     try {
-      const decoded = iconv.decode(rawBytes, enc);
-      // If it decoded cleanly (no replacement chars), use it
+      const decoded = iconv.decode(Buffer.from(bytes), enc);
       if (!decoded.includes("\uFFFD")) return decoded;
     } catch {
       continue;
     }
   }
 
-  return rawName;
+  return new TextDecoder("utf-8").decode(bytes);
 }
+
+const ZIP_OPTS = { decodeFileName: smartDecodeFilename };
 
 interface ScanResult {
   name: string;
@@ -112,7 +114,7 @@ async function scanZipFile(
     } else if (lower.endsWith(".zip")) {
       const innerBytes = await file.async("uint8array");
       try {
-        const innerZip = await JSZip.loadAsync(innerBytes);
+        const innerZip = await JSZip.loadAsync(innerBytes, ZIP_OPTS);
         const nestedPrefix = `${prefix}${entryName}/`;
         const nested = await scanZipFile(innerZip, nestedPrefix);
         results.push(...nested);
@@ -127,7 +129,7 @@ async function scanZipFile(
 
 export async function scanZip(zipPath: string): Promise<ScanResult[]> {
   const data = await readFile(zipPath);
-  const zip = await JSZip.loadAsync(data);
+  const zip = await JSZip.loadAsync(data, ZIP_OPTS);
   return scanZipFile(zip);
 }
 
@@ -137,7 +139,7 @@ async function extractPmxToTmp(
   tmpDir: string,
 ): Promise<string> {
   const data = await readFile(zipPath);
-  let zip = await JSZip.loadAsync(data);
+  let zip = await JSZip.loadAsync(data, ZIP_OPTS);
 
   // If nested zip, open the inner zip first
   if (scanResult.parentZip) {
@@ -149,7 +151,7 @@ async function extractPmxToTmp(
     );
     if (innerZipEntry) {
       const innerBytes = await zip.file(innerZipEntry)!.async("uint8array");
-      zip = await JSZip.loadAsync(innerBytes);
+      zip = await JSZip.loadAsync(innerBytes, ZIP_OPTS);
     }
   }
 
@@ -158,8 +160,8 @@ async function extractPmxToTmp(
   if (!pmxFile) throw new Error(`PMX entry not found: ${scanResult.zipEntry}`);
 
   const pmxBytes = await pmxFile.async("uint8array");
-  const decodedName = decodeZipFilename(path.basename(scanResult.zipEntry));
-  const pmxPath = path.join(tmpDir, decodedName);
+  const pmxBasename = path.basename(scanResult.zipEntry);
+  const pmxPath = path.join(tmpDir, pmxBasename);
   await writeFile(pmxPath, pmxBytes);
 
   // Extract sibling files (textures etc.) from the same directory in the zip
@@ -173,12 +175,15 @@ async function extractPmxToTmp(
     if (!entryDir.startsWith(pmxDir)) continue;
 
     const relativePath = pmxDir ? entryName.slice(pmxDir.length + 1) : entryName;
-    const decodedRelative = decodeZipFilename(relativePath);
-    const targetPath = path.join(tmpDir, decodedRelative);
+    const targetPath = path.join(tmpDir, relativePath);
     const targetDir = path.dirname(targetPath);
-    await mkdir(targetDir, { recursive: true });
-    const bytes = await file.async("uint8array");
-    await writeFile(targetPath, bytes);
+    try {
+      await mkdir(targetDir, { recursive: true });
+      const bytes = await file.async("uint8array");
+      await writeFile(targetPath, bytes);
+    } catch {
+      // Skip files with names the OS can't handle (rare encoding edge cases)
+    }
   }
 
   return pmxPath;

@@ -6,12 +6,15 @@
  *   - table_ue4_vrm  (UE4 bone -> VRM humanoid bone name)
  *   Combined these two tables gives the PMX -> VRM mapping used here.
  *
- * Key VRM4U behaviour for the spine:
- *   spine_01 -> 上半身 -> spine
- *   spine_02 -> 上半身 -> chest    (same node as spine!)
- *   spine_03 -> 上半身2 -> upperChest
- * So 上半身 maps to BOTH spine and chest (same glTF node index),
- * and 上半身2 maps to upperChest (NOT chest).
+ * Spine chain: hips -> spine -> chest -> upperChest -> neck
+ *   センター  -> hips
+ *   上半身   -> spine
+ *   上半身2  -> chest
+ *   上半身3  -> upperChest  (rare, most models stop at 上半身2)
+ *
+ * Note: VRM4U maps 上半身 to both spine and chest by creating two UE bones
+ * from one PMX bone. We can't do that in direct PMX->VRM, so each PMX bone
+ * maps to exactly one VRM humanoid bone.
  */
 
 import type { PmxBone, HumanoidBoneEntry } from "./types.js";
@@ -20,8 +23,9 @@ import type { PmxBone, HumanoidBoneEntry } from "./types.js";
 export const PMX_TO_VRM_HUMANOID = new Map<string, string[]>([
   // Torso
   ["センター", ["hips"]],
-  ["上半身", ["spine", "chest"]],
-  ["上半身2", ["upperChest"]],
+  ["上半身", ["spine"]],
+  ["上半身2", ["chest"]],
+  ["上半身3", ["upperChest"]],
   ["首", ["neck"]],
   ["頭", ["head"]],
   // Left arm
