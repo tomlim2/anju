@@ -11,15 +11,15 @@ Spine chain: hips -> spine -> chest -> upperChest -> neck
   上半身2  -> chest
   上半身3  -> upperChest  (rare, most models stop at 上半身2)
 
-Note: VRM4U maps 上半身 to both spine and chest by creating two UE bones
-from one PMX bone. We can't do that in direct PMX->VRM, so each PMX bone
-maps to exactly one VRM humanoid bone.
+Note: For 2-bone spine (no 上半身3), 上半身 maps to both spine and chest
+(same node index). VRM4U/UE requires chest for retargeting.
 """
 
 PMX_TO_VRM_HUMANOID = {
     # Torso
     "センター": ["hips"],
     "上半身":   ["spine"],
+    "上半身1":  ["chest"],      # alt numbering (1-indexed): 上半身→上半身1→上半身2
     "上半身2":  ["chest"],
     "上半身3":  ["upperChest"],
     "首": ["neck"],
@@ -158,11 +158,14 @@ def map_bones(bones, skinned_bone_indices=None):
 
     # Dynamic spine chain: adjust mapping based on how many spine bones exist
     effective_names = {PMX_BONE_REPLACEMENTS.get(b["name"], b["name"]) for b in bones}
-    has_upper_body_3 = "上半身3" in effective_names
-
     mapping = dict(PMX_TO_VRM_HUMANOID)
-    if not has_upper_body_3:
-        # 2-bone spine: 上半身→spine, 上半身2→upperChest (skip chest)
+    if "上半身1" in effective_names:
+        # 1-indexed 3-bone: 上半身→spine, 上半身1→chest (default), 上半身2→upperChest
+        mapping["上半身2"] = ["upperChest"]
+    elif "上半身3" not in effective_names:
+        # 2-bone spine: 上半身→spine+chest, 上半身2→upperChest
+        # chest must be present — VRM4U/UE crashes without it during retarget
+        mapping["上半身"] = ["spine", "chest"]
         mapping["上半身2"] = ["upperChest"]
 
     # Pass 1: collect all candidates per VRM slot

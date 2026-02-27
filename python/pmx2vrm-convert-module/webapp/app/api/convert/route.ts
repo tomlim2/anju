@@ -58,21 +58,49 @@ export async function POST(req: NextRequest) {
 
   try {
     const form = await req.formData();
-    const file = form.get("file") as File | null;
-    if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
-    }
-
     const scale = parseFloat(String(form.get("scale") ?? "0.08"));
     const noSpring = form.get("noSpring") === "true";
-    const originalName = file.name;
 
-    // Write to temp (pmx-reader needs file path for texture resolution)
     tmpDir = path.join(tmpdir(), `truepmx2vrm-web-${Date.now()}`);
     await mkdir(tmpDir, { recursive: true });
-    const pmxPath = path.join(tmpDir, originalName);
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(pmxPath, buffer);
+
+    // Support both folder upload (files[]+paths[]) and legacy single file
+    const files = form.getAll("files") as File[];
+    const paths = form.getAll("paths") as string[];
+    let pmxPath = "";
+    let originalName = "";
+
+    if (files.length > 0 && paths.length === files.length) {
+      // Folder mode: write all files preserving relative paths
+      let largestPmxSize = 0;
+      for (let i = 0; i < files.length; i++) {
+        const relPath = paths[i];
+        const dest = path.join(tmpDir, ...relPath.split("/"));
+        await mkdir(path.dirname(dest), { recursive: true });
+        const buf = Buffer.from(await files[i].arrayBuffer());
+        await writeFile(dest, buf);
+        // Pick the largest PMX (humanoid > accessories)
+        if (relPath.toLowerCase().endsWith(".pmx") && files[i].size > largestPmxSize) {
+          largestPmxSize = files[i].size;
+          pmxPath = dest;
+          originalName = files[i].name;
+        }
+      }
+    } else {
+      // Legacy single file mode
+      const file = form.get("file") as File | null;
+      if (!file) {
+        return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+      }
+      originalName = file.name;
+      pmxPath = path.join(tmpDir, originalName);
+      const buffer = Buffer.from(await file.arrayBuffer());
+      await writeFile(pmxPath, buffer);
+    }
+
+    if (!pmxPath) {
+      return NextResponse.json({ error: "No .pmx file found in upload" }, { status: 400 });
+    }
 
     // 1. Read PMX
     log("Reading PMX...");
@@ -87,6 +115,13 @@ export async function POST(req: NextRequest) {
     log("Mapping bones...");
     const humanoidBones = mapBones(pmxData.bones, pmxData.skinned_bone_indices);
     log(`  Mapped ${humanoidBones.length} humanoid bones`);
+
+    if (humanoidBones.length < 15) {
+      return NextResponse.json({
+        error: `Not a humanoid PMX: only ${humanoidBones.length}/15 required bones mapped. This file may be an accessory or prop.`,
+        logs,
+      }, { status: 400 });
+    }
 
     // 4. Spring bones
     let secondary;
@@ -115,12 +150,13 @@ export async function POST(req: NextRequest) {
     log(`Done in ${elapsed}ms (${(glbBuffer.byteLength / 1024).toFixed(0)} KB)`);
 
     const vrmName = originalName.replace(/\.pmx$/i, ".vrm");
+    const safeFilename = encodeURIComponent(vrmName);
 
     return new NextResponse(Buffer.from(glbBuffer) as unknown as BodyInit, {
       status: 200,
       headers: {
         "Content-Type": "model/gltf-binary",
-        "Content-Disposition": `attachment; filename="${vrmName}"`,
+        "Content-Disposition": `attachment; filename*=UTF-8''${safeFilename}`,
         "X-Convert-Time": String(elapsed),
         "X-Convert-Logs": Buffer.from(JSON.stringify(logs)).toString("base64"),
         "X-Validation": Buffer.from(JSON.stringify(validation)).toString("base64"),

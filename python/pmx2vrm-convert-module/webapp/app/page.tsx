@@ -196,13 +196,85 @@ function LogViewer({ text }: { text: string }) {
   return <pre style={styles.log} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
+// ── Folder picker component ──
+
+function FolderPicker({
+  files,
+  displayName,
+  onFiles,
+  onClear,
+}: {
+  files: File[];
+  displayName: string;
+  onFiles: (files: File[], name: string) => void;
+  onClear: () => void;
+}) {
+  const folderInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFolderChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+    const allFiles: File[] = [];
+    let folderName = "";
+    for (let i = 0; i < fileList.length; i++) {
+      const f = fileList[i];
+      const relPath = (f as any).webkitRelativePath || f.name;
+      if (!folderName) folderName = relPath.split("/")[0];
+      Object.defineProperty(f, "_relativePath", {
+        value: relPath.split("/").slice(1).join("/") || f.name,
+        writable: false,
+      });
+      allFiles.push(f);
+    }
+    const pmxCandidates = allFiles
+      .filter(f => f.name.toLowerCase().endsWith(".pmx"))
+      .sort((a, b) => b.size - a.size);
+    if (pmxCandidates.length === 0) {
+      alert("No .pmx file found in the selected folder");
+      e.target.value = "";
+      return;
+    }
+    // Pick the largest PMX (humanoid models are always larger than accessories)
+    const pmx = pmxCandidates[0];
+    const note = pmxCandidates.length > 1
+      ? ` (${pmxCandidates.length} PMXs found, using largest: ${pmx.name})`
+      : "";
+    onFiles(allFiles, `${folderName}/ (${allFiles.length} files, PMX: ${pmx.name})${note}`);
+  }, [onFiles]);
+
+  if (files.length > 0) {
+    const totalSize = files.reduce((s, f) => s + f.size, 0);
+    return (
+      <div style={styles.fileInfo}>
+        <span style={styles.fileName}>{displayName}</span>
+        <span style={styles.fileSize}>{formatSize(totalSize)}</span>
+        <button style={styles.removeBtn} onClick={onClear}>&times;</button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <button style={styles.btnSecondary} onClick={() => folderInputRef.current?.click()}>
+        Select PMX folder
+      </button>
+      <span style={{ fontSize: 12, color: "var(--text-tertiary)", marginLeft: 12 }}>
+        Folder must contain a .pmx file (textures included automatically)
+      </span>
+      <input ref={folderInputRef} type="file" onChange={handleFolderChange} style={{ display: "none" }}
+        {...{ webkitdirectory: "", directory: "" } as any} />
+    </div>
+  );
+}
+
 // ── Main page ──
 
 export default function Page() {
   const [tab, setTab] = useState<Tab>("convert");
 
   // Convert state
-  const [pmxFile, setPmxFile] = useState<File | null>(null);
+  const [pmxFiles, setPmxFiles] = useState<File[]>([]);
+  const [pmxDisplayName, setPmxDisplayName] = useState("");
   const [pmxScale, setPmxScale] = useState("0.08");
   const [pmxNoSpring, setPmxNoSpring] = useState(false);
   const [pmxStatus, setPmxStatus] = useState<Status>("idle");
@@ -226,15 +298,27 @@ export default function Page() {
 
   // ── Convert handler ──
   const handleConvert = useCallback(async () => {
-    if (!pmxFile) return;
+    if (pmxFiles.length === 0) return;
     setPmxStatus("loading");
     setPmxResult(null);
     setPmxError("");
 
     const form = new FormData();
-    form.append("file", pmxFile);
     form.append("scale", pmxScale);
     form.append("noSpring", String(pmxNoSpring));
+
+    // Find the PMX file for naming
+    const pmx = pmxFiles.find(f => f.name.toLowerCase().endsWith(".pmx"));
+    const pmxName = pmx?.name ?? "output.pmx";
+
+    // Send all files with relative paths
+    for (const f of pmxFiles) {
+      form.append("files", f);
+      const relPath = (f as any)._relativePath
+        || (f as any).webkitRelativePath
+        || f.name;
+      form.append("paths", relPath);
+    }
 
     try {
       const resp = await fetch("/api/convert", { method: "POST", body: form });
@@ -253,7 +337,7 @@ export default function Page() {
 
       setPmxResult({
         blob,
-        name: pmxFile.name.replace(/\.pmx$/i, ".vrm"),
+        name: pmxName.replace(/\.pmx$/i, ".vrm"),
         size: blob.size,
         elapsed,
         logs,
@@ -264,7 +348,7 @@ export default function Page() {
       setPmxError(e.message);
       setPmxStatus("error");
     }
-  }, [pmxFile, pmxScale, pmxNoSpring]);
+  }, [pmxFiles, pmxScale, pmxNoSpring]);
 
   // ── ZIP handler ──
   const handleZip = useCallback(async () => {
@@ -338,13 +422,11 @@ export default function Page() {
       {/* ── Convert PMX ── */}
       {tab === "convert" && (
         <div>
-          <Dropzone
-            accept=".pmx"
-            label=".pmx"
-            hint="Max 200 MB"
-            file={pmxFile}
-            onFile={setPmxFile}
-            onClear={() => { setPmxFile(null); setPmxStatus("idle"); setPmxResult(null); }}
+          <FolderPicker
+            files={pmxFiles}
+            displayName={pmxDisplayName}
+            onFiles={(files, name) => { setPmxFiles(files); setPmxDisplayName(name); }}
+            onClear={() => { setPmxFiles([]); setPmxDisplayName(""); setPmxStatus("idle"); setPmxResult(null); }}
           />
 
           <div style={styles.options}>
@@ -371,8 +453,8 @@ export default function Page() {
           </div>
 
           <button
-            style={{ ...styles.btn, opacity: !pmxFile || pmxStatus === "loading" ? 0.4 : 1 }}
-            disabled={!pmxFile || pmxStatus === "loading"}
+            style={{ ...styles.btn, opacity: pmxFiles.length === 0 || pmxStatus === "loading" ? 0.4 : 1 }}
+            disabled={pmxFiles.length === 0 || pmxStatus === "loading"}
             onClick={handleConvert}
           >
             {pmxStatus === "loading" ? "Converting..." : "Convert to VRM"}
@@ -387,39 +469,52 @@ export default function Page() {
             </div>
           )}
 
-          {pmxStatus === "success" && pmxResult && (
-            <div style={{ marginTop: 24 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                <Badge type="success">SUCCESS</Badge>
-                <span style={styles.resultMeta}>
-                  {formatSize(pmxResult.size)} in {pmxResult.elapsed}ms
-                </span>
-              </div>
+          {pmxStatus === "success" && pmxResult && (() => {
+            const valid = pmxResult.validation?.valid ?? false;
+            const hasWarnings = pmxResult.validation?.issues.some(i => i.severity === "WARNING") ?? false;
+            return (
+              <div style={{ marginTop: 24 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                  {valid ? (
+                    <Badge type={hasWarnings ? "warning" : "success"}>
+                      {hasWarnings ? "VALID (warnings)" : "VALID"}
+                    </Badge>
+                  ) : (
+                    <Badge type="error">INVALID</Badge>
+                  )}
+                  <span style={styles.resultMeta}>
+                    {formatSize(pmxResult.size)} in {pmxResult.elapsed}ms
+                  </span>
+                </div>
 
-              <button
-                style={styles.btn}
-                onClick={() => downloadBlob(pmxResult.blob, pmxResult.name)}
-              >
-                Download {pmxResult.name}
-              </button>
-
-              {pmxResult.logs.length > 0 && (
-                <details style={{ marginTop: 16 }}>
-                  <summary style={styles.summary}>Pipeline log</summary>
-                  <pre style={{ ...styles.log, marginTop: 8 }}>{pmxResult.logs.join("\n")}</pre>
-                </details>
-              )}
-
-              {pmxResult.validation && (
-                <details style={{ marginTop: 8 }}>
-                  <summary style={styles.summary}>Validation</summary>
-                  <div style={{ marginTop: 8 }}>
+                {pmxResult.validation && (
+                  <div style={{ marginBottom: 16 }}>
                     <LogViewer text={formatValidation(pmxResult.validation)} />
                   </div>
-                </details>
-              )}
-            </div>
-          )}
+                )}
+
+                {valid ? (
+                  <button
+                    style={styles.btn}
+                    onClick={() => downloadBlob(pmxResult.blob, pmxResult.name)}
+                  >
+                    Download {pmxResult.name}
+                  </button>
+                ) : (
+                  <div style={{ fontSize: 13, color: "var(--red)" }}>
+                    Download blocked — VRM validation failed
+                  </div>
+                )}
+
+                {pmxResult.logs.length > 0 && (
+                  <details style={{ marginTop: 16 }}>
+                    <summary style={styles.summary}>Pipeline log</summary>
+                    <pre style={{ ...styles.log, marginTop: 8 }}>{pmxResult.logs.join("\n")}</pre>
+                  </details>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 

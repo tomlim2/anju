@@ -66,9 +66,10 @@ class ValidationResult:
         }
 
 
-# VRM 0.x required humanoid bones (17 bones)
+# VRM 0.x required humanoid bones (chest/upperChest optional — most PMX models
+# have only 2-bone spine where 上半身2→upperChest, leaving chest unmapped)
 _REQUIRED_BONES = {
-    "hips", "spine", "chest", "neck", "head",
+    "hips", "spine", "neck", "head",
     "leftUpperArm", "leftLowerArm", "leftHand",
     "rightUpperArm", "rightLowerArm", "rightHand",
     "leftUpperLeg", "leftLowerLeg", "leftFoot",

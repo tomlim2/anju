@@ -12,9 +12,8 @@
  *   上半身2  -> chest
  *   上半身3  -> upperChest  (rare, most models stop at 上半身2)
  *
- * Note: VRM4U maps 上半身 to both spine and chest by creating two UE bones
- * from one PMX bone. We can't do that in direct PMX->VRM, so each PMX bone
- * maps to exactly one VRM humanoid bone.
+ * Note: For 2-bone spine (no 上半身3), 上半身 maps to both spine and chest
+ * (same node index). VRM4U/UE requires chest for retargeting.
  */
 
 import type { PmxBone, HumanoidBoneEntry } from "./types.js";
@@ -24,6 +23,7 @@ export const PMX_TO_VRM_HUMANOID = new Map<string, string[]>([
   // Torso
   ["センター", ["hips"]],
   ["上半身", ["spine"]],
+  ["上半身1", ["chest"]],      // alt numbering (1-indexed): 上半身→上半身1→上半身2
   ["上半身2", ["chest"]],
   ["上半身3", ["upperChest"]],
   ["首", ["neck"]],
@@ -150,11 +150,14 @@ export function mapBones(
   const effectiveNames = new Set(
     bones.map(b => PMX_BONE_REPLACEMENTS.get(b.name) ?? b.name),
   );
-  const hasUpperBody3 = effectiveNames.has("上半身3");
-
   const mapping = new Map(PMX_TO_VRM_HUMANOID);
-  if (!hasUpperBody3) {
-    // 2-bone spine: 上半身→spine, 上半身2→upperChest (skip chest)
+  if (effectiveNames.has("上半身1")) {
+    // 1-indexed 3-bone: 上半身→spine, 上半身1→chest (default), 上半身2→upperChest
+    mapping.set("上半身2", ["upperChest"]);
+  } else if (!effectiveNames.has("上半身3")) {
+    // 2-bone spine: 上半身→spine+chest, 上半身2→upperChest
+    // chest must be present — VRM4U/UE crashes without it during retarget
+    mapping.set("上半身", ["spine", "chest"]);
     mapping.set("上半身2", ["upperChest"]);
   }
 
