@@ -487,7 +487,7 @@ class CharacterCreatorGUI:
         tree_frame = tk.Frame(editor_frame, bg='white')
         tree_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
 
-        columns = ('preset_id', 'character_file', 'category', 'display_name', 'scaling', 'source')
+        columns = ('preset_id', 'character_file', 'category', 'display_name', 'gender', 'scaling', 'source')
         self.assets_tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=15,
                                         selectmode='extended')
 
@@ -495,6 +495,7 @@ class CharacterCreatorGUI:
         self.assets_tree.heading('character_file', text='캐릭터 파일')
         self.assets_tree.heading('category', text='카테고리')
         self.assets_tree.heading('display_name', text='표시 이름')
+        self.assets_tree.heading('gender', text='성별')
         self.assets_tree.heading('scaling', text='스케일링')
         self.assets_tree.heading('source', text='출처')
 
@@ -502,6 +503,7 @@ class CharacterCreatorGUI:
         self.assets_tree.column('character_file', width=160, minwidth=100)
         self.assets_tree.column('category', width=130, minwidth=80)
         self.assets_tree.column('display_name', width=100, minwidth=60)
+        self.assets_tree.column('gender', width=50, minwidth=40)
         self.assets_tree.column('scaling', width=70, minwidth=50)
         self.assets_tree.column('source', width=60, minwidth=40)
 
@@ -544,6 +546,8 @@ class CharacterCreatorGUI:
         self.asset_char_file_var = tk.StringVar()
         self.asset_category_var = tk.StringVar()
         self.asset_display_name_var = tk.StringVar()
+        self.asset_gender_var = tk.StringVar()
+        self.asset_thumbnail_var = tk.StringVar()
         self.asset_scaling_var = tk.StringVar()
         self.asset_source_var = tk.StringVar()
 
@@ -551,7 +555,8 @@ class CharacterCreatorGUI:
         self._populating_form = False
         self._char_meta_original = {}
         for var in (self.asset_preset_id_var, self.asset_char_file_var, self.asset_category_var,
-                    self.asset_display_name_var, self.asset_scaling_var, self.asset_source_var):
+                    self.asset_display_name_var, self.asset_gender_var, self.asset_thumbnail_var,
+                    self.asset_scaling_var, self.asset_source_var):
             var.trace_add('write', self._on_form_field_changed)
 
         fields = [
@@ -559,6 +564,7 @@ class CharacterCreatorGUI:
             ("캐릭터 파일:", self.asset_char_file_var, None),
             ("카테고리:", self.asset_category_var, ["CharacterCategory.VRM"]),
             ("표시 이름:", self.asset_display_name_var, None),
+            ("성별:", self.asset_gender_var, ["Female", "Male"]),
             ("스케일링:", self.asset_scaling_var, ["Original", "CineV"]),
             ("출처:", self.asset_source_var, ["None", "VRM", "VRoid", "Zepeto"]),
         ]
@@ -575,6 +581,23 @@ class CharacterCreatorGUI:
                 tk.Entry(row, textvariable=var, bg='white', fg='black',
                         relief=tk.SOLID, borderwidth=1).pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
 
+        # Thumbnail row (entry + browse + preview)
+        thumb_row = tk.Frame(form_frame, bg='white')
+        thumb_row.pack(fill=tk.X, pady=2)
+        tk.Label(thumb_row, text="썸네일:", width=16, anchor='w',
+                bg='white', fg='black', font=('Arial', 9)).pack(side=tk.LEFT)
+        tk.Entry(thumb_row, textvariable=self.asset_thumbnail_var, bg='white', fg='black',
+                relief=tk.SOLID, borderwidth=1).pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+        tk.Button(thumb_row, text="찾기", command=self._browse_thumbnail,
+                 bg='white', fg='black', relief=tk.SOLID, borderwidth=1,
+                 padx=6, cursor='hand2', font=('Arial', 8)).pack(side=tk.LEFT, padx=(0, 5))
+
+        # Thumbnail preview
+        self._thumb_preview_label = tk.Label(form_frame, bg='white', text="(썸네일 미리보기)",
+                                             fg='#999999', font=('Arial', 8))
+        self._thumb_preview_label.pack(anchor='w', padx=(130, 0), pady=(2, 0))
+        self._thumb_photo = None  # keep reference to prevent GC
+
         # Buttons row
         btn_row = tk.Frame(form_frame, bg='white')
         btn_row.pack(pady=(10, 5))
@@ -589,6 +612,56 @@ class CharacterCreatorGUI:
                  cursor='hand2', state=tk.DISABLED)
         self.assets_delete_btn.pack(side=tk.LEFT, padx=5)
 
+
+    def _browse_thumbnail(self):
+        """Browse for a thumbnail image file"""
+        user_char_folder = self.get_user_character_folder()
+        initial_dir = user_char_folder if user_char_folder else os.path.expanduser('~')
+        path = filedialog.askopenfilename(
+            title="썸네일 이미지 선택",
+            initialdir=initial_dir,
+            filetypes=[("이미지 파일", "*.png *.jpg *.jpeg *.bmp"), ("모든 파일", "*.*")]
+        )
+        if path:
+            # Store only filename if it's in the UserCharacter folder
+            if user_char_folder and os.path.dirname(os.path.abspath(path)) == os.path.abspath(user_char_folder):
+                self.asset_thumbnail_var.set(os.path.basename(path))
+            else:
+                # Copy to UserCharacter folder
+                dest = os.path.join(user_char_folder, os.path.basename(path))
+                try:
+                    shutil.copy2(path, dest)
+                    self.asset_thumbnail_var.set(os.path.basename(path))
+                    self.log_output(f"썸네일 복사: {os.path.basename(path)}")
+                except Exception as e:
+                    self.log_output(f"썸네일 복사 실패: {str(e)}")
+                    self.asset_thumbnail_var.set(os.path.basename(path))
+
+    def _update_thumb_preview(self):
+        """Update thumbnail preview image"""
+        thumb_name = self.asset_thumbnail_var.get()
+        user_char_folder = self.get_user_character_folder()
+        if not thumb_name or not user_char_folder:
+            self._thumb_preview_label.config(image='', text="(썸네일 미리보기)")
+            self._thumb_photo = None
+            return
+        thumb_path = os.path.join(user_char_folder, thumb_name)
+        if not os.path.exists(thumb_path):
+            self._thumb_preview_label.config(image='', text=f"({thumb_name} 없음)")
+            self._thumb_photo = None
+            return
+        try:
+            from PIL import Image, ImageTk
+            img = Image.open(thumb_path)
+            img.thumbnail((80, 80))
+            self._thumb_photo = ImageTk.PhotoImage(img)
+            self._thumb_preview_label.config(image=self._thumb_photo, text="")
+        except ImportError:
+            self._thumb_preview_label.config(image='', text=f"[{thumb_name}]")
+            self._thumb_photo = None
+        except Exception:
+            self._thumb_preview_label.config(image='', text=f"({thumb_name} 로드 실패)")
+            self._thumb_photo = None
 
     def get_assets_info_path(self):
         """Get the assets.info file path"""
@@ -658,6 +731,7 @@ class CharacterCreatorGUI:
                 entry.get('CharacterFilePath', ''),
                 entry.get('CategoryName', ''),
                 entry.get('DisplayName', ''),
+                entry.get('Gender', ''),
                 entry.get('ScalingMethod', ''),
                 entry.get('ModelSourceType', ''),
             ))
@@ -666,7 +740,7 @@ class CharacterCreatorGUI:
         # Empty state guidance
         if not self.assets_data:
             self.assets_tree.insert('', tk.END, iid='empty_placeholder', values=(
-                '', '항목 없음', '', '', '', ''
+                '', '항목 없음', '', '', '', '', ''
             ))
             self.assets_apply_btn.config(state=tk.DISABLED)
             self.assets_delete_btn.config(state=tk.DISABLED)
@@ -752,6 +826,8 @@ class CharacterCreatorGUI:
         self.asset_preset_id_var.set(entry.get('Preset_id', ''))
         self.asset_char_file_var.set(entry.get('CharacterFilePath', ''))
         self.asset_category_var.set(entry.get('CategoryName', ''))
+        self.asset_gender_var.set(entry.get('Gender', ''))
+        self.asset_thumbnail_var.set(entry.get('ThumbnailFileName', ''))
 
         # Read DisplayName, ScalingMethod, ModelSourceType from .character file
         self.asset_display_name_var.set('')
@@ -779,6 +855,7 @@ class CharacterCreatorGUI:
             self.asset_source_var.set(entry.get('ModelSourceType', ''))
 
         self._populating_form = False
+        self._update_thumb_preview()
 
         # Enable apply button if .character metadata differs from assets.info
         meta_mismatch = False
@@ -810,6 +887,8 @@ class CharacterCreatorGUI:
             self.asset_preset_id_var.get() != entry.get('Preset_id', '') or
             self.asset_char_file_var.get() != entry.get('CharacterFilePath', '') or
             self.asset_category_var.get() != entry.get('CategoryName', '') or
+            self.asset_gender_var.get() != entry.get('Gender', '') or
+            self.asset_thumbnail_var.get() != entry.get('ThumbnailFileName', '') or
             self.asset_display_name_var.get() != orig_meta.get('DisplayName', '') or
             self.asset_scaling_var.get() != orig_meta.get('ScalingMethod', '') or
             self.asset_source_var.get() != orig_meta.get('ModelSourceType', '')
@@ -824,10 +903,11 @@ class CharacterCreatorGUI:
         idx = self.selected_asset_idx
 
         self.assets_data[idx]['Preset_id'] = self.asset_preset_id_var.get()
-        self.assets_data[idx]['Gender'] = self.assets_data[idx].get('Gender', '')
+        self.assets_data[idx]['Gender'] = self.asset_gender_var.get()
         self.assets_data[idx]['DisplayName'] = self.asset_display_name_var.get()
         self.assets_data[idx]['CharacterFilePath'] = self.asset_char_file_var.get()
         self.assets_data[idx]['CategoryName'] = self.asset_category_var.get()
+        self.assets_data[idx]['ThumbnailFileName'] = self.asset_thumbnail_var.get()
         # ScalingMethod, ModelSourceType → .character 파일에만 기록 (assets.info에는 저장하지 않음)
 
         # Write metadata back to .character file
