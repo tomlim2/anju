@@ -208,7 +208,7 @@ async function extractPmxToTmp(
     const entryDir = path.dirname(entryName);
     if (!entryDir.startsWith(pmxDir)) continue;
 
-    const relativePath = pmxDir ? entryName.slice(pmxDir.length + 1) : entryName;
+    const relativePath = pmxDir && pmxDir !== "." ? entryName.slice(pmxDir.length + 1) : entryName;
     const targetPath = path.join(tmpDir, relativePath);
     const targetDir = path.dirname(targetPath);
     try {
