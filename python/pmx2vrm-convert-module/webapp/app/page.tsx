@@ -1,30 +1,39 @@
 "use client";
 
 import { useState, useRef, useCallback, type DragEvent, type ChangeEvent } from "react";
+import JSZip from "jszip";
 import "./globals.css";
 
-type Tab = "convert" | "zip" | "validate";
+type Tab = "convert" | "validate";
 type Status = "idle" | "loading" | "success" | "error";
 
-interface ConvertResult {
-  blob: Blob;
+// ── Types ──
+
+interface QueueItem {
+  files: File[];
+  displayName: string;
+}
+
+interface OutputItem {
   name: string;
   size: number;
-  elapsed: number;
-  logs: string[];
+  blob: Blob;
   validation: ValidationData | null;
 }
 
-interface ZipOutput {
+interface QueueResult {
+  itemName: string;
+  outputs: OutputItem[];
+  logs: string[];
+  elapsed: number;
+  error: string | null;
+}
+
+interface ZipApiOutput {
   name: string;
   size: number;
   data: string; // base64
-}
-
-interface ZipResult {
-  outputs: ZipOutput[];
-  logs: string[];
-  elapsed: number;
+  validation: ValidationData | null;
 }
 
 interface ValidationIssue {
@@ -196,73 +205,54 @@ function LogViewer({ text }: { text: string }) {
   return <pre style={styles.log} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-// ── Folder picker component ──
+// ── Queue picker component ──
 
-function FolderPicker({
-  files,
-  displayName,
-  onFiles,
-  onClear,
+function QueuePicker({
+  items,
+  onAddZips,
+  onRemove,
+  disabled,
 }: {
-  files: File[];
-  displayName: string;
-  onFiles: (files: File[], name: string) => void;
-  onClear: () => void;
+  items: QueueItem[];
+  onAddZips: (items: QueueItem[]) => void;
+  onRemove: (index: number) => void;
+  disabled?: boolean;
 }) {
-  const folderInputRef = useRef<HTMLInputElement>(null);
+  const zipInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFolderChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+  const handleZipChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0) return;
-    const allFiles: File[] = [];
-    let folderName = "";
+    const newItems: QueueItem[] = [];
     for (let i = 0; i < fileList.length; i++) {
       const f = fileList[i];
-      const relPath = (f as any).webkitRelativePath || f.name;
-      if (!folderName) folderName = relPath.split("/")[0];
-      Object.defineProperty(f, "_relativePath", {
-        value: relPath.split("/").slice(1).join("/") || f.name,
-        writable: false,
-      });
-      allFiles.push(f);
+      newItems.push({ files: [f], displayName: f.name });
     }
-    const pmxCandidates = allFiles
-      .filter(f => f.name.toLowerCase().endsWith(".pmx"))
-      .sort((a, b) => b.size - a.size);
-    if (pmxCandidates.length === 0) {
-      alert("No .pmx file found in the selected folder");
-      e.target.value = "";
-      return;
-    }
-    // Pick the largest PMX (humanoid models are always larger than accessories)
-    const pmx = pmxCandidates[0];
-    const note = pmxCandidates.length > 1
-      ? ` (${pmxCandidates.length} PMXs found, using largest: ${pmx.name})`
-      : "";
-    onFiles(allFiles, `${folderName}/ (${allFiles.length} files, PMX: ${pmx.name})${note}`);
-  }, [onFiles]);
-
-  if (files.length > 0) {
-    const totalSize = files.reduce((s, f) => s + f.size, 0);
-    return (
-      <div style={styles.fileInfo}>
-        <span style={styles.fileName}>{displayName}</span>
-        <span style={styles.fileSize}>{formatSize(totalSize)}</span>
-        <button style={styles.removeBtn} onClick={onClear}>&times;</button>
-      </div>
-    );
-  }
+    onAddZips(newItems);
+    e.target.value = "";
+  }, [onAddZips]);
 
   return (
     <div>
-      <button style={styles.btnSecondary} onClick={() => folderInputRef.current?.click()}>
-        Select PMX folder
-      </button>
-      <span style={{ fontSize: 12, color: "var(--text-tertiary)", marginLeft: 12 }}>
-        Folder must contain a .pmx file (textures included automatically)
-      </span>
-      <input ref={folderInputRef} type="file" onChange={handleFolderChange} style={{ display: "none" }}
-        {...{ webkitdirectory: "", directory: "" } as any} />
+      {items.map((item, i) => {
+        const totalSize = item.files.reduce((s, f) => s + f.size, 0);
+        return (
+          <div key={i} style={{ ...styles.fileInfo, marginBottom: 4 }}>
+            <span style={styles.fileName}>{item.displayName}</span>
+            <span style={styles.fileSize}>{formatSize(totalSize)}</span>
+            <button style={styles.removeBtn} onClick={() => onRemove(i)} disabled={disabled}>&times;</button>
+          </div>
+        );
+      })}
+      <div style={{ display: "flex", gap: 8, marginTop: items.length > 0 ? 12 : 0 }}>
+        <button style={styles.btnSecondary} onClick={() => zipInputRef.current?.click()} disabled={disabled}>
+          {items.length > 0 ? "Add ZIP" : "Select ZIP file"}
+        </button>
+        <span style={{ fontSize: 12, color: "var(--text-tertiary)", display: "flex", alignItems: "center" }}>
+          ZIP archives containing PMX files (flat only, no nested ZIPs)
+        </span>
+      </div>
+      <input ref={zipInputRef} type="file" accept=".zip" multiple onChange={handleZipChange} style={{ display: "none" }} />
     </div>
   );
 }
@@ -272,22 +262,13 @@ function FolderPicker({
 export default function Page() {
   const [tab, setTab] = useState<Tab>("convert");
 
-  // Convert state
-  const [pmxFiles, setPmxFiles] = useState<File[]>([]);
-  const [pmxDisplayName, setPmxDisplayName] = useState("");
-  const [pmxScale, setPmxScale] = useState("0.08");
-  const [pmxNoSpring, setPmxNoSpring] = useState(false);
-  const [pmxStatus, setPmxStatus] = useState<Status>("idle");
-  const [pmxResult, setPmxResult] = useState<ConvertResult | null>(null);
-  const [pmxError, setPmxError] = useState("");
-
-  // ZIP state
-  const [zipFile, setZipFile] = useState<File | null>(null);
-  const [zipScale, setZipScale] = useState("0.08");
-  const [zipNoSpring, setZipNoSpring] = useState(false);
-  const [zipStatus, setZipStatus] = useState<Status>("idle");
-  const [zipResult, setZipResult] = useState<ZipResult | null>(null);
-  const [zipError, setZipError] = useState("");
+  // Convert state (unified queue)
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [cvtScale, setCvtScale] = useState("0.08");
+  const [cvtNoSpring, setCvtNoSpring] = useState(false);
+  const [cvtStatus, setCvtStatus] = useState<Status>("idle");
+  const [cvtResults, setCvtResults] = useState<QueueResult[]>([]);
+  const [cvtProgress, setCvtProgress] = useState("");
 
   // Validate state
   const [vrmFile, setVrmFile] = useState<File | null>(null);
@@ -296,84 +277,49 @@ export default function Page() {
   const [vrmResult, setVrmResult] = useState<ValidateResult | null>(null);
   const [vrmError, setVrmError] = useState("");
 
-  // ── Convert handler ──
+  // ── Unified convert handler ──
   const handleConvert = useCallback(async () => {
-    if (pmxFiles.length === 0) return;
-    setPmxStatus("loading");
-    setPmxResult(null);
-    setPmxError("");
+    if (queue.length === 0) return;
+    setCvtStatus("loading");
+    setCvtResults([]);
+    setCvtProgress(`Converting 1/${queue.length}...`);
 
-    const form = new FormData();
-    form.append("scale", pmxScale);
-    form.append("noSpring", String(pmxNoSpring));
+    const results: QueueResult[] = [];
 
-    // Find the PMX file for naming
-    const pmx = pmxFiles.find(f => f.name.toLowerCase().endsWith(".pmx"));
-    const pmxName = pmx?.name ?? "output.pmx";
+    for (let i = 0; i < queue.length; i++) {
+      const item = queue[i];
+      setCvtProgress(`Converting ${i + 1}/${queue.length}...`);
 
-    // Send all files with relative paths
-    for (const f of pmxFiles) {
-      form.append("files", f);
-      const relPath = (f as any)._relativePath
-        || (f as any).webkitRelativePath
-        || f.name;
-      form.append("paths", relPath);
-    }
+      const form = new FormData();
+      form.append("file", item.files[0]);
+      form.append("scale", cvtScale);
+      form.append("noSpring", String(cvtNoSpring));
 
-    try {
-      const resp = await fetch("/api/convert", { method: "POST", body: form });
-      if (!resp.ok) {
-        const err = await resp.json();
-        throw new Error(err.error || "Conversion failed");
+      try {
+        const resp = await fetch("/api/convert-zip", { method: "POST", body: form });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || "Conversion failed");
+
+        const zipOutputs: ZipApiOutput[] = data.outputs;
+        const logs: string[] = data.logs ?? [];
+        const elapsed: number = data.elapsed ?? 0;
+        const outputs: OutputItem[] = zipOutputs.map(out => {
+          const bytes = Uint8Array.from(atob(out.data), c => c.charCodeAt(0));
+          const blob = new Blob([bytes], { type: "application/octet-stream" });
+          return { name: out.name, size: out.size, blob, validation: out.validation };
+        });
+
+        results.push({ itemName: item.displayName, outputs, logs, elapsed, error: null });
+      } catch (e: any) {
+        results.push({ itemName: item.displayName, outputs: [], logs: [], elapsed: 0, error: e.message });
       }
 
-      const blob = await resp.blob();
-      const elapsed = Number(resp.headers.get("X-Convert-Time") ?? 0);
-      const vrmName = resp.headers.get("X-Vrm-Name") || pmxName.replace(/\.pmx$/i, ".vrm");
-      const logsB64 = resp.headers.get("X-Convert-Logs");
-      const validB64 = resp.headers.get("X-Validation");
-
-      const logs: string[] = logsB64 ? JSON.parse(atob(logsB64)) : [];
-      const validation: ValidationData | null = validB64 ? JSON.parse(atob(validB64)) : null;
-
-      setPmxResult({
-        blob,
-        name: vrmName,
-        size: blob.size,
-        elapsed,
-        logs,
-        validation,
-      });
-      setPmxStatus("success");
-    } catch (e: any) {
-      setPmxError(e.message);
-      setPmxStatus("error");
+      setCvtResults([...results]);
     }
-  }, [pmxFiles, pmxScale, pmxNoSpring]);
 
-  // ── ZIP handler ──
-  const handleZip = useCallback(async () => {
-    if (!zipFile) return;
-    setZipStatus("loading");
-    setZipResult(null);
-    setZipError("");
-
-    const form = new FormData();
-    form.append("file", zipFile);
-    form.append("scale", zipScale);
-    form.append("noSpring", String(zipNoSpring));
-
-    try {
-      const resp = await fetch("/api/convert-zip", { method: "POST", body: form });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || "Conversion failed");
-      setZipResult(data);
-      setZipStatus("success");
-    } catch (e: any) {
-      setZipError(e.message);
-      setZipStatus("error");
-    }
-  }, [zipFile, zipScale, zipNoSpring]);
+    setCvtStatus("success");
+    setCvtProgress("");
+  }, [queue, cvtScale, cvtNoSpring]);
 
   // ── Validate handler ──
   const handleValidate = useCallback(async () => {
@@ -398,6 +344,11 @@ export default function Page() {
     }
   }, [vrmFile, vrmStrict]);
 
+  // ── Collect all downloadable outputs ──
+  const allValidOutputs = cvtResults.flatMap(r =>
+    r.outputs.filter(o => o.validation === null || o.validation.valid)
+  );
+
   return (
     <div style={styles.container}>
       <h1 style={styles.h1}>truepmx2vrm</h1>
@@ -405,7 +356,7 @@ export default function Page() {
 
       {/* Tabs */}
       <div style={styles.tabs}>
-        {(["convert", "zip", "validate"] as Tab[]).map(t => (
+        {(["convert", "validate"] as Tab[]).map(t => (
           <button
             key={t}
             style={{
@@ -415,19 +366,19 @@ export default function Page() {
             }}
             onClick={() => setTab(t)}
           >
-            {t === "convert" ? "Convert PMX" : t === "zip" ? "Convert ZIP" : "Validate VRM"}
+            {t === "convert" ? "Convert" : "Validate VRM"}
           </button>
         ))}
       </div>
 
-      {/* ── Convert PMX ── */}
+      {/* ── Convert (unified: folders + ZIPs) ── */}
       {tab === "convert" && (
         <div>
-          <FolderPicker
-            files={pmxFiles}
-            displayName={pmxDisplayName}
-            onFiles={(files, name) => { setPmxFiles(files); setPmxDisplayName(name); }}
-            onClear={() => { setPmxFiles([]); setPmxDisplayName(""); setPmxStatus("idle"); setPmxResult(null); }}
+          <QueuePicker
+            items={queue}
+            onAddZips={(items) => { setQueue(prev => [...prev, ...items]); setCvtStatus("idle"); setCvtResults([]); }}
+            onRemove={(i) => { setQueue(prev => prev.filter((_, j) => j !== i)); setCvtStatus("idle"); setCvtResults([]); }}
+            disabled={cvtStatus === "loading"}
           />
 
           <div style={styles.options}>
@@ -435,8 +386,8 @@ export default function Page() {
               Scale
               <input
                 type="number"
-                value={pmxScale}
-                onChange={e => setPmxScale(e.target.value)}
+                value={cvtScale}
+                onChange={e => setCvtScale(e.target.value)}
                 step="0.01"
                 min="0.01"
                 style={styles.numberInput}
@@ -445,8 +396,8 @@ export default function Page() {
             <label style={styles.option}>
               <input
                 type="checkbox"
-                checked={pmxNoSpring}
-                onChange={e => setPmxNoSpring(e.target.checked)}
+                checked={cvtNoSpring}
+                onChange={e => setCvtNoSpring(e.target.checked)}
                 style={styles.checkbox}
               />
               Skip spring bones
@@ -454,151 +405,109 @@ export default function Page() {
           </div>
 
           <button
-            style={{ ...styles.btn, opacity: pmxFiles.length === 0 || pmxStatus === "loading" ? 0.4 : 1 }}
-            disabled={pmxFiles.length === 0 || pmxStatus === "loading"}
+            style={{ ...styles.btn, opacity: queue.length === 0 || cvtStatus === "loading" ? 0.4 : 1 }}
+            disabled={queue.length === 0 || cvtStatus === "loading"}
             onClick={handleConvert}
           >
-            {pmxStatus === "loading" ? "Converting..." : "Convert to VRM"}
+            {cvtStatus === "loading"
+              ? cvtProgress
+              : queue.length > 1
+                ? `Convert ${queue.length} items to VRM`
+                : "Convert to VRM"}
           </button>
 
-          {pmxStatus === "loading" && <div style={styles.progressBar}><div style={styles.progressFill} /></div>}
+          {cvtStatus === "loading" && <div style={styles.progressBar}><div style={styles.progressFill} /></div>}
 
-          {pmxStatus === "error" && (
+          {/* Results */}
+          {cvtResults.length > 0 && (
             <div style={{ marginTop: 24 }}>
-              <Badge type="error">ERROR</Badge>
-              <span style={{ ...styles.resultMeta, marginLeft: 12 }}>{pmxError}</span>
-            </div>
-          )}
-
-          {pmxStatus === "success" && pmxResult && (() => {
-            const valid = pmxResult.validation?.valid ?? false;
-            const hasWarnings = pmxResult.validation?.issues.some(i => i.severity === "WARNING") ?? false;
-            return (
-              <div style={{ marginTop: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                  {valid ? (
-                    <Badge type={hasWarnings ? "warning" : "success"}>
-                      {hasWarnings ? "VALID (warnings)" : "VALID"}
-                    </Badge>
-                  ) : (
-                    <Badge type="error">INVALID</Badge>
-                  )}
-                  <span style={styles.resultMeta}>
-                    {formatSize(pmxResult.size)} in {pmxResult.elapsed}ms
-                  </span>
-                </div>
-
-                {pmxResult.validation && (
-                  <div style={{ marginBottom: 16 }}>
-                    <LogViewer text={formatValidation(pmxResult.validation)} />
-                  </div>
-                )}
-
-                {valid ? (
-                  <button
-                    style={styles.btn}
-                    onClick={() => downloadBlob(pmxResult.blob, pmxResult.name)}
-                  >
-                    Download {pmxResult.name}
-                  </button>
-                ) : (
-                  <div style={{ fontSize: 13, color: "var(--red)" }}>
-                    Download blocked — VRM validation failed
-                  </div>
-                )}
-
-                {pmxResult.logs.length > 0 && (
-                  <details style={{ marginTop: 16 }}>
-                    <summary style={styles.summary}>Pipeline log</summary>
-                    <pre style={{ ...styles.log, marginTop: 8 }}>{pmxResult.logs.join("\n")}</pre>
-                  </details>
-                )}
-              </div>
-            );
-          })()}
-        </div>
-      )}
-
-      {/* ── Convert ZIP ── */}
-      {tab === "zip" && (
-        <div>
-          <Dropzone
-            accept=".zip"
-            label=".zip"
-            hint="Handles nested zips and CJK filenames"
-            file={zipFile}
-            onFile={setZipFile}
-            onClear={() => { setZipFile(null); setZipStatus("idle"); setZipResult(null); }}
-          />
-
-          <div style={styles.options}>
-            <label style={styles.option}>
-              Scale
-              <input
-                type="number"
-                value={zipScale}
-                onChange={e => setZipScale(e.target.value)}
-                step="0.01"
-                min="0.01"
-                style={styles.numberInput}
-              />
-            </label>
-            <label style={styles.option}>
-              <input
-                type="checkbox"
-                checked={zipNoSpring}
-                onChange={e => setZipNoSpring(e.target.checked)}
-                style={styles.checkbox}
-              />
-              Skip spring bones
-            </label>
-          </div>
-
-          <button
-            style={{ ...styles.btn, opacity: !zipFile || zipStatus === "loading" ? 0.4 : 1 }}
-            disabled={!zipFile || zipStatus === "loading"}
-            onClick={handleZip}
-          >
-            {zipStatus === "loading" ? "Converting..." : "Convert ZIP"}
-          </button>
-
-          {zipStatus === "loading" && <div style={styles.progressBar}><div style={styles.progressFill} /></div>}
-
-          {zipStatus === "error" && (
-            <div style={{ marginTop: 24 }}>
-              <Badge type="error">ERROR</Badge>
-              <span style={{ ...styles.resultMeta, marginLeft: 12 }}>{zipError}</span>
-            </div>
-          )}
-
-          {zipStatus === "success" && zipResult && (
-            <div style={{ marginTop: 24 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                <Badge type="success">{zipResult.outputs.length} VRM(s)</Badge>
-                <span style={styles.resultMeta}>{zipResult.elapsed}ms</span>
-              </div>
-
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {zipResult.outputs.map((out, i) => (
-                  <button
-                    key={i}
-                    style={styles.btnSecondary}
-                    onClick={() => {
-                      const bytes = Uint8Array.from(atob(out.data), c => c.charCodeAt(0));
-                      downloadBlob(bytes, out.name);
-                    }}
-                  >
-                    {out.name} ({formatSize(out.size)})
-                  </button>
-                ))}
-              </div>
-
-              {zipResult.logs.length > 0 && (
-                <details style={{ marginTop: 16 }}>
-                  <summary style={styles.summary}>Pipeline log</summary>
-                  <pre style={{ ...styles.log, marginTop: 8 }}>{zipResult.logs.join("\n")}</pre>
-                </details>
+              {allValidOutputs.length > 1 && cvtStatus === "success" && (
+                <button
+                  style={{ ...styles.btn, marginBottom: 20 }}
+                  onClick={async () => {
+                    const zip = new JSZip();
+                    for (const out of allValidOutputs) {
+                      zip.file(out.name, out.blob);
+                    }
+                    const zipBlob = await zip.generateAsync({ type: "blob" });
+                    downloadBlob(zipBlob, "vrm_output.zip");
+                  }}
+                >
+                  Download All ({allValidOutputs.length} VRMs)
+                </button>
               )}
+
+              {cvtResults.map((item, i) => {
+                if (item.error) {
+                  return (
+                    <div key={i} style={styles.resultCard}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <Badge type="error">ERROR</Badge>
+                        <span style={{ ...styles.fileName, flex: 1 }}>{item.itemName}</span>
+                      </div>
+                      <div style={{ fontSize: 13, color: "var(--red)", marginTop: 8 }}>{item.error}</div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={i} style={styles.resultCard}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: item.outputs.length > 1 ? 12 : 0 }}>
+                      <span style={{ ...styles.fileName, flex: 1, fontWeight: 600 }}>{item.itemName}</span>
+                      <span style={styles.resultMeta}>
+                        {item.outputs.length} VRM{item.outputs.length !== 1 ? "s" : ""} in {item.elapsed}ms
+                      </span>
+                    </div>
+
+                    {item.outputs.map((out, j) => {
+                      const isInvalid = out.validation !== null && !out.validation.valid;
+                      const hasWarnings = out.validation?.issues.some(i => i.severity === "WARNING") ?? false;
+                      const isValid = out.validation !== null && out.validation.valid;
+                      return (
+                        <div key={j} style={{ padding: "8px 0", borderTop: j > 0 ? "1px solid var(--border)" : "none" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                            {isValid && (
+                              <Badge type={hasWarnings ? "warning" : "success"}>
+                                {hasWarnings ? "WARN" : "VALID"}
+                              </Badge>
+                            )}
+                            {isInvalid && <Badge type="error">INVALID</Badge>}
+                            {out.validation === null && <Badge type="warning">NO VALIDATION</Badge>}
+                            <span style={styles.outputName}>{out.name}</span>
+                            <span style={styles.resultMeta}>{formatSize(out.size)}</span>
+                            {!isInvalid ? (
+                              <button
+                                style={styles.btnSmall}
+                                onClick={() => downloadBlob(out.blob, out.name)}
+                              >
+                                Download
+                              </button>
+                            ) : (
+                              <span style={{ fontSize: 12, color: "var(--red)" }}>blocked</span>
+                            )}
+                          </div>
+
+                          {out.validation && (
+                            <details style={{ marginTop: 8 }}>
+                              <summary style={styles.summary}>Validation</summary>
+                              <div style={{ marginTop: 4 }}>
+                                <LogViewer text={formatValidation(out.validation)} />
+                              </div>
+                            </details>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {item.logs.length > 0 && (
+                      <details style={{ marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+                        <summary style={styles.summary}>Pipeline log</summary>
+                        <pre style={{ ...styles.log, marginTop: 8 }}>{item.logs.join("\n")}</pre>
+                      </details>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -811,6 +720,28 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
     transition: "border-color 0.15s ease",
   },
+  btnSmall: {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "4px 12px",
+    fontSize: 12,
+    fontWeight: 500,
+    fontFamily: "var(--sans)",
+    background: "var(--text)",
+    color: "var(--bg)",
+    border: "none",
+    cursor: "pointer",
+    flexShrink: 0,
+  },
+  outputName: {
+    flex: 1,
+    fontFamily: "var(--mono)",
+    fontSize: 13,
+    color: "var(--text)",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
+  },
   progressBar: {
     height: 2,
     background: "var(--bg-secondary)",
@@ -830,10 +761,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     letterSpacing: "0.04em",
     textTransform: "uppercase" as const,
+    flexShrink: 0,
   },
   resultMeta: {
     fontSize: 13,
     color: "var(--text-secondary)",
+    flexShrink: 0,
   },
   log: {
     background: "var(--bg-secondary)",
@@ -851,6 +784,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 14,
     cursor: "pointer",
     color: "var(--text-secondary)",
+  },
+  resultCard: {
+    padding: "16px 20px",
+    marginBottom: 12,
+    border: "1px solid var(--border)",
+    background: "var(--bg-secondary)",
   },
   footer: {
     marginTop: 60,

@@ -8,8 +8,10 @@
  */
 
 import { readFile } from "node:fs/promises";
+import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
+import iconv from "iconv-lite";
 import type { PmxBone, PmxMaterial, PmxMorph, PmxMorphOffset, PmxRigidBody, PmxJoint, PmxData } from "./types.js";
 
 // ── BinaryReader ──
@@ -763,6 +765,57 @@ async function loadTextureAsPng(filePath: string): Promise<Buffer> {
   }
 }
 
+// ── Texture path resolver (mojibake recovery) ──
+
+const CJK_ENCODINGS = ["shiftjis", "gbk", "euc-kr", "big5"];
+
+/**
+ * Resolve a texture path from the PMX against the actual filesystem.
+ *
+ * Falls back through three strategies:
+ *  1. Exact match
+ *  2. Case-insensitive match
+ *  3. Mojibake recovery — re-encode the CJK filename through every plausible
+ *     source→destination encoding pair and check if the garbled result exists
+ *     on disk.
+ */
+function resolveTexturePath(pmxDir: string, texPath: string): string | null {
+  const normalized = texPath.replace(/\\/g, path.sep).replace(/\//g, path.sep);
+  const fullPath = path.join(pmxDir, normalized);
+
+  // 1. Exact match
+  if (existsSync(fullPath)) return fullPath;
+
+  // 2. Case-insensitive match
+  const dir = path.dirname(fullPath);
+  const base = path.basename(fullPath);
+  if (existsSync(dir)) {
+    const files = readdirSync(dir);
+    const ciMatch = files.find(f => f.toLowerCase() === base.toLowerCase());
+    if (ciMatch) return path.join(dir, ciMatch);
+  }
+
+  // 3. Mojibake recovery
+  if (existsSync(dir)) {
+    const files = readdirSync(dir);
+    for (const srcEnc of CJK_ENCODINGS) {
+      try {
+        const bytes = iconv.encode(base, srcEnc);
+        for (const dstEnc of CJK_ENCODINGS) {
+          if (srcEnc === dstEnc) continue;
+          try {
+            const garbled = iconv.decode(Buffer.from(bytes), dstEnc);
+            const match = files.find(f => f === garbled);
+            if (match) return path.join(dir, match);
+          } catch { /* encoding pair not applicable */ }
+        }
+      } catch { /* source encoding failed */ }
+    }
+  }
+
+  return null;
+}
+
 // ── Public API ──
 
 /**
@@ -851,20 +904,25 @@ export async function read(pmxPath: string, scale = 0.08): Promise<PmxData> {
   const textureMimes: string[] = [];
 
   for (const texPath of raw.texture_paths) {
-    const fullPath = path.join(pmxDir, texPath.replace(/\\/g, path.sep).replace(/\//g, path.sep));
-    try {
-      const pngBuffer = await loadTextureAsPng(fullPath);
-      textures.push(new Uint8Array(pngBuffer));
-      textureMimes.push("image/png");
-    } catch (e: any) {
-      console.log(`Warning: Failed to load texture '${texPath}': ${e.message}`);
-      // 1x1 white fallback
-      const fallback = await sharp({
-        create: { width: 1, height: 1, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
-      }).png().toBuffer();
-      textures.push(new Uint8Array(fallback));
-      textureMimes.push("image/png");
+    const resolved = resolveTexturePath(pmxDir, texPath);
+    if (resolved) {
+      try {
+        const pngBuffer = await loadTextureAsPng(resolved);
+        textures.push(new Uint8Array(pngBuffer));
+        textureMimes.push("image/png");
+        continue;
+      } catch (e: any) {
+        console.log(`Warning: Failed to load texture '${texPath}': ${e.message}`);
+      }
+    } else {
+      console.log(`Warning: Texture not found '${texPath}'`);
     }
+    // 1x1 white fallback
+    const fallback = await sharp({
+      create: { width: 1, height: 1, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
+    }).png().toBuffer();
+    textures.push(new Uint8Array(fallback));
+    textureMimes.push("image/png");
   }
 
   // Rigid bodies: apply coordinate transform + scale

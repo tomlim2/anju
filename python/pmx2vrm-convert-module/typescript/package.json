@@ -3,12 +3,11 @@
   "version": "0.1.0",
   "description": "PMX to VRM 0.x converter",
   "type": "module",
-  "main": "src/index.ts",
+  "main": "src/intake.ts",
   "bin": {
-    "truepmx2vrm": "src/index.ts"
+    "truepmx2vrm": "src/intake.ts"
   },
   "scripts": {
-    "convert": "tsx src/index.ts",
     "intake": "tsx src/intake.ts",
     "validate": "tsx src/vrm-validator.ts",
     "build": "tsc",

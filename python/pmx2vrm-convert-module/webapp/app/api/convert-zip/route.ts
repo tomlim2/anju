@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, readFile, mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
-import { scanZip, process_ as processZip } from "@converter/intake.js";
+import { process_ } from "@converter/intake.js";
+import { validate } from "@converter/vrm-validator.js";
 
 export const maxDuration = 300;
 
@@ -30,39 +31,35 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(zipPath, buffer);
 
-    // Scan
-    log("Scanning zip...");
-    const results = await scanZip(zipPath);
-    log(`  Found ${results.length} .pmx file(s)`);
-
-    const humanoids = results.filter((r: any) => r.humanoid);
-    log(`  Humanoid: ${humanoids.length}`);
-
-    for (const r of results) {
-      const tag = (r as any).humanoid ? "humanoid" : "skip";
-      log(`  ${(r as any).name} — ${tag} (${(r as any).mappedCount}/17)`);
-    }
-
-    if (humanoids.length === 0) {
-      return NextResponse.json(
-        { error: "No humanoid PMX found in zip", logs, results },
-        { status: 400 },
-      );
-    }
-
-    // Convert
+    // Convert (scan + rename handled internally by process_)
     const outDir = path.join(tmpDir, "output");
     await mkdir(outDir, { recursive: true });
-    const outputPaths: string[] = await processZip(zipPath, outDir, scale, noSpring);
+    log("Processing zip...");
+    const outputPaths = await process_(zipPath, {
+      outputDir: outDir,
+      scale,
+      noSpring,
+      noRename: false,
+      noValidate: true, // validate here in API so we can return results
+    });
+    log(`  Converted ${outputPaths.length} VRM(s)`);
 
-    // Read outputs
-    const outputs: { name: string; size: number; data: string }[] = [];
+    // Read outputs + validate each
+    const outputs: { name: string; size: number; data: string; validation: any }[] = [];
     for (const vrmPath of outputPaths) {
       const buf = await readFile(vrmPath);
+      const uint8 = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+      let validation = null;
+      try {
+        validation = await validate(uint8);
+      } catch { /* validation optional */ }
+      const name = path.basename(vrmPath);
+      log(`  ${name} — ${validation?.valid ? "VALID" : "INVALID"}`);
       outputs.push({
-        name: path.basename(vrmPath),
+        name,
         size: buf.byteLength,
         data: buf.toString("base64"),
+        validation,
       });
     }
 

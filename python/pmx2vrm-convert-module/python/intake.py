@@ -1,6 +1,7 @@
 """ZIP intake — scan a zip for humanoid PMX models, then convert to VRM.
 
-Handles nested zips (zip-in-zip) which is common for MMD model distributions.
+Accepts flat ZIPs containing .pmx files.
+Nested ZIPs (zip-in-zip) are NOT supported — extract them first.
 
 Usage:
     python -m pmx2vrm_convert_module.python.intake model.zip
@@ -9,7 +10,6 @@ Usage:
 """
 
 import argparse
-import io
 import os
 import sys
 import tempfile
@@ -112,9 +112,10 @@ def is_humanoid(pmx_bytes):
     return len(mapped) >= len(VRM_REQUIRED_BONES), mapped
 
 
-def _scan_zipfile(zf, prefix=""):
-    """Recursively scan a ZipFile for PMX entries, descending into nested zips."""
+def _scan_zipfile(zf):
+    """Scan a ZipFile for PMX entries. Does not descend into nested zips."""
     results = []
+    warnings = []
 
     for entry in zf.namelist():
         lower = entry.lower()
@@ -123,53 +124,29 @@ def _scan_zipfile(zf, prefix=""):
             pmx_bytes = zf.read(entry)
             humanoid, mapped = is_humanoid(pmx_bytes)
             results.append({
-                "name": f"{prefix}{entry}" if prefix else entry,
+                "name": entry,
                 "zip_entry": entry,
-                "parent_zip": prefix.rstrip("/") if prefix else None,
                 "humanoid": humanoid,
                 "mapped_bones": mapped,
                 "mapped_count": len(mapped),
             })
 
         elif lower.endswith(".zip"):
-            inner_bytes = zf.read(entry)
-            try:
-                inner_zf = zipfile.ZipFile(io.BytesIO(inner_bytes), "r")
-                nested_prefix = f"{prefix}{entry}/"
-                results.extend(_scan_zipfile(inner_zf, prefix=nested_prefix))
-                inner_zf.close()
-            except zipfile.BadZipFile:
-                pass
+            warnings.append(entry)
 
-    return results
+    return results, warnings
 
 
 def scan_zip(zip_path):
-    """Scan a zip for .pmx files (including nested zips) and classify as humanoid or not.
+    """Scan a zip for .pmx files (flat only) and classify as humanoid or not.
 
     Returns:
-        List of dicts with keys: name, zip_entry, parent_zip, humanoid, mapped_bones, mapped_count
+        (results, warnings) where results is a list of dicts with keys:
+        name, zip_entry, humanoid, mapped_bones, mapped_count;
+        and warnings is a list of nested .zip entry names found.
     """
     with zipfile.ZipFile(zip_path, "r") as zf:
         return _scan_zipfile(zf)
-
-
-def _extract_nested_zip(zip_path, parent_zip_entry, tmp_dir):
-    """Extract a nested zip's contents to tmp_dir with encoding fix.
-
-    Returns (extract_dir, entry_map) where entry_map maps original names to decoded paths.
-    """
-    with zipfile.ZipFile(zip_path, "r") as outer:
-        inner_bytes = outer.read(parent_zip_entry)
-
-    decoded_stem = _decode_zip_filename(Path(parent_zip_entry).stem)
-    extract_dir = os.path.join(tmp_dir, decoded_stem)
-    os.makedirs(extract_dir, exist_ok=True)
-
-    inner_zf = zipfile.ZipFile(io.BytesIO(inner_bytes), "r")
-    entry_map = _extract_with_encoding_fix(inner_zf, extract_dir)
-    inner_zf.close()
-    return extract_dir, entry_map
 
 
 def extract_pmx_files(zip_path, scan_results, tmp_dir):
@@ -187,25 +164,14 @@ def extract_pmx_files(zip_path, scan_results, tmp_dir):
         List of (scan_result, pmx_path) tuples.
     """
     zip_str = str(zip_path)
-    extracted_nested = {}
-    outer_entry_map = None
+    entry_map = None
 
     result_paths = []
 
     for r in scan_results:
-        parent = r["parent_zip"]
-
-        if parent is not None:
-            if parent not in extracted_nested:
-                extracted_nested[parent] = _extract_nested_zip(
-                    zip_str, parent, tmp_dir,
-                )
-            _, entry_map = extracted_nested[parent]
-        else:
-            if outer_entry_map is None:
-                with zipfile.ZipFile(zip_str, "r") as zf:
-                    outer_entry_map = _extract_with_encoding_fix(zf, tmp_dir)
-            entry_map = outer_entry_map
+        if entry_map is None:
+            with zipfile.ZipFile(zip_str, "r") as zf:
+                entry_map = _extract_with_encoding_fix(zf, tmp_dir)
 
         pmx_path = entry_map[r["zip_entry"]]
         result_paths.append((r, pmx_path))
@@ -216,7 +182,7 @@ def extract_pmx_files(zip_path, scan_results, tmp_dir):
 def process(zip_path, output_dir=None, scale=0.08, no_spring=False):
     """Process zip: find humanoid PMX files, convert each to VRM.
 
-    Handles nested zips automatically.
+    Only flat ZIPs are supported. Nested ZIPs will produce a warning.
 
     Args:
         zip_path: Path to input zip file.
@@ -243,7 +209,10 @@ def process(zip_path, output_dir=None, scale=0.08, no_spring=False):
 
     # 1. Scan
     print(f"Scanning: {zip_path.name}")
-    results = scan_zip(str(zip_path))
+    results, warnings = scan_zip(str(zip_path))
+
+    for nested in warnings:
+        print(f"  \u26A0 Nested ZIP detected: {nested}. Extract it first, then convert the inner folder/zip.")
 
     if not results:
         raise ValueError(f"No .pmx files found in {zip_path.name}")
