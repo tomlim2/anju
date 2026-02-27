@@ -11,8 +11,8 @@ import struct
 import sys
 
 
-def write_glb(gltf_data, output_path):
-    """Write glTF data as GLB binary with proper 4-byte alignment.
+def build_glb_buffer(gltf_data):
+    """Serialize glTF data to GLB binary bytes.
 
     GLB layout:
       [12-byte header: magic + version + total_length]
@@ -32,16 +32,28 @@ def write_glb(gltf_data, output_path):
     bin_data += b"\x00" * bin_pad
 
     total_length = 12 + 8 + len(json_bytes) + 8 + len(bin_data)
+    buf = bytearray(total_length)
 
+    struct.pack_into("<III", buf, 0, 0x46546C67, 2, total_length)
+
+    offset = 12
+    struct.pack_into("<II", buf, offset, len(json_bytes), 0x4E4F534A)
+    offset += 8
+    buf[offset:offset + len(json_bytes)] = json_bytes
+    offset += len(json_bytes)
+
+    struct.pack_into("<II", buf, offset, len(bin_data), 0x004E4942)
+    offset += 8
+    buf[offset:offset + len(bin_data)] = bytes(bin_data)
+
+    return bytes(buf)
+
+
+def write_glb(gltf_data, output_path):
+    """Serialize glTF data and write as GLB file."""
+    data = build_glb_buffer(gltf_data)
     with open(output_path, "wb") as f:
-        # GLB header
-        f.write(struct.pack("<III", 0x46546C67, 2, total_length))
-        # JSON chunk
-        f.write(struct.pack("<II", len(json_bytes), 0x4E4F534A))
-        f.write(json_bytes)
-        # BIN chunk
-        f.write(struct.pack("<II", len(bin_data), 0x004E4942))
-        f.write(bytes(bin_data))
+        f.write(data)
 
 
 def main():
@@ -61,7 +73,7 @@ def main():
     args = parser.parse_args()
 
     from . import pmx_reader, gltf_builder, bone_mapping, spring_converter, vrm_builder
-    from .vrm_renamer import inject_original_name
+    from .vrm_renamer import rename_vrm
 
     # 1. Read PMX
     print(f"Reading PMX: {args.input}")
@@ -115,12 +127,18 @@ def main():
         gltf_data, humanoid_bones, secondary_animation, pmx_data["materials"],
     )
 
-    # 6. Store original name in VRM metadata
-    inject_original_name(gltf_data, args.input)
+    # 6. Build GLB
+    print("Building GLB...")
+    glb_buffer = build_glb_buffer(gltf_data)
 
-    # 7. Write GLB
+    # 7. Rename VRM (store original name in metadata, generate English filename)
+    renamed_buffer, english_name = rename_vrm(glb_buffer, args.input)
+    print(f"  Original: {args.input} -> {english_name}")
+
+    # 8. Write GLB
     print(f"Writing GLB: {args.output}")
-    write_glb(gltf_data, args.output)
+    with open(args.output, "wb") as f:
+        f.write(renamed_buffer)
     print("Done.")
 
 

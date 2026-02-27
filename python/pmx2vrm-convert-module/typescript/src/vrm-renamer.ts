@@ -3,10 +3,12 @@
  * generates an ASCII-safe English filename for the output.
  */
 
+// ── GLB helpers ──
+
 /**
  * Parse a GLB buffer into its JSON and BIN chunks.
  */
-function parseGlb(buffer: Uint8Array): { json: Record<string, any>; bin: Uint8Array; } {
+function parseGlb(buffer: Uint8Array): { json: Record<string, any>; bin: Uint8Array } {
   const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
 
   const magic = view.getUint32(0, true);
@@ -69,16 +71,12 @@ function buildGlb(json: Record<string, any>, bin: Uint8Array): Uint8Array {
   return output;
 }
 
-/**
- * Check if a string contains any non-ASCII characters.
- */
+// ── Naming helpers ──
+
 function hasNonAscii(str: string): boolean {
   return /[^\x00-\x7F]/.test(str);
 }
 
-/**
- * Generate a timestamp-based filename: vrm_YYYYMMDD_HHmmss
- */
 function timestampName(): string {
   const now = new Date();
   const y = now.getFullYear();
@@ -90,17 +88,37 @@ function timestampName(): string {
   return `vrm_${y}${mo}${d}_${h}${mi}${s}`;
 }
 
-/**
- * Sanitize an ASCII string into a safe filename:
- * - Replace non-alphanumeric (except hyphen/underscore/dot) with underscore
- * - Collapse consecutive underscores
- * - Trim leading/trailing underscores
- */
 function sanitizeAscii(name: string): string {
   return name
     .replace(/[^a-zA-Z0-9\-_.]/g, "_")
     .replace(/_+/g, "_")
     .replace(/^_|_$/g, "");
+}
+
+function stripExtension(name: string): string {
+  return name.replace(/\.(pmx|vrm)$/i, "");
+}
+
+// ── Public API ──
+
+/**
+ * Generate an ASCII-safe VRM filename from the original name.
+ *
+ * Rules:
+ *   - Non-ASCII chars present → timestamp: vrm_YYYYMMDD_HHmmss.vrm
+ *   - All ASCII → sanitize special chars to underscore + .vrm
+ */
+export function makeEnglishName(originalName: string): string {
+  const stem = stripExtension(originalName);
+
+  if (hasNonAscii(stem)) {
+    return `${timestampName()}.vrm`;
+  }
+
+  const safe = sanitizeAscii(stem);
+  if (!safe) return `${timestampName()}.vrm`;
+
+  return `${safe}.vrm`;
 }
 
 /**
@@ -116,8 +134,7 @@ export function renameVrm(
   glbBuffer: Uint8Array,
   originalName: string,
 ): { buffer: Uint8Array; englishName: string } {
-  // Strip extension to get the base name
-  const baseName = originalName.replace(/\.(pmx|vrm)$/i, "");
+  const baseName = stripExtension(originalName);
 
   // Parse GLB, inject original name into VRM meta
   const { json, bin } = parseGlb(glbBuffer);
@@ -130,13 +147,7 @@ export function renameVrm(
   const buffer = buildGlb(json, bin);
 
   // Generate english filename
-  let stem: string;
-  if (hasNonAscii(baseName)) {
-    stem = timestampName();
-  } else {
-    stem = sanitizeAscii(baseName);
-    if (!stem) stem = timestampName();
-  }
+  const englishName = makeEnglishName(originalName);
 
-  return { buffer, englishName: `${stem}.vrm` };
+  return { buffer, englishName };
 }
