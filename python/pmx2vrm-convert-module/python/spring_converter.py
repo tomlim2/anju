@@ -47,6 +47,19 @@ def _sphere_radius(rb):
 _COLLIDER_RADIUS_SCALE = 0.5   # static RB → VRM collider sphere
 _HIT_RADIUS_SCALE      = 0.4   # dynamic RB → VRM boneGroup hitRadius
 
+# Tuning constants
+_DRAG_FORCE_MAX = 0.8
+_SPRING_CONSTANT_DIVISOR = 200.0
+_STIFFINESS_MAX = 4.0
+_CHAIN_LONG = 6
+_CHAIN_MED = 4
+_CHAIN_LONG_STIFFINESS_CAP = 2.0
+_CHAIN_MED_STIFFINESS_CAP = 3.5
+_CHAIN_DRAG_MIN = 0.8
+_CHAIN_LONG_GRAVITY_MIN = 0.15
+_CHAIN_MED_GRAVITY_MIN = 0.02
+_GROUND_Y_MIN = 0.05
+
 
 def _rotation_limit_range(joint):
     """Average rotation limit range (radians) from a joint. 0 = locked."""
@@ -70,7 +83,7 @@ def _map_params(rb, joint=None):
       2. rotation_limit range → tighter limits = higher stiffiness
       3. fallback: angular_damping as proxy
     """
-    drag_force = max(0.0, min(1.0, rb["linear_damping"]))
+    drag_force = max(0.0, min(_DRAG_FORCE_MAX, rb["linear_damping"]))
     hit_radius = max(0.0, _sphere_radius(rb))
 
     # Rotation limit range determines both stiffiness AND gravity
@@ -82,11 +95,11 @@ def _map_params(rb, joint=None):
         scr = joint.get("spring_constant_rotation", [0, 0, 0])
         mag = math.sqrt(sum(v * v for v in scr))
         if mag > 1.0:
-            stiffiness = max(0.0, min(4.0, mag / 200.0))
+            stiffiness = max(0.0, min(_STIFFINESS_MAX, mag / _SPRING_CONSTANT_DIVISOR))
         elif avg_range > 0.001:
-            stiffiness = max(0.2, min(4.0, math.pi / avg_range * 0.5))
+            stiffiness = max(0.2, min(_STIFFINESS_MAX, math.pi / avg_range * 0.5))
         else:
-            stiffiness = 4.0
+            stiffiness = _STIFFINESS_MAX
 
     if stiffiness < 0.01:
         stiffiness = max(0.2, min(2.0, rb["angular_damping"] * 1.5))
@@ -236,10 +249,10 @@ def convert(rigid_bodies, joints, bones):
         if not bone_indices:
             continue
 
-        # Trim bones below ground (Y < 0.05m).  PMX models often have
-        # physics anchor bones extending underground; these cause spring
-        # tips to stick to the floor.
-        bone_indices = [bi for bi in bone_indices if bones[bi]["position"][1] > 0.05]
+        # Trim bones below ground.  PMX models often have physics anchor
+        # bones extending underground; these cause spring tips to stick
+        # to the floor.
+        bone_indices = [bi for bi in bone_indices if bones[bi]["position"][1] > _GROUND_Y_MIN]
         if not bone_indices:
             continue
 
@@ -273,21 +286,20 @@ def convert(rigid_bodies, joints, bones):
 
         hangs_down = avg_y < -0.01  # chain extends downward
 
-        if chain_len >= 6:
-            stiffiness = min(stiffiness, 2.0)
-            drag_force = max(drag_force, 0.8)
+        if chain_len >= _CHAIN_LONG:
+            stiffiness = min(stiffiness, _CHAIN_LONG_STIFFINESS_CAP)
+            drag_force = max(drag_force, _CHAIN_DRAG_MIN)
             if hangs_down:
-                gravity_power = max(gravity_power, 0.15)
+                gravity_power = max(gravity_power, _CHAIN_LONG_GRAVITY_MIN)
             else:
                 gravity_power = 0.0
-        elif chain_len >= 4:
-            stiffiness = min(stiffiness, 3.5)
-            drag_force = max(drag_force, 0.8)
+        elif chain_len >= _CHAIN_MED:
+            stiffiness = min(stiffiness, _CHAIN_MED_STIFFINESS_CAP)
+            drag_force = max(drag_force, _CHAIN_DRAG_MIN)
             if hangs_down:
-                gravity_power = max(gravity_power, 0.02)
+                gravity_power = max(gravity_power, _CHAIN_MED_GRAVITY_MIN)
             else:
                 gravity_power = 0.0
-        # Short chains (1-3): keep _map_params values (stiff, low/no gravity)
 
         bone_groups.append({
             "stiffiness":   round(stiffiness,    4),  # Double-i: VRM 0.x spec typo!

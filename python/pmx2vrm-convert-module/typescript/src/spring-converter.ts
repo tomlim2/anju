@@ -19,6 +19,19 @@ function sphereRadius(rb: PmxRigidBody): number {
 const COLLIDER_RADIUS_SCALE = 0.5;
 const HIT_RADIUS_SCALE = 0.4;
 
+// ── Tuning constants ──
+const DRAG_FORCE_MAX = 0.8;
+const SPRING_CONSTANT_DIVISOR = 200.0;
+const STIFFINESS_MAX = 4.0;
+const CHAIN_LONG = 6;
+const CHAIN_MED = 4;
+const CHAIN_LONG_STIFFINESS_CAP = 2.0;
+const CHAIN_MED_STIFFINESS_CAP = 3.5;
+const CHAIN_DRAG_MIN = 0.8;
+const CHAIN_LONG_GRAVITY_MIN = 0.15;
+const CHAIN_MED_GRAVITY_MIN = 0.02;
+const GROUND_Y_MIN = 0.05;
+
 function rotationLimitRange(joint: PmxJoint | null): number {
   if (!joint) return 0.0;
   const rmin = joint.rotation_limit_min ?? [0, 0, 0];
@@ -30,7 +43,7 @@ function mapParams(
   rb: PmxRigidBody,
   joint: PmxJoint | null,
 ): [number, number, number, number] {
-  let dragForce = Math.max(0.0, Math.min(1.0, rb.linear_damping));
+  let dragForce = Math.max(0.0, Math.min(DRAG_FORCE_MAX, rb.linear_damping));
   let hitRadius = Math.max(0.0, sphereRadius(rb));
 
   const avgRange = rotationLimitRange(joint);
@@ -41,11 +54,11 @@ function mapParams(
     const scr = joint.spring_constant_rotation ?? [0, 0, 0];
     const mag = Math.sqrt(scr[0] ** 2 + scr[1] ** 2 + scr[2] ** 2);
     if (mag > 1.0) {
-      stiffiness = Math.max(0.0, Math.min(4.0, mag / 200.0));
+      stiffiness = Math.max(0.0, Math.min(STIFFINESS_MAX, mag / SPRING_CONSTANT_DIVISOR));
     } else if (avgRange > 0.001) {
-      stiffiness = Math.max(0.2, Math.min(4.0, Math.PI / avgRange * 0.5));
+      stiffiness = Math.max(0.2, Math.min(STIFFINESS_MAX, Math.PI / avgRange * 0.5));
     } else {
-      stiffiness = 4.0;
+      stiffiness = STIFFINESS_MAX;
     }
   }
 
@@ -206,8 +219,8 @@ export function convert(
 
     if (boneIndices.length === 0) continue;
 
-    // Trim bones below ground (Y < 0.05m)
-    boneIndices = boneIndices.filter(bi => bones[bi].position[1] > 0.05);
+    // Trim bones below ground
+    boneIndices = boneIndices.filter(bi => bones[bi].position[1] > GROUND_Y_MIN);
     if (boneIndices.length === 0) continue;
 
     // Anchor (center) bone
@@ -242,14 +255,14 @@ export function convert(
 
     const hangsDown = avgY < -0.01;
 
-    if (chainLen >= 6) {
-      stiffiness = Math.min(stiffiness, 2.0);
-      dragForce = Math.max(dragForce, 0.8);
-      gravityPower = hangsDown ? Math.max(gravityPower, 0.15) : 0.0;
-    } else if (chainLen >= 4) {
-      stiffiness = Math.min(stiffiness, 3.5);
-      dragForce = Math.max(dragForce, 0.8);
-      gravityPower = hangsDown ? Math.max(gravityPower, 0.02) : 0.0;
+    if (chainLen >= CHAIN_LONG) {
+      stiffiness = Math.min(stiffiness, CHAIN_LONG_STIFFINESS_CAP);
+      dragForce = Math.max(dragForce, CHAIN_DRAG_MIN);
+      gravityPower = hangsDown ? Math.max(gravityPower, CHAIN_LONG_GRAVITY_MIN) : 0.0;
+    } else if (chainLen >= CHAIN_MED) {
+      stiffiness = Math.min(stiffiness, CHAIN_MED_STIFFINESS_CAP);
+      dragForce = Math.max(dragForce, CHAIN_DRAG_MIN);
+      gravityPower = hangsDown ? Math.max(gravityPower, CHAIN_MED_GRAVITY_MIN) : 0.0;
     }
 
     boneGroups.push({

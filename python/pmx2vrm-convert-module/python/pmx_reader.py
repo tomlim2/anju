@@ -591,6 +591,8 @@ def read(pmx_path, scale=0.08):
             "rigidbody_index_b": j["rigidbody_index_b"],
             "position": [-jp[0] * scale, jp[1] * scale, jp[2] * scale],
             "rotation": j["rotation"],
+            "rotation_limit_min": j["rotation_limit_min"],
+            "rotation_limit_max": j["rotation_limit_max"],
             "spring_constant_translation": j["spring_constant_translation"],
             "spring_constant_rotation": j["spring_constant_rotation"],
         })
