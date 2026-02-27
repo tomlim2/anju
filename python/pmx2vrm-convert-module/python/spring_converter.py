@@ -270,6 +270,14 @@ def convert(rigid_bodies, joints, bones):
             edge_joint.get((dyn_chain[0], anchor_rb))
         ) if anchor_rb >= 0 else None
 
+        # Skip chains where joint rotation is fully locked (rigid attachment)
+        if rep_joint is not None:
+            rmin = rep_joint.get("rotation_limit_min", [0, 0, 0])
+            rmax = rep_joint.get("rotation_limit_max", [0, 0, 0])
+            scr = rep_joint.get("spring_constant_rotation", [0, 0, 0])
+            if all(v == 0 for v in rmin) and all(v == 0 for v in rmax) and all(v == 0 for v in scr):
+                continue
+
         drag_force, stiffiness, gravity_power, hit_radius = _map_params(rep_rb, rep_joint)
 
         # hitRadius: take max across chain, scaled down for VRM line-segment collision

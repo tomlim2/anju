@@ -238,6 +238,14 @@ export function convert(
                  edgeJoint.get(`${dynChain[0]},${anchorRb}`) ?? null;
     }
 
+    // Skip chains where joint rotation is fully locked (rigid attachment)
+    if (repJoint) {
+      const rmin = repJoint.rotation_limit_min ?? [0, 0, 0];
+      const rmax = repJoint.rotation_limit_max ?? [0, 0, 0];
+      const scr = repJoint.spring_constant_rotation ?? [0, 0, 0];
+      if (rmin.every(v => v === 0) && rmax.every(v => v === 0) && scr.every(v => v === 0)) continue;
+    }
+
     let [dragForce, stiffiness, gravityPower, hitRadius] = mapParams(repRb, repJoint);
 
     // hitRadius: max across chain, scaled
