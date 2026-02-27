@@ -329,6 +329,7 @@ export default function Page() {
 
       const blob = await resp.blob();
       const elapsed = Number(resp.headers.get("X-Convert-Time") ?? 0);
+      const vrmName = resp.headers.get("X-Vrm-Name") || pmxName.replace(/\.pmx$/i, ".vrm");
       const logsB64 = resp.headers.get("X-Convert-Logs");
       const validB64 = resp.headers.get("X-Validation");
 
@@ -337,7 +338,7 @@ export default function Page() {
 
       setPmxResult({
         blob,
-        name: pmxName.replace(/\.pmx$/i, ".vrm"),
+        name: vrmName,
         size: blob.size,
         elapsed,
         logs,

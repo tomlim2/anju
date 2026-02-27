@@ -9,6 +9,7 @@ import { mapBones } from "@converter/bone-mapping.js";
 import { convert as convertSpring } from "@converter/spring-converter.js";
 import { build as buildVrm } from "@converter/vrm-builder.js";
 import { validate } from "@converter/vrm-validator.js";
+import { renameVrm } from "@converter/vrm-renamer.js";
 import type { GltfData } from "@converter/types.js";
 
 export const maxDuration = 120;
@@ -142,21 +143,26 @@ export async function POST(req: NextRequest) {
     log("Building GLB...");
     const glbBuffer = buildGlbBuffer(gltfData);
 
-    // 7. Validate
+    // 7. Rename VRM (store original name in metadata, generate English filename)
+    log("Renaming VRM...");
+    const { buffer: renamedBuffer, englishName } = renameVrm(glbBuffer, originalName);
+    log(`  Original: ${originalName} → ${englishName}`);
+
+    // 8. Validate
     log("Validating...");
-    const validation = await validate(glbBuffer);
+    const validation = await validate(renamedBuffer);
 
     const elapsed = Date.now() - start;
-    log(`Done in ${elapsed}ms (${(glbBuffer.byteLength / 1024).toFixed(0)} KB)`);
+    log(`Done in ${elapsed}ms (${(renamedBuffer.byteLength / 1024).toFixed(0)} KB)`);
 
-    const vrmName = originalName.replace(/\.pmx$/i, ".vrm");
-    const safeFilename = encodeURIComponent(vrmName);
+    const safeFilename = encodeURIComponent(englishName);
 
-    return new NextResponse(Buffer.from(glbBuffer) as unknown as BodyInit, {
+    return new NextResponse(Buffer.from(renamedBuffer) as unknown as BodyInit, {
       status: 200,
       headers: {
         "Content-Type": "model/gltf-binary",
         "Content-Disposition": `attachment; filename*=UTF-8''${safeFilename}`,
+        "X-Vrm-Name": englishName,
         "X-Convert-Time": String(elapsed),
         "X-Convert-Logs": Buffer.from(JSON.stringify(logs)).toString("base64"),
         "X-Validation": Buffer.from(JSON.stringify(validation)).toString("base64"),
