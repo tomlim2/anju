@@ -258,7 +258,7 @@ async function convertOne(
   );
 
   let gltfData = buildGltf(pmxData);
-  const humanoidBones = mapBones(pmxData.bones);
+  const humanoidBones = mapBones(pmxData.bones, pmxData.skinned_bone_indices);
 
   let secondary;
   if (opts.noSpring) {

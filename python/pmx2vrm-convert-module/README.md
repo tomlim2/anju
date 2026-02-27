@@ -2,6 +2,8 @@
 
 PMX to VRM 0.x converter with dual TypeScript and Python implementations.
 
+> **⚠️ CRITICAL:** 하나의 PMX ZIP에서 **2개 이상의 VRM**이 출력될 수 있다. 의상 차분, 체형 차분, 본체+소품 등으로 ZIP 안에 humanoid PMX가 여러 개 들어있는 경우가 흔하다. **반드시 다중 출력을 전제로 처리 로직을 구성할 것.**
+
 ## Supported inputs
 
 - **Folder** containing `.pmx` files and their textures
