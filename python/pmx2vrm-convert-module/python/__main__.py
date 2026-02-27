@@ -61,6 +61,7 @@ def main():
     args = parser.parse_args()
 
     from . import pmx_reader, gltf_builder, bone_mapping, spring_converter, vrm_builder
+    from .vrm_renamer import inject_original_name
 
     # 1. Read PMX
     print(f"Reading PMX: {args.input}")
@@ -114,7 +115,10 @@ def main():
         gltf_data, humanoid_bones, secondary_animation, pmx_data["materials"],
     )
 
-    # 6. Write GLB
+    # 6. Store original name in VRM metadata
+    inject_original_name(gltf_data, args.input)
+
+    # 7. Write GLB
     print(f"Writing GLB: {args.output}")
     write_glb(gltf_data, args.output)
     print("Done.")

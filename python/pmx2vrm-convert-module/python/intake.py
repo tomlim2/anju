@@ -264,6 +264,7 @@ def process(zip_path, output_dir=None, scale=0.08, no_spring=False):
     from . import bone_mapping, gltf_builder
     from . import pmx_reader as pmx_mod
     from . import spring_converter, vrm_builder
+    from .vrm_renamer import inject_original_name, make_english_name
     from .__main__ import write_glb
 
     output_paths = []
@@ -272,13 +273,15 @@ def process(zip_path, output_dir=None, scale=0.08, no_spring=False):
         pmx_files = extract_pmx_files(zip_path, humanoids, tmp_dir)
 
         for scan_result, pmx_path in pmx_files:
-            decoded_stem = Path(pmx_path).stem
-            vrm_path = output_dir / f"{decoded_stem}.vrm"
+            original_name = Path(pmx_path).name
+            english_name = make_english_name(original_name)
+            english_stem = Path(english_name).stem
+            vrm_path = output_dir / english_name
 
             # Avoid overwriting: append _2, _3, etc.
             counter = 2
             while vrm_path.exists() or str(vrm_path) in output_paths:
-                vrm_path = output_dir / f"{decoded_stem}_{counter}.vrm"
+                vrm_path = output_dir / f"{english_stem}_{counter}.vrm"
                 counter += 1
 
             print(f"\nConverting: {scan_result['name']}")
@@ -302,6 +305,9 @@ def process(zip_path, output_dir=None, scale=0.08, no_spring=False):
             gltf_data = vrm_builder.build(
                 gltf_data, humanoid_bones, secondary, pmx_data["materials"],
             )
+
+            inject_original_name(gltf_data, original_name)
+            print(f"  Rename: {original_name} -> {vrm_path.name}")
 
             write_glb(gltf_data, str(vrm_path))
             output_paths.append(str(vrm_path))
