@@ -1264,6 +1264,19 @@ class CharacterCreatorGUI:
 
 
 if __name__ == "__main__":
+    import sys
+
     root = tk.Tk()
     app = CharacterCreatorGUI(root)
+
+    # CLI: accept VRM file paths as positional arguments
+    vrm_args = [a for a in sys.argv[1:] if a.lower().endswith(".vrm") and os.path.isfile(a)]
+    if vrm_args:
+        app.pending_vrm_files = [os.path.normpath(f) for f in vrm_args]
+        app.vrm_listbox.delete(0, tk.END)
+        for f in app.pending_vrm_files:
+            stem = os.path.splitext(os.path.basename(f))[0]
+            app.vrm_listbox.insert(tk.END, f"{stem[:12]}  ←  {os.path.basename(f)}")
+        app.vrm_count_label.config(text=f"{len(app.pending_vrm_files)}개 선택됨", fg="black")
+
     root.mainloop()
