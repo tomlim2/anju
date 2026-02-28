@@ -311,7 +311,8 @@ def extract_pmx_files(zip_path, scan_results, tmp_dir):
 # ── Core conversion for a single PMX ──
 
 def _convert_one(pmx_path, display_name, output_dir, output_paths, *,
-                 scale, no_spring, no_rename, no_validate, name=None):
+                 scale, no_spring, no_rename, no_validate, name=None,
+                 preset="default"):
     """Convert a single PMX file to VRM. Returns the final output path."""
     from . import bone_mapping, gltf_builder
     from . import pmx_reader as pmx_mod
@@ -340,6 +341,7 @@ def _convert_one(pmx_path, display_name, output_dir, output_paths, *,
             pmx_data["rigid_bodies"],
             pmx_data["joints_phys"],
             pmx_data["bones"],
+            preset=preset,
         )
 
     gltf_data = vrm_builder.build(
@@ -396,7 +398,8 @@ def _convert_one(pmx_path, display_name, output_dir, output_paths, *,
 # ── Public API ──
 
 def process(input_path, output_dir=None, scale=0.08,
-            no_spring=False, no_rename=False, no_validate=False, name=None):
+            no_spring=False, no_rename=False, no_validate=False, name=None,
+            preset="default"):
     """Process input: find humanoid PMX files, convert each to VRM.
 
     Auto-detects input type: single .pmx file, .zip archive, or folder.
@@ -436,6 +439,7 @@ def process(input_path, output_dir=None, scale=0.08,
         no_rename=no_rename,
         no_validate=no_validate,
         name=name,
+        preset=preset,
     )
 
     if is_pmx:
@@ -558,6 +562,7 @@ def main():
     parser.add_argument("--no-rename", action="store_true", help="Skip ASCII rename")
     parser.add_argument("--no-validate", action="store_true", help="Skip VRM validation")
     parser.add_argument("--name", help="Custom output VRM filename (e.g. MyCharacter)")
+    parser.add_argument("--preset", default="default", help="Spring bone preset name (default: default)")
     args = parser.parse_args()
 
     try:
@@ -569,6 +574,7 @@ def main():
             no_rename=args.no_rename,
             no_validate=args.no_validate,
             name=args.name,
+            preset=args.preset,
         )
     except (FileNotFoundError, ValueError, RuntimeError) as e:
         print(f"Error: {e}", file=sys.stderr)

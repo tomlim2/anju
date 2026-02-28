@@ -19,31 +19,31 @@ function sphereRadius(rb: PmxRigidBody): number {
 const COLLIDER_RADIUS_SCALE = 0.3;
 const HIT_RADIUS_SCALE = 0.2;
 
-// ── Tuning constants ──
-const DRAG_FORCE_MAX = 0.8;
+// ── Tuning constants (synced with python/spring_presets.json "default") ──
+const DRAG_FORCE_MAX = 0.6;
 const SPRING_CONSTANT_DIVISOR = 200.0;
 const STIFFINESS_MAX = 4.0;
 const CHAIN_LONG = 6;
 const CHAIN_MED = 4;
-const CHAIN_LONG_STIFFINESS_CAP = 2.0;
-const CHAIN_MED_STIFFINESS_CAP = 3.5;
-const CHAIN_DRAG_MIN = 0.8;
-const CHAIN_LONG_GRAVITY_MIN = 0.15;
-const CHAIN_LONG_GRAVITY_MAX = 0.5;
-const CHAIN_MED_GRAVITY_MIN = 0.02;
-const CHAIN_MED_GRAVITY_MAX = 0.3;
-const CHAIN_SHORT_STIFFINESS_MIN = 4.0;
+const CHAIN_LONG_STIFFINESS_CAP = 1.5;
+const CHAIN_MED_STIFFINESS_CAP = 2.5;
+const CHAIN_DRAG_MIN = 0.6;
+const CHAIN_LONG_GRAVITY_MIN = 0.1;
+const CHAIN_LONG_GRAVITY_MAX = 0.6;
+const CHAIN_MED_GRAVITY_MIN = 0.03;
+const CHAIN_MED_GRAVITY_MAX = 0.4;
+const CHAIN_SHORT_STIFFINESS_MIN = 3.5;
 const CHAIN_SHORT_GRAVITY_MAX = 0.0;
-const CHAIN_SHORT_DRAG_MIN = 0.95;
+const CHAIN_SHORT_DRAG_MIN = 0.9;
 const GROUND_Y_MIN = 0.05;
 // Chain split: long hanging chains → stiff root + flowing tip
 const SPLIT_MIN_CHAIN = 6;
 const SPLIT_ROOT_RATIO = 0.4;
 const SPLIT_ROOT_MIN = 2;
-const SPLIT_ROOT_STIFFINESS = 3.5;
-const SPLIT_ROOT_GRAVITY = 0.05;
-const SPLIT_TIP_STIFFINESS = 1.5;
-const SPLIT_TIP_GRAVITY_MAX = 0.4;
+const SPLIT_ROOT_STIFFINESS = 3.0;
+const SPLIT_ROOT_GRAVITY = 0.08;
+const SPLIT_TIP_STIFFINESS = 1.2;
+const SPLIT_TIP_GRAVITY_MAX = 0.45;
 
 function rotationLimitRange(joint: PmxJoint | null): number {
   if (!joint) return 0.0;
