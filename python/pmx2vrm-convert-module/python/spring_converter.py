@@ -58,6 +58,8 @@ _CHAIN_MED_STIFFINESS_CAP = 3.5
 _CHAIN_DRAG_MIN = 0.8
 _CHAIN_LONG_GRAVITY_MIN = 0.15
 _CHAIN_MED_GRAVITY_MIN = 0.02
+_CHAIN_SHORT_STIFFINESS_MIN = 2.0
+_CHAIN_SHORT_GRAVITY_MAX = 0.05
 _GROUND_Y_MIN = 0.05
 
 
@@ -308,6 +310,11 @@ def convert(rigid_bodies, joints, bones):
                 gravity_power = max(gravity_power, _CHAIN_MED_GRAVITY_MIN)
             else:
                 gravity_power = 0.0
+        else:
+            # Short chains (ribbons, accessories): stiffer + cap gravity
+            stiffiness = max(stiffiness, _CHAIN_SHORT_STIFFINESS_MIN)
+            drag_force = max(drag_force, _CHAIN_DRAG_MIN)
+            gravity_power = min(gravity_power, _CHAIN_SHORT_GRAVITY_MAX) if hangs_down else 0.0
 
         bone_groups.append({
             "stiffiness":   round(stiffiness,    4),  # Double-i: VRM 0.x spec typo!

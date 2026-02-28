@@ -30,6 +30,8 @@ const CHAIN_MED_STIFFINESS_CAP = 3.5;
 const CHAIN_DRAG_MIN = 0.8;
 const CHAIN_LONG_GRAVITY_MIN = 0.15;
 const CHAIN_MED_GRAVITY_MIN = 0.02;
+const CHAIN_SHORT_STIFFINESS_MIN = 2.0;
+const CHAIN_SHORT_GRAVITY_MAX = 0.05;
 const GROUND_Y_MIN = 0.05;
 
 function rotationLimitRange(joint: PmxJoint | null): number {
@@ -271,6 +273,11 @@ export function convert(
       stiffiness = Math.min(stiffiness, CHAIN_MED_STIFFINESS_CAP);
       dragForce = Math.max(dragForce, CHAIN_DRAG_MIN);
       gravityPower = hangsDown ? Math.max(gravityPower, CHAIN_MED_GRAVITY_MIN) : 0.0;
+    } else {
+      // Short chains (ribbons, accessories): stiffer + cap gravity
+      stiffiness = Math.max(stiffiness, CHAIN_SHORT_STIFFINESS_MIN);
+      dragForce = Math.max(dragForce, CHAIN_DRAG_MIN);
+      gravityPower = hangsDown ? Math.min(gravityPower, CHAIN_SHORT_GRAVITY_MAX) : 0.0;
     }
 
     boneGroups.push({
