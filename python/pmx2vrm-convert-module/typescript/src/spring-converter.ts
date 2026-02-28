@@ -16,8 +16,8 @@ function sphereRadius(rb: PmxRigidBody): number {
   return Math.max(...sz) * 0.5;     // Box
 }
 
-const COLLIDER_RADIUS_SCALE = 0.5;
-const HIT_RADIUS_SCALE = 0.4;
+const COLLIDER_RADIUS_SCALE = 0.3;
+const HIT_RADIUS_SCALE = 0.2;
 
 // ── Tuning constants ──
 const DRAG_FORCE_MAX = 0.8;
@@ -29,10 +29,20 @@ const CHAIN_LONG_STIFFINESS_CAP = 2.0;
 const CHAIN_MED_STIFFINESS_CAP = 3.5;
 const CHAIN_DRAG_MIN = 0.8;
 const CHAIN_LONG_GRAVITY_MIN = 0.15;
+const CHAIN_LONG_GRAVITY_MAX = 0.5;
 const CHAIN_MED_GRAVITY_MIN = 0.02;
+const CHAIN_MED_GRAVITY_MAX = 0.3;
 const CHAIN_SHORT_STIFFINESS_MIN = 2.0;
 const CHAIN_SHORT_GRAVITY_MAX = 0.05;
 const GROUND_Y_MIN = 0.05;
+// Chain split: long hanging chains → stiff root + flowing tip
+const SPLIT_MIN_CHAIN = 6;
+const SPLIT_ROOT_RATIO = 0.4;
+const SPLIT_ROOT_MIN = 2;
+const SPLIT_ROOT_STIFFINESS = 3.5;
+const SPLIT_ROOT_GRAVITY = 0.05;
+const SPLIT_TIP_STIFFINESS = 1.5;
+const SPLIT_TIP_GRAVITY_MAX = 0.4;
 
 function rotationLimitRange(joint: PmxJoint | null): number {
   if (!joint) return 0.0;
@@ -265,14 +275,55 @@ export function convert(
 
     const hangsDown = avgY < -0.01;
 
+    // Chain split: long hanging chains → stiff root + flowing tip
+    if (chainLen >= SPLIT_MIN_CHAIN && hangsDown) {
+      const splitAt = Math.max(SPLIT_ROOT_MIN, Math.floor(chainLen * SPLIT_ROOT_RATIO));
+      const rootBones = boneIndices.slice(0, splitAt);
+      const tipBones = boneIndices.slice(splitAt);
+      dragForce = Math.max(dragForce, CHAIN_DRAG_MIN);
+
+      boneGroups.push({
+        stiffiness: round4(SPLIT_ROOT_STIFFINESS),
+        gravityPower: round4(SPLIT_ROOT_GRAVITY),
+        gravityDir: { x: 0, y: -1, z: 0 },
+        dragForce: round4(dragForce),
+        hitRadius: round4(hitRadius),
+        bones: rootBones,
+        colliderGroups: [],
+        center: centerBone,
+        comment: "",
+      });
+
+      const tipGrav = Math.max(
+        CHAIN_LONG_GRAVITY_MIN,
+        Math.min(gravityPower, SPLIT_TIP_GRAVITY_MAX),
+      );
+      boneGroups.push({
+        stiffiness: round4(SPLIT_TIP_STIFFINESS),
+        gravityPower: round4(tipGrav),
+        gravityDir: { x: 0, y: -1, z: 0 },
+        dragForce: round4(dragForce),
+        hitRadius: round4(hitRadius),
+        bones: tipBones,
+        colliderGroups: [],
+        center: rootBones[rootBones.length - 1],
+        comment: "",
+      });
+      continue;
+    }
+
     if (chainLen >= CHAIN_LONG) {
       stiffiness = Math.min(stiffiness, CHAIN_LONG_STIFFINESS_CAP);
       dragForce = Math.max(dragForce, CHAIN_DRAG_MIN);
-      gravityPower = hangsDown ? Math.max(gravityPower, CHAIN_LONG_GRAVITY_MIN) : 0.0;
+      gravityPower = hangsDown
+        ? Math.min(Math.max(gravityPower, CHAIN_LONG_GRAVITY_MIN), CHAIN_LONG_GRAVITY_MAX)
+        : 0.0;
     } else if (chainLen >= CHAIN_MED) {
       stiffiness = Math.min(stiffiness, CHAIN_MED_STIFFINESS_CAP);
       dragForce = Math.max(dragForce, CHAIN_DRAG_MIN);
-      gravityPower = hangsDown ? Math.max(gravityPower, CHAIN_MED_GRAVITY_MIN) : 0.0;
+      gravityPower = hangsDown
+        ? Math.min(Math.max(gravityPower, CHAIN_MED_GRAVITY_MIN), CHAIN_MED_GRAVITY_MAX)
+        : 0.0;
     } else {
       // Short chains (ribbons, accessories): stiffer + cap gravity
       stiffiness = Math.max(stiffiness, CHAIN_SHORT_STIFFINESS_MIN);
@@ -328,8 +379,8 @@ export function convert(
   }
 
   // Step 6: Link colliderGroups to boneGroups
-  const bodyBones = new Set([
-    "頭", "上半身", "上半身2", "首",
+  const upperBodyBones = new Set(["頭", "上半身", "上半身2", "首"]);
+  const lowerBodyBones = new Set([
     "下半身",
     "右足", "左足", "右足D", "左足D",
     "右ひざ", "左ひざ", "右ひざD", "左ひざD",
@@ -354,9 +405,18 @@ export function convert(
       }
     }
 
+    // Body bones' colliders — filtered by region to prevent
+    // upper-body colliders from pushing skirt chains outward
+    const centerName = bg.center >= 0 && bg.center < numBon ? bones[bg.center].name : "";
+    const chainIsLower = lowerBodyBones.has(centerName);
+    const chainIsUpper = upperBodyBones.has(centerName);
+
     for (const [bi, cgIdx] of cgBoneMap) {
-      if (bodyBones.has(bones[bi].name)) {
-        relevant.add(cgIdx);
+      const boneName = bones[bi].name;
+      if (upperBodyBones.has(boneName)) {
+        if (!chainIsLower) relevant.add(cgIdx);
+      } else if (lowerBodyBones.has(boneName)) {
+        if (!chainIsUpper) relevant.add(cgIdx);
       }
     }
 

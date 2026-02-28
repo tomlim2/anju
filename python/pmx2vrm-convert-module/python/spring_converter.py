@@ -44,8 +44,8 @@ def _sphere_radius(rb):
 # geometry.  VRM spring bones use thin line-segment collision, so the raw
 # PMX radii are far too large.  These empirical factors bring the values
 # into the typical VRM range.
-_COLLIDER_RADIUS_SCALE = 0.5   # static RB → VRM collider sphere
-_HIT_RADIUS_SCALE      = 0.4   # dynamic RB → VRM boneGroup hitRadius
+_COLLIDER_RADIUS_SCALE = 0.3   # static RB → VRM collider sphere
+_HIT_RADIUS_SCALE      = 0.2   # dynamic RB → VRM boneGroup hitRadius
 
 # Tuning constants
 _DRAG_FORCE_MAX = 0.8
@@ -57,9 +57,20 @@ _CHAIN_LONG_STIFFINESS_CAP = 2.0
 _CHAIN_MED_STIFFINESS_CAP = 3.5
 _CHAIN_DRAG_MIN = 0.8
 _CHAIN_LONG_GRAVITY_MIN = 0.15
+_CHAIN_LONG_GRAVITY_MAX = 0.5
 _CHAIN_MED_GRAVITY_MIN = 0.02
+_CHAIN_MED_GRAVITY_MAX = 0.3
 _CHAIN_SHORT_STIFFINESS_MIN = 2.0
 _CHAIN_SHORT_GRAVITY_MAX = 0.05
+# Chain split: long hanging chains get a stiff root segment + flowing tip segment
+# to prevent hip/body penetration while keeping natural cloth motion.
+_SPLIT_MIN_CHAIN = 6          # only split chains with ≥ this many bones
+_SPLIT_ROOT_RATIO = 0.4       # first 40% of bones = stiff segment
+_SPLIT_ROOT_MIN = 2           # stiff segment has at least 2 bones
+_SPLIT_ROOT_STIFFINESS = 3.5  # stiff segment restoring force
+_SPLIT_ROOT_GRAVITY = 0.05    # stiff segment barely sags
+_SPLIT_TIP_STIFFINESS = 1.5   # tip segment flows freely
+_SPLIT_TIP_GRAVITY_MAX = 0.4  # tip segment gravity cap
 _GROUND_Y_MIN = 0.05
 
 
@@ -296,11 +307,51 @@ def convert(rigid_bodies, joints, bones):
 
         hangs_down = avg_y < -0.01  # chain extends downward
 
+        # -- Chain split for long hanging chains --
+        # Root segment stays stiff (prevents body penetration),
+        # tip segment flows freely (natural cloth/hair motion).
+        if chain_len >= _SPLIT_MIN_CHAIN and hangs_down:
+            split_at = max(_SPLIT_ROOT_MIN, int(chain_len * _SPLIT_ROOT_RATIO))
+            root_bones = bone_indices[:split_at]
+            tip_bones  = bone_indices[split_at:]
+
+            drag_force = max(drag_force, _CHAIN_DRAG_MIN)
+
+            # Root segment: stiff, minimal gravity
+            bone_groups.append({
+                "stiffiness":   round(_SPLIT_ROOT_STIFFINESS, 4),
+                "gravityPower": round(_SPLIT_ROOT_GRAVITY,    4),
+                "gravityDir":   {"x": 0, "y": -1, "z": 0},
+                "dragForce":    round(drag_force,             4),
+                "hitRadius":    round(hit_radius,             4),
+                "bones":        root_bones,
+                "colliderGroups": [],
+                "center":       center_bone,
+                "comment":      "",
+            })
+
+            # Tip segment: flows freely, center = last root bone
+            tip_grav = min(gravity_power, _SPLIT_TIP_GRAVITY_MAX) if hangs_down else 0.0
+            tip_grav = max(tip_grav, _CHAIN_LONG_GRAVITY_MIN)
+            bone_groups.append({
+                "stiffiness":   round(_SPLIT_TIP_STIFFINESS,  4),
+                "gravityPower": round(tip_grav,               4),
+                "gravityDir":   {"x": 0, "y": -1, "z": 0},
+                "dragForce":    round(drag_force,             4),
+                "hitRadius":    round(hit_radius,             4),
+                "bones":        tip_bones,
+                "colliderGroups": [],
+                "center":       root_bones[-1],
+                "comment":      "",
+            })
+            continue
+
         if chain_len >= _CHAIN_LONG:
             stiffiness = min(stiffiness, _CHAIN_LONG_STIFFINESS_CAP)
             drag_force = max(drag_force, _CHAIN_DRAG_MIN)
             if hangs_down:
                 gravity_power = max(gravity_power, _CHAIN_LONG_GRAVITY_MIN)
+                gravity_power = min(gravity_power, _CHAIN_LONG_GRAVITY_MAX)
             else:
                 gravity_power = 0.0
         elif chain_len >= _CHAIN_MED:
@@ -308,6 +359,7 @@ def convert(rigid_bodies, joints, bones):
             drag_force = max(drag_force, _CHAIN_DRAG_MIN)
             if hangs_down:
                 gravity_power = max(gravity_power, _CHAIN_MED_GRAVITY_MIN)
+                gravity_power = min(gravity_power, _CHAIN_MED_GRAVITY_MAX)
             else:
                 gravity_power = 0.0
         else:
@@ -367,11 +419,11 @@ def convert(rigid_bodies, joints, bones):
     # spring bone and including any ancestor that has a collider.
     #
     # Additionally, head/chest/upperChest always get included (hair, cloth etc.)
-    body_bones = {
-        "頭", "上半身", "上半身2", "首",          # upper body
-        "下半身",                                  # hip / pelvis
-        "右足", "左足", "右足D", "左足D",          # thighs
-        "右ひざ", "左ひざ", "右ひざD", "左ひざD",  # knees
+    _upper_body_bones = {"頭", "上半身", "上半身2", "首"}
+    _lower_body_bones = {
+        "下半身",
+        "右足", "左足", "右足D", "左足D",
+        "右ひざ", "左ひざ", "右ひざD", "左ひざD",
     }
 
     for bg in bone_groups:
@@ -394,10 +446,22 @@ def convert(rigid_bodies, joints, bones):
                 cur = par
                 depth += 1
 
-        # Body bones' colliders affect everything (hair, skirt, etc.)
+        # Body bones' colliders — filtered by region to prevent
+        # upper-body colliders from pushing skirt chains outward
+        center_name = ""
+        if bg["center"] >= 0 and bg["center"] < num_bon:
+            center_name = bones[bg["center"]]["name"]
+        chain_is_lower = center_name in _lower_body_bones
+        chain_is_upper = center_name in _upper_body_bones
+
         for bi, cg_idx in cg_bone_map.items():
-            if bones[bi]["name"] in body_bones:
-                relevant.add(cg_idx)
+            bone_name = bones[bi]["name"]
+            if bone_name in _upper_body_bones:
+                if not chain_is_lower:
+                    relevant.add(cg_idx)
+            elif bone_name in _lower_body_bones:
+                if not chain_is_upper:
+                    relevant.add(cg_idx)
 
         bg["colliderGroups"] = sorted(relevant)
 
