@@ -60,8 +60,9 @@ _CHAIN_LONG_GRAVITY_MIN = 0.15
 _CHAIN_LONG_GRAVITY_MAX = 0.5
 _CHAIN_MED_GRAVITY_MIN = 0.02
 _CHAIN_MED_GRAVITY_MAX = 0.3
-_CHAIN_SHORT_STIFFINESS_MIN = 2.0
-_CHAIN_SHORT_GRAVITY_MAX = 0.05
+_CHAIN_SHORT_STIFFINESS_MIN = 4.0
+_CHAIN_SHORT_GRAVITY_MAX = 0.0
+_CHAIN_SHORT_DRAG_MIN = 0.95
 # Chain split: long hanging chains get a stiff root segment + flowing tip segment
 # to prevent hip/body penetration while keeping natural cloth motion.
 _SPLIT_MIN_CHAIN = 6          # only split chains with ≥ this many bones
@@ -363,10 +364,10 @@ def convert(rigid_bodies, joints, bones):
             else:
                 gravity_power = 0.0
         else:
-            # Short chains (ribbons, accessories): stiffer + cap gravity
+            # Short chains (ribbons, accessories): nearly frozen
             stiffiness = max(stiffiness, _CHAIN_SHORT_STIFFINESS_MIN)
-            drag_force = max(drag_force, _CHAIN_DRAG_MIN)
-            gravity_power = min(gravity_power, _CHAIN_SHORT_GRAVITY_MAX) if hangs_down else 0.0
+            drag_force = max(drag_force, _CHAIN_SHORT_DRAG_MIN)
+            gravity_power = _CHAIN_SHORT_GRAVITY_MAX
 
         bone_groups.append({
             "stiffiness":   round(stiffiness,    4),  # Double-i: VRM 0.x spec typo!

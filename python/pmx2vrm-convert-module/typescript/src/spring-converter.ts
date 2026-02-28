@@ -32,8 +32,9 @@ const CHAIN_LONG_GRAVITY_MIN = 0.15;
 const CHAIN_LONG_GRAVITY_MAX = 0.5;
 const CHAIN_MED_GRAVITY_MIN = 0.02;
 const CHAIN_MED_GRAVITY_MAX = 0.3;
-const CHAIN_SHORT_STIFFINESS_MIN = 2.0;
-const CHAIN_SHORT_GRAVITY_MAX = 0.05;
+const CHAIN_SHORT_STIFFINESS_MIN = 4.0;
+const CHAIN_SHORT_GRAVITY_MAX = 0.0;
+const CHAIN_SHORT_DRAG_MIN = 0.95;
 const GROUND_Y_MIN = 0.05;
 // Chain split: long hanging chains → stiff root + flowing tip
 const SPLIT_MIN_CHAIN = 6;
@@ -325,10 +326,10 @@ export function convert(
         ? Math.min(Math.max(gravityPower, CHAIN_MED_GRAVITY_MIN), CHAIN_MED_GRAVITY_MAX)
         : 0.0;
     } else {
-      // Short chains (ribbons, accessories): stiffer + cap gravity
+      // Short chains (ribbons, accessories): nearly frozen
       stiffiness = Math.max(stiffiness, CHAIN_SHORT_STIFFINESS_MIN);
-      dragForce = Math.max(dragForce, CHAIN_DRAG_MIN);
-      gravityPower = hangsDown ? Math.min(gravityPower, CHAIN_SHORT_GRAVITY_MAX) : 0.0;
+      dragForce = Math.max(dragForce, CHAIN_SHORT_DRAG_MIN);
+      gravityPower = CHAIN_SHORT_GRAVITY_MAX;
     }
 
     boneGroups.push({
