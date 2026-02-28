@@ -139,7 +139,7 @@ def main():
         print("Start ZenServer before registering characters.")
         sys.exit(1)
 
-    # Patch + Build
+    # Patch + Build (matches GUI: Popen with CREATE_NEW_CONSOLE)
     patch_source()
     try:
         if not args.no_build:
@@ -147,14 +147,16 @@ def main():
             if os.path.exists(build_bat):
                 print("=== Building (patched source) ===")
                 build_cmd = f'"{build_bat}" CINEVStudioEditor Win64 Development -Project="{project_file}" -WaitMutex'
-                ret = subprocess.run(build_cmd, shell=True).returncode
-                if ret != 0:
-                    print(f"ERROR: Build failed (code {ret})")
+                build_process = subprocess.Popen(build_cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+                build_process.wait()
+                if build_process.returncode != 0:
+                    print(f"ERROR: Build failed (code {build_process.returncode})")
                     return
                 print("Build OK\n")
 
         assets_data = load_assets()
         added = 0
+        failed = 0
         total = len(vrm_files)
 
         for i, vrm_path in enumerate(vrm_files):
@@ -175,7 +177,7 @@ def main():
                 json.dump(json_data, f, indent=2)
             print(f"  1) JSON: {os.path.basename(json_file)}")
 
-            # Step 2: Commandlet
+            # Step 2: Commandlet (matches GUI: Popen with CREATE_NEW_CONSOLE)
             before_files = set(os.listdir(output_folder))
             cmd = (
                 f'"{exe_path}" "{project_file}" '
@@ -186,8 +188,9 @@ def main():
                 f'-stdout -nopause -unattended -AllowCommandletRendering -RenderOffScreen'
             )
             print(f"  2) Commandlet running...")
-            ret = subprocess.run(cmd, shell=True).returncode
-            print(f"     Exit code: {ret}")
+            process = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+            process.wait()
+            print(f"     Exit code: {process.returncode}")
 
             # Step 3: Verify & move
             after_files = set(os.listdir(output_folder))
@@ -209,9 +212,12 @@ def main():
                     shutil.move(thumb_src, os.path.join(user_char_folder, thumb_name))
                     thumb_file = thumb_name
                     print(f"     Thumbnail: {thumb_name}")
+                else:
+                    print(f"     Thumbnail not found: {thumb_name}")
             else:
                 char_file = f"{display_name}.character"
                 print(f"  3) No new .character detected, using default: {char_file}")
+                failed += 1
 
             # Step 4: assets.info
             preset_id = str(uuid.uuid4())
@@ -227,7 +233,10 @@ def main():
             added += 1
             print(f"  4) Registered in assets.info")
 
-        print(f"\n=== Done. {added}/{total} registered ===")
+        result = f"Done. {added}/{total} registered"
+        if failed:
+            result += f", {failed} without .character file"
+        print(f"\n=== {result} ===")
 
     finally:
         restore_source()
