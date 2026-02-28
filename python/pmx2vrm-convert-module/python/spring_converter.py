@@ -21,8 +21,27 @@ Key difference from naive DFS:
 """
 
 from collections import defaultdict, deque
+import json
 import math
+import os
 
+
+# ---------------------------------------------------------------------------
+# Preset loading
+# ---------------------------------------------------------------------------
+
+_PRESETS_FILE = os.path.join(os.path.dirname(__file__), "spring_presets.json")
+
+def _load_preset(name="default"):
+    """Load tuning constants from spring_presets.json."""
+    with open(_PRESETS_FILE, "r", encoding="utf-8") as f:
+        presets = json.load(f)
+    if name not in presets:
+        raise ValueError(f"Unknown spring preset '{name}'. Available: {list(presets.keys())}")
+    return presets[name]
+
+# Active preset (module-level defaults, overridable via load_preset)
+_P = _load_preset("default")
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -38,41 +57,6 @@ def _sphere_radius(rb):
         return sz[0]
     else:                # Box → half of longest side
         return max(sz) * 0.5
-
-
-# PMX rigid bodies are Bullet Physics collision volumes that enclose mesh
-# geometry.  VRM spring bones use thin line-segment collision, so the raw
-# PMX radii are far too large.  These empirical factors bring the values
-# into the typical VRM range.
-_COLLIDER_RADIUS_SCALE = 0.3   # static RB → VRM collider sphere
-_HIT_RADIUS_SCALE      = 0.2   # dynamic RB → VRM boneGroup hitRadius
-
-# Tuning constants
-_DRAG_FORCE_MAX = 0.8
-_SPRING_CONSTANT_DIVISOR = 200.0
-_STIFFINESS_MAX = 4.0
-_CHAIN_LONG = 6
-_CHAIN_MED = 4
-_CHAIN_LONG_STIFFINESS_CAP = 2.0
-_CHAIN_MED_STIFFINESS_CAP = 3.5
-_CHAIN_DRAG_MIN = 0.8
-_CHAIN_LONG_GRAVITY_MIN = 0.15
-_CHAIN_LONG_GRAVITY_MAX = 0.5
-_CHAIN_MED_GRAVITY_MIN = 0.02
-_CHAIN_MED_GRAVITY_MAX = 0.3
-_CHAIN_SHORT_STIFFINESS_MIN = 4.0
-_CHAIN_SHORT_GRAVITY_MAX = 0.0
-_CHAIN_SHORT_DRAG_MIN = 0.95
-# Chain split: long hanging chains get a stiff root segment + flowing tip segment
-# to prevent hip/body penetration while keeping natural cloth motion.
-_SPLIT_MIN_CHAIN = 6          # only split chains with ≥ this many bones
-_SPLIT_ROOT_RATIO = 0.4       # first 40% of bones = stiff segment
-_SPLIT_ROOT_MIN = 2           # stiff segment has at least 2 bones
-_SPLIT_ROOT_STIFFINESS = 3.5  # stiff segment restoring force
-_SPLIT_ROOT_GRAVITY = 0.05    # stiff segment barely sags
-_SPLIT_TIP_STIFFINESS = 1.5   # tip segment flows freely
-_SPLIT_TIP_GRAVITY_MAX = 0.4  # tip segment gravity cap
-_GROUND_Y_MIN = 0.05
 
 
 def _rotation_limit_range(joint):
@@ -97,7 +81,7 @@ def _map_params(rb, joint=None):
       2. rotation_limit range → tighter limits = higher stiffiness
       3. fallback: angular_damping as proxy
     """
-    drag_force = max(0.0, min(_DRAG_FORCE_MAX, rb["linear_damping"]))
+    drag_force = max(0.0, min(_P["drag_force_max"], rb["linear_damping"]))
     hit_radius = max(0.0, _sphere_radius(rb))
 
     # Rotation limit range determines both stiffiness AND gravity
@@ -109,11 +93,11 @@ def _map_params(rb, joint=None):
         scr = joint.get("spring_constant_rotation", [0, 0, 0])
         mag = math.sqrt(sum(v * v for v in scr))
         if mag > 1.0:
-            stiffiness = max(0.0, min(_STIFFINESS_MAX, mag / _SPRING_CONSTANT_DIVISOR))
+            stiffiness = max(0.0, min(_P["stiffiness_max"], mag / _P["spring_constant_divisor"]))
         elif avg_range > 0.001:
-            stiffiness = max(0.2, min(_STIFFINESS_MAX, math.pi / avg_range * 0.5))
+            stiffiness = max(0.2, min(_P["stiffiness_max"], math.pi / avg_range * 0.5))
         else:
-            stiffiness = _STIFFINESS_MAX
+            stiffiness = _P["stiffiness_max"]
 
     if stiffiness < 0.01:
         stiffiness = max(0.2, min(2.0, rb["angular_damping"] * 1.5))
@@ -135,17 +119,20 @@ def _map_params(rb, joint=None):
 # Main
 # ---------------------------------------------------------------------------
 
-def convert(rigid_bodies, joints, bones):
+def convert(rigid_bodies, joints, bones, preset="default"):
     """Convert PMX physics to VRM 0.x secondaryAnimation.
 
     Args:
         rigid_bodies: List of rigid body dicts from pmx_reader.
         joints:       List of joint dicts from pmx_reader.
         bones:        List of bone dicts from pmx_reader.
+        preset:       Name of spring preset from spring_presets.json.
 
     Returns:
         dict with "boneGroups" and "colliderGroups" in VRM 0.x format.
     """
+    global _P
+    _P = _load_preset(preset)
     if not rigid_bodies:
         return {"boneGroups": [], "colliderGroups": []}
 
@@ -266,7 +253,7 @@ def convert(rigid_bodies, joints, bones):
         # Trim bones below ground.  PMX models often have physics anchor
         # bones extending underground; these cause spring tips to stick
         # to the floor.
-        bone_indices = [bi for bi in bone_indices if bones[bi]["position"][1] > _GROUND_Y_MIN]
+        bone_indices = [bi for bi in bone_indices if bones[bi]["position"][1] > _P["ground_y_min"]]
         if not bone_indices:
             continue
 
@@ -295,7 +282,7 @@ def convert(rigid_bodies, joints, bones):
         drag_force, stiffiness, gravity_power, hit_radius = _map_params(rep_rb, rep_joint)
 
         # hitRadius: take max across chain, scaled down for VRM line-segment collision
-        hit_radius = max(_sphere_radius(rigid_bodies[i]) for i in dyn_chain) * _HIT_RADIUS_SCALE
+        hit_radius = max(_sphere_radius(rigid_bodies[i]) for i in dyn_chain) * _P["hit_radius_scale"]
 
         # Detect chain direction from bone positions: average Y displacement
         # Downward chains (skirt, hair) get gravity; upward/lateral (wings) don't
@@ -311,17 +298,17 @@ def convert(rigid_bodies, joints, bones):
         # -- Chain split for long hanging chains --
         # Root segment stays stiff (prevents body penetration),
         # tip segment flows freely (natural cloth/hair motion).
-        if chain_len >= _SPLIT_MIN_CHAIN and hangs_down:
-            split_at = max(_SPLIT_ROOT_MIN, int(chain_len * _SPLIT_ROOT_RATIO))
+        if chain_len >= _P["split_min_chain"] and hangs_down:
+            split_at = max(_P["split_root_min"], int(chain_len * _P["split_root_ratio"]))
             root_bones = bone_indices[:split_at]
             tip_bones  = bone_indices[split_at:]
 
-            drag_force = max(drag_force, _CHAIN_DRAG_MIN)
+            drag_force = max(drag_force, _P["chain_drag_min"])
 
             # Root segment: stiff, minimal gravity
             bone_groups.append({
-                "stiffiness":   round(_SPLIT_ROOT_STIFFINESS, 4),
-                "gravityPower": round(_SPLIT_ROOT_GRAVITY,    4),
+                "stiffiness":   round(_P["split_root_stiffiness"], 4),
+                "gravityPower": round(_P["split_root_gravity"],    4),
                 "gravityDir":   {"x": 0, "y": -1, "z": 0},
                 "dragForce":    round(drag_force,             4),
                 "hitRadius":    round(hit_radius,             4),
@@ -332,10 +319,10 @@ def convert(rigid_bodies, joints, bones):
             })
 
             # Tip segment: flows freely, center = last root bone
-            tip_grav = min(gravity_power, _SPLIT_TIP_GRAVITY_MAX) if hangs_down else 0.0
-            tip_grav = max(tip_grav, _CHAIN_LONG_GRAVITY_MIN)
+            tip_grav = min(gravity_power, _P["split_tip_gravity_max"]) if hangs_down else 0.0
+            tip_grav = max(tip_grav, _P["chain_long_gravity_min"])
             bone_groups.append({
-                "stiffiness":   round(_SPLIT_TIP_STIFFINESS,  4),
+                "stiffiness":   round(_P["split_tip_stiffiness"],  4),
                 "gravityPower": round(tip_grav,               4),
                 "gravityDir":   {"x": 0, "y": -1, "z": 0},
                 "dragForce":    round(drag_force,             4),
@@ -347,27 +334,27 @@ def convert(rigid_bodies, joints, bones):
             })
             continue
 
-        if chain_len >= _CHAIN_LONG:
-            stiffiness = min(stiffiness, _CHAIN_LONG_STIFFINESS_CAP)
-            drag_force = max(drag_force, _CHAIN_DRAG_MIN)
+        if chain_len >= _P["chain_long"]:
+            stiffiness = min(stiffiness, _P["chain_long_stiffiness_cap"])
+            drag_force = max(drag_force, _P["chain_drag_min"])
             if hangs_down:
-                gravity_power = max(gravity_power, _CHAIN_LONG_GRAVITY_MIN)
-                gravity_power = min(gravity_power, _CHAIN_LONG_GRAVITY_MAX)
+                gravity_power = max(gravity_power, _P["chain_long_gravity_min"])
+                gravity_power = min(gravity_power, _P["chain_long_gravity_max"])
             else:
                 gravity_power = 0.0
-        elif chain_len >= _CHAIN_MED:
-            stiffiness = min(stiffiness, _CHAIN_MED_STIFFINESS_CAP)
-            drag_force = max(drag_force, _CHAIN_DRAG_MIN)
+        elif chain_len >= _P["chain_med"]:
+            stiffiness = min(stiffiness, _P["chain_med_stiffiness_cap"])
+            drag_force = max(drag_force, _P["chain_drag_min"])
             if hangs_down:
-                gravity_power = max(gravity_power, _CHAIN_MED_GRAVITY_MIN)
-                gravity_power = min(gravity_power, _CHAIN_MED_GRAVITY_MAX)
+                gravity_power = max(gravity_power, _P["chain_med_gravity_min"])
+                gravity_power = min(gravity_power, _P["chain_med_gravity_max"])
             else:
                 gravity_power = 0.0
         else:
             # Short chains (ribbons, accessories): nearly frozen
-            stiffiness = max(stiffiness, _CHAIN_SHORT_STIFFINESS_MIN)
-            drag_force = max(drag_force, _CHAIN_SHORT_DRAG_MIN)
-            gravity_power = _CHAIN_SHORT_GRAVITY_MAX
+            stiffiness = max(stiffiness, _P["chain_short_stiffiness_min"])
+            drag_force = max(drag_force, _P["chain_short_drag_min"])
+            gravity_power = _P["chain_short_gravity_max"]
 
         bone_groups.append({
             "stiffiness":   round(stiffiness,    4),  # Double-i: VRM 0.x spec typo!
@@ -391,7 +378,7 @@ def convert(rigid_bodies, joints, bones):
         if bi < 0 or bi >= num_bon:
             continue
 
-        radius   = _sphere_radius(rb) * _COLLIDER_RADIUS_SCALE
+        radius   = _sphere_radius(rb) * _P["collider_radius_scale"]
         bone_pos = bones[bi]["position"]
         offset_x = float(rb["shape_position"][0] - bone_pos[0])
         offset_y = float(rb["shape_position"][1] - bone_pos[1])
