@@ -468,6 +468,89 @@ class PmxReader:
         }
 
 
+def clean_weights(joint_indices, skin_weights, threshold=0.001):
+    """Clean vertex weights: deduplicate, filter tiny, sort, normalize.
+
+    Args:
+        joint_indices: (N, 4) uint16 array of bone indices.
+        skin_weights: (N, 4) float32 array of weights.
+        threshold: Weights below this value are zeroed out.
+
+    Returns:
+        Cleaned (joint_indices, skin_weights) tuple, both (N, 4).
+    """
+    ji = joint_indices.copy()
+    sw = skin_weights.copy()
+    n = ji.shape[0]
+
+    # 1. Deduplicate — merge weights for duplicate bone indices per vertex
+    for slot in range(1, 4):
+        for prev in range(slot):
+            dup = ji[:, slot] == ji[:, prev]
+            sw[dup, prev] += sw[dup, slot]
+            sw[dup, slot] = 0.0
+            ji[dup, slot] = 0
+
+    # 2. Threshold filter — zero out tiny weights
+    tiny = sw < threshold
+    sw[tiny] = 0.0
+    ji[tiny] = 0
+
+    # 3. Sort — descending by weight (strongest bone first)
+    order = np.argsort(-sw, axis=1)
+    rows = np.arange(n)[:, None]
+    ji = ji[rows, order]
+    sw = sw[rows, order]
+
+    # 4. Normalize — sum to 1.0
+    sums = sw.sum(axis=1, keepdims=True)
+    sums = np.where(sums == 0, 1.0, sums)
+    sw = sw / sums
+
+    # 5. Fallback — vertices with all-zero weights bind to bone 0
+    dead = sw.sum(axis=1) == 0
+    ji[dead, 0] = 0
+    sw[dead, 0] = 1.0
+
+    return ji, sw
+
+
+# Encoding roundtrips to recover mojibake texture filenames.
+# Covers ZIPs where CJK filenames were stored with wrong encoding chain.
+_ENCODING_ROUNDTRIPS = [
+    ("gbk", "euc-kr"),
+    ("gbk", "shift_jis"),
+    ("gbk", "big5"),
+    ("big5", "euc-kr"),
+    ("shift_jis", "euc-kr"),
+    ("euc-kr", "gbk"),
+]
+
+
+def _find_texture_fallback(full_path):
+    """When texture file not found, try encoding roundtrips to find mojibake filename."""
+    parent = os.path.dirname(full_path)
+    tex_name = os.path.basename(full_path)
+    stem, ext = os.path.splitext(tex_name)
+
+    try:
+        dir_files = os.listdir(parent)
+    except OSError:
+        return None
+
+    candidates = {f for f in dir_files if os.path.splitext(f)[1].lower() == ext.lower()}
+
+    for enc_from, enc_to in _ENCODING_ROUNDTRIPS:
+        try:
+            mojibake_name = stem.encode(enc_from).decode(enc_to) + ext
+            if mojibake_name in candidates:
+                return os.path.join(parent, mojibake_name)
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            continue
+
+    return None
+
+
 def read(pmx_path, scale=0.08):
     """Read PMX file and return normalized data for the converter pipeline.
 
@@ -504,10 +587,8 @@ def read(pmx_path, scale=0.08):
     joint_indices = raw["joint_indices_raw"]
     skin_weights = raw["skin_weights_raw"]
 
-    # Normalize weights
-    weight_sums = skin_weights.sum(axis=1, keepdims=True)
-    weight_sums = np.where(weight_sums == 0, 1.0, weight_sums)
-    skin_weights = skin_weights / weight_sums
+    # Clean weights: deduplicate, filter tiny, normalize
+    joint_indices, skin_weights = clean_weights(joint_indices, skin_weights)
 
     # Bones that actually drive vertices (normalized weight > 0)
     # Used by bone_mapping to choose between D-bone / standard bone pairs.
@@ -543,6 +624,10 @@ def read(pmx_path, scale=0.08):
             pmx_dir,
             tex_path.replace("\\", os.sep).replace("/", os.sep),
         )
+        if not os.path.isfile(full_path):
+            fallback = _find_texture_fallback(full_path)
+            if fallback:
+                full_path = fallback
         try:
             img = Image.open(full_path)
             if img.mode not in ("RGB", "RGBA"):
