@@ -17,7 +17,6 @@ from datetime import datetime
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(SCRIPT_DIR, "character_creator_config.json")
-ASSETS_INFO = os.path.join(SCRIPT_DIR, "assets.info")
 COMMANDLET_SOURCE = r"E:\CINEVStudio\CINEVStudio\Source\Cinev\CLI\CinevCreateUserCharacterCommandlet.cpp"
 PATCH_ORIGINAL = "if (!InitializeWorldAndGameInstance())"
 PATCH_REPLACE = "if (!InitializeWorldAndGameInstance(FString(), false, false))"
@@ -76,15 +75,20 @@ def restore_source():
         print(f"[Patch] Restore error: {e}")
 
 
-def load_assets():
-    if os.path.exists(ASSETS_INFO):
-        with open(ASSETS_INFO, "r", encoding="utf-8") as f:
+def get_assets_info_path(user_char_folder):
+    """assets.info lives in the UserCharacter folder (where UE reads it)."""
+    return os.path.join(user_char_folder, "assets.info")
+
+
+def load_assets(assets_path):
+    if os.path.exists(assets_path):
+        with open(assets_path, "r", encoding="utf-8") as f:
             return json.load(f)
     return []
 
 
-def save_assets(data):
-    with open(ASSETS_INFO, "w", encoding="utf-8") as f:
+def save_assets(data, assets_path):
+    with open(assets_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
@@ -154,7 +158,8 @@ def main():
                     return
                 print("Build OK\n")
 
-        assets_data = load_assets()
+        assets_path = get_assets_info_path(user_char_folder)
+        assets_data = load_assets(assets_path)
         added = 0
         failed = 0
         total = len(vrm_files)
@@ -229,7 +234,7 @@ def main():
                 "CategoryName": "CharacterCategory.VRM",
                 "ThumbnailFileName": thumb_file,
             })
-            save_assets(assets_data)
+            save_assets(assets_data, assets_path)
             added += 1
             print(f"  4) Registered in assets.info")
 
