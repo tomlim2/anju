@@ -264,14 +264,14 @@ export class UI {
     }
     if (this._vmdPath) lines.push(`VMD: ${this._vmdPath}`);
     const text = lines.join('\n');
-    el.innerHTML = `<pre>${text}<button id="btn-copy-paths">Copy</button></pre>`;
+    el.innerHTML = `<pre>${text}<button id="btn-copy-paths"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></pre>`;
     el.style.display = 'block';
 
     document.getElementById('btn-copy-paths').addEventListener('click', () => {
       navigator.clipboard.writeText(text).then(() => {
         const btn = document.getElementById('btn-copy-paths');
-        btn.textContent = 'Copied';
-        setTimeout(() => { btn.textContent = 'Copy'; }, 1000);
+        btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8.5l3 3 7-7"/></svg>';
+        setTimeout(() => { btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg>'; }, 1000);
       });
     });
   }

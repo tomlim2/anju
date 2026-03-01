@@ -47,6 +47,10 @@ export class MMDModelLoader {
           return urlMap.get(match);
         }
       }
+      // Missing texture: return transparent 1px PNG for image files to suppress console errors
+      if (/\.(png|jpe?g|bmp|tga|dds|gif|spa|sph)$/i.test(filename)) {
+        return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+      }
       return url;
     };
 
