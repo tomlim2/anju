@@ -11,6 +11,7 @@ export class UI {
     this._ac = new AbortController();
     this._manifest = null;
     this._zipEntries = null;
+    this._zipName = '';
     this._pmxPath = '';
     this._vmdPath = '';
 
@@ -60,6 +61,7 @@ export class UI {
       }
 
       this._zipEntries = entries;
+      this._zipName = file.name;
 
       const selectPmx = document.getElementById('select-pmx');
       selectPmx.innerHTML = '<option value="">PMX</option>';
@@ -256,13 +258,16 @@ export class UI {
       return;
     }
     const lines = [];
-    if (this._pmxPath) lines.push(`<span class="label">PMX:</span> <span class="path">${this._pmxPath}</span>`);
-    if (this._vmdPath) lines.push(`<span class="label">VMD:</span> <span class="path">${this._vmdPath}</span>`);
-    el.innerHTML = lines.join('<br>') + '<br><button id="btn-copy-paths">Copy</button>';
+    if (this._pmxPath) {
+      const pmxDisplay = this._zipName ? `${this._zipName}/${this._pmxPath}` : this._pmxPath;
+      lines.push(`PMX: ${pmxDisplay}`);
+    }
+    if (this._vmdPath) lines.push(`VMD: ${this._vmdPath}`);
+    const text = lines.join('\n');
+    el.innerHTML = `<pre>${text}<button id="btn-copy-paths">Copy</button></pre>`;
     el.style.display = 'block';
 
     document.getElementById('btn-copy-paths').addEventListener('click', () => {
-      const text = [this._pmxPath && `PMX: ${this._pmxPath}`, this._vmdPath && `VMD: ${this._vmdPath}`].filter(Boolean).join('\n');
       navigator.clipboard.writeText(text).then(() => {
         const btn = document.getElementById('btn-copy-paths');
         btn.textContent = 'Copied';

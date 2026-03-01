@@ -135,25 +135,34 @@
       position: fixed;
       bottom: 12px;
       left: 12px;
-      font-size: 11px;
-      color: var(--text-dim);
       z-index: 20;
-      line-height: 1.6;
       display: none;
     }
-    #debug-paths .label { color: var(--text-dim); }
-    #debug-paths .path { color: var(--text); }
+    #debug-paths pre {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 8px 40px 8px 10px;
+      margin: 0;
+      font-size: 11px;
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+      color: var(--text-dim);
+      line-height: 1.6;
+      white-space: pre;
+      position: relative;
+    }
     #debug-paths button {
+      position: absolute;
+      top: 4px;
+      right: 4px;
       background: var(--surface);
       border: 1px solid var(--border);
       color: var(--text-dim);
       padding: 2px 8px;
       font-size: 10px;
       cursor: pointer;
-      margin-left: 8px;
       font-family: inherit;
     }
-    #debug-paths button:hover { color: var(--text); }
+    #debug-paths button:hover { color: var(--text); background: var(--panel); }
 
     /* WebGPU fallback */
     .fallback {
