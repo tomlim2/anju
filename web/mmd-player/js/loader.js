@@ -1,6 +1,7 @@
 import { LoadingManager } from 'three/webgpu';
 import { MMDLoader } from '../vendor/MMDLoader.js';
 import { swapToToonMaterial } from './shader.js';
+import { findMojibakeMatch } from './encoding.js';
 
 export class MMDModelLoader {
   constructor(mmdScene) {
@@ -24,12 +25,29 @@ export class MMDModelLoader {
       }
     }
 
+    // Build candidate set for mojibake fallback
+    const candidateSet = new Set(urlMap.keys());
+
     // Custom LoadingManager that resolves texture filenames to blob URLs
     const manager = new LoadingManager();
     manager.resolveURL = (url) => {
       const decoded = decodeURIComponent(url);
       const filename = decoded.split(/[/\\]/).pop().toLowerCase();
-      return urlMap.get(filename) || url;
+      const direct = urlMap.get(filename);
+      if (direct) return direct;
+
+      // Mojibake fallback: try encoding round-trips
+      const dotIdx = filename.lastIndexOf('.');
+      if (dotIdx > 0) {
+        const stem = filename.slice(0, dotIdx);
+        const ext = filename.slice(dotIdx);
+        const match = findMojibakeMatch(stem, ext, candidateSet);
+        if (match) {
+          console.info(`[MMD] Mojibake fallback: "${filename}" → "${match}"`);
+          return urlMap.get(match);
+        }
+      }
+      return url;
     };
 
     const loader = new MMDLoader(manager);
