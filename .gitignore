@@ -13,3 +13,6 @@ python/shipping_manager/creator_only/config.json
 
 # NZ Downloader config (contains API secrets)
 api-test/nz-downloader/config.js
+
+# MMD player local data (symlink to archive)
+web/mmd-player/data

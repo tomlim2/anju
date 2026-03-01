@@ -14,6 +14,7 @@ export class MMDAnimation {
 
     this.helper = new MMDAnimationHelper({
       afterglow: 2.0,
+      pmxAnimation: true,
     });
 
     const params = {
@@ -49,8 +50,14 @@ export class MMDAnimation {
   destroy() {
     if (this.helper && this.mesh) {
       this.helper.remove(this.mesh);
+      // Reset skeleton to rest pose so the next animation starts clean
+      if (this.mesh.skeleton) this.mesh.skeleton.pose();
+      this.mesh.position.set(0, 0, 0);
+      this.mesh.rotation.set(0, 0, 0);
     }
     this.helper = null;
     this.mesh = null;
+    this.duration = 0;
+    this.playing = false;
   }
 }

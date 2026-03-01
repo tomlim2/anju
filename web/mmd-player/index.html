@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MMD Player</title>
 
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
   <script type="importmap">
   {
     "imports": {
@@ -74,10 +76,11 @@
       left: 12px;
       display: flex;
       gap: 8px;
+      align-items: center;
       z-index: 20;
     }
 
-    #controls button {
+    #controls button, #controls select {
       background: var(--surface);
       border: 1px solid var(--border);
       color: var(--text);
@@ -87,9 +90,45 @@
       font-family: inherit;
     }
 
-    #controls button:hover {
+    #controls button:hover, #controls select:hover {
       background: var(--panel);
     }
+
+    #controls button:disabled, #controls select:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    #controls select {
+      max-width: 180px;
+    }
+
+    #volume {
+      width: 80px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .separator {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+    }
+
+    /* Debug info */
+    #debug-info {
+      position: fixed;
+      top: 44px;
+      left: 12px;
+      font-size: 11px;
+      color: var(--text-dim);
+      z-index: 20;
+      pointer-events: none;
+      line-height: 1.5;
+    }
+
+    #debug-info .remap { color: #e5c07b; }
+    #debug-info .drop { color: #e06c75; }
 
     /* WebGPU fallback */
     .fallback {
@@ -116,16 +155,23 @@
 
   <div id="title">MMD Player</div>
 
+  <div id="debug-info"></div>
   <div id="status"></div>
 
   <div id="controls">
-    <button id="btn-open-mmd-small">Open MMD</button>
-    <button id="btn-open-vmd-small">Open VMD</button>
-    <button id="btn-play" style="display:none">Pause</button>
+    <button id="btn-upload-zip">Upload ZIP</button>
+    <select id="select-pmx" disabled><option value="">PMX</option></select>
+    <div class="separator"></div>
+    <select id="select-artist"><option value="">Artist</option></select>
+    <select id="select-song" disabled><option value="">Song</option></select>
+    <div class="separator"></div>
+    <button id="btn-play" disabled>Play</button>
+    <button id="btn-pause" disabled>Pause</button>
+    <button id="btn-stop" disabled>Stop</button>
+    <input type="range" id="volume" min="0" max="1" step="0.01" value="0.5">
   </div>
 
-  <input type="file" id="input-mmd" webkitdirectory multiple hidden>
-  <input type="file" id="input-vmd" accept=".vmd" hidden>
+  <input type="file" id="input-zip" accept=".zip" hidden>
 
   <script>
     if (!navigator.gpu) {
