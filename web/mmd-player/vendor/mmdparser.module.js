@@ -11183,10 +11183,89 @@ Parser.prototype.parseVmd = function ( buffer, leftToRight ) {
 
 	};
 
+	var parseLights = function () {
+
+		var metadata = vmd.metadata;
+		metadata.lightCount = dv.getUint32();
+
+		vmd.lights = [];
+		for ( var i = 0; i < metadata.lightCount; i++ ) {
+
+			var p = {};
+			p.frameNum = dv.getUint32();
+			p.color = dv.getFloat32Array( 3 );
+			p.position = dv.getFloat32Array( 3 );
+			vmd.lights.push( p );
+
+		}
+
+	};
+
+	var parseSelfShadows = function () {
+
+		var metadata = vmd.metadata;
+		metadata.selfShadowCount = dv.getUint32();
+
+		vmd.selfShadows = [];
+		for ( var i = 0; i < metadata.selfShadowCount; i++ ) {
+
+			var p = {};
+			p.frameNum = dv.getUint32();
+			p.type = dv.getUint8();
+			p.distance = dv.getFloat32();
+			vmd.selfShadows.push( p );
+
+		}
+
+	};
+
+	var parseIKStates = function () {
+
+		var metadata = vmd.metadata;
+		metadata.ikStateCount = dv.getUint32();
+
+		vmd.ikStates = [];
+		for ( var i = 0; i < metadata.ikStateCount; i++ ) {
+
+			var p = {};
+			p.frameNum = dv.getUint32();
+			p.visible = dv.getUint8() !== 0;
+			p.ikCount = dv.getUint32();
+			p.iks = [];
+			for ( var j = 0; j < p.ikCount; j++ ) {
+
+				var ik = {};
+				ik.boneName = dv.getSjisStringsAsUnicode( 20 );
+				ik.enabled = dv.getUint8() !== 0;
+				p.iks.push( ik );
+
+			}
+			vmd.ikStates.push( p );
+
+		}
+
+	};
+
 	parseHeader();
 	parseMotions();
 	parseMorphs();
 	parseCameras();
+
+	if ( dv.offset < dv.dv.byteLength ) {
+
+		try {
+
+			parseLights();
+			parseSelfShadows();
+			parseIKStates();
+
+		} catch ( e ) {
+
+			// Optional sections may not exist in older VMD files
+
+		}
+
+	}
 
 	if ( leftToRight === true ) this.leftToRightVmd( vmd );
 
@@ -11368,9 +11447,11 @@ Parser.prototype.mergeVmds = function ( vmds ) {
 	v.metadata.motionCount = 0;
 	v.metadata.morphCount = 0;
 	v.metadata.cameraCount = 0;
+	v.metadata.ikStateCount = 0;
 	v.motions = [];
 	v.morphs = [];
 	v.cameras = [];
+	v.ikStates = [];
 
 	for ( var i = 0; i < vmds.length; i++ ) {
 
@@ -11395,6 +11476,18 @@ Parser.prototype.mergeVmds = function ( vmds ) {
 		for ( var j = 0; j < v2.metadata.cameraCount; j++ ) {
 
 			v.cameras.push( v2.cameras[ j ] );
+
+		}
+
+		if ( v2.ikStates ) {
+
+			v.metadata.ikStateCount += v2.metadata.ikStateCount;
+
+			for ( var j = 0; j < v2.ikStates.length; j++ ) {
+
+				v.ikStates.push( v2.ikStates[ j ] );
+
+			}
 
 		}
 

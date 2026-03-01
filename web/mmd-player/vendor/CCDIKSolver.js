@@ -25,6 +25,43 @@ const _axis = new Vector3();
 const _vector = new Vector3();
 const _matrix = new Matrix4();
 
+// Swing-Twist decomposition: clamp rotation around a single primary axis
+function clampBySingleAxis( q, axisIdx, min, max ) {
+
+	// Ensure canonical form (w >= 0) to avoid quaternion double-cover issue
+	const sign = q.w < 0 ? - 1 : 1;
+	const comp = sign * ( axisIdx === 0 ? q.x : axisIdx === 1 ? q.y : q.z );
+	const w = sign * q.w;
+	const len = Math.sqrt( comp * comp + w * w );
+
+	if ( len < 1e-10 ) {
+
+		q.set( 0, 0, 0, 1 );
+		return;
+
+	}
+
+	// Signed angle: 2 * atan2( twist_axis_component, w )
+	let angle = 2 * Math.atan2( comp / len, w / len );
+
+	// Clamp
+	angle = Math.max( angle, min );
+	angle = Math.min( angle, max );
+
+	// Reconstruct quaternion from clamped angle
+	const half = angle * 0.5;
+	const s = Math.sin( half );
+	const c = Math.cos( half );
+
+	q.set(
+		axisIdx === 0 ? s : 0,
+		axisIdx === 1 ? s : 0,
+		axisIdx === 2 ? s : 0,
+		c
+	);
+
+}
+
 
 /**
  * CCD Algorithm
@@ -71,6 +108,8 @@ class CCDIKSolver {
 		const iks = this.iks;
 
 		for ( let i = 0, il = iks.length; i < il; i ++ ) {
+
+			if ( iks[ i ].ikEnabled === false ) continue;
 
 			this.updateOne( iks[ i ] );
 
@@ -184,15 +223,44 @@ class CCDIKSolver {
 
 				}
 
-				if ( rotationMin !== undefined ) {
+				if ( rotationMin !== undefined && rotationMax !== undefined ) {
 
-					link.rotation.setFromVector3( _vector.setFromEuler( link.rotation ).max( rotationMin ) );
+					// Detect single-axis constraint (knee hinge etc.)
+					const xRange = rotationMax.x - rotationMin.x > 1e-5;
+					const yRange = rotationMax.y - rotationMin.y > 1e-5;
+					const zRange = rotationMax.z - rotationMin.z > 1e-5;
+					const axisCount = ( xRange ? 1 : 0 ) + ( yRange ? 1 : 0 ) + ( zRange ? 1 : 0 );
 
-				}
+					if ( axisCount <= 1 ) {
 
-				if ( rotationMax !== undefined ) {
+						// Single-axis hinge: swing-twist decomposition
+						const axis = xRange ? 0 : yRange ? 1 : 2;
+						const min = axis === 0 ? rotationMin.x : axis === 1 ? rotationMin.y : rotationMin.z;
+						const max = axis === 0 ? rotationMax.x : axis === 1 ? rotationMax.y : rotationMax.z;
+						clampBySingleAxis( link.quaternion, axis, min, max );
 
-					link.rotation.setFromVector3( _vector.setFromEuler( link.rotation ).min( rotationMax ) );
+					} else {
+
+						// Multi-axis: Euler clamp fallback
+						link.rotation.setFromVector3( _vector.setFromEuler( link.rotation ).max( rotationMin ) );
+						link.rotation.setFromVector3( _vector.setFromEuler( link.rotation ).min( rotationMax ) );
+
+					}
+
+				} else {
+
+					// Only min or only max specified
+					if ( rotationMin !== undefined ) {
+
+						link.rotation.setFromVector3( _vector.setFromEuler( link.rotation ).max( rotationMin ) );
+
+					}
+
+					if ( rotationMax !== undefined ) {
+
+						link.rotation.setFromVector3( _vector.setFromEuler( link.rotation ).min( rotationMax ) );
+
+					}
 
 				}
 

@@ -1656,7 +1656,16 @@ class AnimationBuilder {
 
 		}
 
-		return new AnimationClip( '', - 1, tracks );
+		const clip = new AnimationClip( '', - 1, tracks );
+
+		// Attach IK state data for per-frame IK enable/disable
+		if ( vmd.ikStates && vmd.ikStates.length > 0 ) {
+
+			clip.ikStates = vmd.ikStates.slice().sort( ( a, b ) => a.frameNum - b.frameNum );
+
+		}
+
+		return clip;
 
 	}
 

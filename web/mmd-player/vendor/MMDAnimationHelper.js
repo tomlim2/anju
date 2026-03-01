@@ -465,6 +465,24 @@ class MMDAnimationHelper {
 		objects.ikSolver = this._createCCDIKSolver( mesh );
 		objects.grantSolver = this.createGrantSolver( mesh );
 
+		// Extract IK state data from clip for per-frame IK enable/disable
+		if ( animation !== undefined ) {
+
+			const clips = Array.isArray( animation ) ? animation : [ animation ];
+
+			for ( let i = 0, il = clips.length; i < il; i ++ ) {
+
+				if ( clips[ i ].ikStates ) {
+
+					objects.ikStates = clips[ i ].ikStates;
+					break;
+
+				}
+
+			}
+
+		}
+
 		return this;
 
 	}
@@ -536,6 +554,13 @@ class MMDAnimationHelper {
 			mixer.update( delta );
 
 			this._saveBones( mesh );
+
+			// Apply VMD IK enable/disable states for current frame
+			if ( objects.ikStates && this.enabled.ik ) {
+
+				this._updateIKEnabled( mesh, mixer.time, objects.ikStates );
+
+			}
 
 			// PMX animation system special path
 			if ( this.configuration.pmxAnimation &&
@@ -643,6 +668,50 @@ class MMDAnimationHelper {
 			camera.up.set( 0, 1, 0 );
 			camera.up.applyQuaternion( camera.quaternion );
 			camera.lookAt( this.cameraTarget.position );
+
+		}
+
+	}
+
+	_updateIKEnabled( mesh, time, ikStates ) {
+
+		// Convert animation time to VMD frame number (30fps)
+		const frame = time * 30;
+
+		// Binary search for the most recent IK state entry (step interpolation)
+		let stateIndex = 0;
+
+		for ( let i = ikStates.length - 1; i >= 0; i -- ) {
+
+			if ( ikStates[ i ].frameNum <= frame ) {
+
+				stateIndex = i;
+				break;
+
+			}
+
+		}
+
+		const state = ikStates[ stateIndex ];
+		const iks = mesh.geometry.userData.MMD.iks;
+		const bones = mesh.geometry.userData.MMD.bones;
+
+		// Build bone name to enabled lookup from the IK state
+		for ( let i = 0, il = state.iks.length; i < il; i ++ ) {
+
+			const ikState = state.iks[ i ];
+
+			// Match IK state bone name against IK chain target bones
+			for ( let j = 0, jl = iks.length; j < jl; j ++ ) {
+
+				if ( bones[ iks[ j ].target ] && bones[ iks[ j ].target ].name === ikState.boneName ) {
+
+					iks[ j ].ikEnabled = ikState.enabled;
+					break;
+
+				}
+
+			}
 
 		}
 
@@ -1013,7 +1082,7 @@ function updateOne( mesh, boneIndex, ikSolver, grantSolver ) {
 
 	}
 
-	if ( ikSolver && boneData.ik ) {
+	if ( ikSolver && boneData.ik && boneData.ik.ikEnabled !== false ) {
 
 		// @TODO: Updating world matrices every time solving an IK bone is
 		// costly. Optimize if possible.
