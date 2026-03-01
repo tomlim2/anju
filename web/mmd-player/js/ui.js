@@ -258,7 +258,7 @@ export class UI {
     const lines = [];
     if (this._pmxPath) lines.push(`<span class="label">PMX:</span> <span class="path">${this._pmxPath}</span>`);
     if (this._vmdPath) lines.push(`<span class="label">VMD:</span> <span class="path">${this._vmdPath}</span>`);
-    el.innerHTML = lines.join('<br>') + '<button id="btn-copy-paths">Copy</button>';
+    el.innerHTML = lines.join('<br>') + '<br><button id="btn-copy-paths">Copy</button>';
     el.style.display = 'block';
 
     document.getElementById('btn-copy-paths').addEventListener('click', () => {
