@@ -73,7 +73,12 @@ export class MMDModelLoader {
       this.mmdScene.scene.remove(this.mesh);
       this.mesh.geometry.dispose();
       const mats = Array.isArray(this.mesh.material) ? this.mesh.material : [this.mesh.material];
-      mats.forEach(m => m.dispose());
+      mats.forEach(m => {
+        for (const key of ['map', 'normalMap', 'emissiveMap', 'alphaMap', 'matcap']) {
+          if (m[key]) m[key].dispose();
+        }
+        m.dispose();
+      });
       this.mesh = null;
     }
   }

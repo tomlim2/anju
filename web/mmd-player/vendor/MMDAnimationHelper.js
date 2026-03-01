@@ -372,6 +372,15 @@ class MMDAnimationHelper {
 
 			if ( this.meshes[ i ] === mesh ) {
 
+				const objects = this.objects.get( mesh );
+
+				if ( objects ) {
+
+					if ( objects.mixer ) objects.mixer.stopAllAction();
+					if ( objects.physics ) objects.physics.reset();
+
+				}
+
 				this.objects.delete( mesh );
 				found = true;
 
@@ -464,6 +473,15 @@ class MMDAnimationHelper {
 
 		objects.ikSolver = this._createCCDIKSolver( mesh );
 		objects.grantSolver = this.createGrantSolver( mesh );
+
+		// Reset IK enabled flags from previous animation
+		const iks = mesh.geometry.userData.MMD.iks;
+
+		for ( let i = 0, il = iks.length; i < il; i ++ ) {
+
+			delete iks[ i ].ikEnabled;
+
+		}
 
 		// Extract IK state data from clip for per-frame IK enable/disable
 		if ( animation !== undefined ) {
@@ -678,8 +696,8 @@ class MMDAnimationHelper {
 		// Convert animation time to VMD frame number (30fps)
 		const frame = time * 30;
 
-		// Binary search for the most recent IK state entry (step interpolation)
-		let stateIndex = 0;
+		// Find the most recent IK state entry (step interpolation)
+		let stateIndex = - 1;
 
 		for ( let i = ikStates.length - 1; i >= 0; i -- ) {
 
@@ -691,6 +709,9 @@ class MMDAnimationHelper {
 			}
 
 		}
+
+		// No applicable state yet — keep all IK enabled (default)
+		if ( stateIndex < 0 ) return;
 
 		const state = ikStates[ stateIndex ];
 		const iks = mesh.geometry.userData.MMD.iks;

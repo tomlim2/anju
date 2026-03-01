@@ -11,6 +11,8 @@ export class UI {
     this._ac = new AbortController();
     this._manifest = null;
     this._zipEntries = null;
+    this._pmxPath = '';
+    this._vmdPath = '';
 
     this._initZipUpload();
     this._initVMDDropdowns();
@@ -109,6 +111,8 @@ export class UI {
       }
 
       await this.loader.loadPMXFromBlobs(pmxFile, blobs);
+      this._pmxPath = pmxPath;
+      this._updateDebugPaths();
       statusEl.textContent = `Loaded: ${pmxName}`;
 
       // Re-apply currently selected song if any
@@ -184,6 +188,8 @@ export class UI {
       const vmdFile = new File([vmdBlob], vmdPath.split('/').pop());
 
       await this._loadVMD(this.loader.mesh, vmdFile);
+      this._vmdPath = vmdPath;
+      this._updateDebugPaths();
 
       const audioRes = await fetch('data/' + audioPath);
       if (!audioRes.ok) throw new Error(`Failed to fetch audio: ${audioRes.status}`);
@@ -239,6 +245,30 @@ export class UI {
       parts.push(`Ignored: ${ignored.length} cosmetic bones`);
     }
     el.innerHTML = parts.length ? parts.join(' · ') : '';
+  }
+
+  // --- Debug Paths Panel ---
+
+  _updateDebugPaths() {
+    const el = document.getElementById('debug-paths');
+    if (!this._pmxPath && !this._vmdPath) {
+      el.style.display = 'none';
+      return;
+    }
+    const lines = [];
+    if (this._pmxPath) lines.push(`<span class="label">PMX:</span> <span class="path">${this._pmxPath}</span>`);
+    if (this._vmdPath) lines.push(`<span class="label">VMD:</span> <span class="path">${this._vmdPath}</span>`);
+    el.innerHTML = lines.join('<br>') + '<button id="btn-copy-paths">Copy</button>';
+    el.style.display = 'block';
+
+    document.getElementById('btn-copy-paths').addEventListener('click', () => {
+      const text = [this._pmxPath && `PMX: ${this._pmxPath}`, this._vmdPath && `VMD: ${this._vmdPath}`].filter(Boolean).join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('btn-copy-paths');
+        btn.textContent = 'Copied';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1000);
+      });
+    });
   }
 
   // --- Transport Controls (Play / Pause / Stop) ---

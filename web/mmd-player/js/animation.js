@@ -52,6 +52,10 @@ export class MMDAnimation {
       this.helper.remove(this.mesh);
       // Reset skeleton to rest pose so the next animation starts clean
       if (this.mesh.skeleton) this.mesh.skeleton.pose();
+      // Reset morph target influences (blend shapes) to zero
+      if (this.mesh.morphTargetInfluences) {
+        this.mesh.morphTargetInfluences.fill(0);
+      }
       this.mesh.position.set(0, 0, 0);
       this.mesh.rotation.set(0, 0, 0);
     }

@@ -62,7 +62,7 @@
     #status {
       position: fixed;
       bottom: 12px;
-      left: 12px;
+      right: 12px;
       font-size: 12px;
       color: var(--text-dim);
       z-index: 20;
@@ -130,6 +130,31 @@
     #debug-info .remap { color: #e5c07b; }
     #debug-info .drop { color: #e06c75; }
 
+    /* Debug paths panel */
+    #debug-paths {
+      position: fixed;
+      bottom: 12px;
+      left: 12px;
+      font-size: 11px;
+      color: var(--text-dim);
+      z-index: 20;
+      line-height: 1.6;
+      display: none;
+    }
+    #debug-paths .label { color: var(--text-dim); }
+    #debug-paths .path { color: var(--text); }
+    #debug-paths button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 2px 8px;
+      font-size: 10px;
+      cursor: pointer;
+      margin-left: 8px;
+      font-family: inherit;
+    }
+    #debug-paths button:hover { color: var(--text); }
+
     /* WebGPU fallback */
     .fallback {
       display: flex;
@@ -156,6 +181,7 @@
   <div id="title">MMD Player</div>
 
   <div id="debug-info"></div>
+  <div id="debug-paths"></div>
   <div id="status"></div>
 
   <div id="controls">
