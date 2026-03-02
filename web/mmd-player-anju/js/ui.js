@@ -1,16 +1,16 @@
 import { MMDLoader } from '../vendor/MMDLoader.js';
 import { hasHumanoidBones } from './pmx-check.js';
 import { remapClipBones } from './bone-remap.js';
+import { precomputeBloomEvents } from './effects/bloom-precompute.js';
 
 export class UI {
-  constructor({ mmdScene, loader, animation, audio, tracker, sparkFx, decelTracker, bloomFx, riseFx, fallFx }) {
+  constructor({ mmdScene, loader, animation, audio, tracker, sparkFx, bloomFx, riseFx, fallFx }) {
     this.mmdScene = mmdScene;
     this.loader = loader;
     this.animation = animation;
     this.audio = audio;
     this.tracker = tracker;
     this.sparkFx = sparkFx;
-    this.decelTracker = decelTracker;
     this.bloomFx = bloomFx;
     this.riseFx = riseFx;
     this.fallFx = fallFx;
@@ -40,7 +40,6 @@ export class UI {
     try {
       await this.loader.loadPMXFromPath(path);
       this.tracker.bind(this.loader.mesh);
-      this.decelTracker.bind(this.loader.mesh);
       this._pmxPath = path;
       document.getElementById('title').style.display = 'none';
 
@@ -52,7 +51,11 @@ export class UI {
 
         if (this.animation.helper && this.animation.mesh) {
           const obj = this.animation.helper.objects.get(this.animation.mesh);
-          if (obj && obj.mixer) obj.mixer.setTime(this.audio.currentTime);
+          if (obj && obj.mixer) {
+            const t = this.audio.currentTime;
+            obj.mixer.setTime(t);
+            this.bloomFx.seekTo(t);
+          }
         }
         this.animation.playing = true;
       }
@@ -143,8 +146,8 @@ export class UI {
 
     // Clean up model state (but keep audio playing)
     this.tracker.unbind();
-    this.decelTracker.unbind();
     this.animation.destroy();
+    this.bloomFx.resetTime();
 
     try {
       const pmxBlob = this._zipEntries.get(pmxPath);
@@ -157,7 +160,6 @@ export class UI {
 
       await this.loader.loadPMXFromBlobs(pmxFile, blobs);
       this.tracker.bind(this.loader.mesh);
-      this.decelTracker.bind(this.loader.mesh);
       this._pmxPath = pmxPath;
       this._updateDebugPaths();
 
@@ -171,7 +173,10 @@ export class UI {
         // Sync animation to audio time
         if (this.animation.helper && this.animation.mesh) {
           const obj = this.animation.helper.objects.get(this.animation.mesh);
-          if (obj && obj.mixer) obj.mixer.setTime(savedTime);
+          if (obj && obj.mixer) {
+            obj.mixer.setTime(savedTime);
+            this.bloomFx.seekTo(savedTime);
+          }
         }
         this.animation.playing = true;
       }
@@ -312,6 +317,7 @@ export class UI {
       if (this.loader.mesh) {
         // Mesh available: apply VMD directly
         this.animation.destroy();
+        this.bloomFx.resetTime();
         await this._applyVmdToMesh(vmdFile);
         this._currentVmd = { vmdPath, audioPath, vmdBlob: vmdFile };
         this._pendingVmd = null;
@@ -337,6 +343,10 @@ export class UI {
 
         const result = remapClipBones(clip, mesh.skeleton);
         this._showBoneDebug(result);
+
+        // Precompute bloom events before the helper takes over the mesh
+        const events = precomputeBloomEvents(mesh, clip, ['左手首', '右手首']);
+        this.bloomFx.setEvents(events);
 
         this.animation.initHelper(mesh, { vmd: clip, physics: false });
         this.animation.playing = false;
@@ -452,13 +462,11 @@ export class UI {
       const val = e.target.value;
       this.tracker.enabled = false;
       this.sparkFx.enabled = false;
-      this.decelTracker.enabled = false;
       this.bloomFx.enabled = false;
       if (val === 'spark') {
         this.tracker.enabled = true;
         this.sparkFx.enabled = true;
       } else if (val === 'bloom') {
-        this.decelTracker.enabled = true;
         this.bloomFx.enabled = true;
       }
     }, sig);

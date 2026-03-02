@@ -7,8 +7,8 @@ import {
 
 const MAX = 4;
 const LIFETIME = 1.0;
-const TRAVEL = 1.25;
-const DRAG = 0.97;
+const TRAVEL = 10;
+const DRAG = 0.95;
 const SIZE = 3.0;
 const OFFSCREEN_Y = -10000;
 
@@ -59,35 +59,64 @@ export class BloomBurstEffect {
     }
 
     this._activeCount = 0;
+    this._events = [];
+    this._nextIdx = 0;
+    this._time = 0;
   }
 
-  trigger(boneName, position, normalDir, peakSpeed) {
-    if (!this.enabled) return;
+  setEvents(events) {
+    this._events = events;
+    this._nextIdx = 0;
+    this._time = 0;
+  }
 
-    // Only trigger on outward spread or upward motion
-    const isUpward = normalDir.y > 0.4;
-    const isOutward = boneName === '左手首'
-      ? normalDir.x < -0.4
-      : normalDir.x > 0.4;
-    if (!isUpward && !isOutward) return;
+  resetTime() {
+    this._time = 0;
+    this._nextIdx = 0;
+  }
 
+  seekTo(time) {
+    this._time = time;
+    // Binary search: find first event with time > this._time
+    let lo = 0, hi = this._events.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (this._events[mid].time <= time) lo = mid + 1;
+      else hi = mid;
+    }
+    this._nextIdx = lo;
+  }
+
+  _trigger(position, direction) {
     const entry = this._pool[this._head];
     this._head = (this._head + 1) % MAX;
 
     entry.sprite.position.set(position.x, position.y, position.z);
     entry.sprite.scale.set(SIZE, SIZE, 1);
     entry.sprite.material.opacity = 1;
-    entry.vx = normalDir.x * TRAVEL;
-    entry.vy = normalDir.y * TRAVEL;
-    entry.vz = normalDir.z * TRAVEL;
+    entry.vx = direction.x * TRAVEL;
+    entry.vy = direction.y * TRAVEL;
+    entry.vz = direction.z * TRAVEL;
     entry.age = 0;
     this._activeCount = Math.min(this._activeCount + 1, MAX);
   }
 
   update(delta) {
-    if (!this.enabled || this._activeCount <= 0) return;
+    if (!this.enabled) return;
 
     const dt = Math.min(delta, 0.1);
+    this._time += dt;
+
+    // Fire precomputed events whose time has passed
+    while (this._nextIdx < this._events.length && this._events[this._nextIdx].time <= this._time) {
+      const evt = this._events[this._nextIdx];
+      this._trigger(evt.position, evt.direction);
+      this._nextIdx++;
+    }
+
+    // Animate active sprites
+    if (this._activeCount <= 0) return;
+
     let alive = 0;
 
     for (const entry of this._pool) {

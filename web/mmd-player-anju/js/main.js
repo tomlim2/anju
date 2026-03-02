@@ -4,7 +4,6 @@ import { MMDAnimation } from './animation.js';
 import { MMDAudio } from './audio.js';
 import { UI } from './ui.js';
 import { BoneVelocityTracker } from './bone-velocity.js';
-import { BoneDecelerationTracker } from './bone-decel.js';
 import { SparkBurstEffect } from './effects/spark-burst.js';
 import { BloomBurstEffect } from './effects/bloom-burst.js';
 import { RisingLightEffect } from './effects/rising-light.js';
@@ -28,14 +27,8 @@ const sparkFx = new SparkBurstEffect(mmdScene.scene, mmdScene.renderer);
 sparkFx.enabled = false;
 tracker.onTrigger((name, pos, vel, speed) => sparkFx.trigger(name, pos, vel, speed));
 
-// Hand FX: Bloom
-const decelTracker = new BoneDecelerationTracker({
-  boneNames: ['左手首', '右手首'],
-  highThreshold: 20,
-  lowThreshold: 3,
-});
+// Hand FX: Bloom (precomputed — events set by UI on VMD load)
 const bloomFx = new BloomBurstEffect(mmdScene.scene);
-decelTracker.onTrigger((name, pos, dir, speed) => bloomFx.trigger(name, pos, dir, speed));
 
 // BG FX
 const riseFx = new RisingLightEffect(mmdScene.scene);
@@ -45,7 +38,7 @@ fallFx.enabled = false;
 
 const ui = new UI({
   mmdScene, loader, animation, audio,
-  tracker, sparkFx, decelTracker, bloomFx,
+  tracker, sparkFx, bloomFx,
   riseFx, fallFx,
 });
 
@@ -54,7 +47,6 @@ function animate() {
   const delta = mmdScene.clock.getDelta();
   animation.update(delta);
   tracker.update(delta);
-  decelTracker.update(delta);
   sparkFx.update(delta);
   bloomFx.update(delta);
   riseFx.update(delta);
