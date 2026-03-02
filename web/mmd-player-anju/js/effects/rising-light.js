@@ -11,13 +11,13 @@ import {
 } from 'three/webgpu';
 
 const MAX = 512;
-const SPAWN_RANGE_X = 80;
-const SPAWN_RANGE_Z = 80;
+const SPAWN_RANGE_X = 160;
+const SPAWN_RANGE_Z = 160;
 const SPAWN_Y_MIN = -2;
 const SPAWN_Y_MAX = 5;
 const RISE_SPEED_MIN = 1.5;
 const RISE_SPEED_MAX = 4.0;
-const LIFETIME = 8.0;
+const LIFETIME = 12.0;
 const FADE_Y = 50;
 const PLANE_SCALE = 0.5;
 const FADE_RATIO = 0.3;         // last 30% of lifetime fades out
@@ -27,7 +27,7 @@ const Y_FADE_START = 35;        // start Y-fade before FADE_Y
 const WIND_DECAY = 0.98;       // slow decay — wind lingers long
 const WIND_STRENGTH = 18.0;    // strong horizontal push
 const WIND_RISE_BOOST = 6.0;   // big upward surge on impulse
-const WIND_RADIUS = 25;        // wide influence radius
+const WIND_RADIUS = 10;        // effective impulse radius
 
 export class RisingLightEffect {
   constructor(scene, camera) {
@@ -85,11 +85,17 @@ export class RisingLightEffect {
 
   setEvents(events) {
     this._events = events;
-    this._nextIdx = 0;
+    this.resetTime();
   }
 
   resetTime() {
     this._nextIdx = 0;
+    this._velArr.fill(0);
+    for (let i = 0; i < MAX; i++) {
+      this._respawn(i);
+      this._ageArr[i] = Math.random() * LIFETIME;
+      this._posArr[i * 3 + 1] += this._baseSpeed[i] * this._ageArr[i];
+    }
   }
 
   seekTo(time) {
@@ -134,9 +140,10 @@ export class RisingLightEffect {
       const dx = posArr[i3] - cx;
       const dz = posArr[i3 + 2] - cz;
       const dist = Math.sqrt(dx * dx + dz * dz);
-      if (dist > WIND_RADIUS) continue;
 
-      const falloff = 1 - dist / WIND_RADIUS;
+      // Full range: sharp falloff — 1/(1+(d/r)^4)
+      const r = dist / WIND_RADIUS;
+      const falloff = 1 / (1 + r * r * r * r);
       velArr[i3] += dirX * WIND_STRENGTH * falloff;
       velArr[i3 + 1] += WIND_RISE_BOOST * falloff;
       velArr[i3 + 2] += dirZ * WIND_STRENGTH * falloff;
