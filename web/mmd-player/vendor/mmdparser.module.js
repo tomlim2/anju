@@ -11183,7 +11183,7 @@ Parser.prototype.parseVmd = function ( buffer, leftToRight ) {
 
 	};
 
-	var parseLights = function () {
+	var parseLights = function () { // [anju]
 
 		var metadata = vmd.metadata;
 		metadata.lightCount = dv.getUint32();
@@ -11201,7 +11201,7 @@ Parser.prototype.parseVmd = function ( buffer, leftToRight ) {
 
 	};
 
-	var parseSelfShadows = function () {
+	var parseSelfShadows = function () { // [anju]
 
 		var metadata = vmd.metadata;
 		metadata.selfShadowCount = dv.getUint32();
@@ -11219,7 +11219,7 @@ Parser.prototype.parseVmd = function ( buffer, leftToRight ) {
 
 	};
 
-	var parseIKStates = function () {
+	var parseIKStates = function () { // [anju]
 
 		var metadata = vmd.metadata;
 		metadata.ikStateCount = dv.getUint32();
@@ -11253,7 +11253,7 @@ Parser.prototype.parseVmd = function ( buffer, leftToRight ) {
 
 	if ( dv.offset < dv.dv.byteLength ) {
 
-		try {
+		try { // [anju] parse optional VMD sections
 
 			parseLights();
 			parseSelfShadows();
@@ -11447,11 +11447,11 @@ Parser.prototype.mergeVmds = function ( vmds ) {
 	v.metadata.motionCount = 0;
 	v.metadata.morphCount = 0;
 	v.metadata.cameraCount = 0;
-	v.metadata.ikStateCount = 0;
+	v.metadata.ikStateCount = 0; // [anju]
 	v.motions = [];
 	v.morphs = [];
 	v.cameras = [];
-	v.ikStates = [];
+	v.ikStates = []; // [anju]
 
 	for ( var i = 0; i < vmds.length; i++ ) {
 
@@ -11479,6 +11479,7 @@ Parser.prototype.mergeVmds = function ( vmds ) {
 
 		}
 
+		// [anju] merge ikStates
 		if ( v2.ikStates ) {
 
 			v.metadata.ikStateCount += v2.metadata.ikStateCount;
@@ -11490,6 +11491,7 @@ Parser.prototype.mergeVmds = function ( vmds ) {
 			}
 
 		}
+		// [/anju]
 
 	}
 

@@ -76,7 +76,7 @@ import { MMDParser } from './mmdparser.module.js';
  */
 class MMDLoader extends Loader {
 
-	constructor( manager ) {
+	constructor( manager ) { // [anju] removed deprecation warning
 
 		super( manager );
 
@@ -1656,12 +1656,13 @@ class AnimationBuilder {
 
 		const clip = new AnimationClip( '', - 1, tracks );
 
-		// Attach IK state data for per-frame IK enable/disable
+		// [anju] Attach IK state data for per-frame IK enable/disable
 		if ( vmd.ikStates && vmd.ikStates.length > 0 ) {
 
 			clip.ikStates = vmd.ikStates.slice().sort( ( a, b ) => a.frameNum - b.frameNum );
 
 		}
+		// [/anju]
 
 		return clip;
 

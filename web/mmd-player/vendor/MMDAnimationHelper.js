@@ -6,6 +6,7 @@ import {
 } from 'three';
 import { CCDIKSolver } from './CCDIKSolver.js';
 import { MMDPhysics } from './MMDPhysics.js';
+import { updateIKEnabled } from './anjuUtil.js'; // [anju]
 
 /**
  * MMDAnimationHelper handles animation of MMD assets loaded by MMDLoader
@@ -370,6 +371,7 @@ class MMDAnimationHelper {
 
 			if ( this.meshes[ i ] === mesh ) {
 
+				// [anju] stop animation + reset physics on remove
 				const objects = this.objects.get( mesh );
 
 				if ( objects ) {
@@ -378,6 +380,7 @@ class MMDAnimationHelper {
 					if ( objects.physics ) objects.physics.reset();
 
 				}
+				// [/anju]
 
 				this.objects.delete( mesh );
 				found = true;
@@ -472,7 +475,7 @@ class MMDAnimationHelper {
 		objects.ikSolver = this._createCCDIKSolver( mesh );
 		objects.grantSolver = this.createGrantSolver( mesh );
 
-		// Reset IK enabled flags from previous animation
+		// [anju] Reset IK enabled flags from previous animation
 		const iks = mesh.geometry.userData.MMD.iks;
 
 		for ( let i = 0, il = iks.length; i < il; i ++ ) {
@@ -481,7 +484,7 @@ class MMDAnimationHelper {
 
 		}
 
-		// Extract IK state data from clip for per-frame IK enable/disable
+		// [anju] Extract IK state data from clip for per-frame IK enable/disable
 		if ( animation !== undefined ) {
 
 			const clips = Array.isArray( animation ) ? animation : [ animation ];
@@ -498,6 +501,7 @@ class MMDAnimationHelper {
 			}
 
 		}
+		// [/anju]
 
 		return this;
 
@@ -571,12 +575,13 @@ class MMDAnimationHelper {
 
 			this._saveBones( mesh );
 
-			// Apply VMD IK enable/disable states for current frame
+			// [anju] Apply VMD IK enable/disable states for current frame
 			if ( objects.ikStates && this.enabled.ik ) {
 
-				this._updateIKEnabled( mesh, mixer.time, objects.ikStates );
+				updateIKEnabled( mesh, mixer.time, objects.ikStates );
 
 			}
+			// [/anju]
 
 			// PMX animation system special path
 			if ( this.configuration.pmxAnimation &&
@@ -684,53 +689,6 @@ class MMDAnimationHelper {
 			camera.up.set( 0, 1, 0 );
 			camera.up.applyQuaternion( camera.quaternion );
 			camera.lookAt( this.cameraTarget.position );
-
-		}
-
-	}
-
-	_updateIKEnabled( mesh, time, ikStates ) {
-
-		// Convert animation time to VMD frame number (30fps)
-		const frame = time * 30;
-
-		// Find the most recent IK state entry (step interpolation)
-		let stateIndex = - 1;
-
-		for ( let i = ikStates.length - 1; i >= 0; i -- ) {
-
-			if ( ikStates[ i ].frameNum <= frame ) {
-
-				stateIndex = i;
-				break;
-
-			}
-
-		}
-
-		// No applicable state yet — keep all IK enabled (default)
-		if ( stateIndex < 0 ) return;
-
-		const state = ikStates[ stateIndex ];
-		const iks = mesh.geometry.userData.MMD.iks;
-		const bones = mesh.geometry.userData.MMD.bones;
-
-		// Build bone name to enabled lookup from the IK state
-		for ( let i = 0, il = state.iks.length; i < il; i ++ ) {
-
-			const ikState = state.iks[ i ];
-
-			// Match IK state bone name against IK chain target bones
-			for ( let j = 0, jl = iks.length; j < jl; j ++ ) {
-
-				if ( bones[ iks[ j ].target ] && bones[ iks[ j ].target ].name === ikState.boneName ) {
-
-					iks[ j ].ikEnabled = ikState.enabled;
-					break;
-
-				}
-
-			}
 
 		}
 
@@ -1101,7 +1059,7 @@ function updateOne( mesh, boneIndex, ikSolver, grantSolver ) {
 
 	}
 
-	if ( ikSolver && boneData.ik && boneData.ik.ikEnabled !== false ) {
+	if ( ikSolver && boneData.ik && boneData.ik.ikEnabled !== false ) { // [anju] ikEnabled check
 
 		// @TODO: Updating world matrices every time solving an IK bone is
 		// costly. Optimize if possible.

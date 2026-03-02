@@ -37,7 +37,7 @@ class MMDPhysics {
 	 * @param {Integer} params.maxStepNum - Default is 3.
 	 * @param {Vector3} params.gravity - Default is ( 0, - 9.8 * 10, 0 )
 	 */
-	constructor( mesh, rigidBodyParams, constraintParams = [], params = {} ) {
+	constructor( mesh, rigidBodyParams, constraintParams = [], params = {} ) { // [anju] removed deprecation warning
 
 		if ( typeof Ammo === 'undefined' ) {
 

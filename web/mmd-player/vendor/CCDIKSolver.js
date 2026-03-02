@@ -12,6 +12,7 @@ import {
 	SphereGeometry,
 	Vector3
 } from 'three';
+import { clampBySingleAxis } from './anjuUtil.js'; // [anju]
 
 const _q = new Quaternion();
 const _targetPos = new Vector3();
@@ -24,43 +25,6 @@ const _linkScale = new Vector3();
 const _axis = new Vector3();
 const _vector = new Vector3();
 const _matrix = new Matrix4();
-
-// Swing-Twist decomposition: clamp rotation around a single primary axis
-function clampBySingleAxis( q, axisIdx, min, max ) {
-
-	// Ensure canonical form (w >= 0) to avoid quaternion double-cover issue
-	const sign = q.w < 0 ? - 1 : 1;
-	const comp = sign * ( axisIdx === 0 ? q.x : axisIdx === 1 ? q.y : q.z );
-	const w = sign * q.w;
-	const len = Math.sqrt( comp * comp + w * w );
-
-	if ( len < 1e-10 ) {
-
-		q.set( 0, 0, 0, 1 );
-		return;
-
-	}
-
-	// Signed angle: 2 * atan2( twist_axis_component, w )
-	let angle = 2 * Math.atan2( comp / len, w / len );
-
-	// Clamp
-	angle = Math.max( angle, min );
-	angle = Math.min( angle, max );
-
-	// Reconstruct quaternion from clamped angle
-	const half = angle * 0.5;
-	const s = Math.sin( half );
-	const c = Math.cos( half );
-
-	q.set(
-		axisIdx === 0 ? s : 0,
-		axisIdx === 1 ? s : 0,
-		axisIdx === 2 ? s : 0,
-		c
-	);
-
-}
 
 
 /**
@@ -109,7 +73,7 @@ class CCDIKSolver {
 
 		for ( let i = 0, il = iks.length; i < il; i ++ ) {
 
-			if ( iks[ i ].ikEnabled === false ) continue;
+			if ( iks[ i ].ikEnabled === false ) continue; // [anju]
 
 			this.updateOne( iks[ i ] );
 
@@ -223,6 +187,7 @@ class CCDIKSolver {
 
 				}
 
+				// [anju] single-axis hinge detection + clampBySingleAxis
 				if ( rotationMin !== undefined && rotationMax !== undefined ) {
 
 					// Detect single-axis constraint (knee hinge etc.)
@@ -263,6 +228,7 @@ class CCDIKSolver {
 					}
 
 				}
+				// [/anju]
 
 				link.updateMatrixWorld( true );
 
