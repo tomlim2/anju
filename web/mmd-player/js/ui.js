@@ -45,9 +45,6 @@ export class UI {
   }
 
   async _handleZipFile(file) {
-    const statusEl = document.getElementById('status');
-    statusEl.textContent = 'Extracting ZIP...';
-
     try {
       const zip = await JSZip.loadAsync(file);
       const entries = new Map();
@@ -79,7 +76,6 @@ export class UI {
 
       selectPmx.disabled = false;
       const count = selectPmx.options.length - 1;
-      statusEl.textContent = `ZIP: ${count} humanoid PMX found`;
       document.getElementById('title').style.display = 'none';
 
       // Auto-load first humanoid PMX
@@ -89,14 +85,11 @@ export class UI {
       }
     } catch (err) {
       console.error('ZIP error:', err);
-      statusEl.textContent = `Error: ${err.message}`;
     }
   }
 
   async _loadPmxFromZip(pmxPath) {
-    const statusEl = document.getElementById('status');
     const pmxName = pmxPath.split('/').pop();
-    statusEl.textContent = `Loading ${pmxName}...`;
 
     // Clean up existing animation and audio before loading new model
     this.animation.destroy();
@@ -115,7 +108,6 @@ export class UI {
       await this.loader.loadPMXFromBlobs(pmxFile, blobs);
       this._pmxPath = pmxPath;
       this._updateDebugPaths();
-      statusEl.textContent = `Loaded: ${pmxName}`;
 
       // Re-apply currently selected song if any
       const songSelect = document.getElementById('select-song');
@@ -125,7 +117,6 @@ export class UI {
       }
     } catch (err) {
       console.error('PMX load error:', err);
-      statusEl.textContent = `Error: ${err.message}`;
     }
   }
 
@@ -175,13 +166,7 @@ export class UI {
   }
 
   async _loadVMDFromManifest(vmdPath, audioPath) {
-    if (!this.loader.mesh) {
-      document.getElementById('status').textContent = 'Load a PMX model first';
-      return;
-    }
-
-    const statusEl = document.getElementById('status');
-    statusEl.textContent = 'Loading animation...';
+    if (!this.loader.mesh) return;
 
     try {
       const vmdRes = await fetch('data/' + vmdPath);
@@ -199,12 +184,9 @@ export class UI {
       const audioFile = new File([audioBlob], audioPath.split('/').pop());
       this.audio.loadFromFile(audioFile);
 
-      const songName = vmdPath.split('/').slice(-2, -1)[0] || vmdPath;
-      statusEl.textContent = `Animation: ${songName}`;
       this._setTransportEnabled(true);
     } catch (err) {
       console.error('VMD manifest load error:', err);
-      statusEl.textContent = `Error: ${err.message}`;
     }
   }
 
