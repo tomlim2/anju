@@ -24,13 +24,31 @@ const ui = new UI({
   riseFx, fallFx,
 });
 
+let _lastAudioTime = 0;
+
 function animate() {
   requestAnimationFrame(animate);
-  const delta = mmdScene.clock.getDelta();
-  animation.update(delta);
+  const wallDelta = mmdScene.clock.getDelta();
+
+  if (audio.audioElement) {
+    const audioTime = audio.currentTime;
+    const audioDelta = audioTime - _lastAudioTime;
+    if (audioDelta !== 0) {
+      if (Math.abs(audioDelta) > 0.1) {
+        animation.seekTo(audioTime);
+        riseFx.seekTo(audioTime);
+      } else {
+        animation.update(audioDelta);
+      }
+      _lastAudioTime = audioTime;
+    }
+  } else {
+    animation.update(wallDelta);
+  }
+
   const animTime = animation.getCurrentTime();
-  riseFx.update(delta, animTime);
-  fallFx.update(delta);
+  riseFx.update(wallDelta, animTime);
+  fallFx.update(wallDelta);
   mmdScene.render();
 }
 animate();

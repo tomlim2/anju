@@ -307,50 +307,62 @@ export class UI {
 
   async _loadVMDFromManifest(vmdPath, audioPath) {
     try {
-      // Fetch VMD blob
-      const vmdRes = await fetch('data/' + vmdPath);
+      // Fetch VMD and audio in parallel
+      const [vmdRes, audioRes] = await Promise.all([
+        fetch('data/' + vmdPath),
+        fetch('data/' + audioPath),
+      ]);
       if (!vmdRes.ok) throw new Error(`Failed to fetch VMD: ${vmdRes.status}`);
+      if (!audioRes.ok) throw new Error(`Failed to fetch audio: ${audioRes.status}`);
+
       const vmdBlob = await vmdRes.blob();
       const vmdFile = new File([vmdBlob], vmdPath.split('/').pop());
-
-      // Fetch and play audio immediately (regardless of mesh)
-      const audioRes = await fetch('data/' + audioPath);
-      if (!audioRes.ok) throw new Error(`Failed to fetch audio: ${audioRes.status}`);
       const audioBlob = await audioRes.blob();
       const audioFile = new File([audioBlob], audioPath.split('/').pop());
+
+      // Load audio source (but don't play yet — wait for VMD to be ready)
       this.audio.loadFromFile(audioFile);
-      try {
-        await this.audio.audioElement.play();
-        this._updatePlayPauseButton(true);
-      } catch {
-        // Autoplay blocked — wait for first user interaction
-        this._updatePlayPauseButton(false);
-        const resume = () => {
-          this.audio.play();
-          this.animation.playing = true;
-          this._updatePlayPauseButton(true);
-          document.removeEventListener('click', resume);
-          document.removeEventListener('keydown', resume);
-        };
-        document.addEventListener('click', resume, { once: true });
-        document.addEventListener('keydown', resume, { once: true });
-      }
 
       this._vmdPath = vmdPath;
       this._updateDebugPaths();
 
       if (this.loader.mesh) {
-        // Mesh available: apply VMD directly
+        // Mesh available: apply VMD, then start both together
         this.animation.destroy();
-                this.riseFx.resetTime();
+        this.riseFx.resetTime();
         await this._applyVmdToMesh(vmdFile);
         this._currentVmd = { vmdPath, audioPath, vmdBlob: vmdFile };
         this._pendingVmd = null;
+
+        // Start audio + animation at the same time
         this.animation.playing = true;
+        try {
+          await this.audio.audioElement.play();
+          this._updatePlayPauseButton(true);
+        } catch {
+          // Autoplay blocked — wait for first user interaction
+          this.animation.playing = false;
+          this._updatePlayPauseButton(false);
+          const resume = () => {
+            this.audio.play();
+            this.animation.playing = true;
+            this._updatePlayPauseButton(true);
+            document.removeEventListener('click', resume);
+            document.removeEventListener('keydown', resume);
+          };
+          document.addEventListener('click', resume, { once: true });
+          document.addEventListener('keydown', resume, { once: true });
+        }
       } else {
-        // No mesh yet: store VMD for later application
+        // No mesh yet: store VMD for later, play audio immediately
         this._pendingVmd = { vmdPath, audioPath, vmdBlob: vmdFile };
         this._currentVmd = null;
+        try {
+          await this.audio.audioElement.play();
+          this._updatePlayPauseButton(true);
+        } catch {
+          this._updatePlayPauseButton(false);
+        }
       }
     } catch (err) {
       console.error('VMD manifest load error:', err);
@@ -498,10 +510,9 @@ export class UI {
 
     const seekFromEvent = (e) => {
       const rect = this._tlTrack.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const x = clientX - rect.left;
+      const x = e.clientX - rect.left;
       const ratio = Math.max(0, Math.min(1, x / rect.width));
-      const duration = this.animation.duration;
+      const duration = this.audio.duration;
       if (duration <= 0) return;
       const time = Math.round(ratio * duration * FPS) / FPS;
       this.animation.seekTo(time);
@@ -518,38 +529,36 @@ export class UI {
         this.audio.pause();
       }
       this._tlContainer.classList.add('dragging');
+      this._tlTrack.setPointerCapture(e.pointerId);
       seekFromEvent(e);
     };
 
     const onMove = (e) => {
       if (!this._tlDragging) return;
-      e.preventDefault();
       seekFromEvent(e);
     };
 
-    const onEnd = () => {
+    const onEnd = (e) => {
       if (!this._tlDragging) return;
       this._tlDragging = false;
       this._tlContainer.classList.remove('dragging');
+      this._tlTrack.releasePointerCapture(e.pointerId);
       if (this._tlWasPlaying) {
         this.animation.playing = true;
         this.audio.play();
       }
     };
 
-    this._tlTrack.addEventListener('mousedown', onStart, sig);
-    document.addEventListener('mousemove', onMove, sig);
-    document.addEventListener('mouseup', onEnd, sig);
-
-    this._tlTrack.addEventListener('touchstart', onStart, { ...sig, passive: false });
-    document.addEventListener('touchmove', onMove, { ...sig, passive: false });
-    document.addEventListener('touchend', onEnd, sig);
+    this._tlTrack.addEventListener('pointerdown', onStart, sig);
+    this._tlTrack.addEventListener('pointermove', onMove, sig);
+    this._tlTrack.addEventListener('pointerup', onEnd, sig);
+    this._tlTrack.addEventListener('lostpointercapture', onEnd, sig);
 
     // Continuous update loop
     const updateLoop = () => {
       if (!this._tlDragging) {
-        const duration = this.animation.duration;
-        const time = this.animation.getCurrentTime();
+        const duration = this.audio.duration;
+        const time = this.audio.currentTime;
         this._updateTimelineDisplay(time, duration);
       }
       this._tlRAF = requestAnimationFrame(updateLoop);
@@ -559,9 +568,9 @@ export class UI {
 
   _updateTimelineDisplay(time, duration) {
     const FPS = 30;
-    const pct = duration > 0 ? (time / duration) * 100 : 0;
-    this._tlFill.style.width = pct + '%';
-    this._tlThumb.style.left = pct + '%';
+    const ratio = duration > 0 ? time / duration : 0;
+    this._tlFill.style.transform = `scaleX(${ratio})`;
+    this._tlThumb.style.left = (ratio * 100) + '%';
     this._tlCurrent.textContent = this._formatTimeline(time, FPS);
     this._tlTotal.textContent = this._formatTimeline(duration, FPS);
   }

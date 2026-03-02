@@ -106,6 +106,7 @@ export class RisingLightEffect {
       else hi = mid;
     }
     this._nextIdx = lo;
+    this._velArr.fill(0);
   }
 
   _respawn(i) {

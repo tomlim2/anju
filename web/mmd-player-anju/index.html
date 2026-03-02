@@ -122,6 +122,8 @@
       padding: 10px 0;
       position: relative;
       cursor: pointer;
+      touch-action: none;
+      user-select: none;
     }
 
     #tl-bar {
@@ -137,7 +139,10 @@
       height: 100%;
       background: var(--accent);
       border-radius: 2px;
-      width: 0%;
+      width: 100%;
+      transform-origin: left;
+      transform: scaleX(0);
+      will-change: transform;
     }
 
     #tl-thumb {
@@ -157,6 +162,10 @@
     #tl-track:hover #tl-thumb,
     #timeline.dragging #tl-thumb {
       opacity: 1;
+    }
+
+    #timeline.dragging {
+      user-select: none;
     }
 
     .separator {
