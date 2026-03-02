@@ -48,6 +48,14 @@ export class MMDAnimation {
     return (obj && obj.mixer) ? obj.mixer.time : 0;
   }
 
+  seekTo(time) {
+    if (!this.helper || !this.mesh) return;
+    const obj = this.helper.objects.get(this.mesh);
+    if (obj && obj.mixer) {
+      obj.mixer.setTime(time);
+    }
+  }
+
   togglePlay() {
     this.playing = !this.playing;
     return this.playing;

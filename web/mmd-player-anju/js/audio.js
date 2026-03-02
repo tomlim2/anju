@@ -44,6 +44,12 @@ export class MMDAudio {
     }
   }
 
+  seekTo(time) {
+    if (this.audioElement) {
+      this.audioElement.currentTime = time;
+    }
+  }
+
   get currentTime() {
     return this.audioElement ? this.audioElement.currentTime : 0;
   }

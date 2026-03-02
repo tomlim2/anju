@@ -25,6 +25,8 @@ export class SparkBurstEffect extends VelocityEffect {
 
     this._head = 0;
     this._activeCount = 0;
+    this._events = [];
+    this._nextIdx = 0;
 
     // Geometry — MAX points, dead ones parked offscreen
     const posArr = new Float32Array(MAX * 3);
@@ -48,13 +50,34 @@ export class SparkBurstEffect extends VelocityEffect {
     this.scene.add(this._mesh);
   }
 
+  setEvents(events) {
+    this._events = events;
+    this._nextIdx = 0;
+  }
+
+  resetTime() {
+    this._nextIdx = 0;
+  }
+
+  seekTo(time) {
+    let lo = 0, hi = this._events.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (this._events[mid].time <= time) lo = mid + 1;
+      else hi = mid;
+    }
+    this._nextIdx = lo;
+  }
+
   trigger(boneName, position, velocity, speed) {
     if (!this.enabled) return;
 
     const posArr = this._posArr;
     const velArr = this._velArr;
     const ageArr = this._ageArr;
-    const dir = velocity.clone().normalize();
+    const vx = velocity.x, vy = velocity.y, vz = velocity.z;
+    const len = Math.sqrt(vx * vx + vy * vy + vz * vz) || 1;
+    const dir = { x: vx / len, y: vy / len, z: vz / len };
 
     for (let j = 0; j < BURST_COUNT; j++) {
       const i = this._head;
@@ -81,8 +104,17 @@ export class SparkBurstEffect extends VelocityEffect {
     this._activeCount = MAX;
   }
 
-  update(delta) {
-    if (!this.enabled || this._activeCount <= 0) return;
+  update(delta, animationTime) {
+    if (!this.enabled) return;
+
+    // Fire precomputed events
+    while (this._nextIdx < this._events.length && this._events[this._nextIdx].time <= animationTime) {
+      const evt = this._events[this._nextIdx];
+      this.trigger(null, evt.position, evt.velocity, evt.speed);
+      this._nextIdx++;
+    }
+
+    if (this._activeCount <= 0) return;
 
     const dt = Math.min(delta, 0.1);
     const posArr = this._posArr;

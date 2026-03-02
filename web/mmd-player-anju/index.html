@@ -63,6 +63,7 @@
       position: fixed;
       top: 12px;
       left: 12px;
+      right: 12px;
       display: flex;
       gap: 8px;
       align-items: center;
@@ -96,6 +97,66 @@
       width: 80px;
       accent-color: var(--accent);
       cursor: pointer;
+    }
+
+    /* Timeline scrubber */
+    #timeline {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 80px;
+    }
+
+    #tl-current, #tl-total {
+      font-size: 10px;
+      color: var(--text-dim);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+      user-select: none;
+    }
+
+    #tl-track {
+      flex: 1;
+      padding: 10px 0;
+      position: relative;
+      cursor: pointer;
+    }
+
+    #tl-bar {
+      height: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    #tl-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      width: 0%;
+    }
+
+    #tl-thumb {
+      position: absolute;
+      top: 50%;
+      left: 0%;
+      width: 10px;
+      height: 10px;
+      background: var(--accent);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      transition: opacity 0.15s;
+      pointer-events: none;
+    }
+
+    #tl-track:hover #tl-thumb,
+    #timeline.dragging #tl-thumb {
+      opacity: 1;
     }
 
     .separator {
@@ -239,6 +300,14 @@
     <select id="select-song" disabled><option value="">Song</option></select>
     <div class="separator"></div>
     <button id="btn-playpause">&#9655;</button>
+    <div id="timeline">
+      <span id="tl-current">0:00 f0</span>
+      <div id="tl-track">
+        <div id="tl-bar"><div id="tl-fill"></div></div>
+        <div id="tl-thumb"></div>
+      </div>
+      <span id="tl-total">0:00 f0</span>
+    </div>
     <button id="btn-mute" class="toggle muted">&#128263;</button>
     <input type="range" id="volume" min="0" max="1" step="0.01" value="0.5">
   </div>
@@ -249,18 +318,10 @@
     <span id="loading-status"></span>
   </div>
 
-  <div id="controls-hand-fx">
-    <select id="select-hand-fx">
-      <option value="none">Hand FX: None</option>
-      <option value="spark">Hand FX: Spark</option>
-      <option value="bloom" selected>Hand FX: Bloom</option>
-    </select>
-  </div>
-
   <div id="controls-bg-fx">
     <select id="select-bg-fx">
-      <option value="none" selected>BG FX: None</option>
-      <option value="rise">BG FX: Rise</option>
+      <option value="none">BG FX: None</option>
+      <option value="rise" selected>BG FX: Rise</option>
       <option value="fall">BG FX: Fall</option>
     </select>
   </div>

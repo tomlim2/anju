@@ -2,15 +2,15 @@ import { MMDLoader } from '../vendor/MMDLoader.js';
 import { hasHumanoidBones } from './pmx-check.js';
 import { remapClipBones } from './bone-remap.js';
 import { precomputeBloomEvents } from './effects/bloom-precompute.js';
+import { precomputeSparkEvents } from './effects/spark-precompute.js';
+import { detectBeatsFromBuffer } from './effects/audio-beats.js';
 
 export class UI {
-  constructor({ mmdScene, loader, animation, audio, tracker, sparkFx, bloomFx, riseFx, fallFx }) {
+  constructor({ mmdScene, loader, animation, audio, bloomFx, riseFx, fallFx }) {
     this.mmdScene = mmdScene;
     this.loader = loader;
     this.animation = animation;
     this.audio = audio;
-    this.tracker = tracker;
-    this.sparkFx = sparkFx;
     this.bloomFx = bloomFx;
     this.riseFx = riseFx;
     this.fallFx = fallFx;
@@ -26,6 +26,7 @@ export class UI {
     this._initZipUpload();
     this._initVMDDropdowns();
     this._initPlayback();
+    this._initTimeline();
     this._initFxSelectors();
     this._loadDefaultModel();
 
@@ -39,7 +40,6 @@ export class UI {
 
     try {
       await this.loader.loadPMXFromPath(path);
-      this.tracker.bind(this.loader.mesh);
       this._pmxPath = path;
       document.getElementById('title').style.display = 'none';
 
@@ -55,6 +55,7 @@ export class UI {
             const t = this.audio.currentTime;
             obj.mixer.setTime(t);
             this.bloomFx.seekTo(t);
+            this.riseFx.seekTo(t);
           }
         }
         this.animation.playing = true;
@@ -145,9 +146,9 @@ export class UI {
     const wasPlaying = this.animation.playing;
 
     // Clean up model state (but keep audio playing)
-    this.tracker.unbind();
     this.animation.destroy();
     this.bloomFx.resetTime();
+    this.riseFx.resetTime();
 
     try {
       const pmxBlob = this._zipEntries.get(pmxPath);
@@ -159,7 +160,6 @@ export class UI {
       }
 
       await this.loader.loadPMXFromBlobs(pmxFile, blobs);
-      this.tracker.bind(this.loader.mesh);
       this._pmxPath = pmxPath;
       this._updateDebugPaths();
 
@@ -176,6 +176,7 @@ export class UI {
           if (obj && obj.mixer) {
             obj.mixer.setTime(savedTime);
             this.bloomFx.seekTo(savedTime);
+            this.riseFx.seekTo(savedTime);
           }
         }
         this.animation.playing = true;
@@ -344,10 +345,19 @@ export class UI {
       this._vmdPath = vmdPath;
       this._updateDebugPaths();
 
+      // Detect beats for bloom event gating
+      try {
+        const ab = await audioBlob.arrayBuffer();
+        this._beatTimestamps = await detectBeatsFromBuffer(ab);
+      } catch {
+        this._beatTimestamps = null;
+      }
+
       if (this.loader.mesh) {
         // Mesh available: apply VMD directly
         this.animation.destroy();
-        this.bloomFx.resetTime();
+            this.bloomFx.resetTime();
+        this.riseFx.resetTime();
         await this._applyVmdToMesh(vmdFile);
         this._currentVmd = { vmdPath, audioPath, vmdBlob: vmdFile };
         this._pendingVmd = null;
@@ -374,9 +384,15 @@ export class UI {
         const result = remapClipBones(clip, mesh.skeleton);
         this._showBoneDebug(result);
 
-        // Precompute bloom events before the helper takes over the mesh
-        const events = precomputeBloomEvents(mesh, clip, ['左手首', '右手首']);
-        this.bloomFx.setEvents(events);
+        // Precompute effect events before the helper takes over the mesh
+        const wrists = ['左手首', '右手首'];
+        const motionEvents = precomputeSparkEvents(mesh, clip, wrists);
+        this.riseFx.setEvents(motionEvents);
+
+        const bloomEvents = precomputeBloomEvents(mesh, clip, wrists, {
+          beatTimestamps: this._beatTimestamps || null,
+        });
+        this.bloomFx.setEvents(bloomEvents);
 
         this.animation.initHelper(mesh, { vmd: clip, physics: false });
         this.animation.playing = false;
@@ -485,21 +501,101 @@ export class UI {
     btn.innerHTML = isPlaying ? '&#9646;&#9646;' : '&#9655;';
   }
 
-  _initFxSelectors() {
+  // --- Timeline Scrubber ---
+
+  _initTimeline() {
+    this._tlTrack = document.getElementById('tl-track');
+    this._tlFill = document.getElementById('tl-fill');
+    this._tlThumb = document.getElementById('tl-thumb');
+    this._tlCurrent = document.getElementById('tl-current');
+    this._tlTotal = document.getElementById('tl-total');
+    this._tlContainer = document.getElementById('timeline');
+    this._tlDragging = false;
+    this._tlWasPlaying = false;
+
+    const FPS = 30;
     const sig = { signal: this._ac.signal };
 
-    document.getElementById('select-hand-fx').addEventListener('change', (e) => {
-      const val = e.target.value;
-      this.tracker.enabled = false;
-      this.sparkFx.enabled = false;
-      this.bloomFx.enabled = false;
-      if (val === 'spark') {
-        this.tracker.enabled = true;
-        this.sparkFx.enabled = true;
-      } else if (val === 'bloom') {
-        this.bloomFx.enabled = true;
+    const seekFromEvent = (e) => {
+      const rect = this._tlTrack.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const x = clientX - rect.left;
+      const ratio = Math.max(0, Math.min(1, x / rect.width));
+      const duration = this.animation.duration;
+      if (duration <= 0) return;
+      const time = Math.round(ratio * duration * FPS) / FPS;
+      this.animation.seekTo(time);
+      this.audio.seekTo(time);
+      this.bloomFx.seekTo(time);
+      this.riseFx.seekTo(time);
+      this._updateTimelineDisplay(time, duration);
+    };
+
+    const onStart = (e) => {
+      this._tlDragging = true;
+      this._tlWasPlaying = this.animation.playing;
+      if (this._tlWasPlaying) {
+        this.animation.playing = false;
+        this.audio.pause();
       }
-    }, sig);
+      this._tlContainer.classList.add('dragging');
+      seekFromEvent(e);
+    };
+
+    const onMove = (e) => {
+      if (!this._tlDragging) return;
+      e.preventDefault();
+      seekFromEvent(e);
+    };
+
+    const onEnd = () => {
+      if (!this._tlDragging) return;
+      this._tlDragging = false;
+      this._tlContainer.classList.remove('dragging');
+      if (this._tlWasPlaying) {
+        this.animation.playing = true;
+        this.audio.play();
+      }
+    };
+
+    this._tlTrack.addEventListener('mousedown', onStart, sig);
+    document.addEventListener('mousemove', onMove, sig);
+    document.addEventListener('mouseup', onEnd, sig);
+
+    this._tlTrack.addEventListener('touchstart', onStart, { ...sig, passive: false });
+    document.addEventListener('touchmove', onMove, { ...sig, passive: false });
+    document.addEventListener('touchend', onEnd, sig);
+
+    // Continuous update loop
+    const updateLoop = () => {
+      if (!this._tlDragging) {
+        const duration = this.animation.duration;
+        const time = this.animation.getCurrentTime();
+        this._updateTimelineDisplay(time, duration);
+      }
+      this._tlRAF = requestAnimationFrame(updateLoop);
+    };
+    this._tlRAF = requestAnimationFrame(updateLoop);
+  }
+
+  _updateTimelineDisplay(time, duration) {
+    const FPS = 30;
+    const pct = duration > 0 ? (time / duration) * 100 : 0;
+    this._tlFill.style.width = pct + '%';
+    this._tlThumb.style.left = pct + '%';
+    this._tlCurrent.textContent = this._formatTimeline(time, FPS);
+    this._tlTotal.textContent = this._formatTimeline(duration, FPS);
+  }
+
+  _formatTimeline(seconds, fps) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    const f = Math.round(seconds * fps);
+    return `${m}:${String(s).padStart(2, '0')} f${f}`;
+  }
+
+  _initFxSelectors() {
+    const sig = { signal: this._ac.signal };
 
     document.getElementById('select-bg-fx').addEventListener('change', (e) => {
       const val = e.target.value;
@@ -512,5 +608,6 @@ export class UI {
 
   destroy() {
     this._ac.abort();
+    if (this._tlRAF) cancelAnimationFrame(this._tlRAF);
   }
 }
