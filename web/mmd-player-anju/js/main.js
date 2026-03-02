@@ -46,9 +46,10 @@ function animate() {
   requestAnimationFrame(animate);
   const delta = mmdScene.clock.getDelta();
   animation.update(delta);
+  const animTime = animation.getCurrentTime();
   tracker.update(delta);
   sparkFx.update(delta);
-  bloomFx.update(delta);
+  bloomFx.update(delta, animTime);
   riseFx.update(delta);
   fallFx.update(delta);
   mmdScene.render();

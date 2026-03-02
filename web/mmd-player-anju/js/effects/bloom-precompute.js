@@ -1,9 +1,8 @@
 import { AnimationMixer, Vector3 } from 'three/webgpu';
 
 const STEP = 1 / 30;
-const HIGH_THRESHOLD = 20;
-const LOW_THRESHOLD = 3;
-const SMOOTHING = 0.3;
+const FAST_SPEED = 25;   // speed above this → "was fast"
+const STOP_SPEED = 3;    // speed below this → "stopped"
 
 export function precomputeBloomEvents(mesh, clip, boneNames) {
   const mixer = new AnimationMixer(mesh);
@@ -23,17 +22,14 @@ export function precomputeBloomEvents(mesh, clip, boneNames) {
       continue;
     }
     entries.push({
-      name,
       bone,
       prevPos: new Vector3(),
-      smoothSpeed: 0,
-      wasHigh: false,
-      peakSpeed: 0,
-      lastHighDir: new Vector3(),
+      lastFastDir: new Vector3(),
+      wasFast: false,
     });
   }
 
-  // Initialize positions at t=0
+  // Initialize at t=0
   mixer.setTime(0);
   mesh.updateMatrixWorld(true);
   for (const entry of entries) {
@@ -41,8 +37,8 @@ export function precomputeBloomEvents(mesh, clip, boneNames) {
   }
 
   const events = [];
-  const currentPos = new Vector3();
-  const rawVel = new Vector3();
+  const pos = new Vector3();
+  const vel = new Vector3();
   const duration = clip.duration;
 
   for (let t = STEP; t <= duration; t += STEP) {
@@ -50,46 +46,33 @@ export function precomputeBloomEvents(mesh, clip, boneNames) {
     mesh.updateMatrixWorld(true);
 
     for (const entry of entries) {
-      entry.bone.getWorldPosition(currentPos);
+      entry.bone.getWorldPosition(pos);
 
-      rawVel.copy(currentPos).sub(entry.prevPos).divideScalar(STEP);
-      entry.prevPos.copy(currentPos);
+      vel.copy(pos).sub(entry.prevPos).divideScalar(STEP);
+      const speed = vel.length();
 
-      const rawSpeed = rawVel.length();
-      entry.smoothSpeed += (rawSpeed - entry.smoothSpeed) * SMOOTHING;
-
-      if (entry.smoothSpeed > HIGH_THRESHOLD) {
-        entry.wasHigh = true;
-        if (entry.smoothSpeed > entry.peakSpeed) {
-          entry.peakSpeed = entry.smoothSpeed;
-          rawVel.normalize();
-          entry.lastHighDir.copy(rawVel);
-        }
+      // Track: was this bone moving fast recently?
+      if (speed > FAST_SPEED) {
+        entry.wasFast = true;
+        vel.divideScalar(speed);  // normalize
+        entry.lastFastDir.copy(vel);
       }
 
-      if (entry.wasHigh && entry.smoothSpeed < LOW_THRESHOLD) {
-        entry.wasHigh = false;
-
-        const dir = entry.lastHighDir;
-        const isUpward = dir.y > 0.4;
-        const dx = currentPos.x;
-        const dz = currentPos.z;
-        const len = Math.sqrt(dx * dx + dz * dz) || 1;
-        const outDot = (dir.x * dx + dir.z * dz) / len;
-        const isOutward = outDot > 0.5;
-
-        if (isUpward || isOutward) {
-          events.push({
-            time: t,
-            position: { x: currentPos.x, y: currentPos.y, z: currentPos.z },
-            direction: { x: dir.x, y: dir.y, z: dir.z },
-          });
-        }
-
-        entry.peakSpeed = 0;
+      // Fire: was fast, now stopped
+      if (entry.wasFast && speed < STOP_SPEED) {
+        entry.wasFast = false;
+        events.push({
+          time: t,
+          position: { x: pos.x, y: pos.y, z: pos.z },
+          direction: { x: entry.lastFastDir.x, y: entry.lastFastDir.y, z: entry.lastFastDir.z },
+        });
       }
+
+      entry.prevPos.copy(pos);
     }
   }
+
+  events.sort((a, b) => a.time - b.time);
 
   // Cleanup
   action.stop();
@@ -102,6 +85,12 @@ export function precomputeBloomEvents(mesh, clip, boneNames) {
   mesh.position.set(0, 0, 0);
   mesh.rotation.set(0, 0, 0);
 
-  console.log(`[bloom] precomputed ${events.length} events`);
+  // Debug: speed distribution and event timing
+  const early = events.filter(e => e.time < 30);
+  const late = events.filter(e => e.time >= 30);
+  console.log(`[bloom] precomputed ${events.length} events (first 30s: ${early.length}, after: ${late.length})`);
+  if (early.length > 0) {
+    console.log(`[bloom] first 30s events:`, early.map(e => e.time.toFixed(2) + 's'));
+  }
   return events;
 }

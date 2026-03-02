@@ -42,6 +42,12 @@ export class MMDAnimation {
     }
   }
 
+  getCurrentTime() {
+    if (!this.helper || !this.mesh) return 0;
+    const obj = this.helper.objects.get(this.mesh);
+    return (obj && obj.mixer) ? obj.mixer.time : 0;
+  }
+
   togglePlay() {
     this.playing = !this.playing;
     return this.playing;

@@ -238,6 +238,36 @@ export class UI {
 
   _initAutoPlay() {
     if (!this._manifest || !this._manifest.artists.length) return;
+    this._playFirstSong();
+  }
+
+  _playFirstSong() {
+    const targetVmd = 'vmd/[Seto]/[NEW]/Summer Idol/Summer Idol/mmd_SummerIdol_RIN.vmd';
+
+    for (const artist of this._manifest.artists) {
+      const song = artist.songs.find(s => s.vmd === targetVmd);
+      if (!song) continue;
+
+      const artistSelect = document.getElementById('select-artist');
+      const songSelect = document.getElementById('select-song');
+
+      artistSelect.value = artist.name;
+      artistSelect.dispatchEvent(new Event('change'));
+
+      for (const opt of songSelect.options) {
+        if (!opt.value) continue;
+        const parsed = JSON.parse(opt.value);
+        if (parsed.vmd === targetVmd) {
+          songSelect.value = opt.value;
+          break;
+        }
+      }
+
+      this._loadVMDFromManifest(song.vmd, song.audio);
+      return;
+    }
+
+    // Fallback if target not found
     this._playRandomSong();
   }
 

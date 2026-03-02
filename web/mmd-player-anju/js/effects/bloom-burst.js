@@ -6,9 +6,9 @@ import {
 } from 'three/webgpu';
 
 const MAX = 4;
-const LIFETIME = 1.0;
-const TRAVEL = 10;
-const DRAG = 0.95;
+const LIFETIME = 1.2;
+const TRAVEL = 20;
+const DRAG = 0.97;
 const SIZE = 3.0;
 const OFFSCREEN_Y = -10000;
 
@@ -61,23 +61,18 @@ export class BloomBurstEffect {
     this._activeCount = 0;
     this._events = [];
     this._nextIdx = 0;
-    this._time = 0;
   }
 
   setEvents(events) {
     this._events = events;
     this._nextIdx = 0;
-    this._time = 0;
   }
 
   resetTime() {
-    this._time = 0;
     this._nextIdx = 0;
   }
 
   seekTo(time) {
-    this._time = time;
-    // Binary search: find first event with time > this._time
     let lo = 0, hi = this._events.length;
     while (lo < hi) {
       const mid = (lo + hi) >> 1;
@@ -101,14 +96,11 @@ export class BloomBurstEffect {
     this._activeCount = Math.min(this._activeCount + 1, MAX);
   }
 
-  update(delta) {
+  update(delta, animationTime) {
     if (!this.enabled) return;
 
-    const dt = Math.min(delta, 0.1);
-    this._time += dt;
-
-    // Fire precomputed events whose time has passed
-    while (this._nextIdx < this._events.length && this._events[this._nextIdx].time <= this._time) {
+    // Fire events keyed to actual animation time — no drift
+    while (this._nextIdx < this._events.length && this._events[this._nextIdx].time <= animationTime) {
       const evt = this._events[this._nextIdx];
       this._trigger(evt.position, evt.direction);
       this._nextIdx++;
@@ -117,6 +109,7 @@ export class BloomBurstEffect {
     // Animate active sprites
     if (this._activeCount <= 0) return;
 
+    const dt = Math.min(delta, 0.1);
     let alive = 0;
 
     for (const entry of this._pool) {
@@ -138,7 +131,6 @@ export class BloomBurstEffect {
       entry.vy *= DRAG;
       entry.vz *= DRAG;
 
-      // Fade out over lifetime
       entry.sprite.material.opacity = 1 - entry.age;
     }
 
