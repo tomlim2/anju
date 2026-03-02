@@ -1,17 +1,14 @@
 import { MMDLoader } from '../vendor/MMDLoader.js';
 import { hasHumanoidBones } from './pmx-check.js';
 import { remapClipBones } from './bone-remap.js';
-import { precomputeBloomEvents } from './effects/bloom-precompute.js';
 import { precomputeSparkEvents } from './effects/spark-precompute.js';
-import { detectBeatsFromBuffer } from './effects/audio-beats.js';
 
 export class UI {
-  constructor({ mmdScene, loader, animation, audio, bloomFx, riseFx, fallFx }) {
+  constructor({ mmdScene, loader, animation, audio, riseFx, fallFx }) {
     this.mmdScene = mmdScene;
     this.loader = loader;
     this.animation = animation;
     this.audio = audio;
-    this.bloomFx = bloomFx;
     this.riseFx = riseFx;
     this.fallFx = fallFx;
     this._ac = new AbortController();
@@ -54,7 +51,6 @@ export class UI {
           if (obj && obj.mixer) {
             const t = this.audio.currentTime;
             obj.mixer.setTime(t);
-            this.bloomFx.seekTo(t);
             this.riseFx.seekTo(t);
           }
         }
@@ -147,7 +143,6 @@ export class UI {
 
     // Clean up model state (but keep audio playing)
     this.animation.destroy();
-    this.bloomFx.resetTime();
     this.riseFx.resetTime();
 
     try {
@@ -175,7 +170,6 @@ export class UI {
           const obj = this.animation.helper.objects.get(this.animation.mesh);
           if (obj && obj.mixer) {
             obj.mixer.setTime(savedTime);
-            this.bloomFx.seekTo(savedTime);
             this.riseFx.seekTo(savedTime);
           }
         }
@@ -345,19 +339,10 @@ export class UI {
       this._vmdPath = vmdPath;
       this._updateDebugPaths();
 
-      // Detect beats for bloom event gating
-      try {
-        const ab = await audioBlob.arrayBuffer();
-        this._beatTimestamps = await detectBeatsFromBuffer(ab);
-      } catch {
-        this._beatTimestamps = null;
-      }
-
       if (this.loader.mesh) {
         // Mesh available: apply VMD directly
         this.animation.destroy();
-            this.bloomFx.resetTime();
-        this.riseFx.resetTime();
+                this.riseFx.resetTime();
         await this._applyVmdToMesh(vmdFile);
         this._currentVmd = { vmdPath, audioPath, vmdBlob: vmdFile };
         this._pendingVmd = null;
@@ -388,11 +373,6 @@ export class UI {
         const wrists = ['左手首', '右手首'];
         const motionEvents = precomputeSparkEvents(mesh, clip, wrists);
         this.riseFx.setEvents(motionEvents);
-
-        const bloomEvents = precomputeBloomEvents(mesh, clip, wrists, {
-          beatTimestamps: this._beatTimestamps || null,
-        });
-        this.bloomFx.setEvents(bloomEvents);
 
         this.animation.initHelper(mesh, { vmd: clip, physics: false });
         this.animation.playing = false;
@@ -526,7 +506,6 @@ export class UI {
       const time = Math.round(ratio * duration * FPS) / FPS;
       this.animation.seekTo(time);
       this.audio.seekTo(time);
-      this.bloomFx.seekTo(time);
       this.riseFx.seekTo(time);
       this._updateTimelineDisplay(time, duration);
     };

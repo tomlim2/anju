@@ -30,7 +30,7 @@ export class MMDAudio {
   }
 
   play() {
-    if (this.audioElement) this.audioElement.play();
+    if (this.audioElement) this.audioElement.play().catch(() => {});
   }
 
   pause() {
