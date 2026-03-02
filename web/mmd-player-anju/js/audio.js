@@ -3,6 +3,7 @@ export class MMDAudio {
     this.animation = animation;
     this.audioElement = null;
     this._volume = 0.5;
+    this._onEnded = null;
   }
 
   loadFromFile(file) {
@@ -15,8 +16,13 @@ export class MMDAudio {
     this.audioElement = new Audio(url);
     this.audioElement.preload = 'auto';
     this.audioElement.volume = this._volume;
+    this.audioElement.addEventListener('ended', () => {
+      if (this._onEnded) this._onEnded();
+    });
     return this.audioElement;
   }
+
+  onEnded(cb) { this._onEnded = cb; }
 
   setVolume(v) {
     this._volume = v;

@@ -72,6 +72,24 @@ export class MMDModelLoader {
     });
   }
 
+  loadPMXFromPath(path) {
+    this._revokeBlobUrls();
+    const loader = new MMDLoader();
+
+    return new Promise((resolve, reject) => {
+      loader.load(path, (mesh) => {
+        this._removeCurrentMesh();
+        swapToToonMaterial(mesh);
+
+        this.mesh = mesh;
+        this.mmdScene.scene.add(mesh);
+        resolve(mesh);
+      }, undefined, (err) => {
+        reject(err);
+      });
+    });
+  }
+
   _removeCurrentMesh() {
     if (this.mesh) {
       this.mmdScene.scene.remove(this.mesh);

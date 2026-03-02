@@ -104,10 +104,61 @@
       background: var(--border);
     }
 
+    /* Row 2: Model controls */
+    #controls-model,
+    #controls-hand-fx,
+    #controls-bg-fx {
+      position: fixed;
+      left: 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      z-index: 20;
+    }
+
+    #controls-model { top: 44px; right: 12px; }
+    #controls-hand-fx { top: 76px; }
+    #controls-bg-fx { top: 108px; }
+
+    #controls-model button,
+    #controls-model select,
+    #controls-hand-fx select,
+    #controls-bg-fx select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    #controls-model button:hover,
+    #controls-model select:hover,
+    #controls-hand-fx select:hover,
+    #controls-bg-fx select:hover {
+      background: var(--panel);
+    }
+
+    #controls-model select:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    #controls-model select {
+      max-width: 180px;
+    }
+
+    #loading-status {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-left: auto;
+    }
+
     /* Debug info */
     #debug-info {
       position: fixed;
-      top: 44px;
+      top: 140px;
       left: 12px;
       font-size: 11px;
       color: var(--text-dim);
@@ -184,16 +235,34 @@
   <div id="debug-paths"></div>
 
   <div id="controls">
-    <button id="btn-upload-zip">Upload ZIP</button>
-    <select id="select-pmx" disabled><option value="">PMX</option></select>
-    <div class="separator"></div>
     <select id="select-artist"><option value="">Artist</option></select>
     <select id="select-song" disabled><option value="">Song</option></select>
     <div class="separator"></div>
-    <button id="btn-play" disabled>Play</button>
-    <button id="btn-pause" disabled>Pause</button>
-    <button id="btn-stop" disabled>Stop</button>
+    <button id="btn-playpause">&#9655;</button>
+    <button id="btn-mute" class="toggle muted">&#128263;</button>
     <input type="range" id="volume" min="0" max="1" step="0.01" value="0.5">
+  </div>
+
+  <div id="controls-model">
+    <button id="btn-upload-zip">Upload ZIP</button>
+    <select id="select-pmx" disabled><option value="">PMX</option></select>
+    <span id="loading-status"></span>
+  </div>
+
+  <div id="controls-hand-fx">
+    <select id="select-hand-fx">
+      <option value="none">Hand FX: None</option>
+      <option value="spark" selected>Hand FX: Spark</option>
+      <option value="bloom">Hand FX: Bloom</option>
+    </select>
+  </div>
+
+  <div id="controls-bg-fx">
+    <select id="select-bg-fx">
+      <option value="none">BG FX: None</option>
+      <option value="rise" selected>BG FX: Rise</option>
+      <option value="fall">BG FX: Fall</option>
+    </select>
   </div>
 
   <input type="file" id="input-zip" accept=".zip" hidden>

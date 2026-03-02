@@ -3,21 +3,65 @@ import { hasHumanoidBones } from './pmx-check.js';
 import { remapClipBones } from './bone-remap.js';
 
 export class UI {
-  constructor({ mmdScene, loader, animation, audio }) {
+  constructor({ mmdScene, loader, animation, audio, tracker, sparkFx, decelTracker, bloomFx, riseFx, fallFx }) {
     this.mmdScene = mmdScene;
     this.loader = loader;
     this.animation = animation;
     this.audio = audio;
+    this.tracker = tracker;
+    this.sparkFx = sparkFx;
+    this.decelTracker = decelTracker;
+    this.bloomFx = bloomFx;
+    this.riseFx = riseFx;
+    this.fallFx = fallFx;
     this._ac = new AbortController();
     this._manifest = null;
     this._zipEntries = null;
     this._zipName = '';
     this._pmxPath = '';
     this._vmdPath = '';
+    this._currentVmd = null;   // {vmdPath, audioPath} of currently playing song
+    this._pendingVmd = null;   // VMD blob fetched before mesh is available
 
     this._initZipUpload();
     this._initVMDDropdowns();
-    this._initTransport();
+    this._initPlayback();
+    this._initFxSelectors();
+    this._loadDefaultModel();
+
+    this.audio.onEnded(() => this._playRandomSong());
+  }
+
+  async _loadDefaultModel() {
+    const path = 'data/model/Hatsune Miku.pmx';
+    const statusEl = document.getElementById('loading-status');
+    statusEl.textContent = 'Loading...';
+
+    try {
+      await this.loader.loadPMXFromPath(path);
+      this.tracker.bind(this.loader.mesh);
+      this.decelTracker.bind(this.loader.mesh);
+      this._pmxPath = path;
+      document.getElementById('title').style.display = 'none';
+
+      // Apply pending VMD if autoplay already fetched one
+      if (this._pendingVmd) {
+        await this._applyVmdToMesh(this._pendingVmd.vmdBlob);
+        this._currentVmd = this._pendingVmd;
+        this._pendingVmd = null;
+
+        if (this.animation.helper && this.animation.mesh) {
+          const obj = this.animation.helper.objects.get(this.animation.mesh);
+          if (obj && obj.mixer) obj.mixer.setTime(this.audio.currentTime);
+        }
+        this.animation.playing = true;
+      }
+
+      statusEl.textContent = '';
+    } catch (err) {
+      console.error('Default model load error:', err);
+      statusEl.textContent = '';
+    }
   }
 
   // --- ZIP Upload + PMX Selection ---
@@ -90,11 +134,17 @@ export class UI {
 
   async _loadPmxFromZip(pmxPath) {
     const pmxName = pmxPath.split('/').pop();
+    const statusEl = document.getElementById('loading-status');
+    statusEl.textContent = 'Loading...';
 
-    // Clean up existing animation and audio before loading new model
+    // Save current audio time for re-sync
+    const savedTime = this.audio.currentTime;
+    const wasPlaying = this.animation.playing;
+
+    // Clean up model state (but keep audio playing)
+    this.tracker.unbind();
+    this.decelTracker.unbind();
     this.animation.destroy();
-    this.audio.stop();
-    this._setTransportEnabled(false);
 
     try {
       const pmxBlob = this._zipEntries.get(pmxPath);
@@ -106,17 +156,30 @@ export class UI {
       }
 
       await this.loader.loadPMXFromBlobs(pmxFile, blobs);
+      this.tracker.bind(this.loader.mesh);
+      this.decelTracker.bind(this.loader.mesh);
       this._pmxPath = pmxPath;
       this._updateDebugPaths();
 
-      // Re-apply currently selected song if any
-      const songSelect = document.getElementById('select-song');
-      if (songSelect.value) {
-        const { vmd, audio } = JSON.parse(songSelect.value);
-        await this._loadVMDFromManifest(vmd, audio);
+      // Re-apply VMD: use _currentVmd (playing) or _pendingVmd (pre-loaded)
+      const vmdToApply = this._currentVmd || this._pendingVmd;
+      if (vmdToApply) {
+        await this._applyVmdToMesh(vmdToApply.vmdBlob);
+        this._currentVmd = vmdToApply;
+        this._pendingVmd = null;
+
+        // Sync animation to audio time
+        if (this.animation.helper && this.animation.mesh) {
+          const obj = this.animation.helper.objects.get(this.animation.mesh);
+          if (obj && obj.mixer) obj.mixer.setTime(savedTime);
+        }
+        this.animation.playing = true;
       }
+
+      statusEl.textContent = '';
     } catch (err) {
       console.error('PMX load error:', err);
+      statusEl.textContent = '';
     }
   }
 
@@ -163,38 +226,108 @@ export class UI {
       const { vmd, audio } = JSON.parse(songSelect.value);
       await this._loadVMDFromManifest(vmd, audio);
     }, sig);
+
+    // Auto-play on manifest load
+    this._initAutoPlay();
+  }
+
+  _initAutoPlay() {
+    if (!this._manifest || !this._manifest.artists.length) return;
+    this._playRandomSong();
+  }
+
+  _playRandomSong() {
+    if (!this._manifest || !this._manifest.artists.length) return;
+
+    // Build flat list of all songs
+    const allSongs = [];
+    for (const artist of this._manifest.artists) {
+      for (const song of artist.songs) {
+        allSongs.push({ artist: artist.name, song });
+      }
+    }
+    if (allSongs.length === 0) return;
+
+    // Pick random, excluding current song if possible
+    let candidates = allSongs;
+    if (this._currentVmd && allSongs.length > 1) {
+      candidates = allSongs.filter(s => s.song.vmd !== this._currentVmd.vmdPath);
+    }
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+
+    // Reflect selection in dropdowns
+    const artistSelect = document.getElementById('select-artist');
+    const songSelect = document.getElementById('select-song');
+
+    artistSelect.value = pick.artist;
+    artistSelect.dispatchEvent(new Event('change'));
+
+    // Find the matching option in song select
+    for (const opt of songSelect.options) {
+      if (!opt.value) continue;
+      const parsed = JSON.parse(opt.value);
+      if (parsed.vmd === pick.song.vmd) {
+        songSelect.value = opt.value;
+        break;
+      }
+    }
+
+    this._loadVMDFromManifest(pick.song.vmd, pick.song.audio);
   }
 
   async _loadVMDFromManifest(vmdPath, audioPath) {
-    if (!this.loader.mesh) return;
-
     try {
+      // Fetch VMD blob
       const vmdRes = await fetch('data/' + vmdPath);
       if (!vmdRes.ok) throw new Error(`Failed to fetch VMD: ${vmdRes.status}`);
       const vmdBlob = await vmdRes.blob();
       const vmdFile = new File([vmdBlob], vmdPath.split('/').pop());
 
-      await this._loadVMD(this.loader.mesh, vmdFile);
-      this._vmdPath = vmdPath;
-      this._updateDebugPaths();
-
+      // Fetch and play audio immediately (regardless of mesh)
       const audioRes = await fetch('data/' + audioPath);
       if (!audioRes.ok) throw new Error(`Failed to fetch audio: ${audioRes.status}`);
       const audioBlob = await audioRes.blob();
       const audioFile = new File([audioBlob], audioPath.split('/').pop());
       this.audio.loadFromFile(audioFile);
+      try {
+        await this.audio.audioElement.play();
+        this._updatePlayPauseButton(true);
+      } catch {
+        // Autoplay blocked — wait for first user interaction
+        this._updatePlayPauseButton(false);
+        const resume = () => {
+          this.audio.play();
+          this.animation.playing = true;
+          this._updatePlayPauseButton(true);
+          document.removeEventListener('click', resume);
+          document.removeEventListener('keydown', resume);
+        };
+        document.addEventListener('click', resume, { once: true });
+        document.addEventListener('keydown', resume, { once: true });
+      }
 
-      this._setTransportEnabled(true);
+      this._vmdPath = vmdPath;
+      this._updateDebugPaths();
+
+      if (this.loader.mesh) {
+        // Mesh available: apply VMD directly
+        this.animation.destroy();
+        await this._applyVmdToMesh(vmdFile);
+        this._currentVmd = { vmdPath, audioPath, vmdBlob: vmdFile };
+        this._pendingVmd = null;
+        this.animation.playing = true;
+      } else {
+        // No mesh yet: store VMD for later application
+        this._pendingVmd = { vmdPath, audioPath, vmdBlob: vmdFile };
+        this._currentVmd = null;
+      }
     } catch (err) {
       console.error('VMD manifest load error:', err);
     }
   }
 
-  async _loadVMD(mesh, vmdFile) {
-    // Stop current playback and reset pose before loading new animation
-    this.audio.stop();
-    this.animation.destroy();
-
+  async _applyVmdToMesh(vmdFile) {
+    const mesh = this.loader.mesh;
     const loader = new MMDLoader();
     const url = URL.createObjectURL(vmdFile);
 
@@ -202,7 +335,6 @@ export class UI {
       loader.loadAnimation(url, mesh, (clip) => {
         URL.revokeObjectURL(url);
 
-        // Remap missing bones and show debug info
         const result = remapClipBones(clip, mesh.skeleton);
         this._showBoneDebug(result);
 
@@ -258,42 +390,86 @@ export class UI {
     });
   }
 
-  // --- Transport Controls (Play / Pause / Stop) ---
+  // --- Playback Controls (Play/Pause toggle) ---
 
-  _initTransport() {
+  _initPlayback() {
     const sig = { signal: this._ac.signal };
+    const btn = document.getElementById('btn-playpause');
+    const muteBtn = document.getElementById('btn-mute');
+    const volumeEl = document.getElementById('volume');
 
-    document.getElementById('btn-play').addEventListener('click', () => {
-      this.animation.playing = true;
-      this.audio.play();
-    }, sig);
+    // Start muted — slider stays at 0.5 but audio is silent
+    this._muted = true;
+    this._prevVolume = parseFloat(volumeEl.value);
+    this.audio.setVolume(0);
 
-    document.getElementById('btn-pause').addEventListener('click', () => {
-      this.animation.playing = false;
-      this.audio.pause();
-    }, sig);
-
-    document.getElementById('btn-stop').addEventListener('click', () => {
-      this.animation.playing = false;
-      this.audio.stop();
-      // Reset animation mixer time
-      if (this.animation.helper && this.animation.mesh) {
-        const obj = this.animation.helper.objects.get(this.animation.mesh);
-        if (obj && obj.mixer) obj.mixer.setTime(0);
+    btn.addEventListener('click', () => {
+      if (this.audio.audioElement && !this.audio.audioElement.paused) {
+        this.animation.playing = false;
+        this.audio.pause();
+        this._updatePlayPauseButton(false);
+      } else {
+        this.animation.playing = true;
+        this.audio.play();
+        this._updatePlayPauseButton(true);
       }
     }, sig);
 
-    const volumeEl = document.getElementById('volume');
-    this.audio.setVolume(parseFloat(volumeEl.value));
+    muteBtn.addEventListener('click', () => {
+      this._muted = !this._muted;
+      if (this._muted) {
+        this.audio.setVolume(0);
+      } else {
+        this.audio.setVolume(parseFloat(volumeEl.value));
+      }
+      this._updateMuteButton();
+    }, sig);
+
     volumeEl.addEventListener('input', () => {
-      this.audio.setVolume(parseFloat(volumeEl.value));
+      const v = parseFloat(volumeEl.value);
+      if (!this._muted) {
+        this.audio.setVolume(v);
+      }
+      if (v > 0) this._prevVolume = v;
     }, sig);
   }
 
-  _setTransportEnabled(enabled) {
-    document.getElementById('btn-play').disabled = !enabled;
-    document.getElementById('btn-pause').disabled = !enabled;
-    document.getElementById('btn-stop').disabled = !enabled;
+  _updateMuteButton() {
+    const btn = document.getElementById('btn-mute');
+    btn.innerHTML = this._muted ? '&#128263;' : '&#128264;';
+    btn.classList.toggle('active', !this._muted);
+  }
+
+  _updatePlayPauseButton(isPlaying) {
+    const btn = document.getElementById('btn-playpause');
+    btn.innerHTML = isPlaying ? '&#9646;&#9646;' : '&#9655;';
+  }
+
+  _initFxSelectors() {
+    const sig = { signal: this._ac.signal };
+
+    document.getElementById('select-hand-fx').addEventListener('change', (e) => {
+      const val = e.target.value;
+      this.tracker.enabled = false;
+      this.sparkFx.enabled = false;
+      this.decelTracker.enabled = false;
+      this.bloomFx.enabled = false;
+      if (val === 'spark') {
+        this.tracker.enabled = true;
+        this.sparkFx.enabled = true;
+      } else if (val === 'bloom') {
+        this.decelTracker.enabled = true;
+        this.bloomFx.enabled = true;
+      }
+    }, sig);
+
+    document.getElementById('select-bg-fx').addEventListener('change', (e) => {
+      const val = e.target.value;
+      this.riseFx.enabled = false;
+      this.fallFx.enabled = false;
+      if (val === 'rise') this.riseFx.enabled = true;
+      else if (val === 'fall') this.fallFx.enabled = true;
+    }, sig);
   }
 
   destroy() {
