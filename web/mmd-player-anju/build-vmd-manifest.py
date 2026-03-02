@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scan vmd/ directory and generate a manifest.json for mmd-player.
+"""Scan vmd/ directory and generate a manifest.json for mmd-player-anju.
 
 For each leaf folder containing both a motion VMD and an audio file,
 creates an entry grouped by artist.

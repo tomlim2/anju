@@ -15,4 +15,4 @@ python/shipping_manager/creator_only/config.json
 api-test/nz-downloader/config.js
 
 # MMD player local data (symlink to archive)
-web/mmd-player/data
+web/mmd-player-anju/data
