@@ -23,7 +23,9 @@ const tracker = new BoneVelocityTracker({
   boneNames: ['左手首', '右手首'],
   threshold: 15.0,
 });
+tracker.enabled = false;
 const sparkFx = new SparkBurstEffect(mmdScene.scene, mmdScene.renderer);
+sparkFx.enabled = false;
 tracker.onTrigger((name, pos, vel, speed) => sparkFx.trigger(name, pos, vel, speed));
 
 // Hand FX: Bloom
@@ -32,13 +34,12 @@ const decelTracker = new BoneDecelerationTracker({
   highThreshold: 20,
   lowThreshold: 3,
 });
-decelTracker.enabled = false;
 const bloomFx = new BloomBurstEffect(mmdScene.scene);
-bloomFx.enabled = false;
 decelTracker.onTrigger((name, pos, dir, speed) => bloomFx.trigger(name, pos, dir, speed));
 
 // BG FX
 const riseFx = new RisingLightEffect(mmdScene.scene);
+riseFx.enabled = false;
 const fallFx = new FallingLightEffect(mmdScene.scene);
 fallFx.enabled = false;
 

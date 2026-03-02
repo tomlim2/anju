@@ -8,7 +8,7 @@ export class BoneDecelerationTracker {
     this.smoothing = smoothing;
     this.enabled = true;
 
-    this._bones = [];       // { name, bone, prevPos, smoothSpeed, prevSpeed, peakSpeed, lastHighDir }
+    this._bones = [];       // { name, bone, prevPos, smoothSpeed, wasHigh, peakSpeed, lastHighDir }
     this._listeners = [];
     this._bound = false;
   }
@@ -35,7 +35,7 @@ export class BoneDecelerationTracker {
         bone,
         prevPos: pos.clone(),
         smoothSpeed: 0,
-        prevSpeed: 0,
+        wasHigh: false,
         peakSpeed: 0,
         lastHighDir: new Vector3(),
       });
@@ -67,8 +67,9 @@ export class BoneDecelerationTracker {
       // EMA smooth speed
       entry.smoothSpeed += (rawSpeed - entry.smoothSpeed) * this.smoothing;
 
-      // Track peak speed and direction while fast
+      // Enter high-speed state: track peak and direction
       if (entry.smoothSpeed > this.highThreshold) {
+        entry.wasHigh = true;
         if (entry.smoothSpeed > entry.peakSpeed) {
           entry.peakSpeed = entry.smoothSpeed;
         }
@@ -76,15 +77,14 @@ export class BoneDecelerationTracker {
         entry.lastHighDir.copy(rawVel);
       }
 
-      // Deceleration trigger: was fast, now slow
-      if (entry.prevSpeed > this.highThreshold && entry.smoothSpeed < this.lowThreshold) {
+      // Deceleration trigger: was in high-speed state, now below low threshold
+      if (entry.wasHigh && entry.smoothSpeed < this.lowThreshold) {
+        entry.wasHigh = false;
         for (const cb of this._listeners) {
           cb(entry.name, currentPos.clone(), entry.lastHighDir.clone(), entry.peakSpeed);
         }
         entry.peakSpeed = 0;
       }
-
-      entry.prevSpeed = entry.smoothSpeed;
     }
   }
 
