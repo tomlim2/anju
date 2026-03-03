@@ -1,4 +1,5 @@
 import { MMDAnimationHelper } from '../vendor/MMDAnimationHelper.js';
+import { disableUnusedIK } from '../vendor/anjuUtil.js';
 
 export class MMDAnimation {
   constructor(mmdScene) {
@@ -25,6 +26,7 @@ export class MMDAnimation {
     this.helper.add(mesh, params);
 
     if (opts.vmd) {
+      disableUnusedIK(mesh, opts.vmd);
       this.duration = this._getVMDDuration(mesh);
     }
 

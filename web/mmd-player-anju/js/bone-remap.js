@@ -60,5 +60,5 @@ export function remapClipBones(clip, skeleton) {
   if (dropped.length) console.info('[MMD] Bone missing:', dropped.join(', '));
   if (ignored.length) console.info('[MMD] Bone ignored:', ignored.join(', '));
 
-  return { remapped, dropped, ignored };
+  return { remapped, dropped, ignored, trackBones };
 }

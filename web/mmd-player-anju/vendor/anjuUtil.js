@@ -18,6 +18,14 @@
  *   - _removeMesh(): mixer.stopAllAction() + physics.reset()
  *   - updateOne(): ikEnabled !== false condition
  *
+ * animation.js
+ *   - import { disableUnusedIK } from '../vendor/anjuUtil.js'
+ *   - initHelper(): call disableUnusedIK() after helper.add() for FK VMDs
+ *
+ * ui.js
+ *   - _prepareAnimation(): bone remap → validate → retarget → effects
+ *   - imports: bone-remap.js, vmd-validator.js, bone-retarget.js
+ *
  * MMDLoader.js
  *   - build(): attach clip.ikStates
  *   - constructor: remove deprecation warning
@@ -108,6 +116,38 @@ export function updateIKEnabled( mesh, time, ikStates ) {
 				break;
 
 			}
+
+		}
+
+	}
+
+}
+
+// Disable IK chains whose target bone has no animation tracks in the clip.
+// FK-only VMDs animate leg bones directly (左足, 右ひざ, etc.) without
+// IK target tracks (左足ＩＫ, 右足ＩＫ). If IK stays enabled, CCDIKSolver
+// overwrites FK rotations every frame, locking legs in rest pose.
+// Must be called AFTER helper.add() since _setupMeshAnimation resets ikEnabled.
+export function disableUnusedIK( mesh, clip ) {
+
+	const iks = mesh.geometry.userData.MMD.iks;
+	const bones = mesh.geometry.userData.MMD.bones;
+	if ( !iks || !clip ) return;
+
+	const animatedBones = new Set();
+	for ( const track of clip.tracks ) {
+
+		const m = track.name.match( /\.bones\[(.+?)\]\./ );
+		if ( m ) animatedBones.add( m[ 1 ] );
+
+	}
+
+	for ( const ik of iks ) {
+
+		const targetBone = bones[ ik.target ];
+		if ( targetBone && !animatedBones.has( targetBone.name ) ) {
+
+			ik.ikEnabled = false;
 
 		}
 

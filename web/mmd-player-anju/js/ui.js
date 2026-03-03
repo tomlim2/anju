@@ -1,6 +1,8 @@
 import { MMDLoader } from '../vendor/MMDLoader.js';
 import { hasHumanoidBones } from './pmx-check.js';
 import { remapClipBones } from './bone-remap.js';
+import { validateClip } from './vmd-validator.js';
+import { retargetClip } from './bone-retarget.js';
 import { precomputeSparkEvents } from './effects/spark-precompute.js';
 
 export class UI {
@@ -378,13 +380,7 @@ export class UI {
       loader.loadAnimation(url, mesh, (clip) => {
         URL.revokeObjectURL(url);
 
-        const result = remapClipBones(clip, mesh.skeleton);
-        this._showBoneDebug(result);
-
-        // Precompute effect events before the helper takes over the mesh
-        const wrists = ['左手首', '右手首'];
-        const motionEvents = precomputeSparkEvents(mesh, clip, wrists);
-        this.riseFx.setEvents(motionEvents);
+        this._prepareAnimation(clip, mesh);
 
         this.animation.initHelper(mesh, { vmd: clip, physics: false });
         this.animation.playing = false;
@@ -396,9 +392,45 @@ export class UI {
     });
   }
 
-  _showBoneDebug({ remapped, dropped, ignored }) {
+  _prepareAnimation(clip, mesh) {
+    // ① Bone remap
+    const remap = remapClipBones(clip, mesh.skeleton);
+
+    // ② Validate compatibility
+    const validation = validateClip(clip, mesh, remap);
+
+    // ③ Retarget (source model detection → offset correction)
+    const retarget = retargetClip(clip, remap.trackBones, new Set(remap.dropped));
+
+    // ④ Precompute effect events
+    const wrists = ['左手首', '右手首'];
+    const motionEvents = precomputeSparkEvents(mesh, clip, wrists);
+    this.riseFx.setEvents(motionEvents);
+
+    this._showBoneDebug(remap, validation, retarget);
+    return { remap, validation, retarget };
+  }
+
+  _showBoneDebug({ remapped, dropped, ignored }, validation, retarget) {
     const el = document.getElementById('debug-info');
     const parts = [];
+
+    // Compatibility score
+    if (validation) {
+      parts.push(`<span class="compat">Compatible: ${Math.round(validation.score)}%</span>`);
+    }
+
+    // Source model
+    if (validation && validation.sourceModel) {
+      parts.push(`<span class="source">Source: ${validation.sourceModel}</span>`);
+    }
+
+    // Retarget applied
+    if (retarget && retarget.applied.length) {
+      parts.push(`<span class="retarget">Retarget: ${retarget.applied.join(', ')}</span>`);
+    }
+
+    // Bone remap info
     if (remapped.length) {
       parts.push(`<span class="remap">Remapped: ${remapped.join(', ')}</span>`);
     }
@@ -408,6 +440,14 @@ export class UI {
     if (ignored.length) {
       parts.push(`Ignored: ${ignored.length} cosmetic bones`);
     }
+
+    // Arm extremes warning
+    if (validation && Object.keys(validation.armExtremes).length > 0) {
+      const warns = Object.entries(validation.armExtremes)
+        .map(([bone, v]) => `${bone} ${v.peakAngle}°`);
+      parts.push(`<span class="drop">Arm peak: ${warns.join(', ')}</span>`);
+    }
+
     el.innerHTML = parts.length ? parts.join(' · ') : '';
   }
 
