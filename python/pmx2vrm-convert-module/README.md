@@ -1,123 +1,80 @@
 # pmx2vrm
 
-PMX to VRM 0.x converter with dual TypeScript and Python implementations.
+PMX to VRM 0.x converter. Three implementations share the same pipeline logic.
 
-> **CRITICAL:** 하나의 PMX ZIP에서 **2개 이상의 VRM**이 출력될 수 있다. 의상 차분, 체형 차분, 본체+소품 등으로 ZIP 안에 humanoid PMX가 여러 개 들어있는 경우가 흔하다. **반드시 다중 출력을 전제로 처리 로직을 구성할 것.**
+**One ZIP can produce multiple VRMs.** PMX archives often contain costume/body variants. Always handle multi-output.
 
-## Architecture
+## Implementations
+
+| Directory | Runtime | Entry point | Showcase port |
+|-----------|---------|-------------|---------------|
+| `python/` | Python 3.10+ | `intake.py` | — |
+| `typescript/` | Node.js (sharp, iconv-lite) | `src/intake.ts` | 970 (Next.js) |
+| `typescript-browser-only/` | Browser (Web Worker, pako) | `src/adapter-browser/worker.ts` | 971 (Vite) |
+
+## Pipeline
+
+```
+ZIP → scan .pmx → humanoid check (16 required bones)
+  → per humanoid PMX:
+    readPmx() → buildGltf() → buildVrm() → writeGlb() → renameVrm() → validate()
+```
+
+Each step is a pure function. I/O is injected via `ConvertDeps` (ImageEncoder + TextCodec).
+
+## Structure
 
 ```
 pmx2vrm-convert-module/
-├── typescript/src/                # TypeScript implementation (~3,900 LOC)
-│   ├── intake.ts                  # CLI entry + ZIP/folder scan + orchestration
-│   ├── pmx-reader.ts              # PMX binary parser + texture loading
-│   ├── gltf-builder.ts            # glTF 2.0 skeleton/mesh assembly
-│   ├── vrm-builder.ts             # VRM 0.x extension injection
-│   ├── spring-converter.ts        # PMX physics → VRM spring bones
-│   ├── bone-mapping.ts            # Japanese PMX bone names → VRM humanoid
-│   ├── vrm-validator.ts           # 6-layer VRM validation
-│   ├── vrm-renamer.ts             # GLB metadata + ASCII filename
-│   ├── index.ts                   # GLB writer + exports
-│   └── types.ts                   # Shared interfaces
-├── webapp/                        # Next.js 15 + React 19 (port 970)
-│   ├── app/page.tsx               # Upload UI (drag-drop, batch queue)
-│   ├── app/api/convert-zip/       # Server-side conversion endpoint
-│   └── app/api/validate/          # Server-side VRM validation endpoint
-├── python/                        # Python reference implementation
-├── PLAN-browser-only.md           # Browser-only conversion plan (see below)
-└── known-issues.json              # Fixed bugs + known limitations
+├── python/                         # Python reference (standalone)
+│   ├── intake.py                   # CLI entry
+│   └── vrm_validator.py            # Standalone validator (--json flag)
+├── typescript/                     # Node.js implementation (monolithic)
+│   ├── src/intake.ts               # CLI entry (sharp, iconv-lite, fs)
+│   └── showcase/                   # Next.js 15 webapp (port 970, server-side)
+├── typescript-browser-only/        # Browser-compatible refactor
+│   ├── src/
+│   │   ├── core/                   # Pure TS — no I/O, runs anywhere
+│   │   ├── adapter-browser/        # pako PNG, TextDecoder, Web Worker
+│   │   └── adapter-node/           # sharp, iconv-lite (CLI compat)
+│   └── showcase/                   # Vite SPA (port 971, client-side only)
+├── PLAN-browser-only.md            # Refactoring plan (historical — completed)
+└── README.md                       # This file
 ```
 
-### Conversion pipeline
-
-```
-ZIP/Folder → scan for .pmx → humanoid check (17 required bones)
-  → per humanoid PMX:
-    PMX binary → readPmx() → PmxData (in-memory)
-      → buildGltf()  → GltfData (skeleton, mesh, textures)
-      → buildVrm()   → GltfData + VRM 0.x extensions (spring bones, humanoid, materials)
-      → writeGlb()   → GLB binary
-      → renameVrm()  → ASCII-safe filename
-      → validate()   → 6-layer VRM validation
-```
-
-### Dependencies
-
-| Package | Purpose | Environment |
-|---------|---------|-------------|
-| `jszip` | ZIP parsing/creation | Both |
-| `sharp` | Image codec (TGA/BMP → PNG, fallback textures) | Node only |
-| `iconv-lite` | CJK filename decoding (Shift-JIS, GBK, EUC-KR, Big5) | Node only |
-| `commander` | CLI argument parsing | Node only |
-
-## Supported inputs
-
-- **Folder** containing `.pmx` files and their textures
-- **Flat ZIP** containing `.pmx` files and textures (CJK filenames handled automatically)
-
-A single input (folder or ZIP) can contain **multiple humanoid PMX files**. Each humanoid PMX is converted to a separate `.vrm` file. Non-humanoid PMX files (props, accessories, stages) are automatically skipped — the converter checks for 17 required VRM humanoid bones and only converts models that pass.
-
-### Not supported
-
-- **Nested ZIPs** (zip-in-zip) — extract the inner zip first, then convert the extracted folder or zip. The converter will warn if nested ZIPs are detected.
-
-## CLI usage
-
-### TypeScript
+## Quick start
 
 ```bash
-cd typescript
-npx tsx src/intake.ts <input>              # folder or ZIP auto-detect
-npx tsx src/intake.ts <input> -o ./out     # custom output directory
-npx tsx src/intake.ts <input> --no-spring  # skip spring bones
-npx tsx src/intake.ts <input> --no-rename  # skip ASCII rename step
-npx tsx src/intake.ts <input> --no-validate
+# Python
+cd python && python intake.py <zip_or_folder>
+
+# TypeScript (Node)
+cd typescript && npx tsx src/intake.ts <zip_or_folder>
+
+# Browser showcase
+cd typescript-browser-only/showcase && npm run dev  # localhost:971
 ```
 
-### Python
+## Validation
 
-```bash
-python -m pmx2vrm_convert_module.python.intake model.zip
-python -m pmx2vrm_convert_module.python.intake model.zip --output ./out
-python -m pmx2vrm_convert_module.python.intake model.zip --scale 0.08 --no-spring
+`vrm_validator.py` (Python) and `core/vrm-validator.ts` (TS) perform identical 6-layer checks:
+
+1. GLB structure
+2. glTF validity
+3. VRM extension presence
+4. Humanoid bone completeness (16 required)
+5. Spring animation integrity
+6. Material consistency
+
+Both return `ValidationResult` with `valid`, `issues[]`, metadata. Python supports `--json` flag for machine-readable output.
+
+## Key interfaces (typescript-browser-only)
+
+```typescript
+interface ConvertDeps { image: ImageEncoder; text: TextCodec; }
+interface VrmOutput  { name: string; vrm: Uint8Array; validation: ValidationResult; logs: string[]; }
 ```
 
-## Webapp
+Worker protocol: `postMessage({ zipBuffer, scale, noSpring })` → `{ ok, results: VrmOutput[] }`.
 
-```bash
-cd webapp
-npm run dev    # http://localhost:970
-```
-
-Next.js test interface for browser-based conversion. Upload a flat ZIP and download the resulting `.vrm` file(s). Currently **server-side only** — conversion runs in Next.js API routes (`/api/convert-zip`), not in the browser.
-
-- **Upload limit:** 200MB (configured in `next.config.ts`)
-- **Timeout:** 300 seconds per conversion
-- **Response format:** base64-encoded VRM binaries + validation results + logs
-
-## Browser-only conversion plan
-
-> **[`PLAN-browser-only.md`](./PLAN-browser-only.md)** — Refactoring plan to run PMX→VRM conversion entirely in the browser.
-
-### For agents
-
-The converter currently depends on 3 Node-only modules: `sharp`, `node:fs`, `iconv-lite`. The plan extracts all I/O behind an adapter interface (`ImageEncoder`, `TextCodec`) so the same core logic runs in both browser and Node.
-
-**Target structure:**
-```
-typescript/src/
-├── core/            # Pure TS — no I/O, runs anywhere
-├── adapter-browser/ # pako PNG encoder, TextDecoder, Web Worker
-└── adapter-node/    # sharp, iconv-lite, fs (existing behavior)
-```
-
-**Key risks and mitigations:**
-| Risk | Severity | Mitigation |
-|------|----------|------------|
-| Texture alpha corruption | HIGH | Canvas premultiplies alpha irreversibly → bypass Canvas, encode PNG with pako |
-| ZIP filename mojibake | MED | TextDecoder vs iconv-lite detection differs → `TextDecoder({ fatal: true })` fallback chain |
-| Resize quality | LOW | Not currently used, no action needed |
-
-**4 phases:** Interface extraction → Browser adapters → Web Worker integration → Node compat verification
-
-The plan includes current function signatures with line numbers, file move paths, adapter implementation code, and per-phase completion checklists. Read `PLAN-browser-only.md` for full details.
+See each subdirectory's README for implementation-specific details.
