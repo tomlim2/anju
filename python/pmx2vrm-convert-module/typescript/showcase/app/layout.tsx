@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "truepmx2vrm",
-  description: "PMX to VRM 0.x converter — TypeScript test interface",
+  title: "truepmx2vrm (server)",
+  description: "PMX to VRM 0.x converter (server)",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

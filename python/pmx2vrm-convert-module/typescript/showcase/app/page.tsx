@@ -352,7 +352,7 @@ export default function Page() {
   return (
     <div style={styles.container}>
       <h1 style={styles.h1}>truepmx2vrm</h1>
-      <p style={styles.subtitle}>PMX to VRM 0.x converter — TypeScript test interface</p>
+      <p style={styles.subtitle}>PMX to VRM 0.x converter (server)</p>
 
       {/* Tabs */}
       <div style={styles.tabs}>
@@ -576,7 +576,7 @@ export default function Page() {
         </div>
       )}
 
-      <div style={styles.footer}>truepmx2vrm TypeScript &mdash; test interface</div>
+      <div style={styles.footer}>truepmx2vrm &mdash; server</div>
     </div>
   );
 }

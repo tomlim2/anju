@@ -390,7 +390,7 @@ export default function App() {
         </div>
       )}
 
-      <div style={styles.footer}>truepmx2vrm TypeScript &mdash; browser-only</div>
+      <div style={styles.footer}>truepmx2vrm &mdash; browser-only</div>
     </div>
   );
 }
