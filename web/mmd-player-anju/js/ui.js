@@ -3,6 +3,7 @@ import { hasHumanoidBones } from './pmx-check.js';
 import { remapClipBones } from './bone-remap.js';
 import { validateClip } from './vmd-validator.js';
 import { retargetClip } from './bone-retarget.js';
+import { extractVmdMeta } from './vmd-meta.js';
 import { precomputeSparkEvents } from './effects/spark-precompute.js';
 
 export class UI {
@@ -374,13 +375,18 @@ export class UI {
   async _applyVmdToMesh(vmdFile) {
     const mesh = this.loader.mesh;
     const loader = new MMDLoader();
+
+    // Extract VMD metadata before loading
+    const buffer = await vmdFile.arrayBuffer();
+    const vmdMeta = extractVmdMeta(buffer);
+
     const url = URL.createObjectURL(vmdFile);
 
     return new Promise((resolve, reject) => {
       loader.loadAnimation(url, mesh, (clip) => {
         URL.revokeObjectURL(url);
 
-        this._prepareAnimation(clip, mesh);
+        this._prepareAnimation(clip, mesh, vmdMeta);
 
         this.animation.initHelper(mesh, { vmd: clip, physics: false });
         this.animation.playing = false;
@@ -392,12 +398,12 @@ export class UI {
     });
   }
 
-  _prepareAnimation(clip, mesh) {
+  _prepareAnimation(clip, mesh, vmdMeta = null) {
     // ① Bone remap
     const remap = remapClipBones(clip, mesh.skeleton);
 
     // ② Validate compatibility
-    const validation = validateClip(clip, mesh, remap);
+    const validation = validateClip(clip, mesh, remap, vmdMeta);
 
     // ③ Retarget (source model detection → offset correction)
     const retarget = retargetClip(clip, remap.trackBones, new Set(remap.dropped));
@@ -407,75 +413,94 @@ export class UI {
     const motionEvents = precomputeSparkEvents(mesh, clip, wrists);
     this.riseFx.setEvents(motionEvents);
 
-    this._showBoneDebug(remap, validation, retarget);
+    this._showBoneDebug(remap, validation, retarget, vmdMeta);
     return { remap, validation, retarget };
   }
 
-  _showBoneDebug({ remapped, dropped, ignored }, validation, retarget) {
+  _showBoneDebug({ remapped, dropped, ignored }, validation, retarget, vmdMeta) {
     const el = document.getElementById('debug-info');
-    const parts = [];
+    const lines = [];
 
-    // Compatibility score
+    // Line 1: bone/morph counts + score
     if (validation) {
-      parts.push(`<span class="compat">Compatible: ${Math.round(validation.score)}%</span>`);
+      const { boneMatch, morphMatch, score } = validation;
+      const bonePart = `${boneMatch.matched}/${boneMatch.total} bones`;
+      const morphPart = morphMatch
+        ? ` · ${morphMatch.matched}/${morphMatch.total} morphs`
+        : '';
+      const scoreClass = score >= 80 ? 'score-good' : score >= 50 ? 'score-fair' : 'score-poor';
+      const scoreLabel = score >= 80 ? '' : score >= 50 ? ' FAIR' : ' POOR';
+      lines.push(`${bonePart}${morphPart} · <span class="${scoreClass}">${Math.round(score)}%${scoreLabel}</span>`);
     }
 
-    // Source model
-    if (validation && validation.sourceModel) {
-      parts.push(`<span class="source">Source: ${validation.sourceModel}</span>`);
+    // Line 2: Source + Retarget
+    const infoParts = [];
+    if (validation?.sourceModel) {
+      infoParts.push(`Source: ${validation.sourceModel}`);
+    }
+    if (retarget?.applied.length) {
+      infoParts.push(`Retarget: ${retarget.applied.join(', ')}`);
+    }
+    if (infoParts.length) lines.push(infoParts.join(' · '));
+
+    // Warnings
+    if (validation?.isCamera) {
+      lines.push('<span class="warn">WARN Camera VMD loaded on character slot</span>');
+    }
+    if (validation?.semiStdCoverage?.missing.length) {
+      lines.push(`<span class="warn">WARN 準標準ボーン: ${validation.semiStdCoverage.missing.join(', ')}</span>`);
+    }
+    if (validation?.zenoyaPosition) {
+      lines.push('<span class="warn">WARN 全ての親 has position keyframes</span>');
+    }
+    if (validation?.translationWarns?.length) {
+      lines.push(`<span class="warn">WARN Large translation: ${validation.translationWarns.join(', ')}</span>`);
     }
 
-    // Retarget applied
-    if (retarget && retarget.applied.length) {
-      parts.push(`<span class="retarget">Retarget: ${retarget.applied.join(', ')}</span>`);
-    }
-
-    // Bone remap info
-    if (remapped.length) {
-      parts.push(`<span class="remap">Remapped: ${remapped.join(', ')}</span>`);
-    }
-    if (dropped.length) {
-      parts.push(`<span class="drop">Missing: ${dropped.join(', ')}</span>`);
-    }
-    if (ignored.length) {
-      parts.push(`Ignored: ${ignored.length} cosmetic bones`);
-    }
-
-    // Arm extremes warning
+    // Arm extremes
     if (validation && Object.keys(validation.armExtremes).length > 0) {
       const warns = Object.entries(validation.armExtremes)
         .map(([bone, v]) => `${bone} ${v.peakAngle}°`);
-      parts.push(`<span class="drop">Arm peak: ${warns.join(', ')}</span>`);
+      lines.push(`<span class="drop">Arm peak: ${warns.join(', ')}</span>`);
     }
 
-    el.innerHTML = parts.length ? parts.join(' · ') : '';
+    // Missing bones
+    if (dropped.length) {
+      lines.push(`<span class="drop">Missing: ${dropped.join(', ')}</span>`);
+    }
+
+    // Morph missing
+    if (validation?.morphMatch?.missing?.length) {
+      const miss = validation.morphMatch.missing;
+      const display = miss.length > 5
+        ? miss.slice(0, 5).join(', ') + ` +${miss.length - 5} more`
+        : miss.join(', ');
+      lines.push(`<span class="warn">Morph missing: ${display}</span>`);
+    }
+
+    // Paths
+    if (this._pmxPath) {
+      const pmxDisplay = this._zipName ? `${this._zipName}/${this._pmxPath}` : this._pmxPath;
+      lines.push(`PMX: ${pmxDisplay}`);
+    }
+    if (this._vmdPath) {
+      lines.push(`VMD: ${this._vmdPath}`);
+    }
+
+    el.innerHTML = lines.length ? lines.join('<br>') : '';
   }
 
-  // --- Debug Paths Panel ---
+  // --- Debug Paths (renders path-only until validation overwrites) ---
 
   _updateDebugPaths() {
-    const el = document.getElementById('debug-paths');
-    if (!this._pmxPath && !this._vmdPath) {
-      el.style.display = 'none';
-      return;
-    }
+    const el = document.getElementById('debug-info');
     const lines = [];
     if (this._pmxPath) {
       const pmxDisplay = this._zipName ? `${this._zipName}/${this._pmxPath}` : this._pmxPath;
       lines.push(`PMX: ${pmxDisplay}`);
     }
     if (this._vmdPath) lines.push(`VMD: ${this._vmdPath}`);
-    const text = lines.join('\n');
-    el.innerHTML = `<pre>${text}<button id="btn-copy-paths"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></pre>`;
-    el.style.display = 'block';
-
-    document.getElementById('btn-copy-paths').addEventListener('click', () => {
-      navigator.clipboard.writeText(text).then(() => {
-        const btn = document.getElementById('btn-copy-paths');
-        btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8.5l3 3 7-7"/></svg>';
-        setTimeout(() => { btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg>'; }, 1000);
-      });
-    });
+    el.innerHTML = lines.length ? lines.join('<br>') : '';
   }
 
   // --- Playback Controls (Play/Pause toggle) ---

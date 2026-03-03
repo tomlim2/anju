@@ -230,51 +230,28 @@
       position: fixed;
       top: 140px;
       left: 12px;
+      max-width: 450px;
       font-size: 11px;
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
       color: var(--text-dim);
       z-index: 20;
-      pointer-events: none;
-      line-height: 1.5;
+      line-height: 1.6;
+      user-select: text;
+      word-break: break-word;
+    }
+
+    #debug-info:not(:empty) {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 8px 10px;
     }
 
     #debug-info .remap { color: #e5c07b; }
     #debug-info .drop { color: #e06c75; }
-
-    /* Debug paths panel */
-    #debug-paths {
-      position: fixed;
-      bottom: 12px;
-      left: 12px;
-      z-index: 20;
-      display: none;
-    }
-    #debug-paths pre {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      padding: 8px 40px 8px 10px;
-      margin: 0;
-      font-size: 11px;
-      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
-      color: var(--text-dim);
-      line-height: 1.6;
-      white-space: pre;
-      position: relative;
-    }
-    #debug-paths button {
-      position: absolute;
-      top: 6px;
-      right: 6px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-      padding: 4px;
-      line-height: 0;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    #debug-paths button:hover { color: var(--text); background: var(--panel); }
+    #debug-info .score-good { color: #98c379; }
+    #debug-info .score-fair { color: #e5c07b; }
+    #debug-info .score-poor { color: #e06c75; font-weight: 500; }
+    #debug-info .warn { color: #e5c07b; }
 
     /* WebGPU fallback */
     .fallback {
@@ -302,7 +279,6 @@
   <div id="title">MMD Player</div>
 
   <div id="debug-info"></div>
-  <div id="debug-paths"></div>
 
   <div id="controls">
     <select id="select-artist"><option value="">Artist</option></select>
