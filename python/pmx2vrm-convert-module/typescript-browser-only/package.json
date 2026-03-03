@@ -1,0 +1,27 @@
+{
+  "name": "truepmx2vrm",
+  "version": "0.1.0",
+  "description": "PMX to VRM 0.x converter",
+  "type": "module",
+  "main": "src/adapter-node/intake.ts",
+  "bin": {
+    "truepmx2vrm": "src/adapter-node/intake.ts"
+  },
+  "scripts": {
+    "intake": "tsx src/adapter-node/intake.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "commander": "^13.1.0",
+    "iconv-lite": "^0.6.3",
+    "jszip": "^3.10.1",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "@types/pako": "^2.0.4",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

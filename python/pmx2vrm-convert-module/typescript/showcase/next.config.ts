@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 import path from "node:path";
 
-const converterDir = path.resolve(__dirname, "../Typescript/src");
+const converterDir = path.resolve(__dirname, "../src");
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.resolve(__dirname, ".."),
