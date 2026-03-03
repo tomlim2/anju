@@ -1,5 +1,5 @@
 {
-  "name": "truepmx2vrm",
+  "name": "pmx2vrm-convert-module",
   "version": "0.1.0",
   "description": "PMX to VRM 0.x converter",
   "type": "module",
