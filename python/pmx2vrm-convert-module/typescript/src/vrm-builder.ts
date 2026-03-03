@@ -82,7 +82,7 @@ export function build(
 
   // VRM 0.x extension (NEVER include VRMC_vrm!)
   const vrmExt = {
-    exporterVersion: "truepmx2vrm-0.1.0",
+    exporterVersion: "pmx2vrm-0.1.0",
     specVersion: "0.0",
     meta: vrmMeta,
     humanoid: vrmHumanoid,

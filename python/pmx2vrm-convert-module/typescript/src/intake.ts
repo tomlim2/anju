@@ -434,7 +434,7 @@ async function processZip(
   }
 
   const outputPaths: string[] = [];
-  const tmpBase = path.join(tmpdir(), `truepmx2vrm-${Date.now()}`);
+  const tmpBase = path.join(tmpdir(), `pmx2vrm-${Date.now()}`);
   await mkdir(tmpBase, { recursive: true });
 
   try {

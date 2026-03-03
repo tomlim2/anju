@@ -43,7 +43,7 @@ Returns `ValidationResult` JSON:
 {
   "valid": true,
   "vrm_version": "0.0",
-  "exporter": "truepmx2vrm-0.1.0",
+  "exporter": "pmx2vrm-0.1.0",
   "node_count": 428,
   "material_count": 30,
   "bone_count": 54,

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "truepmx2vrm (server)",
+  title: "pmx2vrm (server)",
   description: "PMX to VRM 0.x converter (server)",
 };
 

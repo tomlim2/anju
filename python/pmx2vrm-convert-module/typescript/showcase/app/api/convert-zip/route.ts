@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     const noSpring = form.get("noSpring") === "true";
 
     // Write zip to temp
-    tmpDir = path.join(tmpdir(), `truepmx2vrm-zip-${Date.now()}`);
+    tmpDir = path.join(tmpdir(), `pmx2vrm-zip-${Date.now()}`);
     await mkdir(tmpDir, { recursive: true });
     const zipPath = path.join(tmpDir, file.name);
     const buffer = Buffer.from(await file.arrayBuffer());

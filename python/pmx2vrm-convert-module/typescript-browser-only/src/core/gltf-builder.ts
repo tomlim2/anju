@@ -379,7 +379,7 @@ export function build(pmxData: PmxData): GltfData {
   }
 
   const gltfJson: Record<string, any> = {
-    asset: { version: "2.0", generator: "truepmx2vrm" },
+    asset: { version: "2.0", generator: "pmx2vrm" },
     scene: 0,
     scenes: [{ nodes: [sceneRootIdx] }],
     nodes,

@@ -1,5 +1,5 @@
 /**
- * Shared interfaces for the truepmx2vrm pipeline.
+ * Shared interfaces for the pmx2vrm pipeline.
  *
  * Python has no equivalent file — these types were implicit dicts.
  */

@@ -351,7 +351,7 @@ export default function Page() {
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.h1}>truepmx2vrm</h1>
+      <h1 style={styles.h1}>pmx2vrm</h1>
       <p style={styles.subtitle}>PMX to VRM 0.x converter (server)</p>
 
       {/* Tabs */}
@@ -576,7 +576,7 @@ export default function Page() {
         </div>
       )}
 
-      <div style={styles.footer}>truepmx2vrm &mdash; server</div>
+      <div style={styles.footer}>pmx2vrm &mdash; server</div>
     </div>
   );
 }
