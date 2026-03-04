@@ -12,7 +12,7 @@ import {
 const MAX = 16;
 const LIFETIME = 1.4;
 const MIN_RADIUS = 1.5;
-const MAX_RADIUS = 6.0;
+const MAX_RADIUS = 10.0;
 const SPEED_LOW = 5;           // gentle step — minimum ripple
 const SPEED_HIGH = 40;         // hard jump landing — full ripple
 const RING_THICK = 0.06;       // ring width as fraction of outer radius

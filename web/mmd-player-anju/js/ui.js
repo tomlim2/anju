@@ -5,6 +5,7 @@ import { validateClip } from './vmd-validator.js';
 import { retargetClip } from './bone-retarget.js';
 import { extractVmdMeta } from './vmd-meta.js';
 import { precomputeSparkEvents, precomputeFootEvents } from './effects/spark-precompute.js';
+import { autoSizeIK } from './ik-sizing.js';
 
 export class UI {
   constructor({ mmdScene, loader, animation, audio, riseFx, fallFx, rippleFx, mirrorFx }) {
@@ -414,25 +415,44 @@ export class UI {
     // ③ Retarget (source model detection → offset correction)
     const retarget = retargetClip(clip, remap.trackBones, new Set(remap.dropped));
 
-    // ④ Precompute effect events
+    // ④ IK sizing (body proportion retargeting)
+    const sizing = autoSizeIK(clip, mesh);
+
+    // ⑤ Precompute effect events
     const wrists = ['左手首', '右手首'];
     const motionEvents = precomputeSparkEvents(mesh, clip, wrists);
     this.riseFx.setEvents(motionEvents);
 
-    // Prefer IK targets (directly keyframed); fall back to FK bones
+    // Check which bones the VMD actually keyframes
+    const trackNames = new Set(clip.tracks.map(t => {
+      const m = t.name.match(/\.bones\[(.+?)\]/);
+      return m ? m[1] : t.name.replace(/\.(position|quaternion)$/, '');
+    }));
     const boneMap = new Map();
     for (const bone of mesh.skeleton.bones) boneMap.set(bone.name, bone);
-    const footBones = [];
-    footBones.push(boneMap.has('左足ＩＫ') ? '左足ＩＫ' : boneMap.has('左つま先') ? '左つま先' : '左足首');
-    footBones.push(boneMap.has('右足ＩＫ') ? '右足ＩＫ' : boneMap.has('右つま先') ? '右つま先' : '右足首');
+
+    function pickFoot(side) {
+      const ik = side + '足ＩＫ';
+      if (boneMap.has(ik) && trackNames.has(ik)) return ik;
+      const toe = side + 'つま先';
+      if (boneMap.has(toe)) return toe;
+      return side + '足首';
+    }
+    const footBones = [pickFoot('左'), pickFoot('右')];
+    const ikTracks = [...trackNames].filter(n => n.includes('足'));
+    const pmxFootBones = [...boneMap.keys()].filter(n => n.includes('足'));
+    console.log('[ripple] PMX foot bones:', pmxFootBones);
+    console.log('[ripple] VMD foot tracks:', ikTracks);
+    console.log('[ripple] selected:', footBones);
     const footEvents = precomputeFootEvents(mesh, clip, footBones);
+    console.log('[ripple] events:', footEvents.length);
     this.rippleFx.setEvents(footEvents);
 
-    this._showBoneDebug(remap, validation, retarget, vmdMeta);
-    return { remap, validation, retarget };
+    this._showBoneDebug(remap, validation, retarget, sizing, vmdMeta);
+    return { remap, validation, retarget, sizing };
   }
 
-  _showBoneDebug({ remapped, dropped, ignored }, validation, retarget, vmdMeta) {
+  _showBoneDebug({ remapped, dropped, ignored }, validation, retarget, sizing, vmdMeta) {
     const el = document.getElementById('debug-info');
     const lines = [];
 
@@ -455,6 +475,9 @@ export class UI {
     }
     if (retarget?.applied.length) {
       infoParts.push(`Retarget: ${retarget.applied.join(', ')}`);
+    }
+    if (sizing) {
+      infoParts.push(`Sizing: ×${sizing.ratio.toFixed(2)}`);
     }
     if (infoParts.length) lines.push(infoParts.join(' · '));
 

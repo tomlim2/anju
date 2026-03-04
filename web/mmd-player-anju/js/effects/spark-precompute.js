@@ -83,7 +83,7 @@ export function precomputeSparkEvents(mesh, clip, boneNames) {
   return events;
 }
 
-const FOOT_GROUND_Y = 1.0;
+const FOOT_GROUND_Y = 2.0;
 const FOOT_COOLDOWN = 10;    // ~0.33s at 30fps
 
 export function precomputeFootEvents(mesh, clip, boneNames) {
@@ -155,6 +155,10 @@ export function precomputeFootEvents(mesh, clip, boneNames) {
   mesh.position.set(0, 0, 0);
   mesh.rotation.set(0, 0, 0);
 
-  console.log(`[ripple] precomputed ${events.length} foot contact events`);
+  for (let i = 0; i < entries.length; i++) {
+    const ys = positions[i].map(p => p.y);
+    console.log(`[ripple] ${entries[i].name} Y range: ${Math.min(...ys).toFixed(2)} ~ ${Math.max(...ys).toFixed(2)}`);
+  }
+  console.log(`[ripple] precomputed ${events.length} foot contact events (threshold=${FOOT_GROUND_Y})`);
   return events;
 }
