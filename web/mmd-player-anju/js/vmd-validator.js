@@ -15,6 +15,25 @@ const SEMI_STANDARD_BONES = [
 
 const TRANSLATION_BONES = ['センター', '左足ＩＫ', '右足ＩＫ'];
 
+function detectFamily(bones) {
+  const hasDummy = DUMMY_BONES.some(n => bones.has(n));
+  const hasDivaSpine = bones.has('上半身1') || bones.has('腰2') || bones.has('腰キャンセル左');
+  if (hasDummy && hasDivaSpine) return 'Project DIVA';
+  if (hasDummy) return 'ミリシタ';
+
+  const hasSemiStd2 = bones.has('上半身2');
+  const hasTwist = bones.has('左腕捩') || bones.has('右腕捩')
+                || bones.has('左手捩') || bones.has('右手捩');
+  const hasShoulder = bones.has('左肩P') || bones.has('右肩P')
+                   || bones.has('左肩C') || bones.has('右肩C');
+
+  if (hasShoulder && hasTwist && hasSemiStd2) return 'つみだんご式';
+  if (hasShoulder) return 'YYB式';
+  if (hasSemiStd2 && hasTwist) return 'TDA式';
+  if (!hasSemiStd2 && !hasTwist && !hasShoulder) return 'あにまさ式';
+  return null;
+}
+
 function quatAngle(qw) {
   return 2 * Math.acos(Math.min(1, Math.abs(qw))) * (180 / Math.PI);
 }
@@ -49,11 +68,12 @@ export function validateClip(clip, mesh, remapResult, vmdMeta = null) {
   const vmdHasFK = ['左足', '右足', '左ひざ', '右ひざ'].some(n => trackBones.has(n));
   const ikConflict = vmdHasFK && pmxHasIK && !vmdHasIKTracks;
 
-  // 3. Source model detection
-  const hasDummy = DUMMY_BONES.some(n => trackBones.has(n));
+  // 3. Source detection
   const dummyDropped = DUMMY_BONES.some(n => droppedSet.has(n));
-  let sourceModel = null;
-  if (hasDummy) sourceModel = 'ミリシタ';
+  const vmdFamily = detectFamily(vmdMeta ? vmdMeta.boneNames : trackBones);
+  const pmxFamily = detectFamily(pmxBoneNames);
+  const sourceModel = vmdFamily === 'Project DIVA' ? 'Project DIVA'
+    : DUMMY_BONES.some(n => trackBones.has(n)) ? 'ミリシタ' : null;
 
   // 4. Twist bone coverage
   const twistAnimated = TWIST_BONES.filter(n => trackBones.has(n));
@@ -177,6 +197,8 @@ export function validateClip(clip, mesh, remapResult, vmdMeta = null) {
     boneMatch: { matched, total: trackBones.size, rate: matchRate, missing },
     ikCompat: { pmxHasIK, vmdHasIKTracks, vmdHasFK, conflict: ikConflict },
     sourceModel,
+    vmdFamily,
+    pmxFamily,
     twistCoverage: { animated: twistAnimated, pmx: twistInPmx },
     dummyDropped,
     armExtremes,

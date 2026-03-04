@@ -381,6 +381,12 @@ export class UI {
 
   async _applyVmdToMesh(vmdFile) {
     const mesh = this.loader.mesh;
+
+    // Reset skeleton to rest pose BEFORE loadAnimation — MMDLoader captures
+    // bone.position as basePosition for track baking (rest + vmdOffset).
+    // Without this, a mid-animation song change bakes animated positions.
+    mesh.skeleton.pose();
+
     const loader = new MMDLoader();
 
     // Extract VMD metadata before loading
@@ -416,7 +422,7 @@ export class UI {
     const retarget = retargetClip(clip, remap.trackBones, new Set(remap.dropped));
 
     // ④ IK sizing (body proportion retargeting)
-    const sizing = autoSizeIK(clip, mesh);
+    const sizing = autoSizeIK(clip, mesh, validation?.vmdFamily);
 
     // ⑤ Precompute effect events
     const wrists = ['左手首', '右手首'];
@@ -470,14 +476,16 @@ export class UI {
 
     // Line 2: Source + Retarget
     const infoParts = [];
-    if (validation?.sourceModel) {
-      infoParts.push(`Source: ${validation.sourceModel}`);
+    if (validation?.vmdFamily || validation?.pmxFamily) {
+      infoParts.push(`VMD: ${validation.vmdFamily || '?'} → PMX: ${validation.pmxFamily || '?'}`);
     }
     if (retarget?.applied.length) {
       infoParts.push(`Retarget: ${retarget.applied.join(', ')}`);
     }
     if (sizing) {
-      infoParts.push(`Sizing: ×${sizing.ratio.toFixed(2)}`);
+      const delta = sizing.ikFloorDelta;
+      const sign = delta >= 0 ? '+' : '';
+      infoParts.push(`Sizing: ×${sizing.legRatio.toFixed(2)} IK${sign}${delta.toFixed(2)}`);
     }
     if (infoParts.length) lines.push(infoParts.join(' · '));
 
