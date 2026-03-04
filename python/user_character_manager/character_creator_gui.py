@@ -394,7 +394,7 @@ class CharacterCreatorGUI:
                 # Snapshot output folder before commandlet
                 before_files = set(os.listdir(output_folder))
 
-                cmd = f'"{exe_path}" "{project_file}" -run=CinevCreateUserCharacter -UserCharacterJsonPath="{json_file}" -UserCharacterVrmPath="{vrm_path}" -OutputPath="{output_folder}" -stdout -nopause -unattended -AllowCommandletRendering -RenderOffScreen'
+                cmd = f'"{exe_path}" "{project_file}" -run=CinevCreateUserCharacter -UserCharacterJsonPath="{json_file}" -UserCharacterVrmPath="{vrm_path}" -OutputPath="{output_folder}" -stdout -nopause -unattended -AllowCommandletRendering -AllowCommandletAudio -RenderOffScreen'
                 self.log_output(f"  2) 커맨드렛 실행 중...\n     {cmd}")
 
                 process = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
