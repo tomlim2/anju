@@ -70,6 +70,28 @@ class CCDIKSolver {
 	update() {
 
 		const iks = this.iks;
+		const bones = this.mesh.skeleton.bones;
+
+		// [anju] Save pre-IK link quaternions for cross-fix restoration
+		if ( this.mesh.userData.ikSized ) {
+
+			for ( let i = 0, il = iks.length; i < il; i ++ ) {
+
+				const ik = iks[ i ];
+				if ( ik.ikEnabled === false ) continue;
+				if ( ! ik._savedQ ) ik._savedQ = new Float32Array( ik.links.length * 4 );
+
+				for ( let j = 0, jl = ik.links.length; j < jl; j ++ ) {
+
+					if ( ik.links[ j ].enabled === false ) break;
+					bones[ ik.links[ j ].index ].quaternion.toArray( ik._savedQ, j * 4 );
+
+				}
+
+			}
+
+		}
+		// [/anju]
 
 		for ( let i = 0, il = iks.length; i < il; i ++ ) {
 
@@ -78,6 +100,14 @@ class CCDIKSolver {
 			this.updateOne( iks[ i ] );
 
 		}
+
+		// [anju] Post-solve: detect and undo IK-caused leg crossing
+		if ( this.mesh.userData.ikSized ) {
+
+			this._undoCrossedLegs( iks, bones );
+
+		}
+		// [/anju]
 
 		return this;
 
@@ -105,6 +135,57 @@ class CCDIKSolver {
 
 		const links = ik.links;
 		const iteration = ik.iteration !== undefined ? ik.iteration : 1;
+
+		// [anju] Reach clamping for sized models — pull unreachable targets
+		// into chain range to prevent solver flailing. VMD rotation hints
+		// (足/ひざ quaternions) are preserved to guide CCD toward the correct solution.
+		if ( this.mesh.userData.ikSized ) {
+
+			// Cache chain length
+			if ( ik._chainLength === undefined ) {
+
+				let len = 0;
+				let child = effector;
+
+				for ( let j = 0, jl = links.length; j < jl; j ++ ) {
+
+					if ( links[ j ].enabled === false ) break;
+					len += child.position.length();
+					child = bones[ links[ j ].index ];
+
+				}
+
+				ik._chainLength = len;
+
+			}
+
+			// Find root link index
+			let rootIdx = - 1;
+
+			for ( let j = 0, jl = links.length; j < jl; j ++ ) {
+
+				if ( links[ j ].enabled === false ) break;
+				rootIdx = links[ j ].index;
+
+			}
+
+			// Pull target within reach
+			if ( ik._chainLength > 0 && rootIdx >= 0 ) {
+
+				_linkPos.setFromMatrixPosition( bones[ rootIdx ].matrixWorld );
+				const dist = _targetPos.distanceTo( _linkPos );
+
+				if ( dist > ik._chainLength * 0.999 ) {
+
+					_targetVec.subVectors( _targetPos, _linkPos ).normalize();
+					_targetPos.copy( _linkPos ).addScaledVector( _targetVec, ik._chainLength * 0.999 );
+
+				}
+
+			}
+
+		}
+		// [/anju]
 
 		for ( let i = 0; i < iteration; i ++ ) {
 
@@ -257,6 +338,64 @@ class CCDIKSolver {
 	}
 
 	// private methods
+
+	// [anju] Detect if IK solver produced crossed legs and restore pre-IK pose.
+	// Uses dot product of thigh spread vs ankle spread — rotation-invariant.
+	// Skips if IK targets themselves are crossed (intentional choreography).
+	_undoCrossedLegs( iks, bones ) {
+
+		let leftIK = null, rightIK = null;
+
+		for ( let i = 0, il = iks.length; i < il; i ++ ) {
+
+			const ik = iks[ i ];
+			if ( ik.ikEnabled === false ) continue;
+			const name = bones[ ik.target ] ? bones[ ik.target ].name : '';
+			if ( name === '左足ＩＫ' ) leftIK = ik;
+			else if ( name === '右足ＩＫ' ) rightIK = ik;
+
+		}
+
+		if ( ! leftIK || ! rightIK ) return;
+
+		const leftRootIdx = leftIK.links[ leftIK.links.length - 1 ].index;
+		const rightRootIdx = rightIK.links[ rightIK.links.length - 1 ].index;
+
+		// Thigh spread vector (left − right)
+		_effectorVec.setFromMatrixPosition( bones[ leftRootIdx ].matrixWorld );
+		_targetVec.setFromMatrixPosition( bones[ rightRootIdx ].matrixWorld );
+		_effectorVec.sub( _targetVec );
+
+		// IK target spread — if targets already crossed, it's intentional
+		_linkPos.setFromMatrixPosition( bones[ leftIK.target ].matrixWorld );
+		_axis.setFromMatrixPosition( bones[ rightIK.target ].matrixWorld );
+		_linkPos.sub( _axis );
+
+		if ( _effectorVec.dot( _linkPos ) < 0 ) return;
+
+		// Ankle (effector) spread after IK solve
+		_linkPos.setFromMatrixPosition( bones[ leftIK.effector ].matrixWorld );
+		_axis.setFromMatrixPosition( bones[ rightIK.effector ].matrixWorld );
+		_linkPos.sub( _axis );
+
+		if ( _effectorVec.dot( _linkPos ) >= 0 ) return; // not crossed
+
+		// Crossed — restore pre-IK quaternions for both legs
+		for ( const ik of [ leftIK, rightIK ] ) {
+
+			for ( let j = 0, jl = ik.links.length; j < jl; j ++ ) {
+
+				if ( ik.links[ j ].enabled === false ) break;
+				bones[ ik.links[ j ].index ].quaternion.fromArray( ik._savedQ, j * 4 );
+
+			}
+
+		}
+
+		bones[ leftRootIdx ].updateMatrixWorld( true );
+		bones[ rightRootIdx ].updateMatrixWorld( true );
+
+	}
 
 	_valid() {
 
