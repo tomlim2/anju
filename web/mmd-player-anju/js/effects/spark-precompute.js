@@ -133,7 +133,7 @@ export function precomputeFootEvents(mesh, clip, boneNames) {
 
       if (pos[f - 1].y > FOOT_GROUND_Y && pos[f].y <= FOOT_GROUND_Y) {
         cd = FOOT_COOLDOWN;
-        const vy = (pos[f].y - pos[f - 1].y) / STEP;  // downward velocity (negative)
+        const vy = (pos[f].y - pos[f - 1].y) / STEP;
         const speed = Math.abs(vy);
         events.push({
           time: f * STEP,

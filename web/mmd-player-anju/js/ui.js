@@ -7,7 +7,7 @@ import { extractVmdMeta } from './vmd-meta.js';
 import { precomputeSparkEvents, precomputeFootEvents } from './effects/spark-precompute.js';
 
 export class UI {
-  constructor({ mmdScene, loader, animation, audio, riseFx, fallFx, rippleFx }) {
+  constructor({ mmdScene, loader, animation, audio, riseFx, fallFx, rippleFx, mirrorFx }) {
     this.mmdScene = mmdScene;
     this.loader = loader;
     this.animation = animation;
@@ -15,6 +15,7 @@ export class UI {
     this.riseFx = riseFx;
     this.fallFx = fallFx;
     this.rippleFx = rippleFx;
+    this.mirrorFx = mirrorFx;
     this._ac = new AbortController();
     this._manifest = null;
     this._zipEntries = null;
@@ -675,6 +676,10 @@ export class UI {
 
     document.getElementById('chk-ripple').addEventListener('change', (e) => {
       this.rippleFx.enabled = e.target.checked;
+    }, sig);
+
+    document.getElementById('chk-mirror').addEventListener('change', (e) => {
+      this.mirrorFx.enabled = e.target.checked;
     }, sig);
   }
 

@@ -6,6 +6,7 @@ import { UI } from './ui.js';
 import { RisingLightEffect } from './effects/rising-light.js';
 import { FallingLightEffect } from './effects/falling-light.js';
 import { FootRippleEffect } from './effects/foot-ripple.js';
+import { GroundReflectEffect } from './effects/ground-reflect.js';
 
 const canvas = document.getElementById('canvas');
 const mmdScene = new MMDScene(canvas);
@@ -20,10 +21,11 @@ const riseFx = new RisingLightEffect(mmdScene.scene, mmdScene.camera);
 const fallFx = new FallingLightEffect(mmdScene.scene);
 fallFx.enabled = false;
 const rippleFx = new FootRippleEffect(mmdScene.scene);
+const mirrorFx = new GroundReflectEffect(mmdScene.scene);
 
 const ui = new UI({
   mmdScene, loader, animation, audio,
-  riseFx, fallFx, rippleFx,
+  riseFx, fallFx, rippleFx, mirrorFx,
 });
 
 let _lastAudioTime = 0;
