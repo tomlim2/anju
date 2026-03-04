@@ -128,16 +128,18 @@ export function precomputeFootEvents(mesh, clip, boneNames) {
     const pos = positions[i];
     let cd = 0;
 
-    for (let f = 1; f < N; f++) {
+    for (let f = 2; f < N; f++) {
       if (cd > 0) { cd--; continue; }
 
-      if (pos[f - 1].y > FOOT_GROUND_Y && pos[f].y <= FOOT_GROUND_Y) {
+      // Detect local Y minimum near ground (foot descending then stopping/rising)
+      const prevVy = pos[f - 1].y - pos[f - 2].y;
+      const curVy = pos[f].y - pos[f - 1].y;
+      const speed = Math.abs(prevVy / STEP);
+      if (prevVy <= 0 && curVy >= 0 && pos[f - 1].y <= FOOT_GROUND_Y && speed > 1.0) {
         cd = FOOT_COOLDOWN;
-        const vy = (pos[f].y - pos[f - 1].y) / STEP;
-        const speed = Math.abs(vy);
         events.push({
-          time: f * STEP,
-          position: { x: pos[f].x, y: 0, z: pos[f].z },
+          time: (f - 1) * STEP,
+          position: { x: pos[f - 1].x, y: 0, z: pos[f - 1].z },
           speed,
         });
       }
