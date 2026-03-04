@@ -32,7 +32,7 @@ export class MMDScene {
 
     // Camera
     this.camera = new PerspectiveCamera(45, 1, 0.1, 200);
-    this.camera.position.set(0, 10, 25);
+    this.camera.position.set(0, 10, 35);
 
     // Controls
     this.controls = new OrbitControls(this.camera, this.canvas);

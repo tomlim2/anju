@@ -5,6 +5,7 @@ import { MMDAudio } from './audio.js';
 import { UI } from './ui.js';
 import { RisingLightEffect } from './effects/rising-light.js';
 import { FallingLightEffect } from './effects/falling-light.js';
+import { FootRippleEffect } from './effects/foot-ripple.js';
 
 const canvas = document.getElementById('canvas');
 const mmdScene = new MMDScene(canvas);
@@ -18,10 +19,11 @@ const audio = new MMDAudio(animation);
 const riseFx = new RisingLightEffect(mmdScene.scene, mmdScene.camera);
 const fallFx = new FallingLightEffect(mmdScene.scene);
 fallFx.enabled = false;
+const rippleFx = new FootRippleEffect(mmdScene.scene);
 
 const ui = new UI({
   mmdScene, loader, animation, audio,
-  riseFx, fallFx,
+  riseFx, fallFx, rippleFx,
 });
 
 let _lastAudioTime = 0;
@@ -37,6 +39,7 @@ function animate() {
       if (Math.abs(audioDelta) > 0.1) {
         animation.seekTo(audioTime);
         riseFx.seekTo(audioTime);
+        rippleFx.seekTo(audioTime);
       } else {
         animation.update(audioDelta);
       }
@@ -49,6 +52,7 @@ function animate() {
   const animTime = animation.getCurrentTime();
   riseFx.update(wallDelta, animTime);
   fallFx.update(wallDelta);
+  rippleFx.update(wallDelta, animTime);
   mmdScene.render();
 }
 animate();

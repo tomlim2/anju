@@ -4,16 +4,17 @@ import { remapClipBones } from './bone-remap.js';
 import { validateClip } from './vmd-validator.js';
 import { retargetClip } from './bone-retarget.js';
 import { extractVmdMeta } from './vmd-meta.js';
-import { precomputeSparkEvents } from './effects/spark-precompute.js';
+import { precomputeSparkEvents, precomputeFootEvents } from './effects/spark-precompute.js';
 
 export class UI {
-  constructor({ mmdScene, loader, animation, audio, riseFx, fallFx }) {
+  constructor({ mmdScene, loader, animation, audio, riseFx, fallFx, rippleFx }) {
     this.mmdScene = mmdScene;
     this.loader = loader;
     this.animation = animation;
     this.audio = audio;
     this.riseFx = riseFx;
     this.fallFx = fallFx;
+    this.rippleFx = rippleFx;
     this._ac = new AbortController();
     this._manifest = null;
     this._zipEntries = null;
@@ -55,6 +56,7 @@ export class UI {
             const t = this.audio.currentTime;
             obj.mixer.setTime(t);
             this.riseFx.seekTo(t);
+            this.rippleFx.seekTo(t);
           }
         }
         this.animation.playing = true;
@@ -147,6 +149,7 @@ export class UI {
     // Clean up model state (but keep audio playing)
     this.animation.destroy();
     this.riseFx.resetTime();
+    this.rippleFx.resetTime();
 
     try {
       const pmxBlob = this._zipEntries.get(pmxPath);
@@ -174,6 +177,7 @@ export class UI {
           if (obj && obj.mixer) {
             obj.mixer.setTime(savedTime);
             this.riseFx.seekTo(savedTime);
+            this.rippleFx.seekTo(savedTime);
           }
         }
         this.animation.playing = true;
@@ -333,6 +337,7 @@ export class UI {
         // Mesh available: apply VMD, then start both together
         this.animation.destroy();
         this.riseFx.resetTime();
+        this.rippleFx.resetTime();
         await this._applyVmdToMesh(vmdFile);
         this._currentVmd = { vmdPath, audioPath, vmdBlob: vmdFile };
         this._pendingVmd = null;
@@ -412,6 +417,15 @@ export class UI {
     const wrists = ['左手首', '右手首'];
     const motionEvents = precomputeSparkEvents(mesh, clip, wrists);
     this.riseFx.setEvents(motionEvents);
+
+    // Prefer IK targets (directly keyframed); fall back to FK bones
+    const boneMap = new Map();
+    for (const bone of mesh.skeleton.bones) boneMap.set(bone.name, bone);
+    const footBones = [];
+    footBones.push(boneMap.has('左足ＩＫ') ? '左足ＩＫ' : boneMap.has('左つま先') ? '左つま先' : '左足首');
+    footBones.push(boneMap.has('右足ＩＫ') ? '右足ＩＫ' : boneMap.has('右つま先') ? '右つま先' : '右足首');
+    const footEvents = precomputeFootEvents(mesh, clip, footBones);
+    this.rippleFx.setEvents(footEvents);
 
     this._showBoneDebug(remap, validation, retarget, vmdMeta);
     return { remap, validation, retarget };
@@ -583,6 +597,7 @@ export class UI {
       this.animation.seekTo(time);
       this.audio.seekTo(time);
       this.riseFx.seekTo(time);
+      this.rippleFx.seekTo(time);
       this._updateTimelineDisplay(time, duration);
     };
 
@@ -650,12 +665,16 @@ export class UI {
   _initFxSelectors() {
     const sig = { signal: this._ac.signal };
 
-    document.getElementById('select-bg-fx').addEventListener('change', (e) => {
-      const val = e.target.value;
-      this.riseFx.enabled = false;
-      this.fallFx.enabled = false;
-      if (val === 'rise') this.riseFx.enabled = true;
-      else if (val === 'fall') this.fallFx.enabled = true;
+    document.getElementById('chk-rise').addEventListener('change', (e) => {
+      this.riseFx.enabled = e.target.checked;
+    }, sig);
+
+    document.getElementById('chk-fall').addEventListener('change', (e) => {
+      this.fallFx.enabled = e.target.checked;
+    }, sig);
+
+    document.getElementById('chk-ripple').addEventListener('change', (e) => {
+      this.rippleFx.enabled = e.target.checked;
     }, sig);
   }
 

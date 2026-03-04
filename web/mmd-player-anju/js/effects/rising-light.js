@@ -130,8 +130,9 @@ export class RisingLightEffect {
     const dirX = vx / hLen;
     const dirZ = vz / hLen;
 
-    // Per-particle kick: closer = stronger, farther = weaker
+    // Per-particle kick: 3D distance — closer to model = stronger
     const cx = evt.position.x;
+    const cy = evt.position.y;
     const cz = evt.position.z;
     const posArr = this._posArr;
     const velArr = this._velArr;
@@ -139,10 +140,11 @@ export class RisingLightEffect {
     for (let i = 0; i < MAX; i++) {
       const i3 = i * 3;
       const dx = posArr[i3] - cx;
+      const dy = posArr[i3 + 1] - cy;
       const dz = posArr[i3 + 2] - cz;
-      const dist = Math.sqrt(dx * dx + dz * dz);
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-      // Full range: sharp falloff — 1/(1+(d/r)^4)
+      // Sharp falloff in 3D — 1/(1+(d/r)^4)
       const r = dist / WIND_RADIUS;
       const falloff = 1 / (1 + r * r * r * r);
       velArr[i3] += dirX * WIND_STRENGTH * falloff;

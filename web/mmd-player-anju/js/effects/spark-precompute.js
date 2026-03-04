@@ -82,3 +82,79 @@ export function precomputeSparkEvents(mesh, clip, boneNames) {
   console.log(`[spark] precomputed ${events.length} events`);
   return events;
 }
+
+const FOOT_GROUND_Y = 1.0;
+const FOOT_COOLDOWN = 10;    // ~0.33s at 30fps
+
+export function precomputeFootEvents(mesh, clip, boneNames) {
+  const mixer = new AnimationMixer(mesh);
+  const action = mixer.clipAction(clip);
+  action.play();
+
+  const boneMap = new Map();
+  for (const bone of mesh.skeleton.bones) boneMap.set(bone.name, bone);
+
+  const entries = [];
+  for (const name of boneNames) {
+    const bone = boneMap.get(name);
+    if (!bone) continue;
+    entries.push({ name, bone });
+  }
+
+  if (entries.length === 0) {
+    action.stop();
+    mixer.stopAllAction();
+    mixer.uncacheRoot(mesh);
+    mixer.uncacheClip(clip);
+    return [];
+  }
+
+  const duration = clip.duration;
+  const N = Math.ceil(duration / STEP) + 1;
+  const tmp = new Vector3();
+
+  const positions = entries.map(() => []);
+  for (let f = 0; f < N; f++) {
+    mixer.setTime(Math.min(f * STEP, duration));
+    mesh.updateMatrixWorld(true);
+    for (let i = 0; i < entries.length; i++) {
+      entries[i].bone.getWorldPosition(tmp);
+      positions[i].push({ x: tmp.x, y: tmp.y, z: tmp.z });
+    }
+  }
+
+  const events = [];
+  for (let i = 0; i < entries.length; i++) {
+    const pos = positions[i];
+    let cd = 0;
+
+    for (let f = 1; f < N; f++) {
+      if (cd > 0) { cd--; continue; }
+
+      if (pos[f - 1].y > FOOT_GROUND_Y && pos[f].y <= FOOT_GROUND_Y) {
+        cd = FOOT_COOLDOWN;
+        const vy = (pos[f].y - pos[f - 1].y) / STEP;  // downward velocity (negative)
+        const speed = Math.abs(vy);
+        events.push({
+          time: f * STEP,
+          position: { x: pos[f].x, y: 0, z: pos[f].z },
+          speed,
+        });
+      }
+    }
+  }
+
+  events.sort((a, b) => a.time - b.time);
+
+  action.stop();
+  mixer.stopAllAction();
+  mixer.uncacheRoot(mesh);
+  mixer.uncacheClip(clip);
+  if (mesh.skeleton) mesh.skeleton.pose();
+  if (mesh.morphTargetInfluences) mesh.morphTargetInfluences.fill(0);
+  mesh.position.set(0, 0, 0);
+  mesh.rotation.set(0, 0, 0);
+
+  console.log(`[ripple] precomputed ${events.length} foot contact events`);
+  return events;
+}

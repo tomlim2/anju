@@ -192,8 +192,7 @@
 
     #controls-model button,
     #controls-model select,
-    #controls-hand-fx select,
-    #controls-bg-fx select {
+    #controls-hand-fx select {
       background: var(--surface);
       border: 1px solid var(--border);
       color: var(--text);
@@ -205,9 +204,23 @@
 
     #controls-model button:hover,
     #controls-model select:hover,
-    #controls-hand-fx select:hover,
-    #controls-bg-fx select:hover {
+    #controls-hand-fx select:hover {
       background: var(--panel);
+    }
+
+    #controls-bg-fx label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--text-dim);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    #controls-bg-fx input[type="checkbox"] {
+      accent-color: var(--accent);
+      cursor: pointer;
     }
 
     #controls-model select:disabled {
@@ -304,11 +317,9 @@
   </div>
 
   <div id="controls-bg-fx">
-    <select id="select-bg-fx">
-      <option value="none">BG FX: None</option>
-      <option value="rise" selected>BG FX: Rise</option>
-      <option value="fall">BG FX: Fall</option>
-    </select>
+    <label><input type="checkbox" id="chk-rise" checked> Rise</label>
+    <label><input type="checkbox" id="chk-fall"> Fall</label>
+    <label><input type="checkbox" id="chk-ripple" checked> Ripple</label>
   </div>
 
   <input type="file" id="input-zip" accept=".zip" hidden>
