@@ -190,7 +190,7 @@ def main():
                 f'-UserCharacterJsonPath="{json_file}" '
                 f'-UserCharacterVrmPath="{vrm_path}" '
                 f'-OutputPath="{output_folder}" '
-                f'-stdout -nopause -unattended -AllowCommandletRendering -RenderOffScreen'
+                f'-stdout -nopause -unattended -AllowCommandletRendering -AllowCommandletAudio -RenderOffScreen'
             )
             print(f"  2) Commandlet running...")
             process = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
