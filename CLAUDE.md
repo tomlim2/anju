@@ -47,3 +47,14 @@ webgl/                   # WebGL (보이드 시뮬레이션)
 ## GUI Work
 
 GUI/UI 작업 시 디자인 시스템 참조: `~/.claude/standards/design-system.md`
+
+## PMX-VRM Converter Workflow
+
+- **작업 환경:** anju repo의 Python 버전에서 작업
+- **테스트:** 반드시 스킬(`/pmx-convert-vrm`, `/cocv-validate-vrm` 등)을 통해서만 실행
+- **커밋 순서:**
+  1. Python 변경사항을 TypeScript BK(backend) 버전에 로컬라이징
+  2. Python 변경사항을 TypeScript FE(frontend) 버전에 로컬라이징
+  3. `/cocv-sync-ta-tools`로 ta-tools에 싱크
+  4. ta-tools 커밋 먼저
+  5. anju 커밋

@@ -151,6 +151,7 @@ interface ConvertOpts {
   noSpring: boolean;
   noRename: boolean;
   noValidate: boolean;
+  preset: string;
 }
 
 async function convertOne(
@@ -192,6 +193,7 @@ async function convertOne(
       pmxData.rigid_bodies,
       pmxData.joints_phys,
       pmxData.bones,
+      opts.preset,
     );
   }
 
@@ -250,6 +252,7 @@ export interface ProcessOptions {
   noSpring?: boolean;
   noRename?: boolean;
   noValidate?: boolean;
+  preset?: string;
 }
 
 export async function process_(
@@ -267,13 +270,14 @@ export async function process_(
     noSpring = false,
     noRename = false,
     noValidate = false,
+    preset = "default",
   } = options;
   const outDir = options.outputDir
     ? path.resolve(options.outputDir)
     : isDir ? resolved : path.dirname(resolved);
   await mkdir(outDir, { recursive: true });
 
-  const convertOpts: ConvertOpts = { scale, noSpring, noRename, noValidate };
+  const convertOpts: ConvertOpts = { scale, noSpring, noRename, noValidate, preset };
 
   if (isDir) {
     return processFolder(resolved, outDir, convertOpts);
@@ -413,12 +417,14 @@ async function main(): Promise<void> {
     .option("--no-spring", "Skip spring bones")
     .option("--no-rename", "Skip ASCII rename step")
     .option("--no-validate", "Skip validation step")
+    .option("--preset <name>", "Spring bone preset name (default: default)", "default")
     .action(async (input: string, opts: {
       output?: string;
       scale: number;
       spring: boolean;
       rename: boolean;
       validate: boolean;
+      preset: string;
     }) => {
       try {
         await process_(input, {
@@ -427,6 +433,7 @@ async function main(): Promise<void> {
           noSpring: !opts.spring,
           noRename: !opts.rename,
           noValidate: !opts.validate,
+          preset: opts.preset,
         });
       } catch (e: any) {
         console.error(`Error: ${e.message}`);

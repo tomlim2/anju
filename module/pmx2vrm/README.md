@@ -22,10 +22,32 @@ ZIP → scan .pmx → humanoid check (16 required bones)
 
 Each step is a pure function. I/O is injected via `ConvertDeps` (ImageEncoder + TextCodec).
 
+## Spring Presets
+
+Spring bone conversion uses tunable presets. Available presets:
+
+| Preset | Description |
+|--------|-------------|
+| `default` | Soft motion with spiral prevention, balanced gravity/stiffness |
+| `realistic` | Softer, more gravity-responsive motion |
+
+Presets are defined in `python/spring_presets.json` and embedded in TypeScript as `PRESETS` in `spring-converter.ts`.
+
+```bash
+# Python
+python intake.py <input> --preset realistic
+
+# TypeScript (Node)
+npx tsx src/intake.ts <input> --preset realistic
+
+# Browser: pass via worker message
+postMessage({ zipBuffer, preset: "realistic" })
+```
+
 ## Structure
 
 ```
-pmx2vrm-convert-module/
+pmx2vrm/
 ├── python/                         # Python reference (standalone)
 │   ├── intake.py                   # CLI entry
 │   └── vrm_validator.py            # Standalone validator (--json flag)
@@ -75,6 +97,6 @@ interface ConvertDeps { image: ImageEncoder; text: TextCodec; }
 interface VrmOutput  { name: string; vrm: Uint8Array; validation: ValidationResult; logs: string[]; }
 ```
 
-Worker protocol: `postMessage({ zipBuffer, scale, noSpring })` → `{ ok, results: VrmOutput[] }`.
+Worker protocol: `postMessage({ zipBuffer, scale, noSpring, preset })` → `{ ok, results: VrmOutput[] }`.
 
 See each subdirectory's README for implementation-specific details.

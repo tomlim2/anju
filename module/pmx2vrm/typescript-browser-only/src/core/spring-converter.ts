@@ -6,6 +6,97 @@
 
 import type { PmxBone, PmxRigidBody, PmxJoint, SecondaryAnimation, BoneGroup, ColliderGroup } from "./types.js";
 
+// ── Spring Presets (synced with python/spring_presets.json) ──
+
+interface SpringPreset {
+  collider_radius_scale: number;
+  hit_radius_scale: number;
+  drag_force_max: number;
+  spring_constant_divisor: number;
+  stiffiness_max: number;
+  chain_long: number;
+  chain_med: number;
+  chain_long_stiffiness_cap: number;
+  chain_med_stiffiness_cap: number;
+  chain_drag_min: number;
+  chain_long_gravity_min: number;
+  chain_long_gravity_max: number;
+  chain_med_gravity_min: number;
+  chain_med_gravity_max: number;
+  chain_short_stiffiness_min: number;
+  chain_short_gravity_max: number;
+  chain_short_drag_min: number;
+  split_min_chain: number;
+  split_root_ratio: number;
+  split_root_min: number;
+  split_root_stiffiness: number;
+  split_root_gravity: number;
+  split_tip_stiffiness: number;
+  split_tip_gravity_max: number;
+  ground_y_min: number;
+}
+
+const PRESETS: Record<string, SpringPreset> = {
+  default: {
+    collider_radius_scale: 0.3,
+    hit_radius_scale: 0.2,
+    drag_force_max: 0.6,
+    spring_constant_divisor: 200.0,
+    stiffiness_max: 4.0,
+    chain_long: 6,
+    chain_med: 4,
+    chain_long_stiffiness_cap: 1.5,
+    chain_med_stiffiness_cap: 2.5,
+    chain_drag_min: 0.6,
+    chain_long_gravity_min: 0.1,
+    chain_long_gravity_max: 0.6,
+    chain_med_gravity_min: 0.03,
+    chain_med_gravity_max: 0.4,
+    chain_short_stiffiness_min: 3.5,
+    chain_short_gravity_max: 0.0,
+    chain_short_drag_min: 0.9,
+    split_min_chain: 6,
+    split_root_ratio: 0.4,
+    split_root_min: 2,
+    split_root_stiffiness: 3.0,
+    split_root_gravity: 0.08,
+    split_tip_stiffiness: 1.2,
+    split_tip_gravity_max: 0.45,
+    ground_y_min: 0.05,
+  },
+  realistic: {
+    collider_radius_scale: 0.3,
+    hit_radius_scale: 0.2,
+    drag_force_max: 0.5,
+    spring_constant_divisor: 200.0,
+    stiffiness_max: 4.0,
+    chain_long: 6,
+    chain_med: 4,
+    chain_long_stiffiness_cap: 1.2,
+    chain_med_stiffiness_cap: 2.0,
+    chain_drag_min: 0.4,
+    chain_long_gravity_min: 0.1,
+    chain_long_gravity_max: 0.8,
+    chain_med_gravity_min: 0.05,
+    chain_med_gravity_max: 0.5,
+    chain_short_stiffiness_min: 3.5,
+    chain_short_gravity_max: 0.0,
+    chain_short_drag_min: 0.9,
+    split_min_chain: 6,
+    split_root_ratio: 0.4,
+    split_root_min: 2,
+    split_root_stiffiness: 2.5,
+    split_root_gravity: 0.1,
+    split_tip_stiffiness: 0.8,
+    split_tip_gravity_max: 0.6,
+    ground_y_min: 0.05,
+  },
+};
+
+export function getPresetNames(): string[] {
+  return Object.keys(PRESETS);
+}
+
 // ── Helpers ──
 
 function sphereRadius(rb: PmxRigidBody): number {
@@ -15,35 +106,6 @@ function sphereRadius(rb: PmxRigidBody): number {
   if (st === 2) return sz[0];       // Capsule
   return Math.max(...sz) * 0.5;     // Box
 }
-
-const COLLIDER_RADIUS_SCALE = 0.3;
-const HIT_RADIUS_SCALE = 0.2;
-
-// ── Tuning constants (synced with python/spring_presets.json "default") ──
-const DRAG_FORCE_MAX = 0.6;
-const SPRING_CONSTANT_DIVISOR = 200.0;
-const STIFFINESS_MAX = 4.0;
-const CHAIN_LONG = 6;
-const CHAIN_MED = 4;
-const CHAIN_LONG_STIFFINESS_CAP = 1.5;
-const CHAIN_MED_STIFFINESS_CAP = 2.5;
-const CHAIN_DRAG_MIN = 0.6;
-const CHAIN_LONG_GRAVITY_MIN = 0.1;
-const CHAIN_LONG_GRAVITY_MAX = 0.6;
-const CHAIN_MED_GRAVITY_MIN = 0.03;
-const CHAIN_MED_GRAVITY_MAX = 0.4;
-const CHAIN_SHORT_STIFFINESS_MIN = 3.5;
-const CHAIN_SHORT_GRAVITY_MAX = 0.0;
-const CHAIN_SHORT_DRAG_MIN = 0.9;
-const GROUND_Y_MIN = 0.05;
-// Chain split: long hanging chains → stiff root + flowing tip
-const SPLIT_MIN_CHAIN = 6;
-const SPLIT_ROOT_RATIO = 0.4;
-const SPLIT_ROOT_MIN = 2;
-const SPLIT_ROOT_STIFFINESS = 3.0;
-const SPLIT_ROOT_GRAVITY = 0.08;
-const SPLIT_TIP_STIFFINESS = 1.2;
-const SPLIT_TIP_GRAVITY_MAX = 0.45;
 
 function rotationLimitRange(joint: PmxJoint | null): number {
   if (!joint) return 0.0;
@@ -55,8 +117,9 @@ function rotationLimitRange(joint: PmxJoint | null): number {
 function mapParams(
   rb: PmxRigidBody,
   joint: PmxJoint | null,
+  p: SpringPreset,
 ): [number, number, number, number] {
-  let dragForce = Math.max(0.0, Math.min(DRAG_FORCE_MAX, rb.linear_damping));
+  let dragForce = Math.max(0.0, Math.min(p.drag_force_max, rb.linear_damping));
   let hitRadius = Math.max(0.0, sphereRadius(rb));
 
   const avgRange = rotationLimitRange(joint);
@@ -67,11 +130,11 @@ function mapParams(
     const scr = joint.spring_constant_rotation ?? [0, 0, 0];
     const mag = Math.sqrt(scr[0] ** 2 + scr[1] ** 2 + scr[2] ** 2);
     if (mag > 1.0) {
-      stiffiness = Math.max(0.0, Math.min(STIFFINESS_MAX, mag / SPRING_CONSTANT_DIVISOR));
+      stiffiness = Math.max(0.0, Math.min(p.stiffiness_max, mag / p.spring_constant_divisor));
     } else if (avgRange > 0.001) {
-      stiffiness = Math.max(0.2, Math.min(STIFFINESS_MAX, Math.PI / avgRange * 0.5));
+      stiffiness = Math.max(0.2, Math.min(p.stiffiness_max, Math.PI / avgRange * 0.5));
     } else {
-      stiffiness = STIFFINESS_MAX;
+      stiffiness = p.stiffiness_max;
     }
   }
 
@@ -109,7 +172,13 @@ export function convert(
   rigidBodies: PmxRigidBody[],
   joints: PmxJoint[],
   bones: PmxBone[],
+  preset: string = "default",
 ): SecondaryAnimation {
+  const p = PRESETS[preset];
+  if (!p) {
+    throw new Error(`Unknown spring preset '${preset}'. Available: ${Object.keys(PRESETS).join(", ")}`);
+  }
+
   if (rigidBodies.length === 0) {
     return { boneGroups: [], colliderGroups: [] };
   }
@@ -233,7 +302,7 @@ export function convert(
     if (boneIndices.length === 0) continue;
 
     // Trim bones below ground
-    boneIndices = boneIndices.filter(bi => bones[bi].position[1] > GROUND_Y_MIN);
+    boneIndices = boneIndices.filter(bi => bones[bi].position[1] > p.ground_y_min);
     if (boneIndices.length === 0) continue;
 
     // Anchor (center) bone
@@ -259,10 +328,10 @@ export function convert(
       if (rmin.every(v => v === 0) && rmax.every(v => v === 0) && scr.every(v => v === 0)) continue;
     }
 
-    let [dragForce, stiffiness, gravityPower, hitRadius] = mapParams(repRb, repJoint);
+    let [dragForce, stiffiness, gravityPower, hitRadius] = mapParams(repRb, repJoint, p);
 
     // hitRadius: max across chain, scaled
-    hitRadius = Math.max(...dynChain.map(i => sphereRadius(rigidBodies[i]))) * HIT_RADIUS_SCALE;
+    hitRadius = Math.max(...dynChain.map(i => sphereRadius(rigidBodies[i]))) * p.hit_radius_scale;
 
     // Detect chain direction
     const chainLen = boneIndices.length;
@@ -277,15 +346,15 @@ export function convert(
     const hangsDown = avgY < -0.01;
 
     // Chain split: long hanging chains → stiff root + flowing tip
-    if (chainLen >= SPLIT_MIN_CHAIN && hangsDown) {
-      const splitAt = Math.max(SPLIT_ROOT_MIN, Math.floor(chainLen * SPLIT_ROOT_RATIO));
+    if (chainLen >= p.split_min_chain && hangsDown) {
+      const splitAt = Math.max(p.split_root_min, Math.floor(chainLen * p.split_root_ratio));
       const rootBones = boneIndices.slice(0, splitAt);
       const tipBones = boneIndices.slice(splitAt);
-      dragForce = Math.max(dragForce, CHAIN_DRAG_MIN);
+      dragForce = Math.max(dragForce, p.chain_drag_min);
 
       boneGroups.push({
-        stiffiness: round4(SPLIT_ROOT_STIFFINESS),
-        gravityPower: round4(SPLIT_ROOT_GRAVITY),
+        stiffiness: round4(p.split_root_stiffiness),
+        gravityPower: round4(p.split_root_gravity),
         gravityDir: { x: 0, y: -1, z: 0 },
         dragForce: round4(dragForce),
         hitRadius: round4(hitRadius),
@@ -296,11 +365,11 @@ export function convert(
       });
 
       const tipGrav = Math.max(
-        CHAIN_LONG_GRAVITY_MIN,
-        Math.min(gravityPower, SPLIT_TIP_GRAVITY_MAX),
+        p.chain_long_gravity_min,
+        Math.min(gravityPower, p.split_tip_gravity_max),
       );
       boneGroups.push({
-        stiffiness: round4(SPLIT_TIP_STIFFINESS),
+        stiffiness: round4(p.split_tip_stiffiness),
         gravityPower: round4(tipGrav),
         gravityDir: { x: 0, y: -1, z: 0 },
         dragForce: round4(dragForce),
@@ -313,23 +382,23 @@ export function convert(
       continue;
     }
 
-    if (chainLen >= CHAIN_LONG) {
-      stiffiness = Math.min(stiffiness, CHAIN_LONG_STIFFINESS_CAP);
-      dragForce = Math.max(dragForce, CHAIN_DRAG_MIN);
+    if (chainLen >= p.chain_long) {
+      stiffiness = Math.min(stiffiness, p.chain_long_stiffiness_cap);
+      dragForce = Math.max(dragForce, p.chain_drag_min);
       gravityPower = hangsDown
-        ? Math.min(Math.max(gravityPower, CHAIN_LONG_GRAVITY_MIN), CHAIN_LONG_GRAVITY_MAX)
+        ? Math.min(Math.max(gravityPower, p.chain_long_gravity_min), p.chain_long_gravity_max)
         : 0.0;
-    } else if (chainLen >= CHAIN_MED) {
-      stiffiness = Math.min(stiffiness, CHAIN_MED_STIFFINESS_CAP);
-      dragForce = Math.max(dragForce, CHAIN_DRAG_MIN);
+    } else if (chainLen >= p.chain_med) {
+      stiffiness = Math.min(stiffiness, p.chain_med_stiffiness_cap);
+      dragForce = Math.max(dragForce, p.chain_drag_min);
       gravityPower = hangsDown
-        ? Math.min(Math.max(gravityPower, CHAIN_MED_GRAVITY_MIN), CHAIN_MED_GRAVITY_MAX)
+        ? Math.min(Math.max(gravityPower, p.chain_med_gravity_min), p.chain_med_gravity_max)
         : 0.0;
     } else {
       // Short chains (ribbons, accessories): nearly frozen
-      stiffiness = Math.max(stiffiness, CHAIN_SHORT_STIFFINESS_MIN);
-      dragForce = Math.max(dragForce, CHAIN_SHORT_DRAG_MIN);
-      gravityPower = CHAIN_SHORT_GRAVITY_MAX;
+      stiffiness = Math.max(stiffiness, p.chain_short_stiffiness_min);
+      dragForce = Math.max(dragForce, p.chain_short_drag_min);
+      gravityPower = p.chain_short_gravity_max;
     }
 
     boneGroups.push({
@@ -353,7 +422,7 @@ export function convert(
     const bi = rb.bone_index;
     if (bi < 0 || bi >= numBon) continue;
 
-    const radius = sphereRadius(rb) * COLLIDER_RADIUS_SCALE;
+    const radius = sphereRadius(rb) * p.collider_radius_scale;
     const bonePos = bones[bi].position;
     const offsetX = rb.shape_position[0] - bonePos[0];
     const offsetY = rb.shape_position[1] - bonePos[1];

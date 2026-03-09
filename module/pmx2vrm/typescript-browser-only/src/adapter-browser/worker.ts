@@ -13,9 +13,9 @@ export interface WorkerInput extends ConvertOptions {
 }
 
 self.onmessage = async (e: MessageEvent<WorkerInput>) => {
-  const { zipBuffer, scale, noSpring } = e.data;
+  const { zipBuffer, scale, noSpring, preset } = e.data;
   try {
-    const results = await convertZip(zipBuffer, { scale, noSpring });
+    const results = await convertZip(zipBuffer, { scale, noSpring, preset });
     const transfers = results.map(r => r.vrm.buffer);
     self.postMessage({ ok: true, results }, transfers as any);
   } catch (err) {

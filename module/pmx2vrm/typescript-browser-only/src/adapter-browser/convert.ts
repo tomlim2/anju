@@ -22,6 +22,7 @@ import type { ConvertDeps, VrmOutput } from "../core/types.js";
 export interface ConvertOptions {
   scale?: number;
   noSpring?: boolean;
+  preset?: string;
 }
 
 export async function convertZip(
@@ -80,7 +81,7 @@ export async function convertZip(
 
     const secondary = opts.noSpring
       ? { boneGroups: [], colliderGroups: [] }
-      : convertSpring(pmxData.rigid_bodies, pmxData.joints_phys, pmxData.bones);
+      : convertSpring(pmxData.rigid_bodies, pmxData.joints_phys, pmxData.bones, opts.preset);
 
     gltfData = buildVrm(gltfData, humanoidBones, secondary, pmxData.materials);
     const glbBytes = writeGlb(gltfData);
