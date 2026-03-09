@@ -166,8 +166,8 @@ export function mapBones(
 
   for (let nodeIndex = 0; nodeIndex < bones.length; nodeIndex++) {
     const name = bones[nodeIndex].name;
-    const lookupName = PMX_BONE_REPLACEMENTS.get(name) ?? name;
-    const vrmNames = mapping.get(lookupName) ?? [];
+    if (PMX_BONE_REPLACEMENTS.has(name)) continue; // Skip D-bones / EX bones
+    const vrmNames = mapping.get(name) ?? [];
     const hasSkin = skinnedBoneIndices == null || skinnedBoneIndices.has(nodeIndex);
 
     for (const vrmName of vrmNames) {

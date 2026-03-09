@@ -174,8 +174,9 @@ def map_bones(bones, skinned_bone_indices=None):
 
     for node_index, bone in enumerate(bones):
         name = bone["name"]
-        lookup_name = PMX_BONE_REPLACEMENTS.get(name, name)
-        vrm_names = mapping.get(lookup_name, [])
+        if name in PMX_BONE_REPLACEMENTS:
+            continue  # Skip D-bones / EX bones — use standard bones only
+        vrm_names = mapping.get(name, [])
         has_skin = (skinned_bone_indices is None) or (node_index in skinned_bone_indices)
         for vrm_name in vrm_names:
             candidates[vrm_name].append((node_index, has_skin))
