@@ -38,6 +38,35 @@ interface SpringPreset {
 
 const PRESETS: Record<string, SpringPreset> = {
   default: {
+    // No gravity — ABP controls gravity uniformly
+    collider_radius_scale: 0.3,
+    hit_radius_scale: 0.2,
+    drag_force_max: 0.6,
+    spring_constant_divisor: 200.0,
+    stiffiness_max: 4.0,
+    chain_long: 6,
+    chain_med: 4,
+    chain_long_stiffiness_cap: 1.5,
+    chain_med_stiffiness_cap: 2.5,
+    chain_drag_min: 0.6,
+    chain_long_gravity_min: 0.0,
+    chain_long_gravity_max: 0.0,
+    chain_med_gravity_min: 0.0,
+    chain_med_gravity_max: 0.0,
+    chain_short_stiffiness_min: 3.5,
+    chain_short_gravity_max: 0.0,
+    chain_short_drag_min: 0.9,
+    split_min_chain: 6,
+    split_root_ratio: 0.4,
+    split_root_min: 2,
+    split_root_stiffiness: 3.0,
+    split_root_gravity: 0.0,
+    split_tip_stiffiness: 1.2,
+    split_tip_gravity_max: 0.0,
+    ground_y_min: 0.05,
+  },
+  "with-gravity": {
+    // Per-chain gravity from PMX physics data
     collider_radius_scale: 0.3,
     hit_radius_scale: 0.2,
     drag_force_max: 0.6,
