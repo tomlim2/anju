@@ -54,6 +54,15 @@ npx tsx src/adapter-node/intake.ts <input> [options]
 
 Same flags as `../typescript/` (--output, --scale, --no-spring, --no-rename, --no-validate).
 
+## Setup
+
+```bash
+npm install              # parent deps (jszip, pako, sharp, iconv-lite)
+cd showcase && npm install   # showcase deps (vite, react)
+```
+
+Both installs are required — showcase's Vite resolves `../src/` imports against the parent `node_modules`.
+
 ## Showcase (Vite)
 
 ```bash
