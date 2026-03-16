@@ -817,6 +817,8 @@ class CharacterCreatorGUI:
 
         # Use last selected for edit form
         idx = indices[-1]
+        if idx >= len(self.assets_data):
+            return
         self.selected_asset_idx = idx
         entry = self.assets_data[idx]
 
@@ -880,6 +882,8 @@ class CharacterCreatorGUI:
         if self.selected_asset_idx is None:
             return
         idx = self.selected_asset_idx
+        if idx >= len(self.assets_data):
+            return
         entry = self.assets_data[idx]
         orig_meta = getattr(self, '_char_meta_original', {})
 
@@ -1001,9 +1005,20 @@ class CharacterCreatorGUI:
             msg = f"{count}개 항목을 삭제하시겠습니까?"
 
         if messagebox.askyesno("삭제 확인", msg):
+            self.selected_asset_idx = None
+            self._populating_form = True
+            self.asset_preset_id_var.set("")
+            self.asset_char_file_var.set("")
+            self.asset_category_var.set("")
+            self.asset_display_name_var.set("")
+            self.asset_gender_var.set("")
+            self.asset_thumbnail_var.set("")
+            self.asset_scaling_var.set("")
+            self.asset_source_var.set("")
+            self._char_meta_original = {}
+            self._populating_form = False
             for idx in reversed(indices):
                 self.assets_data.pop(idx)
-            self.selected_asset_idx = None
             self.assets_refresh_tree()
             self.assets_auto_save()
             self.assets_apply_btn.config(state=tk.DISABLED)
