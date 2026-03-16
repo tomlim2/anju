@@ -41,48 +41,67 @@ def read_vrm_json(vrm_path):
         return json.loads(json_bytes.decode("utf-8"))
 
 
+def _read_image_from_buffer(vrm_path, gltf, img_idx):
+    """glTF images[img_idx]의 bufferView에서 바이너리 데이터 읽기"""
+    images = gltf.get("images", [])
+    if img_idx is None or img_idx >= len(images):
+        return None
+    bv_idx = images[img_idx].get("bufferView")
+    if bv_idx is None:
+        return None
+    bvs = gltf.get("bufferViews", [])
+    if bv_idx >= len(bvs):
+        return None
+    bv = bvs[bv_idx]
+    offset = bv.get("byteOffset", 0)
+    length = bv["byteLength"]
+    with open(vrm_path, "rb") as f:
+        f.read(12)  # glTF header
+        json_chunk_len = struct.unpack("<I", f.read(4))[0]
+        f.read(4)  # JSON type
+        f.read(json_chunk_len)  # skip JSON data
+        # BIN chunk header
+        f.read(4)  # bin chunk len
+        f.read(4)  # bin chunk type (b"BIN\x00")
+        bin_start = f.tell()
+        f.seek(bin_start + offset)
+        return f.read(length)
+
+
 def extract_vrm_meta(vrm_path):
-    """VRM에서 title과 썸네일 바이너리 추출.
+    """VRM 0.x / 1.0 에서 title과 썸네일 바이너리 추출.
     Returns (title: str|None, thumb_data: bytes|None)
     """
     gltf = read_vrm_json(vrm_path)
     if not gltf:
         return None, None
 
-    vrm_ext = gltf.get("extensions", {}).get("VRM", {})
-    meta = vrm_ext.get("meta", {})
-    title = meta.get("title") or None
-
-    # 썸네일: meta.texture → textures[idx].source → images[idx]
+    extensions = gltf.get("extensions", {})
+    title = None
     thumb_data = None
-    tex_idx = meta.get("texture")
-    if tex_idx is not None:
-        textures = gltf.get("textures", [])
-        if tex_idx < len(textures):
-            img_idx = textures[tex_idx].get("source")
-            if img_idx is not None:
-                images = gltf.get("images", [])
-                if img_idx < len(images):
-                    img = images[img_idx]
-                    bv_idx = img.get("bufferView")
-                    if bv_idx is not None:
-                        bvs = gltf.get("bufferViews", [])
-                        if bv_idx < len(bvs):
-                            bv = bvs[bv_idx]
-                            offset = bv.get("byteOffset", 0)
-                            length = bv["byteLength"]
-                            # BIN chunk starts after JSON chunk
-                            with open(vrm_path, "rb") as f:
-                                f.read(12)  # glTF header
-                                json_chunk_len = struct.unpack("<I", f.read(4))[0]
-                                f.read(4)  # JSON type
-                                f.read(json_chunk_len)  # skip JSON data
-                                # BIN chunk header
-                                f.read(4)  # bin chunk len
-                                f.read(4)  # bin chunk type (b"BIN\x00")
-                                bin_start = f.tell()
-                                f.seek(bin_start + offset)
-                                thumb_data = f.read(length)
+
+    # VRM 1.0: extensions.VRMC_vrm.meta
+    vrmc = extensions.get("VRMC_vrm", {})
+    if vrmc:
+        meta = vrmc.get("meta", {})
+        title = meta.get("name") or None
+        # thumbnailImage → images[idx] 직접 참조
+        img_idx = meta.get("thumbnailImage")
+        if img_idx is not None:
+            thumb_data = _read_image_from_buffer(vrm_path, gltf, img_idx)
+
+    # VRM 0.x: extensions.VRM.meta
+    if not vrmc:
+        vrm0 = extensions.get("VRM", {})
+        meta = vrm0.get("meta", {})
+        title = meta.get("title") or None
+        # texture → textures[idx].source → images[idx]
+        tex_idx = meta.get("texture")
+        if tex_idx is not None:
+            textures = gltf.get("textures", [])
+            if tex_idx < len(textures):
+                img_idx = textures[tex_idx].get("source")
+                thumb_data = _read_image_from_buffer(vrm_path, gltf, img_idx)
 
     return title, thumb_data
 
@@ -122,8 +141,8 @@ class VRoidCreatorGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("VRoid Character Creator")
-        self.root.geometry("1400x750")
-        self.root.minsize(1024, 600)
+        self.root.geometry("1400x950")
+        self.root.minsize(1024, 800)
         self.root.configure(bg="white")
 
         self.user_char_folder_var = tk.StringVar()
