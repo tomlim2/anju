@@ -770,28 +770,37 @@ class CharacterCreatorGUI:
 
     @staticmethod
     def write_character_metadata(char_path, updates):
-        """Update metadata JSON embedded in a .character file"""
+        """Update metadata JSON embedded in a .character file.
+        Format: [len][header] [len][meta_json] [len][vrm_name] [len][vrm_data] [len][thumb]
+        Must rewrite with correct length prefixes.
+        """
         with open(char_path, 'rb') as f:
             data = f.read()
-        idx = data.find(b'{')
-        if idx < 0:
-            return False
-        depth = 0
-        end = idx
-        for i in range(idx, len(data)):
-            if data[i:i+1] == b'{':
-                depth += 1
-            elif data[i:i+1] == b'}':
-                depth -= 1
-                if depth == 0:
-                    end = i + 1
-                    break
-        json_str = data[idx:end].decode('utf-8', errors='replace')
-        meta = json.loads(json_str)
+        pos = 0
+
+        def read_section(p):
+            length = struct.unpack('<I', data[p:p+4])[0]
+            return data[p+4:p+4+length], p + 4 + length
+
+        header, pos = read_section(pos)
+        meta_bytes, pos = read_section(pos)
+        vrm_name, pos = read_section(pos)
+        vrm_data, pos = read_section(pos)
+        thumb_data, pos = read_section(pos)
+
+        # Parse and update metadata
+        meta_str = meta_bytes.decode('utf-8', errors='replace').rstrip()
+        meta = json.loads(meta_str)
         meta.update(updates)
-        new_json = json.dumps(meta, indent=2, ensure_ascii=False).encode('utf-8')
+        new_meta_json = json.dumps(meta, indent='\t', ensure_ascii=False)
+        new_meta_json = new_meta_json.replace('\n', '\r\n') + ' '
+        new_meta_bytes = new_meta_json.encode('utf-8')
+
+        # Rewrite with correct length prefixes
         with open(char_path, 'wb') as f:
-            f.write(data[:idx] + new_json + data[end:])
+            for section in (header, new_meta_bytes, vrm_name, vrm_data, thumb_data):
+                f.write(struct.pack('<I', len(section)))
+                f.write(section)
         return True
 
     def _get_character_file_path(self, char_filename):
@@ -919,6 +928,7 @@ class CharacterCreatorGUI:
         if char_path:
             try:
                 updates = {
+                    'gender': self.asset_gender_var.get(),
                     'displayName': self.asset_display_name_var.get(),
                     'scalingMethod': self.asset_scaling_var.get(),
                     'modelSourceType': self.asset_source_var.get(),

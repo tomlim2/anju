@@ -14,13 +14,10 @@ import uuid
 
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), "vroid_creator_config.json")
 
-# 1x1 투명 PNG (썸네일 추출 실패 시 fallback)
-EMPTY_THUMB_PNG = (
-    b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
-    b"\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89"
-    b"\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01"
-    b"\r\n\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
-)
+# 기본 썸네일 (썸네일 추출 실패 시 fallback)
+_DEFAULT_THUMB_PATH = os.path.join(os.path.dirname(__file__), "default_thumbnail.png")
+with open(_DEFAULT_THUMB_PATH, "rb") as _f:
+    DEFAULT_THUMB_PNG = _f.read()
 
 
 def read_vrm_json(vrm_path):
@@ -122,7 +119,7 @@ def create_character_file(output_path, vrm_path, metadata, thumb_data=None):
         vrm_data = f.read()
 
     if thumb_data is None:
-        thumb_data = EMPTY_THUMB_PNG
+        thumb_data = DEFAULT_THUMB_PNG
 
     with open(output_path, "wb") as f:
         f.write(struct.pack("<I", len(header)))
@@ -624,28 +621,37 @@ class VRoidCreatorGUI:
 
     @staticmethod
     def write_character_metadata(char_path, updates):
-        """Update metadata JSON embedded in a .character file"""
+        """Update metadata JSON embedded in a .character file.
+        Format: [len][header] [len][meta_json] [len][vrm_name] [len][vrm_data] [len][thumb]
+        Must rewrite with correct length prefixes.
+        """
         with open(char_path, "rb") as f:
             data = f.read()
-        idx = data.find(b"{")
-        if idx < 0:
-            return False
-        depth = 0
-        end = idx
-        for i in range(idx, len(data)):
-            if data[i:i+1] == b"{":
-                depth += 1
-            elif data[i:i+1] == b"}":
-                depth -= 1
-                if depth == 0:
-                    end = i + 1
-                    break
-        json_str = data[idx:end].decode("utf-8", errors="replace")
-        meta = json.loads(json_str)
+        pos = 0
+
+        def read_section(p):
+            length = struct.unpack("<I", data[p:p+4])[0]
+            return data[p+4:p+4+length], p + 4 + length
+
+        header, pos = read_section(pos)
+        meta_bytes, pos = read_section(pos)
+        vrm_name, pos = read_section(pos)
+        vrm_data, pos = read_section(pos)
+        thumb_data, pos = read_section(pos)
+
+        # Parse and update metadata
+        meta_str = meta_bytes.decode("utf-8", errors="replace").rstrip()
+        meta = json.loads(meta_str)
         meta.update(updates)
-        new_json = json.dumps(meta, indent=2, ensure_ascii=False).encode("utf-8")
+        new_meta_json = json.dumps(meta, indent="\t", ensure_ascii=False)
+        new_meta_json = new_meta_json.replace("\n", "\r\n") + " "
+        new_meta_bytes = new_meta_json.encode("utf-8")
+
+        # Rewrite with correct length prefixes
         with open(char_path, "wb") as f:
-            f.write(data[:idx] + new_json + data[end:])
+            for section in (header, new_meta_bytes, vrm_name, vrm_data, thumb_data):
+                f.write(struct.pack("<I", len(section)))
+                f.write(section)
         return True
 
     def _get_character_file_path(self, char_filename):
@@ -848,6 +854,7 @@ class VRoidCreatorGUI:
         if char_path:
             try:
                 updates = {
+                    "gender": self.asset_gender_var.get(),
                     "displayName": self.asset_display_name_var.get(),
                     "scalingMethod": self.asset_scaling_var.get(),
                     "modelSourceType": self.asset_source_var.get(),
