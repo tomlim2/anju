@@ -1,0 +1,12 @@
+[package]
+name = "shotloom-rd"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bevy = { version = "0.18", features = ["wayland"] }
+bevy_vrm1 = "0.6"
+
+# Enable optimizations for dependencies in dev builds (faster runtime, reasonable compile)
+[profile.dev.package."*"]
+opt-level = 1
