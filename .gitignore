@@ -16,3 +16,7 @@ api-test/nz-downloader/config.js
 
 # MMD player local data (symlink to archive)
 web/mmd-player-anju/data
+
+# Rust
+target/
+*.vrm
