@@ -14,6 +14,41 @@ use std::path::PathBuf;
 
 struct VrmLoad;
 
+enum VrmVersion {
+    Vrm0,
+    Vrm1,
+    Unknown,
+}
+
+/// Parse glTF binary header + JSON chunk to detect VRM version.
+/// VRM 0.x: extensionsUsed contains "VRM"
+/// VRM 1.0: extensionsUsed contains "VRMC_vrm"
+fn detect_vrm_version(data: &[u8]) -> VrmVersion {
+    if data.len() < 20 { return VrmVersion::Unknown; }
+
+    // glTF header: magic(4) + version(4) + length(4)
+    // First chunk: chunk_length(4) + chunk_type(4) + chunk_data(chunk_length)
+    let chunk_len = u32::from_le_bytes([data[12], data[13], data[14], data[15]]) as usize;
+    let chunk_type = &data[16..20];
+
+    // First chunk must be JSON (0x4E4F534A)
+    if chunk_type != b"JSON" { return VrmVersion::Unknown; }
+    if data.len() < 20 + chunk_len { return VrmVersion::Unknown; }
+
+    let json_str = match std::str::from_utf8(&data[20..20 + chunk_len]) {
+        Ok(s) => s,
+        Err(_) => return VrmVersion::Unknown,
+    };
+
+    if json_str.contains("\"VRMC_vrm\"") {
+        VrmVersion::Vrm1
+    } else if json_str.contains("\"VRM\"") {
+        VrmVersion::Vrm0
+    } else {
+        VrmVersion::Unknown
+    }
+}
+
 #[derive(Resource)]
 struct AppDataDir(PathBuf);
 
@@ -193,7 +228,18 @@ fn handle_vrm_loaded(
             log.push("[ERROR] not a valid glTF/VRM file");
             continue;
         }
-        log.push("[LOAD] glTF magic OK");
+
+        // Check VRM version from glTF JSON chunk
+        let vrm_version = detect_vrm_version(&ev.contents);
+        match &vrm_version {
+            VrmVersion::Vrm1 => log.push("[LOAD] VRM 1.0 detected"),
+            VrmVersion::Vrm0 => {
+                log.push("[ERROR] VRM 0.x detected — only VRM 1.0 supported");
+                log.push("[ERROR] convert with VRoid Studio or UniVRM");
+                continue;
+            }
+            VrmVersion::Unknown => log.push("[WARN] VRM version unknown — attempting load"),
+        }
 
         // Copy to app data dir
         let dest_path = app_data.0.join("models").join(&ev.file_name);
