@@ -231,19 +231,37 @@ fn handle_vrm_loaded(
 
         // Check VRM version from glTF JSON chunk
         let vrm_version = detect_vrm_version(&ev.contents);
-        match &vrm_version {
-            VrmVersion::Vrm1 => log.push("[LOAD] VRM 1.0 detected"),
-            VrmVersion::Vrm0 => {
-                log.push("[ERROR] VRM 0.x detected — only VRM 1.0 supported");
-                log.push("[ERROR] convert with VRoid Studio or UniVRM");
-                continue;
+        let file_bytes = match &vrm_version {
+            VrmVersion::Vrm1 => {
+                log.push("[LOAD] VRM 1.0 detected");
+                ev.contents.clone()
             }
-            VrmVersion::Unknown => log.push("[WARN] VRM version unknown — attempting load"),
-        }
+            VrmVersion::Vrm0 => {
+                log.push("[CONVERT] VRM 0.x detected — converting to 1.0...");
+                match vrm0_compat::convert(&ev.contents) {
+                    Ok(converted) => {
+                        log.push(format!(
+                            "[CONVERT] done ({:.1} MB → {:.1} MB)",
+                            ev.contents.len() as f64 / 1048576.0,
+                            converted.len() as f64 / 1048576.0
+                        ));
+                        converted
+                    }
+                    Err(e) => {
+                        log.push(format!("[ERROR] conversion failed: {}", e));
+                        continue;
+                    }
+                }
+            }
+            VrmVersion::Unknown => {
+                log.push("[WARN] VRM version unknown — attempting load");
+                ev.contents.clone()
+            }
+        };
 
         // Copy to app data dir
         let dest_path = app_data.0.join("models").join(&ev.file_name);
-        if let Err(e) = fs::write(&dest_path, &ev.contents) {
+        if let Err(e) = fs::write(&dest_path, &file_bytes) {
             log.push(format!("[ERROR] save to app data: {}", e));
             continue;
         }
@@ -251,7 +269,7 @@ fn handle_vrm_loaded(
 
         // Copy to assets/models/
         let assets_path = PathBuf::from("assets/models").join(&ev.file_name);
-        if let Err(e) = fs::write(&assets_path, &ev.contents) {
+        if let Err(e) = fs::write(&assets_path, &file_bytes) {
             log.push(format!("[ERROR] copy to assets: {}", e));
             continue;
         }
