@@ -7,6 +7,8 @@ edition = "2024"
 bevy = { version = "0.18", features = ["wayland", "bevy_dev_tools"] }
 bevy_vrm1 = "0.6"
 bevy_panorbit_camera = "0.34"
+bevy_file_dialog = "0.9"
+directories = "6.0"
 
 # Enable optimizations for dependencies in dev builds (faster runtime, reasonable compile)
 [profile.dev.package."*"]

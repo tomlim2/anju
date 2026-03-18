@@ -4,10 +4,70 @@ use bevy::diagnostic::{
     DiagnosticsStore, EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin,
     SystemInformationDiagnosticsPlugin,
 };
+use bevy_file_dialog::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_vrm1::prelude::*;
+use directories::ProjectDirs;
+use std::collections::VecDeque;
+use std::fs;
+use std::path::PathBuf;
+
+struct VrmLoad;
+
+#[derive(Resource)]
+struct AppDataDir(PathBuf);
+
+#[derive(Component)]
+struct DebugPanel;
+
+#[derive(Component)]
+struct LogPanel;
+
+#[derive(Component)]
+struct LoadedVrm;
+
+// In-app log buffer
+#[derive(Resource)]
+struct AppLog {
+    lines: VecDeque<String>,
+    max_lines: usize,
+    visible: bool,
+}
+
+impl Default for AppLog {
+    fn default() -> Self {
+        Self {
+            lines: VecDeque::new(),
+            max_lines: 20,
+            visible: true,
+        }
+    }
+}
+
+impl AppLog {
+    fn push(&mut self, msg: impl Into<String>) {
+        let msg = msg.into();
+        info!("{}", msg); // also print to terminal
+        self.lines.push_back(msg);
+        while self.lines.len() > self.max_lines {
+            self.lines.pop_front();
+        }
+    }
+
+    fn text(&self) -> String {
+        self.lines.iter().cloned().collect::<Vec<_>>().join("\n")
+    }
+}
 
 fn main() {
+    let data_dir = ProjectDirs::from("", "", "bevy-vrm")
+        .map(|dirs| dirs.data_dir().to_path_buf())
+        .unwrap_or_else(|| PathBuf::from("data"));
+
+    let models_dir = data_dir.join("models");
+    fs::create_dir_all(&models_dir).expect("Failed to create app data directory");
+    fs::create_dir_all("assets/models").ok();
+
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
@@ -32,16 +92,25 @@ fn main() {
         })
         .add_plugins(EntityCountDiagnosticsPlugin::default())
         .add_plugins(SystemInformationDiagnosticsPlugin)
+        .add_plugins(
+            FileDialogPlugin::new()
+                .with_load_file::<VrmLoad>(),
+        )
+        .insert_resource(AppDataDir(data_dir))
+        .init_resource::<AppLog>()
         .add_systems(Startup, setup)
-        .add_systems(Update, (toggle_debug, update_debug_panel))
+        .add_systems(Update, (
+            toggle_debug,
+            toggle_log,
+            update_debug_panel,
+            update_log_panel,
+            open_file_dialog,
+            handle_vrm_loaded,
+        ))
         .run();
 }
 
-#[derive(Component)]
-struct DebugPanel;
-
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    // Camera with orbit controls
+fn setup(mut commands: Commands, mut log: ResMut<AppLog>) {
     commands.spawn((
         Camera3d::default(),
         Transform::from_xyz(0.0, 1.0, 3.0).looking_at(Vec3::new(0.0, 1.0, 0.0), Vec3::Y),
@@ -52,7 +121,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
     ));
 
-    // Directional light
     commands.spawn((
         DirectionalLight {
             illuminance: 10000.0,
@@ -62,17 +130,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -0.5, 0.5, 0.0)),
     ));
 
-    // Load VRM model
-    commands.spawn(VrmHandle(asset_server.load("models/test.vrm")));
-
     // Debug panel (bottom-left)
     commands.spawn((
         DebugPanel,
         Text::new(""),
-        TextFont {
-            font_size: 13.0,
-            ..default()
-        },
+        TextFont { font_size: 13.0, ..default() },
         TextColor(Color::srgba(0.0, 1.0, 0.0, 0.7)),
         Node {
             position_type: PositionType::Absolute,
@@ -82,7 +144,93 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
     ));
 
-    info!("Bevy VRM — F3: toggle debug overlay");
+    // Log panel (right side)
+    commands.spawn((
+        LogPanel,
+        Text::new(""),
+        TextFont { font_size: 11.0, ..default() },
+        TextColor(Color::srgba(0.8, 0.8, 0.8, 0.8)),
+        Node {
+            position_type: PositionType::Absolute,
+            top: Val::Px(40.0),
+            right: Val::Px(12.0),
+            max_width: Val::Px(500.0),
+            ..default()
+        },
+    ));
+
+    log.push("[INIT] O: open VRM | F3: stats | F4: log");
+}
+
+fn open_file_dialog(
+    mut commands: Commands,
+    input: Res<ButtonInput<KeyCode>>,
+    mut log: ResMut<AppLog>,
+) {
+    if input.just_pressed(KeyCode::KeyO) {
+        log.push("[DIALOG] opening file picker...");
+        commands
+            .dialog()
+            .set_title("Open VRM")
+            .add_filter("VRM", &["vrm"])
+            .load_file::<VrmLoad>();
+    }
+}
+
+fn handle_vrm_loaded(
+    mut commands: Commands,
+    mut ev_loaded: MessageReader<DialogFileLoaded<VrmLoad>>,
+    asset_server: Res<AssetServer>,
+    app_data: Res<AppDataDir>,
+    existing_vrm: Query<Entity, With<LoadedVrm>>,
+    mut log: ResMut<AppLog>,
+) {
+    for ev in ev_loaded.read() {
+        log.push(format!("[LOAD] {} ({:.1} MB)", ev.file_name, ev.contents.len() as f64 / 1048576.0));
+
+        // Validate glTF magic
+        if ev.contents.len() < 4 || &ev.contents[0..4] != b"glTF" {
+            log.push("[ERROR] not a valid glTF/VRM file");
+            continue;
+        }
+        log.push("[LOAD] glTF magic OK");
+
+        // Copy to app data dir
+        let dest_path = app_data.0.join("models").join(&ev.file_name);
+        if let Err(e) = fs::write(&dest_path, &ev.contents) {
+            log.push(format!("[ERROR] save to app data: {}", e));
+            continue;
+        }
+        log.push(format!("[LOAD] saved: {}", dest_path.display()));
+
+        // Copy to assets/models/
+        let assets_path = PathBuf::from("assets/models").join(&ev.file_name);
+        if let Err(e) = fs::write(&assets_path, &ev.contents) {
+            log.push(format!("[ERROR] copy to assets: {}", e));
+            continue;
+        }
+        log.push("[LOAD] copied to assets/models/");
+
+        // Despawn existing
+        let count = existing_vrm.iter().count();
+        for entity in &existing_vrm {
+            commands.entity(entity).despawn();
+        }
+        if count > 0 {
+            log.push(format!("[LOAD] despawned {} previous", count));
+        }
+
+        // Load via asset server
+        let asset_path = format!("models/{}", ev.file_name);
+        let handle = asset_server.load::<VrmAsset>(&asset_path);
+        log.push(format!("[LOAD] asset_server.load('{}')", asset_path));
+
+        commands.spawn((
+            LoadedVrm,
+            VrmHandle(handle),
+        ));
+        log.push("[LOAD] VrmHandle spawned — waiting for init...");
+    }
 }
 
 fn toggle_debug(
@@ -93,13 +241,32 @@ fn toggle_debug(
     if input.just_pressed(KeyCode::F3) {
         config.enabled = !config.enabled;
         for mut vis in &mut panel_q {
-            *vis = if config.enabled {
-                Visibility::Inherited
-            } else {
-                Visibility::Hidden
-            };
+            *vis = if config.enabled { Visibility::Inherited } else { Visibility::Hidden };
         }
     }
+}
+
+// F4 to toggle log panel
+fn toggle_log(
+    input: Res<ButtonInput<KeyCode>>,
+    mut log: ResMut<AppLog>,
+    mut panel_q: Query<&mut Visibility, With<LogPanel>>,
+) {
+    if input.just_pressed(KeyCode::F4) {
+        log.visible = !log.visible;
+        for mut vis in &mut panel_q {
+            *vis = if log.visible { Visibility::Inherited } else { Visibility::Hidden };
+        }
+    }
+}
+
+fn update_log_panel(
+    log: Res<AppLog>,
+    mut panel_q: Query<&mut Text, With<LogPanel>>,
+) {
+    if !log.is_changed() { return; }
+    let Ok(mut text) = panel_q.single_mut() else { return; };
+    **text = log.text();
 }
 
 fn update_debug_panel(
@@ -107,32 +274,24 @@ fn update_debug_panel(
     meshes: Res<Assets<Mesh>>,
     images: Res<Assets<Image>>,
     materials: Res<Assets<StandardMaterial>>,
-    mut panel_q: Query<&mut Text, With<DebugPanel>>,
+    mut panel_q: Query<&mut Text, (With<DebugPanel>, Without<LogPanel>)>,
 ) {
-    let Ok(mut text) = panel_q.single_mut() else {
-        return;
-    };
+    let Ok(mut text) = panel_q.single_mut() else { return; };
 
     let entities = diagnostics
         .get(&EntityCountDiagnosticsPlugin::ENTITY_COUNT)
-        .and_then(|d| d.smoothed())
-        .unwrap_or(0.0);
-
+        .and_then(|d| d.smoothed()).unwrap_or(0.0);
     let frame_time = diagnostics
         .get(&FrameTimeDiagnosticsPlugin::FRAME_TIME)
-        .and_then(|d| d.smoothed())
-        .unwrap_or(0.0);
-
+        .and_then(|d| d.smoothed()).unwrap_or(0.0);
     let process_mem = diagnostics
         .get(&SystemInformationDiagnosticsPlugin::PROCESS_MEM_USAGE)
-        .and_then(|d| d.smoothed())
-        .unwrap_or(0.0);
+        .and_then(|d| d.smoothed()).unwrap_or(0.0);
 
     let mesh_count = meshes.len();
     let image_count = images.len();
     let material_count = materials.len();
 
-    // Estimate image memory (width * height * 4 bytes assumed)
     let mut image_bytes: u64 = 0;
     for (_, image) in images.iter() {
         image_bytes += image.width() as u64 * image.height() as u64 * 4;
@@ -143,12 +302,8 @@ fn update_debug_panel(
         "frame: {:.1} ms | entities: {}\n\
          meshes: {} | textures: {} ({:.1} MB) | materials: {}\n\
          process mem: {:.1} GiB",
-        frame_time,
-        entities as u32,
-        mesh_count,
-        image_count,
-        image_mb,
-        material_count,
+        frame_time, entities as u32,
+        mesh_count, image_count, image_mb, material_count,
         process_mem,
     );
 }
