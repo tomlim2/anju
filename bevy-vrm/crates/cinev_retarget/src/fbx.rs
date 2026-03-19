@@ -444,16 +444,24 @@ fn sample_curve(curve: Option<&RawAnimCurve>, t_secs: f64, default: f64) -> f64 
     v0 + (v1 - v0) * alpha
 }
 
+/// Convert FBX Euler angles to quaternion.
+///
+/// FBX intrinsic XYZ means: apply X rotation first, then Y, then Z.
+/// glam's from_euler(XYZ, a, b, c) creates Qx(a)*Qy(b)*Qz(c), which
+/// applies Z first, Y second, X last (opposite order).
+///
+/// Fix: FBX intrinsic XYZ → glam ZYX(z,y,x) to get correct application order.
 pub fn euler_to_quat(degrees: Vec3, order: u8) -> Quat {
     let r = degrees * (std::f32::consts::PI / 180.0);
     match order {
-        0 => Quat::from_euler(glam::EulerRot::XYZ, r.x, r.y, r.z),
-        1 => Quat::from_euler(glam::EulerRot::XZY, r.x, r.z, r.y),
-        2 => Quat::from_euler(glam::EulerRot::YZX, r.y, r.z, r.x),
-        3 => Quat::from_euler(glam::EulerRot::YXZ, r.y, r.x, r.z),
-        4 => Quat::from_euler(glam::EulerRot::ZXY, r.z, r.x, r.y),
-        5 => Quat::from_euler(glam::EulerRot::ZYX, r.z, r.y, r.x),
-        _ => Quat::from_euler(glam::EulerRot::XYZ, r.x, r.y, r.z),
+        // FBX intrinsic → glam reversed
+        0 /* XYZ */ => Quat::from_euler(glam::EulerRot::ZYX, r.z, r.y, r.x),
+        1 /* XZY */ => Quat::from_euler(glam::EulerRot::YZX, r.y, r.z, r.x),
+        2 /* YZX */ => Quat::from_euler(glam::EulerRot::XZY, r.x, r.z, r.y),
+        3 /* YXZ */ => Quat::from_euler(glam::EulerRot::ZXY, r.z, r.x, r.y),
+        4 /* ZXY */ => Quat::from_euler(glam::EulerRot::YXZ, r.y, r.x, r.z),
+        5 /* ZYX */ => Quat::from_euler(glam::EulerRot::XYZ, r.x, r.y, r.z),
+        _ => Quat::from_euler(glam::EulerRot::ZYX, r.z, r.y, r.x),
     }
 }
 

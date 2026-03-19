@@ -123,7 +123,6 @@ pub fn compute_fbx_skeleton(fbx_data: &[u8]) -> Result<FbxSkeletonFrames, Retarg
                 .copied()
                 .unwrap_or((glam::Vec3::ZERO, glam::Quat::IDENTITY));
 
-            let rest_t = bone.rest_translation;
             let pre_rot = bone.pre_rotation;
 
             let anim_rot = fbx.tracks.get(name)
@@ -134,12 +133,11 @@ pub fn compute_fbx_skeleton(fbx_data: &[u8]) -> Result<FbxSkeletonFrames, Retarg
             let anim_t = fbx.tracks.get(name)
                 .and_then(|t| t.translations.get(frame))
                 .copied()
-                .unwrap_or(rest_t);
+                .unwrap_or(bone.rest_translation);
 
-            // World position = parent_world * local_translation
-            // Local rotation = PreRotation * animated_rotation
+            // Compute in UE's native Z-up space (cm)
             let local_rot = pre_rot * anim_rot;
-            let world_pos = parent_pos + parent_rot * anim_t * 0.01; // cm → m
+            let world_pos = parent_pos + parent_rot * anim_t;
             let world_rot = parent_rot * local_rot;
 
             world_transforms.insert(name.clone(), (world_pos, world_rot));
@@ -147,10 +145,11 @@ pub fn compute_fbx_skeleton(fbx_data: &[u8]) -> Result<FbxSkeletonFrames, Retarg
 
         for name in &ordered {
             if let Some(&(pos, _)) = world_transforms.get(name) {
+                // Convert final UE Z-up (cm) to Y-up (m): (x, z, -y) * 0.01
                 bone_positions
                     .entry(name.clone())
                     .or_default()
-                    .push([pos.x, pos.y, pos.z]);
+                    .push([pos.x * 0.01, pos.z * 0.01, -pos.y * 0.01]);
             }
         }
     }

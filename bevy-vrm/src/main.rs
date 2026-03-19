@@ -715,7 +715,31 @@ fn draw_bone_viz(
         }
     }
 
-    // --- FBX source skeleton (cyan/magenta, offset +1m on X) ---
+    // --- Ground grid ---
+    let grid_color = Color::srgba(0.3, 0.3, 0.3, 0.5);
+    let grid_size = 5;
+    let grid_step = 0.5_f32;
+    for i in -grid_size..=grid_size {
+        let v = i as f32 * grid_step;
+        let extent = grid_size as f32 * grid_step;
+        gizmos.line(Vec3::new(v, 0.0, -extent), Vec3::new(v, 0.0, extent), grid_color);
+        gizmos.line(Vec3::new(-extent, 0.0, v), Vec3::new(extent, 0.0, v), grid_color);
+    }
+    // Origin axes with arrow tips (Bevy: right-handed Y-up, +X right, +Y up, +Z forward/out)
+    let axis_len = 0.5;
+    let tip = 0.04;
+    // X axis (red)
+    gizmos.line(Vec3::ZERO, Vec3::X * axis_len, Color::srgb(1.0, 0.0, 0.0));
+    gizmos.sphere(Isometry3d::from_translation(Vec3::X * axis_len), tip, Color::srgb(1.0, 0.0, 0.0));
+    // Y axis (green)
+    gizmos.line(Vec3::ZERO, Vec3::Y * axis_len, Color::srgb(0.0, 1.0, 0.0));
+    gizmos.sphere(Isometry3d::from_translation(Vec3::Y * axis_len), tip, Color::srgb(0.0, 1.0, 0.0));
+    // Z axis (blue)
+    gizmos.line(Vec3::ZERO, Vec3::Z * axis_len, Color::srgb(0.0, 0.0, 1.0));
+    gizmos.sphere(Isometry3d::from_translation(Vec3::Z * axis_len), tip, Color::srgb(0.0, 0.0, 1.0));
+
+    // --- FBX source skeleton (cyan, offset +1.5m on X) ---
+    // FBX positions are in UE Z-up space, convert to Y-up: (x, z, -y) * 0.01
     let Some(fbx_viz) = fbx_viz else { return; };
     let skel = &fbx_viz.data;
     if skel.frame_count == 0 { return; }
@@ -725,16 +749,14 @@ fn draw_bone_viz(
     let frame = ((anim_time / skel.duration as f64) * skel.frame_count as f64) as usize;
     let frame = frame.min(skel.frame_count - 1);
 
-    let offset = Vec3::new(1.5, 0.0, 0.0); // offset to the right
+    let offset = Vec3::new(1.5, 0.0, 0.0);
 
     for (name, positions) in &skel.bone_positions {
         if let Some(pos) = positions.get(frame) {
             let p = Vec3::new(pos[0], pos[1], pos[2]) + offset;
 
-            // FBX bones: cyan dots
             gizmos.sphere(Isometry3d::from_translation(p), 0.006, Color::srgb(0.0, 1.0, 1.0));
 
-            // Line to parent
             if let Some(parent_name) = skel.hierarchy.get(name) {
                 if let Some(parent_positions) = skel.bone_positions.get(parent_name) {
                     if let Some(pp) = parent_positions.get(frame) {
