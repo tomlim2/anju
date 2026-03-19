@@ -65,7 +65,11 @@ struct RetargetState {
 #[derive(Resource, Default)]
 struct BoneVizState {
     enabled: bool,
+    labels_spawned: bool,
 }
+
+#[derive(Component)]
+struct BoneLabel;
 
 #[derive(Resource)]
 struct FbxSkeletonViz {
@@ -412,7 +416,7 @@ fn apply_retarget_animation(
     mut retarget_state: ResMut<RetargetState>,
     mut log: ResMut<AppLog>,
     bone_query: Query<(&VrmBone, &Name, &RestTransform, &RestGlobalTransform)>,
-    root_bone_query: Query<(&Name, &Transform), (With<AnimationPlayer>, Without<VrmBone>)>,
+    root_bone_query: Query<(&Name, &Transform, &GlobalTransform), (With<AnimationPlayer>, Without<VrmBone>)>,
     player_query: Query<(Entity, &AnimationPlayer)>,
     mut animation_clips: ResMut<Assets<AnimationClip>>,
     mut animation_graphs: ResMut<Assets<AnimationGraph>>,
@@ -421,49 +425,44 @@ fn apply_retarget_animation(
         return;
     }
 
-    // Wait until VRM bones are spawned (with RestTransform)
     if bone_query.is_empty() || player_query.is_empty() {
         return;
     }
 
     let anim = retarget_state.pending_anim.as_ref().unwrap();
 
-    // Build VRM humanoid bone name → (glTF node Name, rest rotation)
+    // --- Collect VRM bone data from Bevy (version-independent) ---
     let mut bone_name_map: HashMap<String, Name> = HashMap::new();
-    let mut bone_rest_map: HashMap<String, Quat> = HashMap::new();
-    let mut bone_rest_global_map: HashMap<String, Quat> = HashMap::new();
+    let mut bone_rest_local: HashMap<String, Quat> = HashMap::new();
+    let mut bone_rest_global: HashMap<String, Quat> = HashMap::new();
+
     for (vrm_bone, name, rest_tf, rest_gtf) in &bone_query {
         bone_name_map.insert(vrm_bone.0.clone(), name.clone());
-        bone_rest_map.insert(vrm_bone.0.clone(), rest_tf.rotation);
-        bone_rest_global_map.insert(vrm_bone.0.clone(), rest_gtf.rotation());
+        bone_rest_local.insert(vrm_bone.0.clone(), rest_tf.rotation);
+        bone_rest_global.insert(vrm_bone.0.clone(), rest_gtf.rotation());
     }
 
-    // VRM virtual root bone — find by name, get actual Transform (no RestTransform on root)
+    // Root bone: use Transform (no RestTransform) + GlobalTransform for global rest
     let vrm_root_name = Name::new(Vrm::ROOT_BONE);
-    let mut root_rest_rot = Quat::IDENTITY;
-    for (name, tf) in &root_bone_query {
+    let mut root_rest_local = Quat::IDENTITY;
+    let mut root_rest_global_rot = Quat::IDENTITY;
+    for (name, tf, gtf) in &root_bone_query {
         if name.as_str() == Vrm::ROOT_BONE {
-            root_rest_rot = tf.rotation;
+            root_rest_local = tf.rotation;
+            root_rest_global_rot = gtf.to_scale_rotation_translation().1;
             break;
         }
     }
     bone_name_map.insert("VRMC_vrm.root_bone".to_string(), vrm_root_name);
-    bone_rest_map.insert("VRMC_vrm.root_bone".to_string(), root_rest_rot);
+    bone_rest_local.insert("VRMC_vrm.root_bone".to_string(), root_rest_local);
+    bone_rest_global.insert("VRMC_vrm.root_bone".to_string(), root_rest_global_rot);
 
     log.push(format!(
-        "[ANIM] VRM has {} humanoid bones + root (root_rest: {:.3}, {:.3}, {:.3}, {:.3})",
-        bone_name_map.len() - 1, root_rest_rot.x, root_rest_rot.y, root_rest_rot.z, root_rest_rot.w
+        "[ANIM] {} bones | root local=({:.2},{:.2},{:.2},{:.2}) global=({:.2},{:.2},{:.2},{:.2})",
+        bone_name_map.len(),
+        root_rest_local.x, root_rest_local.y, root_rest_local.z, root_rest_local.w,
+        root_rest_global_rot.x, root_rest_global_rot.y, root_rest_global_rot.z, root_rest_global_rot.w,
     ));
-
-    // Log key bone rest rotations to verify if they're truly identity
-    for key_bone in &["hips", "spine", "chest", "leftUpperArm", "leftUpperLeg"] {
-        if let Some(rest) = bone_rest_map.get(*key_bone) {
-            log.push(format!(
-                "  {} rest: ({:.3}, {:.3}, {:.3}, {:.3})",
-                key_bone, rest.x, rest.y, rest.z, rest.w
-            ));
-        }
-    }
 
     let mut clip = AnimationClip::default();
     let mut applied_count = 0;
@@ -478,6 +477,10 @@ fn apply_retarget_animation(
         }
     };
 
+    // FBX Z-up → glTF Y-up coordinate rotation
+    let coord_rot = Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2);
+    let coord_rot_inv = coord_rot.inverse();
+
     for track in &anim.bone_tracks {
         let node_name = match bone_name_map.get(&track.vrm_bone_name) {
             Some(n) => n.clone(),
@@ -486,47 +489,37 @@ fn apply_retarget_animation(
 
         let target_id = AnimationTargetId::from_name(&node_name);
         let is_root = track.vrm_bone_name == "VRMC_vrm.root_bone";
-        let is_hips = track.vrm_bone_name == "hips";
-        let tgt_rest = bone_rest_map
+
+        // VRM bone rest values (from Bevy, already version-correct)
+        let dist_rest = bone_rest_local
             .get(&track.vrm_bone_name)
             .copied()
             .unwrap_or(Quat::IDENTITY);
-        let src_rest = track.src_rest;
-        let src_rest_inv = src_rest.inverse();
-
-        // VRM spec: how_to_transform_human_pose.md
-        // But FBX rest rotations are in UE space → convert to glTF space first
-        // Coordinate conversion: conjugate by -90° X rotation
-        let coord_rot = Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2);
-        let coord_rot_inv = coord_rot.inverse();
-
-        // Convert FBX rest rotations from UE Z-up to glTF Y-up
-        let src_rest_gltf = coord_rot * src_rest * coord_rot_inv;
-        let src_rest_gltf_inv = src_rest_gltf.inverse();
-        let src_rest_g_gltf = coord_rot * track.src_rest_global * coord_rot_inv;
-        let src_rest_g_gltf_inv = src_rest_g_gltf.inverse();
-
-        let dist_rest = tgt_rest;
-        let dist_rest_g = bone_rest_global_map
+        let dist_rest_g = bone_rest_global
             .get(&track.vrm_bone_name)
             .copied()
-            .unwrap_or(tgt_rest);
-        let dist_rest_g_inv = dist_rest_g.inverse();
+            .unwrap_or(Quat::IDENTITY);
+
+        // FBX bone rest values → convert to glTF space
+        let src_rest_gltf = coord_rot * track.src_rest * coord_rot_inv;
+        let src_rest_g_gltf = coord_rot * track.src_rest_global * coord_rot_inv;
 
         let corrected_rotations: Vec<Quat> = track
             .rotations
             .iter()
             .map(|&delta| {
                 if is_root {
-                    // Root: no rotation animation, keep rest only
-                    // Root motion rotation is handled through hips via the formula
-                    tgt_rest
+                    // Root: keep rest rotation (no FBX root rotation applied)
+                    dist_rest
                 } else {
-                    // ALL humanoid bones (including hips): VRM spec formula
-                    let src_pose_ue = src_rest * delta;
-                    let src_pose_gltf = coord_rot * src_pose_ue * coord_rot_inv;
-                    let normalized = src_rest_g_gltf * src_rest_gltf_inv * src_pose_gltf * src_rest_g_gltf_inv;
-                    (dist_rest * dist_rest_g_inv * normalized * dist_rest_g).normalize()
+                    // VRM spec: how_to_transform_human_pose.md
+                    // Step 1: compute src_pose in glTF space
+                    let src_pose_gltf = coord_rot * (track.src_rest * delta) * coord_rot_inv;
+                    // Step 2: normalize (extract pure animation delta in world space)
+                    let normalized = src_rest_g_gltf * src_rest_gltf.inverse()
+                        * src_pose_gltf * src_rest_g_gltf.inverse();
+                    // Step 3: apply to target bone
+                    (dist_rest * dist_rest_g.inverse() * normalized * dist_rest_g).normalize()
                 }
             })
             .collect();
@@ -694,13 +687,40 @@ fn update_debug_panel(
 }
 
 fn toggle_bone_viz(
+    mut commands: Commands,
     input: Res<ButtonInput<KeyCode>>,
     mut state: ResMut<BoneVizState>,
     mut log: ResMut<AppLog>,
+    labels: Query<Entity, With<BoneLabel>>,
+    bone_query: Query<(Entity, &VrmBone, &GlobalTransform)>,
 ) {
     if input.just_pressed(KeyCode::KeyG) {
         state.enabled = !state.enabled;
         log.push(format!("[VIZ] bones {}", if state.enabled { "ON" } else { "OFF" }));
+
+        if !state.enabled {
+            // Despawn labels
+            for entity in &labels {
+                commands.entity(entity).despawn();
+            }
+            state.labels_spawned = false;
+        }
+    }
+
+    // Spawn labels as children of bone entities (auto-tracks position)
+    if state.enabled && !state.labels_spawned && !bone_query.is_empty() {
+        for (entity, vrm_bone, _gtf) in &bone_query {
+            let short_name = vrm_bone.0.as_str();
+            let label = commands.spawn((
+                BoneLabel,
+                Text2d::new(short_name.to_string()),
+                TextFont { font_size: 11.0, ..default() },
+                TextColor(Color::srgba(1.0, 1.0, 0.5, 0.9)),
+                Transform::from_translation(Vec3::Y * 0.02),
+            )).id();
+            commands.entity(entity).add_child(label);
+        }
+        state.labels_spawned = true;
     }
 }
 
