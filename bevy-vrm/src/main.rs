@@ -685,6 +685,7 @@ fn draw_bone_viz(
     parent_transforms: Query<&GlobalTransform>,
     fbx_viz: Option<Res<FbxSkeletonViz>>,
     time: Res<Time<Real>>,
+    anim_player_query: Query<&AnimationPlayer>,
 ) {
     if !state.enabled {
         return;
@@ -749,8 +750,19 @@ fn draw_bone_viz(
     let skel = &fbx_viz.data;
     if skel.frame_count == 0 { return; }
 
-    let elapsed = time.elapsed_secs_f64() - fbx_viz.start_time;
-    let anim_time = elapsed % skel.duration as f64;
+    // Sync FBX skeleton time with AnimationPlayer
+    let anim_time: f64 = anim_player_query
+        .iter()
+        .next()
+        .and_then(|player| {
+            player.playing_animations().next().map(|(_, active)| {
+                active.elapsed() as f64 % skel.duration as f64
+            })
+        })
+        .unwrap_or_else(|| {
+            let elapsed = time.elapsed_secs_f64() - fbx_viz.start_time;
+            elapsed % skel.duration as f64
+        });
     let frame = ((anim_time / skel.duration as f64) * skel.frame_count as f64) as usize;
     let frame = frame.min(skel.frame_count - 1);
 
