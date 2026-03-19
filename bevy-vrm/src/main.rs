@@ -537,9 +537,39 @@ fn apply_retarget_animation(
             .copied()
             .unwrap_or(Quat::IDENTITY);
 
-        // FBX bone rest values → convert to glTF space
-        let src_rest_gltf = coord_rot * track.src_rest * coord_rot_inv;
-        let src_rest_g_gltf = coord_rot * track.src_rest_global * coord_rot_inv;
+        // Industry standard retarget: q_target = LEFT * q_source * RIGHT
+        // LEFT  = inv(targetParentWorld_bind) * sourceParentWorld_bind
+        // RIGHT = inv(sourceWorld_bind) * targetWorld_bind
+        //
+        // Source bind poses need FBX Z-up → glTF Y-up conversion first.
+        // For source: parent_world = parent's global PreRotation chain
+        //             bone_world = this bone's global PreRotation chain
+        // Both converted to glTF via coord_rot conjugation.
+        let src_parent_world = if track.src_rest_global == track.src_rest {
+            // Parent has identity PreRot (root level)
+            coord_rot * Quat::IDENTITY * coord_rot_inv // = identity (but explicit)
+        } else {
+            // Parent world = global / local = src_rest_global * inv(src_rest)
+            let parent_global = track.src_rest_global * track.src_rest.inverse();
+            coord_rot * parent_global * coord_rot_inv
+        };
+        let src_world = coord_rot * track.src_rest_global * coord_rot_inv;
+
+        // Target: from Bevy (already in glTF space)
+        let tgt_parent_world = dist_rest_g * dist_rest.inverse(); // parent = global / local
+        let tgt_world = dist_rest_g;
+
+        // Precompute LEFT and RIGHT (once per bone)
+        let left = tgt_parent_world.inverse() * src_parent_world;
+        let mut right = src_world.inverse() * tgt_world;
+
+        // A-pose → T-pose offset baked into RIGHT
+        if let Some(offset) = anim.rest_pose_offsets.get(&track.vrm_bone_name) {
+            let offset_quat = Quat::from_euler(
+                EulerRot::XYZ, offset[0], offset[1], offset[2],
+            );
+            right = right * offset_quat;
+        }
 
         let corrected_rotations: Vec<Quat> = track
             .rotations
@@ -548,21 +578,10 @@ fn apply_retarget_animation(
                 if is_root {
                     dist_rest
                 } else {
-                    // VRM spec: how_to_transform_human_pose.md
-                    let src_pose_gltf = coord_rot * (track.src_rest * delta) * coord_rot_inv;
-                    let normalized = src_rest_g_gltf * src_rest_gltf.inverse()
-                        * src_pose_gltf * src_rest_g_gltf.inverse();
-                    let mut result = dist_rest * dist_rest_g.inverse() * normalized * dist_rest_g;
-
-                    // Apply A-pose → T-pose offset if defined
-                    if let Some(offset) = anim.rest_pose_offsets.get(&track.vrm_bone_name) {
-                        let offset_quat = Quat::from_euler(
-                            EulerRot::XYZ, offset[0], offset[1], offset[2],
-                        );
-                        result = result * offset_quat;
-                    }
-
-                    result.normalize()
+                    // q_target = LEFT * q_source * RIGHT
+                    let src_local = track.src_rest * delta; // full FBX local rotation
+                    let src_local_gltf = coord_rot * src_local * coord_rot_inv;
+                    (left * src_local_gltf * right).normalize()
                 }
             })
             .collect();
