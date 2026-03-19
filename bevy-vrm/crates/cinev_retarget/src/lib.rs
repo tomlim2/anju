@@ -3,6 +3,7 @@ pub mod fbx;
 pub mod mapping;
 pub mod vrm_compat;
 
+pub use glam;
 use glam::{Quat, Vec3};
 use thiserror::Error;
 
@@ -37,14 +38,18 @@ pub struct RetargetedAnimation {
 #[derive(Debug)]
 pub struct BoneTrack {
     pub vrm_bone_name: String,
+    /// FBX bone name (with prefix, for looking up world rotations)
+    pub src_bone_name: String,
     pub timestamps: Vec<f32>,
     /// Raw animation (Lcl Rotation as quat, WITHOUT PreRotation)
     pub rotations: Vec<Quat>,
     pub translations: Option<Vec<Vec3>>,
-    /// Source bone LOCAL rest rotation (FBX PreRotation)
+    /// Source bone LOCAL rest rotation (FBX PreRotation only, for src_local = src_rest * delta)
     pub src_rest: Quat,
-    /// Source bone GLOBAL rest rotation (accumulated PreRotations from root)
+    /// Source bone GLOBAL rest rotation (accumulated PreRotation + Lcl Rotation rest)
     pub src_rest_global: Quat,
+    /// Source bone PARENT's global rest rotation
+    pub src_parent_rest_global: Quat,
 }
 
 /// Computed world-space bone positions per frame for visualization.
@@ -52,8 +57,10 @@ pub struct BoneTrack {
 pub struct FbxSkeletonFrames {
     pub frame_count: usize,
     pub duration: f32,
-    /// bone_name → Vec of world positions per frame
+    /// bone_name → Vec of world positions per frame (Y-up, meters)
     pub bone_positions: std::collections::HashMap<String, Vec<[f32; 3]>>,
+    /// bone_name → Vec of world rotations per frame (Z-up, FBX native space)
+    pub bone_rotations: std::collections::HashMap<String, Vec<Quat>>,
     /// bone_name → parent_name
     pub hierarchy: std::collections::HashMap<String, String>,
 }
@@ -109,6 +116,8 @@ pub fn compute_fbx_skeleton(fbx_data: &[u8]) -> Result<FbxSkeletonFrames, Retarg
     // world = parent_world * T(rest_translation) * PreRotation * animated_rotation
     let mut bone_positions: std::collections::HashMap<String, Vec<[f32; 3]>> =
         std::collections::HashMap::new();
+    let mut bone_rotations: std::collections::HashMap<String, Vec<glam::Quat>> =
+        std::collections::HashMap::new();
 
     for frame in 0..frame_count {
         let mut world_transforms: std::collections::HashMap<String, (glam::Vec3, glam::Quat)> =
@@ -148,12 +157,17 @@ pub fn compute_fbx_skeleton(fbx_data: &[u8]) -> Result<FbxSkeletonFrames, Retarg
         }
 
         for name in &ordered {
-            if let Some(&(pos, _)) = world_transforms.get(name) {
+            if let Some(&(pos, rot)) = world_transforms.get(name) {
                 // Convert final UE Z-up (cm) to Y-up (m): (x, z, -y) * 0.01
                 bone_positions
                     .entry(name.clone())
                     .or_default()
                     .push([pos.x * 0.01, pos.z * 0.01, -pos.y * 0.01]);
+                // Store world rotation in native Z-up space
+                bone_rotations
+                    .entry(name.clone())
+                    .or_default()
+                    .push(rot);
             }
         }
     }
@@ -162,6 +176,7 @@ pub fn compute_fbx_skeleton(fbx_data: &[u8]) -> Result<FbxSkeletonFrames, Retarg
         frame_count,
         duration,
         bone_positions,
+        bone_rotations,
         hierarchy,
     })
 }

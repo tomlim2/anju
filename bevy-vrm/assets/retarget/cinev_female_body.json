@@ -6,7 +6,6 @@
     "pelvis": "hips",
     "spine_01": "spine",
     "spine_02": "chest",
-    "spine_03": "upperChest",
     "neck_01": "neck",
     "head": "head",
     "clavicle_l": "leftShoulder",
@@ -60,7 +59,9 @@
     "rightShoulder": [0.0, 0.0, -0.38],
     "rightUpperArm": [0.0, 0.0, -0.71]
   },
-  "accumulate": {},
+  "accumulate": {
+    "upperChest": ["spine_03", "spine_04", "spine_05"]
+  },
   "twist_fold": {
     "leftUpperArm": ["upperarm_twist_01_l", "upperarm_twist_02_l"],
     "rightUpperArm": ["upperarm_twist_01_r", "upperarm_twist_02_r"],
