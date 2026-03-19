@@ -547,8 +547,18 @@ fn apply_retarget_animation(
 
         // Translation curve
         if let Some(ref translations) = track.translations {
-            // Use translations as-is (glTF world coords from ue_to_gltf_translation)
-            let local_translations: Vec<Vec3> = translations.clone();
+            // AnimationClip REPLACES Transform.translation, so we must include
+            // the bone's rest translation + animation delta
+            let bone_rest_translation = bone_query
+                .iter()
+                .find(|(vb, _, _, _)| vb.0 == track.vrm_bone_name)
+                .map(|(_, _, rt, _)| rt.translation)
+                .unwrap_or(Vec3::ZERO);
+
+            let local_translations: Vec<Vec3> = translations
+                .iter()
+                .map(|&delta| bone_rest_translation + delta)
+                .collect();
 
             if local_translations.len() >= 2 {
                 match bevy::math::curve::SampleAutoCurve::new(domain, local_translations) {
