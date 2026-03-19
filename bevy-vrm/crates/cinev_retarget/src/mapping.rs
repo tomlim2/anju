@@ -150,17 +150,12 @@ pub fn retarget(
 
             let src_rest_global = global_rest.get(fbx_name).copied().unwrap_or(bone_pre);
 
-            // For hips: include pelvis translation (converted to glTF Y-up)
-            let translations = if vrm_bone == "hips" {
-                let bone_rest_t = bone.map(|b| b.rest_translation).unwrap_or(Vec3::ZERO);
-                Some(track.translations.iter().map(|&t| {
-                    // Delta from rest position, converted to glTF Y-up
-                    let delta_t = t - bone_rest_t;
-                    ue_to_gltf_translation(delta_t)
-                }).collect())
-            } else {
-                None
-            };
+            // All bones: include translation delta (converted to glTF Y-up)
+            let bone_rest_t = bone.map(|b| b.rest_translation).unwrap_or(Vec3::ZERO);
+            let translations = Some(track.translations.iter().map(|&t| {
+                let delta_t = t - bone_rest_t;
+                ue_to_gltf_translation(delta_t)
+            }).collect());
 
             result_tracks.push(BoneTrack {
                 vrm_bone_name: vrm_bone,

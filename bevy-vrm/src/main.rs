@@ -491,19 +491,10 @@ fn apply_retarget_animation(
         let target_id = AnimationTargetId::from_name(&node_name);
         let is_root = track.vrm_bone_name == "VRMC_vrm.root_bone";
 
-        // VRM bone rest values (from Bevy, already version-correct)
         let dist_rest = bone_rest_local
             .get(&track.vrm_bone_name)
             .copied()
             .unwrap_or(Quat::IDENTITY);
-        let dist_rest_g = bone_rest_global
-            .get(&track.vrm_bone_name)
-            .copied()
-            .unwrap_or(Quat::IDENTITY);
-
-        // FBX bone rest values → convert to glTF space
-        let src_rest_gltf = coord_rot * track.src_rest * coord_rot_inv;
-        let src_rest_g_gltf = coord_rot * track.src_rest_global * coord_rot_inv;
 
         let corrected_rotations: Vec<Quat> = track
             .rotations
@@ -512,13 +503,10 @@ fn apply_retarget_animation(
                 if is_root {
                     dist_rest
                 } else {
-                    // VRM spec: how_to_transform_human_pose.md
-                    let src_pose_gltf = coord_rot * (track.src_rest * delta) * coord_rot_inv;
-                    let normalized = src_rest_g_gltf * src_rest_gltf.inverse()
-                        * src_pose_gltf * src_rest_g_gltf.inverse();
-                    let mut result = dist_rest * dist_rest_g.inverse() * normalized * dist_rest_g;
+                    // Pure coordinate conversion: FBX Z-up → glTF Y-up
+                    let mut result = coord_rot * delta * coord_rot_inv;
 
-                    // Apply A-pose → T-pose offset if defined
+                    // A-pose → T-pose offset
                     if let Some(offset) = anim.rest_pose_offsets.get(&track.vrm_bone_name) {
                         let offset_quat = Quat::from_euler(
                             EulerRot::XYZ, offset[0], offset[1], offset[2],
