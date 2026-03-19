@@ -149,11 +149,24 @@ pub fn retarget(
             let bone_pre = bone.map(|b| b.pre_rotation).unwrap_or(Quat::IDENTITY);
 
             let src_rest_global = global_rest.get(fbx_name).copied().unwrap_or(bone_pre);
+
+            // For hips: include pelvis translation (converted to glTF Y-up)
+            let translations = if vrm_bone == "hips" {
+                let bone_rest_t = bone.map(|b| b.rest_translation).unwrap_or(Vec3::ZERO);
+                Some(track.translations.iter().map(|&t| {
+                    // Delta from rest position, converted to glTF Y-up
+                    let delta_t = t - bone_rest_t;
+                    ue_to_gltf_translation(delta_t)
+                }).collect())
+            } else {
+                None
+            };
+
             result_tracks.push(BoneTrack {
                 vrm_bone_name: vrm_bone,
                 timestamps: timestamps.clone(),
                 rotations: track.rotations.clone(),
-                translations: None,
+                translations,
                 src_rest: bone_pre,
                 src_rest_global,
             });
