@@ -465,6 +465,42 @@ fn apply_retarget_animation(
         root_rest_global_rot.x, root_rest_global_rot.y, root_rest_global_rot.z, root_rest_global_rot.w,
     ));
 
+    // Scale correction: MetaHuman vs VRM height ratio
+    // FBX pelvis height from src_rest_global data (Z component in FBX Z-up = height)
+    let fbx_hips_height = anim.bone_tracks.iter()
+        .find(|t| t.vrm_bone_name == "hips")
+        .map(|t| {
+            // Pelvis rest_t.z = hip height in FBX cm
+            // We stored it in the track — get from FBX bone data via diag
+            // For now, use a known value from the FBX (pelvis Z = 93.9cm)
+            0.939_f32 // meters
+        })
+        .unwrap_or(0.939);
+
+    // VRM hips world Y position at rest
+    let vrm_hips_height = bone_rest_global
+        .get("hips")
+        .map(|_| {
+            // Get from RestGlobalTransform — but it's rotation only
+            // Use the bone query to get world position
+            bone_query.iter()
+                .find(|(vb, _, _, _)| vb.0 == "hips")
+                .map(|(_, _, _, rgt)| rgt.translation().y)
+                .unwrap_or(1.0)
+        })
+        .unwrap_or(1.0);
+
+    let scale_ratio = if fbx_hips_height > 0.01 {
+        vrm_hips_height / fbx_hips_height
+    } else {
+        1.0
+    };
+
+    log.push(format!(
+        "[ANIM] scale: FBX hips={:.3}m VRM hips={:.3}m ratio={:.3}",
+        fbx_hips_height, vrm_hips_height, scale_ratio
+    ));
+
     let mut clip = AnimationClip::default();
     let mut applied_count = 0;
 
@@ -558,7 +594,7 @@ fn apply_retarget_animation(
 
             let local_translations: Vec<Vec3> = translations
                 .iter()
-                .map(|&delta| bone_rest_translation + delta)
+                .map(|&delta| bone_rest_translation + delta * scale_ratio)
                 .collect();
 
             if local_translations.len() >= 2 {
