@@ -445,6 +445,16 @@ fn apply_retarget_animation(
         bone_name_map.len() - 1, root_rest_rot.x, root_rest_rot.y, root_rest_rot.z, root_rest_rot.w
     ));
 
+    // Log key bone rest rotations to verify if they're truly identity
+    for key_bone in &["hips", "spine", "chest", "leftUpperArm", "leftUpperLeg"] {
+        if let Some(rest) = bone_rest_map.get(*key_bone) {
+            log.push(format!(
+                "  {} rest: ({:.3}, {:.3}, {:.3}, {:.3})",
+                key_bone, rest.x, rest.y, rest.z, rest.w
+            ));
+        }
+    }
+
     let mut clip = AnimationClip::default();
     let mut applied_count = 0;
 
@@ -473,20 +483,15 @@ fn apply_retarget_animation(
         let src_rest = track.src_rest;
         let src_rest_inv = src_rest.inverse();
 
-        // Phase 1: Raw delta pass-through (no rest pose correction)
-        // FBX Lcl Rotation is already in bone-local frame (post-PreRotation).
-        // MetaHuman and VRM share similar bone-local coordinate conventions
-        // for the spine chain, so raw deltas transfer reasonably well.
-        // For root bone: apply tgt_rest to maintain VRM root orientation.
         let corrected_rotations: Vec<Quat> = track
             .rotations
             .iter()
             .map(|&delta| {
                 if is_root {
-                    // Root: tgt_rest * delta preserves the 180° Y base rotation
+                    // Root bone: maintain 180° Y base + delta
                     (tgt_rest * delta).normalize()
                 } else {
-                    // Other bones: raw delta directly as local rotation
+                    // All humanoid bones: raw delta (Euler order now correct)
                     delta.normalize()
                 }
             })
