@@ -36,11 +36,13 @@ pub struct RetargetedAnimation {
 pub struct BoneTrack {
     pub vrm_bone_name: String,
     pub timestamps: Vec<f32>,
-    /// Raw animation deltas (Lcl Rotation as quat, WITHOUT PreRotation)
+    /// Raw animation (Lcl Rotation as quat, WITHOUT PreRotation)
     pub rotations: Vec<Quat>,
     pub translations: Option<Vec<Vec3>>,
-    /// Source bone rest pose (FBX PreRotation) — needed for rest pose correction
+    /// Source bone LOCAL rest rotation (FBX PreRotation)
     pub src_rest: Quat,
+    /// Source bone GLOBAL rest rotation (accumulated PreRotations from root)
+    pub src_rest_global: Quat,
 }
 
 /// Computed world-space bone positions per frame for visualization.

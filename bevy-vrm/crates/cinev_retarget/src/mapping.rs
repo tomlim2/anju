@@ -76,6 +76,32 @@ pub fn retarget(
 
     let resolve = |cfg_name: &str| -> Option<&String> { prefix_map.get(cfg_name) };
 
+    // Compute global rest rotation for each FBX bone (accumulated PreRotations from root)
+    let mut global_rest: HashMap<String, Quat> = HashMap::new();
+    // Topological order: process parents first
+    let mut to_process: Vec<String> = fbx.bones.keys().cloned().collect();
+    let mut processed = std::collections::HashSet::new();
+    while !to_process.is_empty() {
+        let mut progress = false;
+        to_process.retain(|name| {
+            let bone = &fbx.bones[name];
+            let parent_done = bone.parent.as_ref().map_or(true, |p| processed.contains(p));
+            if parent_done {
+                let parent_global = bone.parent.as_ref()
+                    .and_then(|p| global_rest.get(p))
+                    .copied()
+                    .unwrap_or(Quat::IDENTITY);
+                global_rest.insert(name.clone(), parent_global * bone.pre_rotation);
+                processed.insert(name.clone());
+                progress = true;
+                false // remove from to_process
+            } else {
+                true // keep
+            }
+        });
+        if !progress { break; }
+    }
+
     // 0. Root bone → VRM virtual root bone (translation + rotation)
     if let Some(ref root_name) = config.root_bone {
         if let Some(fbx_name) = resolve(root_name) {
@@ -90,12 +116,14 @@ pub fn retarget(
                     .map(|&t| ue_to_gltf_translation(t))
                     .collect();
 
+                let src_rest_global = global_rest.get(fbx_name).copied().unwrap_or(src_rest);
                 result_tracks.push(BoneTrack {
                     vrm_bone_name: VRM_ROOT_BONE.to_string(),
                     timestamps: timestamps.clone(),
                     rotations: track.rotations.clone(),
                     translations: Some(translations),
                     src_rest,
+                    src_rest_global,
                 });
             }
         }
@@ -120,12 +148,14 @@ pub fn retarget(
             let bone = fbx.bones.get(fbx_name);
             let bone_pre = bone.map(|b| b.pre_rotation).unwrap_or(Quat::IDENTITY);
 
+            let src_rest_global = global_rest.get(fbx_name).copied().unwrap_or(bone_pre);
             result_tracks.push(BoneTrack {
                 vrm_bone_name: vrm_bone,
                 timestamps: timestamps.clone(),
                 rotations: track.rotations.clone(),
                 translations: None,
                 src_rest: bone_pre,
+                src_rest_global,
             });
         }
     }
@@ -161,12 +191,18 @@ pub fn retarget(
             continue;
         }
 
+        let first_fbx = src_bones.first().and_then(|n| resolve(n));
+        let src_rest_global = first_fbx
+            .and_then(|n| global_rest.get(n))
+            .copied()
+            .unwrap_or(first_src_rest);
         result_tracks.push(BoneTrack {
             vrm_bone_name: vrm_bone.clone(),
             timestamps: timestamps.clone(),
             rotations: accumulated,
             translations: None,
             src_rest: first_src_rest,
+            src_rest_global,
         });
     }
 

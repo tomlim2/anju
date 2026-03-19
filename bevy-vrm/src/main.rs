@@ -403,7 +403,7 @@ fn apply_retarget_animation(
     mut commands: Commands,
     mut retarget_state: ResMut<RetargetState>,
     mut log: ResMut<AppLog>,
-    bone_query: Query<(&VrmBone, &Name, &RestTransform)>,
+    bone_query: Query<(&VrmBone, &Name, &RestTransform, &RestGlobalTransform)>,
     root_bone_query: Query<(&Name, &Transform), (With<AnimationPlayer>, Without<VrmBone>)>,
     player_query: Query<(Entity, &AnimationPlayer)>,
     mut animation_clips: ResMut<Assets<AnimationClip>>,
@@ -423,9 +423,11 @@ fn apply_retarget_animation(
     // Build VRM humanoid bone name → (glTF node Name, rest rotation)
     let mut bone_name_map: HashMap<String, Name> = HashMap::new();
     let mut bone_rest_map: HashMap<String, Quat> = HashMap::new();
-    for (vrm_bone, name, rest_tf) in &bone_query {
+    let mut bone_rest_global_map: HashMap<String, Quat> = HashMap::new();
+    for (vrm_bone, name, rest_tf, rest_gtf) in &bone_query {
         bone_name_map.insert(vrm_bone.0.clone(), name.clone());
         bone_rest_map.insert(vrm_bone.0.clone(), rest_tf.rotation);
+        bone_rest_global_map.insert(vrm_bone.0.clone(), rest_gtf.rotation());
     }
 
     // VRM virtual root bone — find by name, get actual Transform (no RestTransform on root)
@@ -476,6 +478,7 @@ fn apply_retarget_animation(
 
         let target_id = AnimationTargetId::from_name(&node_name);
         let is_root = track.vrm_bone_name == "VRMC_vrm.root_bone";
+        let is_hips = track.vrm_bone_name == "hips";
         let tgt_rest = bone_rest_map
             .get(&track.vrm_bone_name)
             .copied()
@@ -483,16 +486,39 @@ fn apply_retarget_animation(
         let src_rest = track.src_rest;
         let src_rest_inv = src_rest.inverse();
 
+        // VRM spec: how_to_transform_human_pose.md
+        // But FBX rest rotations are in UE space → convert to glTF space first
+        // Coordinate conversion: conjugate by -90° X rotation
+        let coord_rot = Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2);
+        let coord_rot_inv = coord_rot.inverse();
+
+        // Convert FBX rest rotations from UE Z-up to glTF Y-up
+        let src_rest_gltf = coord_rot * src_rest * coord_rot_inv;
+        let src_rest_gltf_inv = src_rest_gltf.inverse();
+        let src_rest_g_gltf = coord_rot * track.src_rest_global * coord_rot_inv;
+        let src_rest_g_gltf_inv = src_rest_g_gltf.inverse();
+
+        let dist_rest = tgt_rest;
+        let dist_rest_g = bone_rest_global_map
+            .get(&track.vrm_bone_name)
+            .copied()
+            .unwrap_or(tgt_rest);
+        let dist_rest_g_inv = dist_rest_g.inverse();
+
         let corrected_rotations: Vec<Quat> = track
             .rotations
             .iter()
             .map(|&delta| {
                 if is_root {
-                    // Root bone: maintain 180° Y base + delta
-                    (tgt_rest * delta).normalize()
+                    // Root: no rotation animation, keep rest only
+                    // Root motion rotation is handled through hips via the formula
+                    tgt_rest
                 } else {
-                    // All humanoid bones: raw delta (Euler order now correct)
-                    delta.normalize()
+                    // ALL humanoid bones (including hips): VRM spec formula
+                    let src_pose_ue = src_rest * delta;
+                    let src_pose_gltf = coord_rot * src_pose_ue * coord_rot_inv;
+                    let normalized = src_rest_g_gltf * src_rest_gltf_inv * src_pose_gltf * src_rest_g_gltf_inv;
+                    (dist_rest * dist_rest_g_inv * normalized * dist_rest_g).normalize()
                 }
             })
             .collect();
@@ -514,15 +540,8 @@ fn apply_retarget_animation(
 
         // Translation curve
         if let Some(ref translations) = track.translations {
-            // Root bone translations are in glTF world space (from ue_to_gltf_translation).
-            // Convert to root bone's local space using tgt_rest rotation.
-            // If parent has 180° Y (0.x→1.0), tgt_rest encodes that relationship.
-            let local_translations: Vec<Vec3> = if is_root {
-                let tgt_rest_inv = tgt_rest.inverse();
-                translations.iter().map(|&t| tgt_rest_inv * t).collect()
-            } else {
-                translations.clone()
-            };
+            // Use translations as-is (glTF world coords from ue_to_gltf_translation)
+            let local_translations: Vec<Vec3> = translations.clone();
 
             if local_translations.len() >= 2 {
                 match bevy::math::curve::SampleAutoCurve::new(domain, local_translations) {
