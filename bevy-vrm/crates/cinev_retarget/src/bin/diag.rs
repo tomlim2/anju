@@ -53,6 +53,28 @@ fn main() {
     }
 
     println!("\n=== Animated bones: {} ===", fbx.tracks.len());
+
+    // Dump first 5 frames of root and pelvis animation
+    let prefix = "DHIbody:";
+    for bone_name in &["root", "pelvis", "spine_01", "thigh_l"] {
+        let fbx_name = format!("{}{}", prefix, bone_name);
+        println!("\n--- {} animation (first 5 frames) ---", bone_name);
+
+        if let Some(track) = fbx.tracks.get(&fbx_name) {
+            for i in 0..5.min(track.rotations.len()) {
+                let r = track.rotations[i];
+                let t = track.translations[i];
+                // Compute rotation angle in degrees
+                let angle_deg = r.to_axis_angle().1.to_degrees();
+                println!(
+                    "  f{}: rot=({:.4},{:.4},{:.4},{:.4}) angle={:.1}° | trans=({:.1},{:.1},{:.1})",
+                    i, r.x, r.y, r.z, r.w, angle_deg, t.x, t.y, t.z
+                );
+            }
+        } else {
+            println!("  (no animation track)");
+        }
+    }
 }
 
 fn check_global_settings(data: &[u8]) {

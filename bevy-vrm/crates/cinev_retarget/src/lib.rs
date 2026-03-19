@@ -30,6 +30,8 @@ pub struct RetargetedAnimation {
     pub name: String,
     pub duration_secs: f32,
     pub bone_tracks: Vec<BoneTrack>,
+    /// A-pose → T-pose offsets per VRM bone (Euler radians [x, y, z])
+    pub rest_pose_offsets: std::collections::HashMap<String, [f32; 3]>,
 }
 
 #[derive(Debug)]

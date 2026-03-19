@@ -13,6 +13,9 @@ pub struct RetargetConfig {
     pub twist_fold: HashMap<String, Vec<String>>,
     #[serde(default)]
     pub root_bone: Option<String>,
+    /// A-pose → T-pose rest pose offsets (Euler radians [x, y, z])
+    #[serde(default)]
+    pub rest_pose_offsets: HashMap<String, [f32; 3]>,
     #[serde(default)]
     pub ignore_patterns: Vec<String>,
     #[serde(default)]

@@ -230,5 +230,6 @@ pub fn retarget(
         name: config.name.clone(),
         duration_secs: duration,
         bone_tracks: result_tracks,
+        rest_pose_offsets: config.rest_pose_offsets.clone(),
     })
 }

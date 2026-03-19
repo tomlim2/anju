@@ -509,17 +509,23 @@ fn apply_retarget_animation(
             .iter()
             .map(|&delta| {
                 if is_root {
-                    // Root: keep rest rotation (no FBX root rotation applied)
                     dist_rest
                 } else {
                     // VRM spec: how_to_transform_human_pose.md
-                    // Step 1: compute src_pose in glTF space
                     let src_pose_gltf = coord_rot * (track.src_rest * delta) * coord_rot_inv;
-                    // Step 2: normalize (extract pure animation delta in world space)
                     let normalized = src_rest_g_gltf * src_rest_gltf.inverse()
                         * src_pose_gltf * src_rest_g_gltf.inverse();
-                    // Step 3: apply to target bone
-                    (dist_rest * dist_rest_g.inverse() * normalized * dist_rest_g).normalize()
+                    let mut result = dist_rest * dist_rest_g.inverse() * normalized * dist_rest_g;
+
+                    // Apply A-pose → T-pose offset if defined
+                    if let Some(offset) = anim.rest_pose_offsets.get(&track.vrm_bone_name) {
+                        let offset_quat = Quat::from_euler(
+                            EulerRot::XYZ, offset[0], offset[1], offset[2],
+                        );
+                        result = result * offset_quat;
+                    }
+
+                    result.normalize()
                 }
             })
             .collect();
