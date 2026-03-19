@@ -10,6 +10,7 @@ bevy_panorbit_camera = "0.34"
 bevy_file_dialog = "0.9"
 directories = "6.0"
 vrm0_compat = { path = "crates/vrm0_compat" }
+cinev_retarget = { path = "crates/cinev_retarget" }
 
 # Enable optimizations for dependencies in dev builds (faster runtime, reasonable compile)
 [profile.dev.package."*"]

@@ -1,51 +1,44 @@
+use bevy::animation::{AnimationTargetId, animated_field};
 use bevy::prelude::*;
 use bevy::dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin};
 use bevy::diagnostic::{
     DiagnosticsStore, EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin,
     SystemInformationDiagnosticsPlugin,
 };
+use bevy::math::curve::Interval;
 use bevy_file_dialog::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_vrm1::prelude::*;
 use directories::ProjectDirs;
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::path::PathBuf;
 
 struct VrmLoad;
+struct FbxLoad;
 
-enum VrmVersion {
+enum VrmVersionTag {
     Vrm0,
     Vrm1,
     Unknown,
 }
 
-/// Parse glTF binary header + JSON chunk to detect VRM version.
-/// VRM 0.x: extensionsUsed contains "VRM"
-/// VRM 1.0: extensionsUsed contains "VRMC_vrm"
-fn detect_vrm_version(data: &[u8]) -> VrmVersion {
-    if data.len() < 20 { return VrmVersion::Unknown; }
-
-    // glTF header: magic(4) + version(4) + length(4)
-    // First chunk: chunk_length(4) + chunk_type(4) + chunk_data(chunk_length)
+fn detect_vrm_version(data: &[u8]) -> VrmVersionTag {
+    if data.len() < 20 { return VrmVersionTag::Unknown; }
     let chunk_len = u32::from_le_bytes([data[12], data[13], data[14], data[15]]) as usize;
     let chunk_type = &data[16..20];
-
-    // First chunk must be JSON (0x4E4F534A)
-    if chunk_type != b"JSON" { return VrmVersion::Unknown; }
-    if data.len() < 20 + chunk_len { return VrmVersion::Unknown; }
-
+    if chunk_type != b"JSON" { return VrmVersionTag::Unknown; }
+    if data.len() < 20 + chunk_len { return VrmVersionTag::Unknown; }
     let json_str = match std::str::from_utf8(&data[20..20 + chunk_len]) {
         Ok(s) => s,
-        Err(_) => return VrmVersion::Unknown,
+        Err(_) => return VrmVersionTag::Unknown,
     };
-
     if json_str.contains("\"VRMC_vrm\"") {
-        VrmVersion::Vrm1
+        VrmVersionTag::Vrm1
     } else if json_str.contains("\"VRM\"") {
-        VrmVersion::Vrm0
+        VrmVersionTag::Vrm0
     } else {
-        VrmVersion::Unknown
+        VrmVersionTag::Unknown
     }
 }
 
@@ -61,7 +54,24 @@ struct LogPanel;
 #[derive(Component)]
 struct LoadedVrm;
 
-// In-app log buffer
+#[derive(Resource, Default)]
+struct RetargetState {
+    config_json: Option<String>,
+    pending_anim: Option<cinev_retarget::RetargetedAnimation>,
+    applied: bool,
+}
+
+#[derive(Resource, Default)]
+struct BoneVizState {
+    enabled: bool,
+}
+
+#[derive(Resource)]
+struct FbxSkeletonViz {
+    data: cinev_retarget::FbxSkeletonFrames,
+    start_time: f64,
+}
+
 #[derive(Resource)]
 struct AppLog {
     lines: VecDeque<String>,
@@ -82,7 +92,7 @@ impl Default for AppLog {
 impl AppLog {
     fn push(&mut self, msg: impl Into<String>) {
         let msg = msg.into();
-        info!("{}", msg); // also print to terminal
+        info!("{}", msg);
         self.lines.push_back(msg);
         while self.lines.len() > self.max_lines {
             self.lines.pop_front();
@@ -129,10 +139,13 @@ fn main() {
         .add_plugins(SystemInformationDiagnosticsPlugin)
         .add_plugins(
             FileDialogPlugin::new()
-                .with_load_file::<VrmLoad>(),
+                .with_load_file::<VrmLoad>()
+                .with_load_file::<FbxLoad>(),
         )
         .insert_resource(AppDataDir(data_dir))
         .init_resource::<AppLog>()
+        .init_resource::<RetargetState>()
+        .init_resource::<BoneVizState>()
         .add_systems(Startup, setup)
         .add_systems(Update, (
             toggle_debug,
@@ -141,6 +154,11 @@ fn main() {
             update_log_panel,
             open_file_dialog,
             handle_vrm_loaded,
+            handle_fbx_loaded,
+            apply_retarget_animation,
+            start_playback,
+            toggle_bone_viz,
+            draw_bone_viz,
         ))
         .run();
 }
@@ -165,7 +183,6 @@ fn setup(mut commands: Commands, mut log: ResMut<AppLog>) {
         Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -0.5, 0.5, 0.0)),
     ));
 
-    // Debug panel (bottom-left)
     commands.spawn((
         DebugPanel,
         Text::new(""),
@@ -179,7 +196,6 @@ fn setup(mut commands: Commands, mut log: ResMut<AppLog>) {
         },
     ));
 
-    // Log panel (right side)
     commands.spawn((
         LogPanel,
         Text::new(""),
@@ -194,7 +210,7 @@ fn setup(mut commands: Commands, mut log: ResMut<AppLog>) {
         },
     ));
 
-    log.push("[INIT] O: open VRM | F3: stats | F4: log");
+    log.push("[INIT] O: VRM | F: FBX | G: bones | F3: stats | F4: log");
 }
 
 fn open_file_dialog(
@@ -210,6 +226,14 @@ fn open_file_dialog(
             .add_filter("VRM", &["vrm"])
             .load_file::<VrmLoad>();
     }
+    if input.just_pressed(KeyCode::KeyF) {
+        log.push("[DIALOG] opening FBX picker...");
+        commands
+            .dialog()
+            .set_title("Open FBX Motion")
+            .add_filter("FBX", &["fbx"])
+            .load_file::<FbxLoad>();
+    }
 }
 
 fn handle_vrm_loaded(
@@ -219,24 +243,23 @@ fn handle_vrm_loaded(
     app_data: Res<AppDataDir>,
     existing_vrm: Query<Entity, With<LoadedVrm>>,
     mut log: ResMut<AppLog>,
+    mut retarget_state: ResMut<RetargetState>,
 ) {
     for ev in ev_loaded.read() {
         log.push(format!("[LOAD] {} ({:.1} MB)", ev.file_name, ev.contents.len() as f64 / 1048576.0));
 
-        // Validate glTF magic
         if ev.contents.len() < 4 || &ev.contents[0..4] != b"glTF" {
             log.push("[ERROR] not a valid glTF/VRM file");
             continue;
         }
 
-        // Check VRM version from glTF JSON chunk
         let vrm_version = detect_vrm_version(&ev.contents);
         let file_bytes = match &vrm_version {
-            VrmVersion::Vrm1 => {
+            VrmVersionTag::Vrm1 => {
                 log.push("[LOAD] VRM 1.0 detected");
                 ev.contents.clone()
             }
-            VrmVersion::Vrm0 => {
+            VrmVersionTag::Vrm0 => {
                 log.push("[CONVERT] VRM 0.x detected — converting to 1.0...");
                 match vrm0_compat::convert(&ev.contents) {
                     Ok(converted) => {
@@ -253,13 +276,12 @@ fn handle_vrm_loaded(
                     }
                 }
             }
-            VrmVersion::Unknown => {
+            VrmVersionTag::Unknown => {
                 log.push("[WARN] VRM version unknown — attempting load");
                 ev.contents.clone()
             }
         };
 
-        // Copy to app data dir
         let dest_path = app_data.0.join("models").join(&ev.file_name);
         if let Err(e) = fs::write(&dest_path, &file_bytes) {
             log.push(format!("[ERROR] save to app data: {}", e));
@@ -267,7 +289,6 @@ fn handle_vrm_loaded(
         }
         log.push(format!("[LOAD] saved: {}", dest_path.display()));
 
-        // Copy to assets/models/
         let assets_path = PathBuf::from("assets/models").join(&ev.file_name);
         if let Err(e) = fs::write(&assets_path, &file_bytes) {
             log.push(format!("[ERROR] copy to assets: {}", e));
@@ -275,7 +296,6 @@ fn handle_vrm_loaded(
         }
         log.push("[LOAD] copied to assets/models/");
 
-        // Despawn existing
         let count = existing_vrm.iter().count();
         for entity in &existing_vrm {
             commands.entity(entity).despawn();
@@ -284,7 +304,9 @@ fn handle_vrm_loaded(
             log.push(format!("[LOAD] despawned {} previous", count));
         }
 
-        // Load via asset server
+        // Reset retarget applied state so animation can be re-applied to new VRM
+        retarget_state.applied = false;
+
         let asset_path = format!("models/{}", ev.file_name);
         let handle = asset_server.load::<VrmAsset>(&asset_path);
         log.push(format!("[LOAD] asset_server.load('{}')", asset_path));
@@ -295,6 +317,274 @@ fn handle_vrm_loaded(
         ));
         log.push("[LOAD] VrmHandle spawned — waiting for init...");
     }
+}
+
+fn handle_fbx_loaded(
+    mut commands: Commands,
+    mut ev_loaded: MessageReader<DialogFileLoaded<FbxLoad>>,
+    mut retarget_state: ResMut<RetargetState>,
+    mut log: ResMut<AppLog>,
+    time: Res<Time<Real>>,
+) {
+    for ev in ev_loaded.read() {
+        log.push(format!(
+            "[FBX] {} ({:.1} MB)",
+            ev.file_name,
+            ev.contents.len() as f64 / 1048576.0
+        ));
+
+        if retarget_state.config_json.is_none() {
+            match fs::read_to_string("assets/retarget/cinev_female_body.json") {
+                Ok(json) => {
+                    log.push("[RETARGET] loaded cinev_female_body config");
+                    retarget_state.config_json = Some(json);
+                }
+                Err(e) => {
+                    log.push(format!("[ERROR] config load failed: {}", e));
+                    continue;
+                }
+            }
+        }
+
+        let config_json = retarget_state.config_json.as_ref().unwrap();
+        let vrm_version = cinev_retarget::vrm_compat::VrmVersion::V1_0;
+
+        match cinev_retarget::retarget(&ev.contents, config_json, vrm_version) {
+            Ok((anim, diag)) => {
+                // Write diagnostics
+                let mut diag_text = String::new();
+                diag_text.push_str(&format!("=== FBX Diagnostics: {} ===\n\n", ev.file_name));
+                diag_text.push_str(&format!("All bones ({}):\n", diag.all_bones.len()));
+                for b in &diag.all_bones { diag_text.push_str(&format!("  {}\n", b)); }
+                diag_text.push_str(&format!("\nAnimated bones ({}):\n", diag.animated_bones.len()));
+                for b in &diag.animated_bones { diag_text.push_str(&format!("  {}\n", b)); }
+                diag_text.push_str(&format!("\nMatched direct ({}):\n", diag.matched_direct.len()));
+                for (src, vrm) in &diag.matched_direct { diag_text.push_str(&format!("  {} → {}\n", src, vrm)); }
+                diag_text.push_str(&format!("\nUnmatched config ({}):\n", diag.unmatched_config.len()));
+                for b in &diag.unmatched_config { diag_text.push_str(&format!("  {}\n", b)); }
+                diag_text.push_str(&format!("\nResult: {} tracks, {:.1}s\n", anim.bone_tracks.len(), anim.duration_secs));
+                for track in &anim.bone_tracks {
+                    diag_text.push_str(&format!("  {} — {} frames{}\n",
+                        track.vrm_bone_name, track.rotations.len(),
+                        if track.translations.is_some() { " +trans" } else { "" }
+                    ));
+                }
+                fs::write("retarget_diag.txt", &diag_text).ok();
+
+                log.push(format!(
+                    "[RETARGET] {} matched, {} unmatched, {} tracks, {:.1}s",
+                    diag.matched_direct.len(), diag.unmatched_config.len(),
+                    anim.bone_tracks.len(), anim.duration_secs
+                ));
+
+                retarget_state.pending_anim = Some(anim);
+                retarget_state.applied = false;
+
+                // Compute FBX skeleton for visualization
+                match cinev_retarget::compute_fbx_skeleton(&ev.contents) {
+                    Ok(skel) => {
+                        log.push(format!("[VIZ] FBX skeleton: {} bones, {} frames", skel.bone_positions.len(), skel.frame_count));
+                        commands.insert_resource(FbxSkeletonViz {
+                            data: skel,
+                            start_time: time.elapsed_secs_f64(),
+                        });
+                    }
+                    Err(e) => log.push(format!("[WARN] FBX skeleton viz: {}", e)),
+                }
+            }
+            Err(e) => {
+                log.push(format!("[ERROR] retarget failed: {}", e));
+            }
+        }
+    }
+}
+
+fn apply_retarget_animation(
+    mut commands: Commands,
+    mut retarget_state: ResMut<RetargetState>,
+    mut log: ResMut<AppLog>,
+    bone_query: Query<(&VrmBone, &Name, &RestTransform)>,
+    root_bone_query: Query<(&Name, &Transform), (With<AnimationPlayer>, Without<VrmBone>)>,
+    player_query: Query<(Entity, &AnimationPlayer)>,
+    mut animation_clips: ResMut<Assets<AnimationClip>>,
+    mut animation_graphs: ResMut<Assets<AnimationGraph>>,
+) {
+    if retarget_state.applied || retarget_state.pending_anim.is_none() {
+        return;
+    }
+
+    // Wait until VRM bones are spawned (with RestTransform)
+    if bone_query.is_empty() || player_query.is_empty() {
+        return;
+    }
+
+    let anim = retarget_state.pending_anim.as_ref().unwrap();
+
+    // Build VRM humanoid bone name → (glTF node Name, rest rotation)
+    let mut bone_name_map: HashMap<String, Name> = HashMap::new();
+    let mut bone_rest_map: HashMap<String, Quat> = HashMap::new();
+    for (vrm_bone, name, rest_tf) in &bone_query {
+        bone_name_map.insert(vrm_bone.0.clone(), name.clone());
+        bone_rest_map.insert(vrm_bone.0.clone(), rest_tf.rotation);
+    }
+
+    // VRM virtual root bone — find by name, get actual Transform (no RestTransform on root)
+    let vrm_root_name = Name::new(Vrm::ROOT_BONE);
+    let mut root_rest_rot = Quat::IDENTITY;
+    for (name, tf) in &root_bone_query {
+        if name.as_str() == Vrm::ROOT_BONE {
+            root_rest_rot = tf.rotation;
+            break;
+        }
+    }
+    bone_name_map.insert("VRMC_vrm.root_bone".to_string(), vrm_root_name);
+    bone_rest_map.insert("VRMC_vrm.root_bone".to_string(), root_rest_rot);
+
+    log.push(format!(
+        "[ANIM] VRM has {} humanoid bones + root (root_rest: {:.3}, {:.3}, {:.3}, {:.3})",
+        bone_name_map.len() - 1, root_rest_rot.x, root_rest_rot.y, root_rest_rot.z, root_rest_rot.w
+    ));
+
+    let mut clip = AnimationClip::default();
+    let mut applied_count = 0;
+
+    let duration = anim.duration_secs;
+    let domain = match Interval::new(0.0, duration) {
+        Ok(d) => d,
+        Err(_) => {
+            log.push("[ERROR] invalid animation duration");
+            retarget_state.applied = true;
+            return;
+        }
+    };
+
+    for track in &anim.bone_tracks {
+        let node_name = match bone_name_map.get(&track.vrm_bone_name) {
+            Some(n) => n.clone(),
+            None => continue,
+        };
+
+        let target_id = AnimationTargetId::from_name(&node_name);
+        let is_root = track.vrm_bone_name == "VRMC_vrm.root_bone";
+        let tgt_rest = bone_rest_map
+            .get(&track.vrm_bone_name)
+            .copied()
+            .unwrap_or(Quat::IDENTITY);
+        let src_rest = track.src_rest;
+        let src_rest_inv = src_rest.inverse();
+
+        // Phase 1: Raw delta pass-through (no rest pose correction)
+        // FBX Lcl Rotation is already in bone-local frame (post-PreRotation).
+        // MetaHuman and VRM share similar bone-local coordinate conventions
+        // for the spine chain, so raw deltas transfer reasonably well.
+        // For root bone: apply tgt_rest to maintain VRM root orientation.
+        let corrected_rotations: Vec<Quat> = track
+            .rotations
+            .iter()
+            .map(|&delta| {
+                if is_root {
+                    // Root: tgt_rest * delta preserves the 180° Y base rotation
+                    (tgt_rest * delta).normalize()
+                } else {
+                    // Other bones: raw delta directly as local rotation
+                    delta.normalize()
+                }
+            })
+            .collect();
+
+        if corrected_rotations.len() >= 2 {
+            match bevy::math::curve::SampleAutoCurve::new(domain, corrected_rotations) {
+                Ok(curve) => {
+                    clip.add_curve_to_target(
+                        target_id,
+                        AnimatableCurve::new(animated_field!(Transform::rotation), curve),
+                    );
+                    applied_count += 1;
+                }
+                Err(e) => {
+                    log.push(format!("[WARN] rotation curve '{}': {:?}", track.vrm_bone_name, e));
+                }
+            }
+        }
+
+        // Translation curve
+        if let Some(ref translations) = track.translations {
+            // Root bone translations are in glTF world space (from ue_to_gltf_translation).
+            // Convert to root bone's local space using tgt_rest rotation.
+            // If parent has 180° Y (0.x→1.0), tgt_rest encodes that relationship.
+            let local_translations: Vec<Vec3> = if is_root {
+                let tgt_rest_inv = tgt_rest.inverse();
+                translations.iter().map(|&t| tgt_rest_inv * t).collect()
+            } else {
+                translations.clone()
+            };
+
+            if local_translations.len() >= 2 {
+                match bevy::math::curve::SampleAutoCurve::new(domain, local_translations) {
+                    Ok(curve) => {
+                        clip.add_curve_to_target(
+                            target_id,
+                            AnimatableCurve::new(animated_field!(Transform::translation), curve),
+                        );
+                    }
+                    Err(e) => {
+                        log.push(format!("[WARN] translation curve '{}': {:?}", track.vrm_bone_name, e));
+                    }
+                }
+            }
+        }
+    }
+
+    if applied_count == 0 {
+        log.push("[WARN] no curves applied — bone names may not match");
+        retarget_state.applied = true;
+        return;
+    }
+
+    clip.set_duration(duration);
+
+    // Create animation graph with single clip
+    let clip_handle = animation_clips.add(clip);
+    let (graph, clip_index) = AnimationGraph::from_clip(clip_handle);
+    let graph_handle = animation_graphs.add(graph);
+
+    // Find the AnimationPlayer entity and start playback
+    for (player_entity, _) in &player_query {
+        commands.entity(player_entity).insert(AnimationGraphHandle(graph_handle.clone()));
+    }
+
+    // Need to start playback after graph is attached — use a one-shot approach
+    // by scheduling the play command. Actually, let's just get the player mutably.
+    // We can't do that with the current query since we have &AnimationPlayer.
+    // Instead, mark as applied and handle play in a separate check.
+    retarget_state.applied = true;
+
+    log.push(format!(
+        "[ANIM] clip created: {} curves, {:.1}s — starting playback",
+        applied_count, duration
+    ));
+
+    // Store clip index for playback
+    commands.insert_resource(PendingPlayback(clip_index));
+}
+
+#[derive(Resource)]
+struct PendingPlayback(AnimationNodeIndex);
+
+fn start_playback(
+    mut commands: Commands,
+    pending: Option<Res<PendingPlayback>>,
+    mut player_query: Query<&mut AnimationPlayer>,
+) {
+    let Some(pending) = pending else { return; };
+
+    for mut player in &mut player_query {
+        player.stop_all();
+        let active = player.start(pending.0);
+        active.set_repeat(bevy::animation::RepeatAnimation::Forever);
+    }
+
+    commands.remove_resource::<PendingPlayback>();
 }
 
 fn toggle_debug(
@@ -310,7 +600,6 @@ fn toggle_debug(
     }
 }
 
-// F4 to toggle log panel
 fn toggle_log(
     input: Res<ButtonInput<KeyCode>>,
     mut log: ResMut<AppLog>,
@@ -370,4 +659,90 @@ fn update_debug_panel(
         mesh_count, image_count, image_mb, material_count,
         process_mem,
     );
+}
+
+fn toggle_bone_viz(
+    input: Res<ButtonInput<KeyCode>>,
+    mut state: ResMut<BoneVizState>,
+    mut log: ResMut<AppLog>,
+) {
+    if input.just_pressed(KeyCode::KeyG) {
+        state.enabled = !state.enabled;
+        log.push(format!("[VIZ] bones {}", if state.enabled { "ON" } else { "OFF" }));
+    }
+}
+
+fn draw_bone_viz(
+    state: Res<BoneVizState>,
+    mut gizmos: Gizmos,
+    bone_query: Query<(&VrmBone, &GlobalTransform)>,
+    all_bones: Query<(&GlobalTransform, Option<&VrmBone>, Option<&Name>, &ChildOf)>,
+    parent_transforms: Query<&GlobalTransform>,
+    fbx_viz: Option<Res<FbxSkeletonViz>>,
+    time: Res<Time<Real>>,
+) {
+    if !state.enabled {
+        return;
+    }
+
+    // --- VRM bones (green/yellow/blue/red) ---
+    for (vrm_bone, gtf) in &bone_query {
+        let pos = gtf.translation();
+
+        let color = match vrm_bone.0.as_str() {
+            s if s.contains("hips") || s.contains("spine") || s.contains("chest")
+                || s.contains("Chest") || s.contains("Spine") => Color::srgb(0.0, 1.0, 0.0),
+            s if s.contains("neck") || s.contains("head")
+                || s.contains("Neck") || s.contains("Head") => Color::srgb(1.0, 1.0, 0.0),
+            s if s.contains("left") || s.contains("Left") => Color::srgb(0.3, 0.5, 1.0),
+            s if s.contains("right") || s.contains("Right") => Color::srgb(1.0, 0.3, 0.3),
+            _ => Color::srgb(0.8, 0.8, 0.8),
+        };
+
+        gizmos.sphere(Isometry3d::from_translation(pos), 0.008, color);
+
+        let rot = gtf.to_scale_rotation_translation().1;
+        let axis_len = 0.03;
+        gizmos.line(pos, pos + rot * Vec3::X * axis_len, Color::srgb(1.0, 0.0, 0.0));
+        gizmos.line(pos, pos + rot * Vec3::Y * axis_len, Color::srgb(0.0, 1.0, 0.0));
+        gizmos.line(pos, pos + rot * Vec3::Z * axis_len, Color::srgb(0.0, 0.0, 1.0));
+    }
+
+    for (gtf, vrm_bone, _name, child_of) in &all_bones {
+        if vrm_bone.is_none() { continue; }
+        if let Ok(parent_gtf) = parent_transforms.get(child_of.0) {
+            gizmos.line(gtf.translation(), parent_gtf.translation(), Color::srgba(1.0, 1.0, 1.0, 0.4));
+        }
+    }
+
+    // --- FBX source skeleton (cyan/magenta, offset +1m on X) ---
+    let Some(fbx_viz) = fbx_viz else { return; };
+    let skel = &fbx_viz.data;
+    if skel.frame_count == 0 { return; }
+
+    let elapsed = time.elapsed_secs_f64() - fbx_viz.start_time;
+    let anim_time = elapsed % skel.duration as f64;
+    let frame = ((anim_time / skel.duration as f64) * skel.frame_count as f64) as usize;
+    let frame = frame.min(skel.frame_count - 1);
+
+    let offset = Vec3::new(1.5, 0.0, 0.0); // offset to the right
+
+    for (name, positions) in &skel.bone_positions {
+        if let Some(pos) = positions.get(frame) {
+            let p = Vec3::new(pos[0], pos[1], pos[2]) + offset;
+
+            // FBX bones: cyan dots
+            gizmos.sphere(Isometry3d::from_translation(p), 0.006, Color::srgb(0.0, 1.0, 1.0));
+
+            // Line to parent
+            if let Some(parent_name) = skel.hierarchy.get(name) {
+                if let Some(parent_positions) = skel.bone_positions.get(parent_name) {
+                    if let Some(pp) = parent_positions.get(frame) {
+                        let pp = Vec3::new(pp[0], pp[1], pp[2]) + offset;
+                        gizmos.line(p, pp, Color::srgba(0.0, 1.0, 1.0, 0.5));
+                    }
+                }
+            }
+        }
+    }
 }
