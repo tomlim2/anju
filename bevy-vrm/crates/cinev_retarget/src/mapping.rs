@@ -274,8 +274,11 @@ pub fn retarget(
     }
 
     // 3. Twist fold — fold twist bone rotations into base bone track
+    // Also update src_bone_name to last twist bone for world-rotation lookup
+    // (last twist bone's world rotation includes base + all twist effects)
     for (vrm_bone, twist_bones) in &config.twist_fold {
         if let Some(existing) = result_tracks.iter_mut().find(|t| t.vrm_bone_name == *vrm_bone) {
+            let mut last_twist_fbx_name: Option<String> = None;
             for cfg_name in twist_bones {
                 let fbx_name = match resolve(cfg_name) {
                     Some(n) => n,
@@ -299,7 +302,12 @@ pub fn retarget(
                         );
                         existing.src_rest_global = existing.src_rest_global * twist_lcl_rest;
                     }
+                    last_twist_fbx_name = Some(fbx_name.clone());
                 }
+            }
+            // Point to last twist bone for world-rotation approach
+            if let Some(name) = last_twist_fbx_name {
+                existing.src_bone_name = name;
             }
         }
     }

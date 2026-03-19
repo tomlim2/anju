@@ -579,91 +579,19 @@ fn apply_retarget_animation(
     let coord_rot = Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2);
     let coord_rot_inv = coord_rot.inverse();
 
-    // World-rotation approach: use FBX world rotations directly (same as FBX viz)
-    // For each bone: correction = vrm_rest_global * inv(coord * fbx_rest_world * coord_inv)
-    // desired_world = correction * coord * fbx_world_anim * coord_inv
-    // vrm_local = inv(vrm_parent_animated) * desired_world
+    // FBX local delta approach:
+    // For each bone at each frame, compute FBX local rotation from animated world rotations,
+    // extract delta from rest, convert to Y-up, and apply to VRM local rest.
     //
-    // Since we precompute animation clips (not per-frame), we track parent animated worlds
-    // by processing bones in hierarchy order.
-    // For bones without FBX world rotations, fall back to LEFT/RIGHT formula.
+    // fbx_local_anim = parent_world_anim.inv() * bone_world_anim
+    // fbx_local_rest = parent_world_rest.inv() * bone_world_rest
+    // delta_zup = fbx_local_rest.inv() * fbx_local_anim
+    // vrm_local = vrm_local_rest * coord * delta_zup * coord_inv
+    //
+    // This avoids 180°Y propagation: each bone computed independently from FBX world data.
 
     let fbx_world_rots = fbx_viz.as_ref().map(|v| &v.data.bone_rotations);
-
-    // Build VRM hierarchy: vrm_bone_name → parent vrm_bone_name
-    // We need this to process bones in order and track animated parent worlds
-    let frame_count = anim.bone_tracks.first().map(|t| t.rotations.len()).unwrap_or(0);
-
-    // Precompute per-bone "correction" quaternion and rest world rotation (Z-up)
-    struct BoneRetargetData {
-        correction: Quat,        // vrm_rest_global * inv(coord * fbx_rest * coord_inv)
-        fbx_rest_world: Quat,    // FBX world rotation at frame 0 (Z-up)
-        has_world_rots: bool,
-        pose_offset: Option<Quat>, // A-pose → T-pose
-    }
-
-    let mut bone_data: HashMap<String, BoneRetargetData> = HashMap::new();
-
-    for track in &anim.bone_tracks {
-        let dist_rest_g = bone_rest_global
-            .get(&track.vrm_bone_name)
-            .copied()
-            .unwrap_or(Quat::IDENTITY);
-
-        let fbx_rots = fbx_world_rots
-            .and_then(|r| r.get(&track.src_bone_name));
-
-        let fbx_rest_world = fbx_rots
-            .and_then(|r| r.first().copied())
-            .unwrap_or(track.src_rest_global);
-
-        let fbx_rest_yup = coord_rot * fbx_rest_world * coord_rot_inv;
-        let mut correction = dist_rest_g * fbx_rest_yup.inverse();
-
-        // A-pose → T-pose offset baked into correction
-        if let Some(offset) = anim.rest_pose_offsets.get(&track.vrm_bone_name) {
-            let offset_quat = Quat::from_euler(
-                EulerRot::XYZ, offset[0], offset[1], offset[2],
-            );
-            correction = correction * offset_quat;
-        }
-
-        bone_data.insert(track.vrm_bone_name.clone(), BoneRetargetData {
-            correction,
-            fbx_rest_world,
-            has_world_rots: fbx_rots.is_some(),
-            pose_offset: anim.rest_pose_offsets.get(&track.vrm_bone_name).map(|o| {
-                Quat::from_euler(EulerRot::XYZ, o[0], o[1], o[2])
-            }),
-        });
-    }
-
-    // Precompute animated world rotations per frame for all bones
-    // This allows child bones to use parent's animated world
-    let mut animated_worlds: HashMap<String, Vec<Quat>> = HashMap::new();
-
-    for frame in 0..frame_count {
-        for track in &anim.bone_tracks {
-            let data = match bone_data.get(&track.vrm_bone_name) {
-                Some(d) => d,
-                None => continue,
-            };
-
-            let fbx_rots = fbx_world_rots
-                .and_then(|r| r.get(&track.src_bone_name));
-
-            let fbx_world_anim = fbx_rots
-                .and_then(|r| r.get(frame).copied());
-
-            if let Some(fbx_world) = fbx_world_anim {
-                let desired = data.correction * (coord_rot * fbx_world * coord_rot_inv);
-                animated_worlds
-                    .entry(track.vrm_bone_name.clone())
-                    .or_insert_with(|| Vec::with_capacity(frame_count))
-                    .push(desired);
-            }
-        }
-    }
+    let fbx_hierarchy = fbx_viz.as_ref().map(|v| &v.data.hierarchy);
 
     for track in &anim.bone_tracks {
         let node_name = match bone_name_map.get(&track.vrm_bone_name) {
@@ -678,11 +606,6 @@ fn apply_retarget_animation(
 
         let target_id = AnimationTargetId::from_name(&node_name);
 
-        let dist_rest_g = bone_rest_global
-            .get(&track.vrm_bone_name)
-            .copied()
-            .unwrap_or(Quat::IDENTITY);
-
         let is_debug_bone = DEBUG_BONES.contains(&track.vrm_bone_name.as_str());
 
         let dist_rest_local = bone_rest_local
@@ -690,41 +613,76 @@ fn apply_retarget_animation(
             .copied()
             .unwrap_or(Quat::IDENTITY);
 
-        // Use entity hierarchy for parent lookup
-        let parent_vrm_name = vrm_parent_map.get(&track.vrm_bone_name).cloned();
-
-        let fbx_rots = fbx_world_rots
+        // Look up FBX world rotations for this bone and its parent
+        let fbx_bone_rots = fbx_world_rots
             .and_then(|r| r.get(&track.src_bone_name));
-        let data = bone_data.get(&track.vrm_bone_name);
+        let fbx_parent_name = fbx_hierarchy
+            .and_then(|h| h.get(&track.src_bone_name));
+        let fbx_parent_rots = fbx_parent_name
+            .and_then(|pn| fbx_world_rots.and_then(|r| r.get(pn)));
+
+        // Rest rotations (frame 0)
+        let fbx_bone_rest = fbx_bone_rots.and_then(|r| r.first().copied());
+        let fbx_parent_rest = fbx_parent_rots.and_then(|r| r.first().copied());
+        let fbx_local_rest = match (fbx_parent_rest, fbx_bone_rest) {
+            (Some(pr), Some(br)) => pr.inverse() * br,
+            (None, Some(br)) => br, // root bone: no parent
+            _ => track.src_rest_global, // fallback
+        };
+
+        // A-pose → T-pose offset
+        let pose_offset = anim.rest_pose_offsets.get(&track.vrm_bone_name).map(|o| {
+            Quat::from_euler(EulerRot::XYZ, o[0], o[1], o[2])
+        });
 
         let corrected_rotations: Vec<Quat> = (0..track.rotations.len())
             .map(|frame_idx| {
-                // Try world-rotation approach (uses FBX viz data)
-                let fbx_world = fbx_rots.and_then(|r| r.get(frame_idx).copied());
+                let fbx_bone_world = fbx_bone_rots.and_then(|r| r.get(frame_idx).copied());
+                let fbx_parent_world = fbx_parent_rots.and_then(|r| r.get(frame_idx).copied());
 
-                if let (Some(fbx_world), Some(data)) = (fbx_world, data) {
-                    let desired_world = data.correction * (coord_rot * fbx_world * coord_rot_inv);
+                if let Some(bone_world) = fbx_bone_world {
+                    // Compute FBX animated local rotation
+                    let fbx_local_anim = match fbx_parent_world {
+                        Some(pw) => pw.inverse() * bone_world,
+                        None => bone_world, // root bone
+                    };
 
-                    // Get parent's animated world rotation
-                    let parent_animated = parent_vrm_name.as_ref()
-                        .and_then(|pn| animated_worlds.get(pn))
-                        .and_then(|w| w.get(frame_idx).copied())
-                        .unwrap_or(Quat::IDENTITY); // scene root for root bone
+                    // Delta from rest in Z-up bone-local frame
+                    let delta_zup = fbx_local_rest.inverse() * fbx_local_anim;
 
-                    let result = (parent_animated.inverse() * desired_world).normalize();
+                    // Convert delta to Y-up
+                    let delta_yup = coord_rot * delta_zup * coord_rot_inv;
+
+                    // VRM faces -Z (180°Y root), FBX faces +Z (in Y-up).
+                    // Local frame difference: negate X and Z rotation axes
+                    // (equivalent to 180°Y conjugation of the delta)
+                    let delta_corrected = if is_root {
+                        delta_yup // root bone: no correction needed
+                    } else {
+                        // 180°Y conjugation: negate x and z of quaternion
+                        Quat::from_xyzw(-delta_yup.x, delta_yup.y, -delta_yup.z, delta_yup.w)
+                    };
+
+                    let mut result = (dist_rest_local * delta_corrected).normalize();
+
+                    // Apply A-pose → T-pose offset
+                    if let Some(offset) = pose_offset {
+                        result = (result * offset).normalize();
+                    }
 
                     if is_debug_bone && frame_idx < 3 {
+                        let delta_angle = delta_zup.to_axis_angle().1.to_degrees();
                         let result_angle = result.to_axis_angle().1.to_degrees();
                         log.push(format!(
-                            "[DBG]   frame[{}] result={:.1}° result=({:.3},{:.3},{:.3},{:.3})",
-                            frame_idx, result_angle,
+                            "[DBG]   frame[{}] delta={:.1}° result={:.1}° result=({:.3},{:.3},{:.3},{:.3})",
+                            frame_idx, delta_angle, result_angle,
                             result.x, result.y, result.z, result.w,
                         ));
                     }
 
                     result
                 } else {
-                    // Fallback: simple delta (no FBX world data available)
+                    // Fallback: use track data directly
                     let delta = track.rotations[frame_idx];
                     let src_local = track.src_rest * delta;
                     let src_local_gltf = coord_rot * src_local * coord_rot_inv;
@@ -739,17 +697,10 @@ fn apply_retarget_animation(
 
         if is_debug_bone {
             log.push(format!("[DBG] === {} ===", track.vrm_bone_name));
-            if let Some(data) = data {
-                log.push(format!(
-                    "[DBG]   correction: ({:.4},{:.4},{:.4},{:.4}) {}",
-                    data.correction.x, data.correction.y, data.correction.z, data.correction.w,
-                    quat_axis_angle_str(data.correction),
-                ));
-                log.push(format!(
-                    "[DBG]   has_world_rots: {}, parent: {:?}",
-                    data.has_world_rots, parent_vrm_name,
-                ));
-            }
+            log.push(format!(
+                "[DBG]   fbx_bone: {}, parent_fbx: {:?}",
+                track.src_bone_name, fbx_parent_name,
+            ));
         }
 
         if corrected_rotations.len() >= 2 {
