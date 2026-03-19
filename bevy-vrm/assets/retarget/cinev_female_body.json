@@ -4,9 +4,9 @@
   "root_bone": "root",
   "direct_map": {
     "pelvis": "hips",
-    "spine_02": "spine",
-    "spine_04": "chest",
-    "spine_05": "upperChest",
+    "spine_01": "spine",
+    "spine_02": "chest",
+    "spine_03": "upperChest",
     "neck_01": "neck",
     "head": "head",
     "clavicle_l": "leftShoulder",
