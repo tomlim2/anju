@@ -223,7 +223,7 @@ fn setup(
         },
     ));
 
-    log.push("[INIT] O:VRM F:FBX G:bones 1:front 2:side 3:top F3:stats F4:log");
+    log.push("[INIT] O:VRM F:FBX G:bones 1:front 2:side 3:top 4:persp F3:stats F4:log");
 }
 
 fn open_file_dialog(
@@ -705,36 +705,44 @@ fn update_debug_panel(
 
 fn camera_presets(
     input: Res<ButtonInput<KeyCode>>,
-    mut camera_q: Query<(&mut Transform, &mut PanOrbitCamera)>,
+    mut camera_q: Query<(&mut Transform, &mut PanOrbitCamera, &mut Projection)>,
 ) {
-    let Some((mut tf, mut orbit)) = camera_q.iter_mut().next() else { return; };
+    let Some((mut tf, mut orbit, mut proj)) = camera_q.iter_mut().next() else { return; };
 
     let focus = Vec3::new(0.0, 1.0, 0.0);
-    let dist = 3.0;
+    let dist = 5.0;
+
+    // 1: Front ortho, 2: Side ortho, 3: Top ortho, 4: Perspective (reset)
+    let mut set_ortho = |pos: Vec3, up: Vec3| {
+        *tf = Transform::from_translation(pos).looking_at(focus, up);
+        orbit.focus = focus;
+        orbit.radius = Some(dist);
+        orbit.enabled = false;
+        *proj = Projection::Orthographic(OrthographicProjection {
+            scaling_mode: bevy::camera::ScalingMode::Fixed { width: 4.0, height: 3.0 },
+            ..OrthographicProjection::default_3d()
+        });
+    };
 
     if input.just_pressed(KeyCode::Digit1) {
-        // Front view: camera at +Z looking at character
-        *tf = Transform::from_xyz(0.0, 1.0, dist).looking_at(focus, Vec3::Y);
-        orbit.focus = focus;
-        orbit.radius = Some(dist);
-        orbit.yaw = Some(0.0);
-        orbit.pitch = Some(0.0);
+        // Front: +Z looking at -Z
+        set_ortho(Vec3::new(0.0, 1.0, dist), Vec3::Y);
     }
     if input.just_pressed(KeyCode::Digit2) {
-        // Side view: camera at +X
-        *tf = Transform::from_xyz(dist, 1.0, 0.0).looking_at(focus, Vec3::Y);
-        orbit.focus = focus;
-        orbit.radius = Some(dist);
-        orbit.yaw = Some(std::f32::consts::FRAC_PI_2);
-        orbit.pitch = Some(0.0);
+        // Side: +X looking at -X
+        set_ortho(Vec3::new(dist, 1.0, 0.0), Vec3::Y);
     }
     if input.just_pressed(KeyCode::Digit3) {
-        // Top view: camera above
-        *tf = Transform::from_xyz(0.0, dist + 1.0, 0.01).looking_at(focus, Vec3::Z);
+        // Top: +Y looking down
+        set_ortho(Vec3::new(0.0, dist, 0.01), Vec3::Z);
+    }
+    if input.just_pressed(KeyCode::Digit4) {
+        // Reset to perspective orbit
+        *tf = Transform::from_xyz(0.0, 1.0, 3.0).looking_at(focus, Vec3::Y);
         orbit.focus = focus;
-        orbit.radius = Some(dist);
-        orbit.yaw = Some(0.0);
-        orbit.pitch = Some(-std::f32::consts::FRAC_PI_2);
+        orbit.radius = Some(3.0);
+        orbit.enabled = true;
+        *proj = Projection::Perspective(PerspectiveProjection::default());
     }
 }
 
