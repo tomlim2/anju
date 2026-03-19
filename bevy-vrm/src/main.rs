@@ -1,4 +1,5 @@
 use bevy::animation::{AnimationTargetId, animated_field};
+use bevy::gizmos::config::{DefaultGizmoConfigGroup, GizmoConfigStore};
 use bevy::prelude::*;
 use bevy::dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin};
 use bevy::diagnostic::{
@@ -163,7 +164,14 @@ fn main() {
         .run();
 }
 
-fn setup(mut commands: Commands, mut log: ResMut<AppLog>) {
+fn setup(
+    mut commands: Commands,
+    mut log: ResMut<AppLog>,
+    mut gizmo_config: ResMut<GizmoConfigStore>,
+) {
+    // Gizmos always render on top of mesh
+    let (config, _) = gizmo_config.config_mut::<DefaultGizmoConfigGroup>();
+    config.depth_bias = -1.0;
     commands.spawn((
         Camera3d::default(),
         Transform::from_xyz(0.0, 1.0, 3.0).looking_at(Vec3::new(0.0, 1.0, 0.0), Vec3::Y),
