@@ -35,7 +35,13 @@ fn detect_vrm_version(data: &[u8]) -> VrmVersionTag {
         Err(_) => return VrmVersionTag::Unknown,
     };
     if json_str.contains("\"VRMC_vrm\"") {
-        VrmVersionTag::Vrm1
+        // Detect converted 0.x: vrm0_compat adds 180°Y rotation [0,1,0,0] to scene root nodes
+        // Native VRM 1.0 files don't have this pattern
+        if json_str.contains("\"rotation\":[0.0,1.0,0.0,0.0]") {
+            VrmVersionTag::Vrm0
+        } else {
+            VrmVersionTag::Vrm1
+        }
     } else if json_str.contains("\"VRM\"") {
         VrmVersionTag::Vrm0
     } else {
@@ -52,8 +58,11 @@ struct DebugPanel;
 #[derive(Component)]
 struct LogPanel;
 
-#[derive(Component)]
-struct LoadedVrm;
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
+enum LoadedVrmVersion {
+    Vrm0,
+    Vrm1,
+}
 
 #[derive(Resource, Default)]
 struct RetargetState {
@@ -77,7 +86,7 @@ impl Default for BoneVizState {
 const HIPS_ONLY: bool = false;
 
 /// Auto-load VRM and FBX on startup
-const AUTO_LOAD_VRM: &str = "models/GhostPumpking.vrm";
+const AUTO_LOAD_VRM: &str = "models/YouAre.vrm";
 const AUTO_LOAD_FBX: &str = "/Users/younsoolim/Desktop/archive/untitled folder/notwww/vrm/25_06672_F_DNTSuperSukiShukiRush_260113.fbx";
 
 #[derive(Component)]
@@ -246,34 +255,44 @@ fn setup(
         match fs::read(&full_path) {
             Ok(file_bytes) => {
                 let vrm_version = detect_vrm_version(&file_bytes);
-                match vrm_version {
-                    VrmVersionTag::Vrm0 => {
-                        log.push("[AUTO] VRM 0.x detected — converting...");
-                        match vrm0_compat::convert(&file_bytes) {
-                            Ok(converted) => {
-                                fs::write(&full_path, &converted).ok();
-                                log.push("[AUTO] VRM 0.x → 1.0 conversion done");
-                            }
-                            Err(e) => {
-                                log.push(format!("[AUTO] VRM 0.x conversion failed: {}", e));
-                            }
+                let is_vrm0 = matches!(vrm_version, VrmVersionTag::Vrm0);
+                // For 0.x: convert and save to .v1.vrm cache, load that instead
+                let load_asset_path = if is_vrm0 {
+                    log.push("[AUTO] VRM 0.x detected — converting...");
+                    match vrm0_compat::convert(&file_bytes) {
+                        Ok(converted) => {
+                            let cache_path = full_path.replace(".vrm", ".v1.vrm");
+                            let cache_asset = AUTO_LOAD_VRM.replace(".vrm", ".v1.vrm");
+                            fs::write(&cache_path, &converted).ok();
+                            log.push("[AUTO] VRM 0.x → 1.0 conversion done");
+                            cache_asset
+                        }
+                        Err(e) => {
+                            log.push(format!("[AUTO] VRM 0.x conversion failed: {}", e));
+                            AUTO_LOAD_VRM.to_string()
                         }
                     }
-                    VrmVersionTag::Vrm1 => {
-                        log.push("[AUTO] VRM 1.0 detected");
+                } else {
+                    match vrm_version {
+                        VrmVersionTag::Vrm1 => log.push("[AUTO] VRM 1.0 detected"),
+                        _ => log.push("[AUTO] VRM version unknown — attempting load as 1.0"),
                     }
-                    VrmVersionTag::Unknown => {
-                        log.push("[AUTO] VRM version unknown — attempting load");
-                    }
-                }
-                let handle = asset_server.load::<VrmAsset>(AUTO_LOAD_VRM);
-                // rotateVRM0: 180°Y on scene to match FBX facing direction
+                    AUTO_LOAD_VRM.to_string()
+                };
+                let handle = asset_server.load::<VrmAsset>(&load_asset_path);
+                let loaded_version = if is_vrm0 { LoadedVrmVersion::Vrm0 } else { LoadedVrmVersion::Vrm1 };
+                let spawn_transform = if is_vrm0 {
+                    Transform::from_rotation(Quat::from_rotation_y(std::f32::consts::PI))
+                } else {
+                    Transform::default()
+                };
                 commands.spawn((
-                    LoadedVrm,
+                    loaded_version,
                     VrmHandle(handle),
-                    Transform::from_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
+                    spawn_transform,
                 ));
-                log.push(format!("[AUTO] VRM: {} (rotateVRM0)", AUTO_LOAD_VRM));
+                let tag = if is_vrm0 { "rotateVRM0" } else { "native1.0" };
+                log.push(format!("[AUTO] VRM: {} ({})", load_asset_path, tag));
             }
             Err(e) => {
                 log.push(format!("[AUTO] VRM file not found: {} — {}", full_path, e));
@@ -357,7 +376,7 @@ fn handle_vrm_loaded(
     mut ev_loaded: MessageReader<DialogFileLoaded<VrmLoad>>,
     asset_server: Res<AssetServer>,
     app_data: Res<AppDataDir>,
-    existing_vrm: Query<Entity, With<LoadedVrm>>,
+    existing_vrm: Query<Entity, With<LoadedVrmVersion>>,
     mut log: ResMut<AppLog>,
     mut retarget_state: ResMut<RetargetState>,
 ) {
@@ -370,6 +389,7 @@ fn handle_vrm_loaded(
         }
 
         let vrm_version = detect_vrm_version(&ev.contents);
+        let is_vrm0 = matches!(vrm_version, VrmVersionTag::Vrm0);
         let file_bytes = match &vrm_version {
             VrmVersionTag::Vrm1 => {
                 log.push("[LOAD] VRM 1.0 detected");
@@ -393,7 +413,7 @@ fn handle_vrm_loaded(
                 }
             }
             VrmVersionTag::Unknown => {
-                log.push("[WARN] VRM version unknown — attempting load");
+                log.push("[WARN] VRM version unknown — attempting load as 1.0");
                 ev.contents.clone()
             }
         };
@@ -427,12 +447,19 @@ fn handle_vrm_loaded(
         let handle = asset_server.load::<VrmAsset>(&asset_path);
         log.push(format!("[LOAD] asset_server.load('{}')", asset_path));
 
+        let loaded_version = if is_vrm0 { LoadedVrmVersion::Vrm0 } else { LoadedVrmVersion::Vrm1 };
+        let spawn_transform = if is_vrm0 {
+            Transform::from_rotation(Quat::from_rotation_y(std::f32::consts::PI))
+        } else {
+            Transform::default()
+        };
         commands.spawn((
-            LoadedVrm,
+            loaded_version,
             VrmHandle(handle),
-            Transform::from_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
+            spawn_transform,
         ));
-        log.push("[LOAD] VrmHandle spawned (rotateVRM0) — waiting for init...");
+        let tag = if is_vrm0 { "rotateVRM0" } else { "native1.0" };
+        log.push(format!("[LOAD] VrmHandle spawned ({}) — waiting for init...", tag));
     }
 }
 
@@ -528,6 +555,7 @@ fn apply_retarget_animation(
     mut animation_clips: ResMut<Assets<AnimationClip>>,
     mut animation_graphs: ResMut<Assets<AnimationGraph>>,
     fbx_viz: Option<Res<FbxSkeletonViz>>,
+    vrm_version_query: Query<&LoadedVrmVersion>,
 ) {
     if retarget_state.applied || retarget_state.pending_anim.is_none() {
         return;
@@ -538,6 +566,11 @@ fn apply_retarget_animation(
     }
 
     let anim = retarget_state.pending_anim.as_ref().unwrap();
+
+    // VRM 0.x needs 180°Y change-of-basis (x,z negate) because scene parent has 180°Y
+    let is_vrm0 = vrm_version_query.iter().next()
+        .map(|v| *v == LoadedVrmVersion::Vrm0)
+        .unwrap_or(false);
 
     // --- Collect VRM bone data from Bevy (version-independent) ---
     let mut bone_name_map: HashMap<String, Name> = HashMap::new();
@@ -716,9 +749,14 @@ fn apply_retarget_animation(
                 if let (Some(vp), Some(vcp), Some(fp), Some(fcp)) =
                     (vrm_pos, vrm_child_pos, fbx_pos, fbx_child_pos)
                 {
-                    // RestGlobalTransform includes 180°Y scene parent → undo by negating X,Z
+                    // VRM 0.x: RestGlobalTransform includes 180°Y scene parent → undo by negating X,Z
+                    // VRM 1.0: no scene parent rotation → use raw direction
                     let vrm_raw = (vcp - vp).normalize_or_zero();
-                    let vrm_dir = Vec3::new(-vrm_raw.x, vrm_raw.y, -vrm_raw.z);
+                    let vrm_dir = if is_vrm0 {
+                        Vec3::new(-vrm_raw.x, vrm_raw.y, -vrm_raw.z)
+                    } else {
+                        vrm_raw
+                    };
                     let fbx_dir = (fcp - fp).normalize_or_zero();
                     let angle = vrm_dir.dot(fbx_dir).clamp(-1.0, 1.0).acos();
 
@@ -778,7 +816,11 @@ fn apply_retarget_animation(
                 }
 
                 // VRM 0.x Change of Basis: R180 * Q * R180^-1 = negate x,z
-                Quat::from_xyzw(-result.x, result.y, -result.z, result.w)
+                if is_vrm0 {
+                    Quat::from_xyzw(-result.x, result.y, -result.z, result.w)
+                } else {
+                    result
+                }
             })
             .collect();
 
@@ -842,8 +884,9 @@ fn apply_retarget_animation(
                     let scaled = delta * scale_ratio;
 
                     if is_root {
-                        // rotateVRM0: negate X,Z for 180°Y parent
-                        bone_rest_translation + Vec3::new(-scaled.x, scaled.y, -scaled.z)
+                        // VRM 0.x: negate X,Z for 180°Y parent; VRM 1.0: direct
+                        let t = bone_rest_translation + scaled;
+                        if is_vrm0 { Vec3::new(-t.x, t.y, -t.z) } else { t }
                     } else if use_fbx_viz_pos {
                         // Hips: FBX world → root-local, then delta from rest → scale → VRM rest
                         let pelvis_w = fbx_pelvis_positions
@@ -865,8 +908,8 @@ fn apply_retarget_animation(
                         let motion_delta = (local_offset - fbx_hips_rest_local) * scale_ratio;
                         let result = bone_rest_translation + motion_delta;
 
-                        // Negate X,Z for 180°Y scene parent
-                        Vec3::new(-result.x, result.y, -result.z)
+                        // VRM 0.x: negate X,Z for 180°Y scene parent
+                        if is_vrm0 { Vec3::new(-result.x, result.y, -result.z) } else { result }
                     } else {
                         bone_rest_translation + scaled
                     }
