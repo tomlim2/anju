@@ -626,6 +626,17 @@ fn apply_retarget_animation(
         root_rest_global_rot.x, root_rest_global_rot.y, root_rest_global_rot.z, root_rest_global_rot.w,
     ));
 
+    // Debug: log spine chain rest rotations
+    for spine_name in &["hips", "spine", "chest", "upperChest", "neck"] {
+        if let (Some(local), Some(global)) = (bone_rest_local.get(*spine_name), bone_rest_global.get(*spine_name)) {
+            log.push(format!(
+                "[REST] {} local=({:.3},{:.3},{:.3},{:.3}) global=({:.3},{:.3},{:.3},{:.3})",
+                spine_name, local.x, local.y, local.z, local.w,
+                global.x, global.y, global.z, global.w,
+            ));
+        }
+    }
+
     // Scale correction: MetaHuman vs VRM height ratio
     // FBX pelvis height from skeleton viz data (Y component in Y-up space = height)
     let fbx_hips_height = fbx_viz.as_ref()
@@ -803,12 +814,22 @@ fn apply_retarget_animation(
         // A-pose correction for this bone (if detected)
         let apose_correction = apose_corrections.get(&track.vrm_bone_name).copied();
 
+        // VRM destination rest (for VRM 1.0 non-identity rest bones)
+        let dst_rest_local = bone_rest_local.get(&track.vrm_bone_name).copied().unwrap_or(Quat::IDENTITY);
+        let dst_rest_global = bone_rest_global.get(&track.vrm_bone_name).copied().unwrap_or(Quat::IDENTITY);
+        let dst_rest_global_inv = dst_rest_global.inverse();
+
         let corrected_rotations: Vec<Quat> = (0..track.rotations.len())
             .map(|frame_idx| {
                 let anim_local_zup = track.src_rest * track.rotations[frame_idx];
                 let anim_local_yup = coord_rot * anim_local_zup * coord_rot_inv;
 
-                let mut result = (parent_rest_yup * anim_local_yup * bone_rest_yup_inv).normalize();
+                // three-vrm: produces normalized (skeleton-space) rotation
+                let normalized = (parent_rest_yup * anim_local_yup * bone_rest_yup_inv).normalize();
+
+                // VRM spec full formula: dst_rest * inv(dst_rest_g) * normalized * dst_rest_g
+                // For VRM 0.x (identity rest): this is a no-op
+                let mut result = (dst_rest_local * dst_rest_global_inv * normalized * dst_rest_global).normalize();
 
                 // Apply A-pose correction: rotate VRM T-pose → FBX A-pose rest orientation
                 if let Some(correction) = apose_correction {
