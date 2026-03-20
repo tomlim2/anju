@@ -140,6 +140,7 @@ fn main() {
             ..default()
         }))
         .add_plugins(VrmPlugin)
+        .configure_sets(PostUpdate, VrmSystemSets::SpringBone.run_if(|| false))
         .add_plugins(PanOrbitCameraPlugin)
         .add_plugins(FpsOverlayPlugin {
             config: FpsOverlayConfig {
@@ -645,6 +646,76 @@ fn apply_retarget_animation(
         hips_rest_offset.x, hips_rest_offset.y, hips_rest_offset.z,
     ));
 
+    // Auto-detect A-pose corrections from FBX vs VRM bone directions at rest
+    // VRM is T-pose (arms horizontal), FBX MetaHuman is A-pose (arms angled down ~40°)
+    // Compute the rotation from VRM rest direction to FBX rest direction per arm bone
+    let apose_corrections: HashMap<String, Quat> = {
+        let mut corrections = HashMap::new();
+        let arm_pairs: &[(&str, &str)] = &[
+            ("leftShoulder", "leftUpperArm"),
+            ("leftUpperArm", "leftLowerArm"),
+            ("rightShoulder", "rightUpperArm"),
+            ("rightUpperArm", "rightLowerArm"),
+        ];
+
+        if let Some(ref fbx) = fbx_viz {
+            for &(bone_name, child_name) in arm_pairs {
+                // VRM bone direction from RestGlobalTransform (skeleton space, no 180°Y)
+                let vrm_pos = bone_query.iter()
+                    .find(|(vb, _, _, _)| vb.0 == bone_name)
+                    .map(|(_, _, _, rgt)| rgt.translation());
+                let vrm_child_pos = bone_query.iter()
+                    .find(|(vb, _, _, _)| vb.0 == child_name)
+                    .map(|(_, _, _, rgt)| rgt.translation());
+
+                // FBX bone direction at rest (frame 0, Y-up world space)
+                let fbx_bone_name = anim.bone_tracks.iter()
+                    .find(|t| t.vrm_bone_name == bone_name)
+                    .map(|t| &t.src_bone_name);
+                let fbx_child_name = anim.bone_tracks.iter()
+                    .find(|t| t.vrm_bone_name == child_name)
+                    .map(|t| &t.src_bone_name);
+
+                let fbx_pos = fbx_bone_name
+                    .and_then(|n| fbx.data.bone_positions.get(n))
+                    .and_then(|p| p.first())
+                    .map(|p| Vec3::new(p[0], p[1], p[2]));
+                let fbx_child_pos = fbx_child_name
+                    .and_then(|n| fbx.data.bone_positions.get(n))
+                    .and_then(|p| p.first())
+                    .map(|p| Vec3::new(p[0], p[1], p[2]));
+
+                if let (Some(vp), Some(vcp), Some(fp), Some(fcp)) =
+                    (vrm_pos, vrm_child_pos, fbx_pos, fbx_child_pos)
+                {
+                    // RestGlobalTransform includes 180°Y scene parent → undo by negating X,Z
+                    let vrm_raw = (vcp - vp).normalize_or_zero();
+                    let vrm_dir = Vec3::new(-vrm_raw.x, vrm_raw.y, -vrm_raw.z);
+                    let fbx_dir = (fcp - fp).normalize_or_zero();
+                    let angle = vrm_dir.dot(fbx_dir).clamp(-1.0, 1.0).acos();
+
+                    if angle > 0.05 {
+                        // World-space rotation from VRM T-pose direction → FBX A-pose direction
+                        let correction_world = Quat::from_rotation_arc(vrm_dir, fbx_dir);
+                        // Convert to bone-local space
+                        let bone_global = bone_rest_global.get(bone_name).copied().unwrap_or(Quat::IDENTITY);
+                        let correction_local = bone_global.inverse() * correction_world * bone_global;
+
+                        log.push(format!(
+                            "[APOSE] {} diff={:.1}° vrm=({:.2},{:.2},{:.2}) fbx=({:.2},{:.2},{:.2})",
+                            bone_name, angle.to_degrees(),
+                            vrm_dir.x, vrm_dir.y, vrm_dir.z,
+                            fbx_dir.x, fbx_dir.y, fbx_dir.z,
+                        ));
+
+                        corrections.insert(bone_name.to_string(), correction_local);
+                    }
+                }
+            }
+        }
+        corrections
+    };
+
     for track in &anim.bone_tracks {
         let node_name = match bone_name_map.get(&track.vrm_bone_name) {
             Some(n) => n.clone(),
@@ -658,26 +729,25 @@ fn apply_retarget_animation(
 
         let target_id = AnimationTargetId::from_name(&node_name);
 
-        // A-pose → T-pose offset
-        let _pose_offset = anim.rest_pose_offsets.get(&track.vrm_bone_name).map(|o| {
-            Quat::from_euler(EulerRot::XYZ, o[0], o[1], o[2])
-        });
-
         // three-vrm formula: parentRestWorld_yup * animLocal_yup * boneRestWorld_yup.inv()
-        // + VRM 0.x correction: negate x,z of result
         let parent_rest_yup = coord_rot * track.src_parent_rest_global * coord_rot_inv;
         let bone_rest_yup = coord_rot * track.src_rest_global * coord_rot_inv;
         let bone_rest_yup_inv = bone_rest_yup.inverse();
 
-        // three-vrm formula + VRM 0.x change of basis: R180 * Q * R180^-1 = negate x,z
-        // This conjugation transforms the three-vrm result into VRM 0.x's 180°-rotated local space,
-        // replacing the old per-root vrm0_rot multiplication.
+        // A-pose correction for this bone (if detected)
+        let apose_correction = apose_corrections.get(&track.vrm_bone_name).copied();
+
         let corrected_rotations: Vec<Quat> = (0..track.rotations.len())
             .map(|frame_idx| {
                 let anim_local_zup = track.src_rest * track.rotations[frame_idx];
                 let anim_local_yup = coord_rot * anim_local_zup * coord_rot_inv;
 
-                let result = (parent_rest_yup * anim_local_yup * bone_rest_yup_inv).normalize();
+                let mut result = (parent_rest_yup * anim_local_yup * bone_rest_yup_inv).normalize();
+
+                // Apply A-pose correction: rotate VRM T-pose → FBX A-pose rest orientation
+                if let Some(correction) = apose_correction {
+                    result = (result * correction).normalize();
+                }
 
                 // VRM 0.x Change of Basis: R180 * Q * R180^-1 = negate x,z
                 Quat::from_xyzw(-result.x, result.y, -result.z, result.w)
@@ -1220,7 +1290,7 @@ fn draw_bone_viz(
     let frame = ((anim_time / skel.duration as f64) * skel.frame_count as f64) as usize;
     let frame = frame.min(skel.frame_count - 1);
 
-    let offset = Vec3::ZERO; // overlay on VRM for comparison
+    let offset = Vec3::new(1.5, 0.0, 0.0); // offset FBX skeleton to the right for comparison
 
     for (name, positions) in &skel.bone_positions {
         if let Some(pos) = positions.get(frame) {
