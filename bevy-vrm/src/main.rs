@@ -256,14 +256,20 @@ fn setup(
             Ok(file_bytes) => {
                 let vrm_version = detect_vrm_version(&file_bytes);
                 let is_vrm0 = matches!(vrm_version, VrmVersionTag::Vrm0);
-                if is_vrm0 {
+                // For 0.x: convert and save to .v1.vrm cache, load that instead
+                let load_asset_path = if is_vrm0 {
+                    log.push("[AUTO] VRM 0.x detected — converting...");
                     match vrm0_compat::convert(&file_bytes) {
                         Ok(converted) => {
-                            fs::write(&full_path, &converted).ok();
+                            let cache_path = full_path.replace(".vrm", ".v1.vrm");
+                            let cache_asset = AUTO_LOAD_VRM.replace(".vrm", ".v1.vrm");
+                            fs::write(&cache_path, &converted).ok();
                             log.push("[AUTO] VRM 0.x → 1.0 conversion done");
+                            cache_asset
                         }
-                        Err(_) => {
-                            log.push("[AUTO] VRM 0.x (already converted) — loading as-is");
+                        Err(e) => {
+                            log.push(format!("[AUTO] VRM 0.x conversion failed: {}", e));
+                            AUTO_LOAD_VRM.to_string()
                         }
                     }
                 } else {
@@ -271,8 +277,9 @@ fn setup(
                         VrmVersionTag::Vrm1 => log.push("[AUTO] VRM 1.0 detected"),
                         _ => log.push("[AUTO] VRM version unknown — attempting load as 1.0"),
                     }
-                }
-                let handle = asset_server.load::<VrmAsset>(AUTO_LOAD_VRM);
+                    AUTO_LOAD_VRM.to_string()
+                };
+                let handle = asset_server.load::<VrmAsset>(&load_asset_path);
                 let loaded_version = if is_vrm0 { LoadedVrmVersion::Vrm0 } else { LoadedVrmVersion::Vrm1 };
                 let spawn_transform = if is_vrm0 {
                     Transform::from_rotation(Quat::from_rotation_y(std::f32::consts::PI))
@@ -285,7 +292,7 @@ fn setup(
                     spawn_transform,
                 ));
                 let tag = if is_vrm0 { "rotateVRM0" } else { "native1.0" };
-                log.push(format!("[AUTO] VRM: {} ({})", AUTO_LOAD_VRM, tag));
+                log.push(format!("[AUTO] VRM: {} ({})", load_asset_path, tag));
             }
             Err(e) => {
                 log.push(format!("[AUTO] VRM file not found: {} — {}", full_path, e));
@@ -549,6 +556,7 @@ fn apply_retarget_animation(
     mut animation_graphs: ResMut<Assets<AnimationGraph>>,
     fbx_viz: Option<Res<FbxSkeletonViz>>,
     vrm_version_query: Query<&LoadedVrmVersion>,
+    time: Res<Time<Real>>,
 ) {
     if retarget_state.applied || retarget_state.pending_anim.is_none() {
         return;
@@ -980,12 +988,18 @@ fn apply_retarget_animation(
         applied_count, duration
     ));
 
-    // Store clip index for playback
-    commands.insert_resource(PendingPlayback(clip_index));
+    // Store clip index + FBX elapsed for synced playback
+    let fbx_elapsed = fbx_viz.as_ref()
+        .map(|viz| time.elapsed_secs_f64() - viz.start_time)
+        .unwrap_or(0.0);
+    commands.insert_resource(PendingPlayback { clip_index, fbx_elapsed });
 }
 
 #[derive(Resource)]
-struct PendingPlayback(AnimationNodeIndex);
+struct PendingPlayback {
+    clip_index: AnimationNodeIndex,
+    fbx_elapsed: f64,
+}
 
 fn start_playback(
     mut commands: Commands,
@@ -996,8 +1010,12 @@ fn start_playback(
 
     for mut player in &mut player_query {
         player.stop_all();
-        let active = player.start(pending.0);
+        let active = player.start(pending.clip_index);
         active.set_repeat(bevy::animation::RepeatAnimation::Forever);
+        // Seek to FBX elapsed captured at clip creation time
+        if pending.fbx_elapsed > 0.0 {
+            active.seek_to(pending.fbx_elapsed as f32);
+        }
     }
 
     commands.remove_resource::<PendingPlayback>();
@@ -1028,15 +1046,8 @@ fn log_root_hips_world(
     let skel = &fbx.data;
     if skel.frame_count == 0 { return; }
 
-    let anim_time: f64 = anim_player_query
-        .iter()
-        .next()
-        .and_then(|player| {
-            player.playing_animations().next().map(|(_, active)| {
-                active.elapsed() as f64 % skel.duration as f64
-            })
-        })
-        .unwrap_or(0.0);
+    let elapsed = _time.elapsed_secs_f64() - fbx.start_time;
+    let anim_time = elapsed % skel.duration as f64;
     let frame = ((anim_time / skel.duration as f64) * skel.frame_count as f64) as usize;
     let frame = frame.min(skel.frame_count.saturating_sub(1));
 
@@ -1385,19 +1396,9 @@ fn draw_bone_viz(
     let skel = &fbx_viz.data;
     if skel.frame_count == 0 { return; }
 
-    // Sync FBX skeleton time with AnimationPlayer
-    let anim_time: f64 = anim_player_query
-        .iter()
-        .next()
-        .and_then(|player| {
-            player.playing_animations().next().map(|(_, active)| {
-                active.elapsed() as f64 % skel.duration as f64
-            })
-        })
-        .unwrap_or_else(|| {
-            let elapsed = time.elapsed_secs_f64() - fbx_viz.start_time;
-            elapsed % skel.duration as f64
-        });
+    // FBX viz always runs on its own clock (independent of AnimationPlayer)
+    let elapsed = time.elapsed_secs_f64() - fbx_viz.start_time;
+    let anim_time = elapsed % skel.duration as f64;
     let frame = ((anim_time / skel.duration as f64) * skel.frame_count as f64) as usize;
     let frame = frame.min(skel.frame_count - 1);
 
