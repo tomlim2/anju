@@ -62,17 +62,23 @@ struct RetargetState {
     applied: bool,
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
 struct BoneVizState {
     enabled: bool,
     labels_spawned: bool,
+}
+impl Default for BoneVizState {
+    fn default() -> Self {
+        Self { enabled: true, labels_spawned: false }
+    }
 }
 
 /// Debug: only apply retarget to hips (isolate hips rotation)
 const HIPS_ONLY: bool = false;
 
-/// Bones to log LEFT/RIGHT debug info for
-const DEBUG_BONES: &[&str] = &["VRMC_vrm.root_bone", "hips", "spine", "chest", "leftUpperArm", "leftUpperLeg"];
+/// Auto-load VRM and FBX on startup
+const AUTO_LOAD_VRM: &str = "models/Yoya.vrm";
+const AUTO_LOAD_FBX: &str = "/Users/younsoolim/Desktop/archive/untitled folder/notwww/vrm/25_06672_F_DNTSuperSukiShukiRush_260113.fbx";
 
 #[derive(Component)]
 struct BoneLabel;
@@ -157,7 +163,7 @@ fn main() {
         .init_resource::<AppLog>()
         .init_resource::<RetargetState>()
         .init_resource::<BoneVizState>()
-        .add_systems(Startup, setup)
+        .add_systems(Startup, (setup, auto_load_fbx))
         .add_systems(Update, (
             toggle_debug,
             toggle_log,
@@ -180,6 +186,7 @@ fn setup(
     mut commands: Commands,
     mut log: ResMut<AppLog>,
     mut gizmo_config: ResMut<GizmoConfigStore>,
+    asset_server: Res<AssetServer>,
 ) {
     // Gizmos always render on top of mesh
     let (config, _) = gizmo_config.config_mut::<DefaultGizmoConfigGroup>();
@@ -231,6 +238,65 @@ fn setup(
     ));
 
     log.push("[INIT] O:VRM F:FBX G:bones 1:front 2:side 3:top 4:persp F3:stats F4:log");
+
+    // Auto-load VRM and FBX for quick iteration
+    if !AUTO_LOAD_VRM.is_empty() {
+        let handle = asset_server.load::<VrmAsset>(AUTO_LOAD_VRM);
+        // rotateVRM0: 180°Y on scene to match FBX facing direction
+        commands.spawn((
+            LoadedVrm,
+            VrmHandle(handle),
+            Transform::from_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
+        ));
+        log.push(format!("[AUTO] VRM: {} (rotateVRM0)", AUTO_LOAD_VRM));
+    }
+}
+
+fn auto_load_fbx(
+    mut commands: Commands,
+    mut retarget_state: ResMut<RetargetState>,
+    mut log: ResMut<AppLog>,
+) {
+    if AUTO_LOAD_FBX.is_empty() { return; }
+
+    let fbx_bytes = match fs::read(AUTO_LOAD_FBX) {
+        Ok(b) => b,
+        Err(e) => {
+            log.push(format!("[AUTO] FBX read failed: {}", e));
+            return;
+        }
+    };
+    log.push(format!("[AUTO] FBX: {} ({:.1} MB)", AUTO_LOAD_FBX, fbx_bytes.len() as f64 / 1048576.0));
+
+    let config_json = match fs::read_to_string("assets/retarget/cinev_female_body.json") {
+        Ok(j) => j,
+        Err(e) => {
+            log.push(format!("[AUTO] config load failed: {}", e));
+            return;
+        }
+    };
+    retarget_state.config_json = Some(config_json.clone());
+
+    let vrm_version = cinev_retarget::vrm_compat::VrmVersion::V1_0;
+    match cinev_retarget::retarget(&fbx_bytes, &config_json, vrm_version) {
+        Ok((anim, _diag)) => {
+            log.push(format!("[AUTO] retarget: {} tracks, {:.1}s", anim.bone_tracks.len(), anim.duration_secs));
+            retarget_state.pending_anim = Some(anim);
+            retarget_state.applied = false;
+        }
+        Err(e) => {
+            log.push(format!("[AUTO] retarget failed: {}", e));
+            return;
+        }
+    }
+
+    match cinev_retarget::compute_fbx_skeleton(&fbx_bytes) {
+        Ok(skel) => {
+            log.push(format!("[AUTO] FBX skeleton: {} bones", skel.bone_positions.len()));
+            commands.insert_resource(FbxSkeletonViz { data: skel, start_time: 0.0 });
+        }
+        Err(e) => log.push(format!("[AUTO] FBX skeleton viz: {}", e)),
+    }
 }
 
 fn open_file_dialog(
@@ -334,8 +400,9 @@ fn handle_vrm_loaded(
         commands.spawn((
             LoadedVrm,
             VrmHandle(handle),
+            Transform::from_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
         ));
-        log.push("[LOAD] VrmHandle spawned — waiting for init...");
+        log.push("[LOAD] VrmHandle spawned (rotateVRM0) — waiting for init...");
     }
 }
 
@@ -419,12 +486,6 @@ fn handle_fbx_loaded(
     }
 }
 
-/// Format quaternion as "axis=(x,y,z) angle=deg°" for debug
-fn quat_axis_angle_str(q: Quat) -> String {
-    let (axis, angle) = q.to_axis_angle();
-    format!("axis=({:.3},{:.3},{:.3}) angle={:.1}°", axis.x, axis.y, axis.z, angle.to_degrees())
-}
-
 fn apply_retarget_animation(
     mut commands: Commands,
     mut retarget_state: ResMut<RetargetState>,
@@ -458,17 +519,6 @@ fn apply_retarget_animation(
         bone_rest_local.insert(vrm_bone.0.clone(), rest_tf.rotation);
         bone_rest_global.insert(vrm_bone.0.clone(), rest_gtf.rotation());
 
-        // Dump root/hips full rest data (only first time)
-        if vrm_bone.0 == "hips" {
-            log.push(format!(
-                "[VRM] {} entity='{}' local_pos=({:.4},{:.4},{:.4}) local_rot=({:.4},{:.4},{:.4},{:.4}) global_pos=({:.4},{:.4},{:.4}) global_rot=({:.4},{:.4},{:.4},{:.4})",
-                vrm_bone.0, name,
-                rest_tf.translation.x, rest_tf.translation.y, rest_tf.translation.z,
-                rest_tf.rotation.x, rest_tf.rotation.y, rest_tf.rotation.z, rest_tf.rotation.w,
-                rest_gtf.translation().x, rest_gtf.translation().y, rest_gtf.translation().z,
-                rest_gtf.rotation().x, rest_gtf.rotation().y, rest_gtf.rotation().z, rest_gtf.rotation().w,
-            ));
-        }
     }
 
     // Build VRM bone parent map from entity hierarchy
@@ -497,21 +547,14 @@ fn apply_retarget_animation(
         if name.as_str() == Vrm::ROOT_BONE {
             root_rest_local = tf.rotation;
             root_rest_global_rot = gtf.to_scale_rotation_translation().1;
-            let (_, _, root_pos) = gtf.to_scale_rotation_translation();
-            log.push(format!(
-                "[VRM] ROOT entity='{}' local_pos=({:.4},{:.4},{:.4}) local_rot=({:.4},{:.4},{:.4},{:.4}) global_pos=({:.4},{:.4},{:.4}) global_rot=({:.4},{:.4},{:.4},{:.4})",
-                name,
-                tf.translation.x, tf.translation.y, tf.translation.z,
-                tf.rotation.x, tf.rotation.y, tf.rotation.z, tf.rotation.w,
-                root_pos.x, root_pos.y, root_pos.z,
-                root_rest_global_rot.x, root_rest_global_rot.y, root_rest_global_rot.z, root_rest_global_rot.w,
-            ));
             break;
         }
     }
     bone_name_map.insert("VRMC_vrm.root_bone".to_string(), vrm_root_name);
     bone_rest_local.insert("VRMC_vrm.root_bone".to_string(), root_rest_local);
-    bone_rest_global.insert("VRMC_vrm.root_bone".to_string(), root_rest_global_rot);
+    // Root's skeleton-space global = just its local rest (skeleton root, no parent in skeleton)
+    // Do NOT use GlobalTransform which includes 180°Y scene parent
+    bone_rest_global.insert("VRMC_vrm.root_bone".to_string(), root_rest_local);
 
     log.push(format!(
         "[ANIM] {} bones | root local=({:.2},{:.2},{:.2},{:.2}) global=({:.2},{:.2},{:.2},{:.2})",
@@ -524,11 +567,8 @@ fn apply_retarget_animation(
     // FBX pelvis height from src_rest_global data (Z component in FBX Z-up = height)
     let fbx_hips_height = anim.bone_tracks.iter()
         .find(|t| t.vrm_bone_name == "hips")
-        .map(|t| {
-            // Pelvis rest_t.z = hip height in FBX cm
-            // We stored it in the track — get from FBX bone data via diag
-            // For now, use a known value from the FBX (pelvis Z = 93.9cm)
-            0.939_f32 // meters
+        .map(|_| {
+            0.939_f32 // meters (pelvis Z = 93.9cm)
         })
         .unwrap_or(0.939);
 
@@ -551,16 +591,6 @@ fn apply_retarget_animation(
         1.0
     };
 
-    log.push(format!(
-        "[ANIM] scale: FBX hips={:.3}m VRM hips={:.3}m ratio={:.3}",
-        fbx_hips_height, vrm_hips_height, scale_ratio
-    ));
-
-    log.push(format!(
-        "[ANIM] VRM root global: ({:.4},{:.4},{:.4},{:.4}) {}",
-        root_rest_global_rot.x, root_rest_global_rot.y, root_rest_global_rot.z, root_rest_global_rot.w,
-        quat_axis_angle_str(root_rest_global_rot),
-    ));
 
     let mut clip = AnimationClip::default();
     let mut applied_count = 0;
@@ -579,19 +609,41 @@ fn apply_retarget_animation(
     let coord_rot = Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2);
     let coord_rot_inv = coord_rot.inverse();
 
-    // FBX local delta approach:
-    // For each bone at each frame, compute FBX local rotation from animated world rotations,
-    // extract delta from rest, convert to Y-up, and apply to VRM local rest.
+    // three-vrm formula (from loadMixamoAnimation.js):
+    //   result = parentRestWorld_yup * animLocal_yup * boneRestWorld_yup.inverse()
     //
-    // fbx_local_anim = parent_world_anim.inv() * bone_world_anim
-    // fbx_local_rest = parent_world_rest.inv() * bone_world_rest
-    // delta_zup = fbx_local_rest.inv() * fbx_local_anim
-    // vrm_local = vrm_local_rest * coord * delta_zup * coord_inv
+    // Where:
+    //   animLocal_zup = PreRotation * Lcl_Rotation_anim (= src_rest * track.rotations[i])
+    //   *_yup = coord_rot * *_zup * coord_rot_inv
     //
-    // This avoids 180°Y propagation: each bone computed independently from FBX world data.
+    // For VRM 0.x: negate x,z of the resulting quaternion (forward axis flip -Z vs +Z)
+    //
+    // This formula produces VRM LOCAL rotation directly (not a delta on top of rest).
 
-    let fbx_world_rots = fbx_viz.as_ref().map(|v| &v.data.bone_rotations);
-    let fbx_hierarchy = fbx_viz.as_ref().map(|v| &v.data.hierarchy);
+    // Compute hips rest offset: FBX pelvis rest (Y-up world) - VRM hips rest (local)
+    // This compensates for different skeleton rest positions
+    let hips_rest_offset = {
+        let fbx_pelvis_rest = fbx_viz.as_ref()
+            .and_then(|v| v.data.bone_positions.get("DHIbody:pelvis"))
+            .and_then(|p| p.first())
+            .map(|p| Vec3::new(p[0], p[1], p[2]));
+        let fbx_root_rest = fbx_viz.as_ref()
+            .and_then(|v| v.data.bone_positions.get("DHIbody:root"))
+            .and_then(|p| p.first())
+            .map(|p| Vec3::new(p[0], p[1], p[2]));
+        let vrm_hips_rest = bone_query.iter()
+            .find(|(vb, _, _, _)| vb.0 == "hips")
+            .map(|(_, _, rt, _)| rt.translation)
+            .unwrap_or(Vec3::ZERO);
+        match (fbx_pelvis_rest, fbx_root_rest) {
+            (Some(p), Some(r)) => (p - r) - vrm_hips_rest,
+            _ => Vec3::ZERO,
+        }
+    };
+    log.push(format!(
+        "[ANIM] hips_rest_offset=({:.3},{:.3},{:.3})",
+        hips_rest_offset.x, hips_rest_offset.y, hips_rest_offset.z,
+    ));
 
     for track in &anim.bone_tracks {
         let node_name = match bone_name_map.get(&track.vrm_bone_name) {
@@ -606,102 +658,31 @@ fn apply_retarget_animation(
 
         let target_id = AnimationTargetId::from_name(&node_name);
 
-        let is_debug_bone = DEBUG_BONES.contains(&track.vrm_bone_name.as_str());
-
-        let dist_rest_local = bone_rest_local
-            .get(&track.vrm_bone_name)
-            .copied()
-            .unwrap_or(Quat::IDENTITY);
-
-        // Look up FBX world rotations for this bone and its parent
-        let fbx_bone_rots = fbx_world_rots
-            .and_then(|r| r.get(&track.src_bone_name));
-        let fbx_parent_name = fbx_hierarchy
-            .and_then(|h| h.get(&track.src_bone_name));
-        let fbx_parent_rots = fbx_parent_name
-            .and_then(|pn| fbx_world_rots.and_then(|r| r.get(pn)));
-
-        // Rest rotations (frame 0)
-        let fbx_bone_rest = fbx_bone_rots.and_then(|r| r.first().copied());
-        let fbx_parent_rest = fbx_parent_rots.and_then(|r| r.first().copied());
-        let fbx_local_rest = match (fbx_parent_rest, fbx_bone_rest) {
-            (Some(pr), Some(br)) => pr.inverse() * br,
-            (None, Some(br)) => br, // root bone: no parent
-            _ => track.src_rest_global, // fallback
-        };
-
         // A-pose → T-pose offset
-        let pose_offset = anim.rest_pose_offsets.get(&track.vrm_bone_name).map(|o| {
+        let _pose_offset = anim.rest_pose_offsets.get(&track.vrm_bone_name).map(|o| {
             Quat::from_euler(EulerRot::XYZ, o[0], o[1], o[2])
         });
 
+        // three-vrm formula: parentRestWorld_yup * animLocal_yup * boneRestWorld_yup.inv()
+        // + VRM 0.x correction: negate x,z of result
+        let parent_rest_yup = coord_rot * track.src_parent_rest_global * coord_rot_inv;
+        let bone_rest_yup = coord_rot * track.src_rest_global * coord_rot_inv;
+        let bone_rest_yup_inv = bone_rest_yup.inverse();
+
+        // three-vrm formula + VRM 0.x change of basis: R180 * Q * R180^-1 = negate x,z
+        // This conjugation transforms the three-vrm result into VRM 0.x's 180°-rotated local space,
+        // replacing the old per-root vrm0_rot multiplication.
         let corrected_rotations: Vec<Quat> = (0..track.rotations.len())
             .map(|frame_idx| {
-                let fbx_bone_world = fbx_bone_rots.and_then(|r| r.get(frame_idx).copied());
-                let fbx_parent_world = fbx_parent_rots.and_then(|r| r.get(frame_idx).copied());
+                let anim_local_zup = track.src_rest * track.rotations[frame_idx];
+                let anim_local_yup = coord_rot * anim_local_zup * coord_rot_inv;
 
-                if let Some(bone_world) = fbx_bone_world {
-                    // Compute FBX animated local rotation
-                    let fbx_local_anim = match fbx_parent_world {
-                        Some(pw) => pw.inverse() * bone_world,
-                        None => bone_world, // root bone
-                    };
+                let result = (parent_rest_yup * anim_local_yup * bone_rest_yup_inv).normalize();
 
-                    // Delta from rest in Z-up bone-local frame
-                    let delta_zup = fbx_local_rest.inverse() * fbx_local_anim;
-
-                    // Convert delta to Y-up
-                    let delta_yup = coord_rot * delta_zup * coord_rot_inv;
-
-                    // VRM faces -Z (180°Y root), FBX faces +Z (in Y-up).
-                    // Local frame difference: negate X and Z rotation axes
-                    // (equivalent to 180°Y conjugation of the delta)
-                    let delta_corrected = if is_root {
-                        delta_yup // root bone: no correction needed
-                    } else {
-                        // 180°Y conjugation: negate x and z of quaternion
-                        Quat::from_xyzw(-delta_yup.x, delta_yup.y, -delta_yup.z, delta_yup.w)
-                    };
-
-                    let mut result = (dist_rest_local * delta_corrected).normalize();
-
-                    // Apply A-pose → T-pose offset
-                    if let Some(offset) = pose_offset {
-                        result = (result * offset).normalize();
-                    }
-
-                    if is_debug_bone && frame_idx < 3 {
-                        let delta_angle = delta_zup.to_axis_angle().1.to_degrees();
-                        let result_angle = result.to_axis_angle().1.to_degrees();
-                        log.push(format!(
-                            "[DBG]   frame[{}] delta={:.1}° result={:.1}° result=({:.3},{:.3},{:.3},{:.3})",
-                            frame_idx, delta_angle, result_angle,
-                            result.x, result.y, result.z, result.w,
-                        ));
-                    }
-
-                    result
-                } else {
-                    // Fallback: use track data directly
-                    let delta = track.rotations[frame_idx];
-                    let src_local = track.src_rest * delta;
-                    let src_local_gltf = coord_rot * src_local * coord_rot_inv;
-                    let src_rest_gltf = coord_rot * track.src_rest_global * coord_rot_inv;
-                    let parent_rest_gltf = coord_rot * track.src_parent_rest_global * coord_rot_inv;
-                    let src_full_local_rest_gltf = parent_rest_gltf.inverse() * src_rest_gltf;
-                    let delta_gltf = src_full_local_rest_gltf.inverse() * src_local_gltf;
-                    (dist_rest_local * delta_gltf).normalize()
-                }
+                // VRM 0.x Change of Basis: R180 * Q * R180^-1 = negate x,z
+                Quat::from_xyzw(-result.x, result.y, -result.z, result.w)
             })
             .collect();
-
-        if is_debug_bone {
-            log.push(format!("[DBG] === {} ===", track.vrm_bone_name));
-            log.push(format!(
-                "[DBG]   fbx_bone: {}, parent_fbx: {:?}",
-                track.src_bone_name, fbx_parent_name,
-            ));
-        }
 
         if corrected_rotations.len() >= 2 {
             match bevy::math::curve::SampleAutoCurve::new(domain, corrected_rotations) {
@@ -728,9 +709,49 @@ fn apply_retarget_animation(
                 .map(|(_, _, rt, _)| rt.translation)
                 .unwrap_or(Vec3::ZERO);
 
-            let local_translations: Vec<Vec3> = translations
-                .iter()
-                .map(|&delta| bone_rest_translation + delta * scale_ratio)
+            // For hips: use FBX skeleton viz world positions directly
+            // Convert world offset to root-local, then negate X,Z for 180°Y parent
+            let use_fbx_viz_pos = track.vrm_bone_name == "hips" && fbx_viz.is_some();
+            let fbx_pelvis_positions = fbx_viz.as_ref()
+                .and_then(|v| v.data.bone_positions.get("DHIbody:pelvis"));
+            let fbx_root_positions = fbx_viz.as_ref()
+                .and_then(|v| v.data.bone_positions.get("DHIbody:root"));
+            let fbx_root_rotations = fbx_viz.as_ref()
+                .and_then(|v| v.data.bone_rotations.get("DHIbody:root"));
+
+            let local_translations: Vec<Vec3> = (0..translations.len())
+                .map(|i| {
+                    let delta = translations[i];
+                    let scaled = delta * scale_ratio;
+
+                    if is_root {
+                        // rotateVRM0: negate X,Z for 180°Y parent
+                        bone_rest_translation + Vec3::new(-scaled.x, scaled.y, -scaled.z)
+                    } else if use_fbx_viz_pos {
+                        // Hips: world offset → root-local offset
+                        let pelvis_w = fbx_pelvis_positions
+                            .and_then(|p| p.get(i))
+                            .map(|p| Vec3::new(p[0], p[1], p[2]))
+                            .unwrap_or(bone_rest_translation);
+                        let root_w = fbx_root_positions
+                            .and_then(|p| p.get(i))
+                            .map(|p| Vec3::new(p[0], p[1], p[2]))
+                            .unwrap_or(Vec3::ZERO);
+                        let root_rot_zup = fbx_root_rotations
+                            .and_then(|r| r.get(i).copied())
+                            .unwrap_or(Quat::IDENTITY);
+                        let root_rot_yup = coord_rot * root_rot_zup * coord_rot_inv;
+
+                        // World offset → root-local (undo root rotation)
+                        let world_offset = pelvis_w - root_w;
+                        let local_offset = root_rot_yup.inverse() * world_offset;
+
+                        // Negate X,Z for 180°Y scene parent
+                        Vec3::new(-local_offset.x, local_offset.y, -local_offset.z)
+                    } else {
+                        bone_rest_translation + scaled
+                    }
+                })
                 .collect();
 
             if local_translations.len() >= 2 {
@@ -746,19 +767,6 @@ fn apply_retarget_animation(
                     }
                 }
             }
-        }
-    }
-
-    // Write debug log to file for analysis
-    {
-        let debug_text = log.lines.iter()
-            .filter(|l| l.starts_with("[DBG]"))
-            .cloned()
-            .collect::<Vec<_>>()
-            .join("\n");
-        if !debug_text.is_empty() {
-            fs::write("retarget_debug.txt", &debug_text).ok();
-            log.push("[DBG] written to retarget_debug.txt");
         }
     }
 
@@ -816,42 +824,153 @@ fn start_playback(
 
 /// Log root_bone and hips world transform every 60 frames
 fn log_root_hips_world(
-    root_q: Query<(&Name, &Transform, &GlobalTransform), (With<AnimationPlayer>, Without<VrmBone>)>,
-    bone_q: Query<(&VrmBone, &Transform, &GlobalTransform)>,
+    root_q: Query<(&Name, &GlobalTransform), (With<AnimationPlayer>, Without<VrmBone>)>,
+    bone_q: Query<(&VrmBone, &GlobalTransform)>,
+    fbx_viz: Option<Res<FbxSkeletonViz>>,
+    anim_player_query: Query<&AnimationPlayer>,
+    _time: Res<Time>,
     mut frame_count: Local<u32>,
     mut log: ResMut<AppLog>,
 ) {
     *frame_count += 1;
-    if *frame_count % 60 != 1 { return; }
 
-    // Root bone
-    for (name, tf, gtf) in &root_q {
-        if name.as_str() == Vrm::ROOT_BONE {
-            let (_, rot, pos) = gtf.to_scale_rotation_translation();
-            let local_rot = tf.rotation;
-            let (axis, angle) = rot.to_axis_angle();
-            let (la, la_deg) = local_rot.to_axis_angle();
-            log.push(format!(
-                "[WORLD] root: pos=({:.2},{:.2},{:.2}) world_rot={:.1}° axis=({:.2},{:.2},{:.2}) local_rot={:.1}° local_axis=({:.2},{:.2},{:.2})",
-                pos.x, pos.y, pos.z,
-                angle.to_degrees(), axis.x, axis.y, axis.z,
-                la_deg.to_degrees(), la.x, la.y, la.z,
-            ));
+    // --- VRM hips world position ---
+    let mut vrm_hips_pos = Vec3::ZERO;
+    for (vrm_bone, gtf) in &bone_q {
+        if vrm_bone.0 == "hips" {
+            vrm_hips_pos = gtf.translation();
         }
     }
 
-    // Hips
-    for (vrm_bone, tf, gtf) in &bone_q {
-        if vrm_bone.0 == "hips" {
-            let (_, rot, pos) = gtf.to_scale_rotation_translation();
-            let local_rot = tf.rotation;
-            let (axis, angle) = rot.to_axis_angle();
-            let (la, la_deg) = local_rot.to_axis_angle();
+    // --- FBX: root + pelvis world positions ---
+    let Some(ref fbx) = fbx_viz else { return; };
+    let skel = &fbx.data;
+    if skel.frame_count == 0 { return; }
+
+    let anim_time: f64 = anim_player_query
+        .iter()
+        .next()
+        .and_then(|player| {
+            player.playing_animations().next().map(|(_, active)| {
+                active.elapsed() as f64 % skel.duration as f64
+            })
+        })
+        .unwrap_or(0.0);
+    let frame = ((anim_time / skel.duration as f64) * skel.frame_count as f64) as usize;
+    let frame = frame.min(skel.frame_count.saturating_sub(1));
+
+    let fbx_pelvis_pos = skel.bone_positions.get("DHIbody:pelvis")
+        .and_then(|p| p.get(frame))
+        .map(|p| Vec3::new(p[0], p[1], p[2]))
+        .unwrap_or(Vec3::ZERO);
+
+    // FBX rotations for hips divergence check
+    let coord_rot = Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2);
+    let coord_rot_inv = coord_rot.inverse();
+    let fbx_root_rot_yup = skel.bone_rotations.get("DHIbody:root")
+        .and_then(|r| r.get(frame).copied())
+        .map(|r| coord_rot * r * coord_rot_inv)
+        .unwrap_or(Quat::IDENTITY);
+    let fbx_pelvis_rot_yup = skel.bone_rotations.get("DHIbody:pelvis")
+        .and_then(|r| r.get(frame).copied())
+        .map(|r| coord_rot * r * coord_rot_inv)
+        .unwrap_or(Quat::IDENTITY);
+
+    let hips_d = vrm_hips_pos - fbx_pelvis_pos;
+    let hips_dist = hips_d.length();
+
+    // Only log when hips diverges significantly
+    if hips_dist > 0.03 {
+        // VRM root/hips world rotations
+        let vrm_root_rot = root_q.iter()
+            .find(|(n, _)| n.as_str() == Vrm::ROOT_BONE)
+            .map(|(_, gtf)| gtf.to_scale_rotation_translation().1)
+            .unwrap_or(Quat::IDENTITY);
+        let vrm_hips_rot = bone_q.iter()
+            .find(|(vb, _)| vb.0 == "hips")
+            .map(|(_, gtf)| gtf.to_scale_rotation_translation().1)
+            .unwrap_or(Quat::IDENTITY);
+
+        // Compare rotations: angle between VRM and FBX world rotations
+        let root_rot_diff = (vrm_root_rot * fbx_root_rot_yup.inverse()).to_axis_angle();
+        let hips_rot_diff = (vrm_hips_rot * fbx_pelvis_rot_yup.inverse()).to_axis_angle();
+
+        // FBX pelvis local rotation (relative to root)
+        let fbx_pelvis_local = fbx_root_rot_yup.inverse() * fbx_pelvis_rot_yup;
+        // VRM hips local (relative to root in world)
+        let vrm_hips_local = vrm_root_rot.inverse() * vrm_hips_rot;
+        let local_diff = (vrm_hips_local * fbx_pelvis_local.inverse()).to_axis_angle();
+
+        log.push(format!(
+            "[DIVERGE] f={} t={:.2}s pos_d={:.3}m ({:.3},{:.3},{:.3})",
+            frame, anim_time, hips_dist, hips_d.x, hips_d.y, hips_d.z,
+        ));
+        log.push(format!(
+            "  root_rot_diff={:.1}° hips_rot_diff={:.1}° hips_local_diff={:.1}°",
+            root_rot_diff.1.to_degrees(),
+            hips_rot_diff.1.to_degrees(),
+            local_diff.1.to_degrees(),
+        ));
+        log.push(format!(
+            "  VRM hips_local=({:.3},{:.3},{:.3},{:.3}) FBX pelvis_local=({:.3},{:.3},{:.3},{:.3})",
+            vrm_hips_local.x, vrm_hips_local.y, vrm_hips_local.z, vrm_hips_local.w,
+            fbx_pelvis_local.x, fbx_pelvis_local.y, fbx_pelvis_local.z, fbx_pelvis_local.w,
+        ));
+    }
+
+    // --- Limb bone comparison (every 30 frames) ---
+    if *frame_count % 30 != 0 { return; }
+
+    // Forward vector comparison: compare bone DIRECTION (parent→child) rather than full rotation.
+    // VRM bones have identity rest → bone direction = parent→child translation direction.
+    // FBX bones: use world position of bone and its child to get direction.
+    // This comparison is meaningful across different skeleton rest poses.
+    let fbx_child_map: &[(&str, &str, &str)] = &[
+        // (vrm_bone, fbx_bone, fbx_child_for_direction)
+        ("leftUpperLeg", "DHIbody:thigh_l", "DHIbody:calf_l"),
+        ("leftLowerLeg", "DHIbody:calf_l", "DHIbody:foot_l"),
+        ("leftUpperArm", "DHIbody:upperarm_l", "DHIbody:lowerarm_l"),
+        ("leftLowerArm", "DHIbody:lowerarm_l", "DHIbody:hand_l"),
+        ("spine", "DHIbody:spine_01", "DHIbody:spine_02"),
+    ];
+
+    for &(vrm_name, fbx_bone, fbx_child) in fbx_child_map {
+        // VRM: bone world position from GlobalTransform (raw world space)
+        let vrm_pos = bone_q.iter()
+            .find(|(vb, _)| vb.0 == vrm_name)
+            .map(|(_, gtf)| gtf.translation());
+
+        // VRM: find child bone position to compute direction
+        // Use known VRM hierarchy: leftUpperLeg→leftLowerLeg, etc.
+        let vrm_child_name = match vrm_name {
+            "leftUpperLeg" => "leftLowerLeg",
+            "leftLowerLeg" => "leftFoot",
+            "leftUpperArm" => "leftLowerArm",
+            "leftLowerArm" => "leftHand",
+            "spine" => "chest",
+            _ => continue,
+        };
+        let vrm_child_pos = bone_q.iter()
+            .find(|(vb, _)| vb.0 == vrm_child_name)
+            .map(|(_, gtf)| gtf.translation());
+
+        // FBX: bone positions (already Y-up, meters)
+        let fbx_pos = skel.bone_positions.get(fbx_bone)
+            .and_then(|p| p.get(frame))
+            .map(|p| Vec3::new(p[0], p[1], p[2]));
+        let fbx_child_pos = skel.bone_positions.get(fbx_child)
+            .and_then(|p| p.get(frame))
+            .map(|p| Vec3::new(p[0], p[1], p[2]));
+
+        if let (Some(vp), Some(vcp), Some(fp), Some(fcp)) = (vrm_pos, vrm_child_pos, fbx_pos, fbx_child_pos) {
+            let vrm_dir = (vcp - vp).normalize_or_zero();
+            let fbx_dir = (fcp - fp).normalize_or_zero();
+            let dot = vrm_dir.dot(fbx_dir).clamp(-1.0, 1.0);
+            let angle = dot.acos().to_degrees();
+
             log.push(format!(
-                "[WORLD] hips: pos=({:.2},{:.2},{:.2}) world_rot={:.1}° axis=({:.2},{:.2},{:.2}) local_rot={:.1}° local_axis=({:.2},{:.2},{:.2})",
-                pos.x, pos.y, pos.z,
-                angle.to_degrees(), axis.x, axis.y, axis.z,
-                la_deg.to_degrees(), la.x, la.y, la.z,
+                "[LIMB] {} fwd_diff={:.1}° vrm=({:.2},{:.2},{:.2}) fbx=({:.2},{:.2},{:.2}) f={}",
+                vrm_name, angle, vrm_dir.x, vrm_dir.y, vrm_dir.z, fbx_dir.x, fbx_dir.y, fbx_dir.z, frame,
             ));
         }
     }
