@@ -594,12 +594,11 @@ fn apply_retarget_animation(
     ));
 
     // Scale correction: MetaHuman vs VRM height ratio
-    // FBX pelvis height from src_rest_global data (Z component in FBX Z-up = height)
-    let fbx_hips_height = anim.bone_tracks.iter()
-        .find(|t| t.vrm_bone_name == "hips")
-        .map(|_| {
-            0.939_f32 // meters (pelvis Z = 93.9cm)
-        })
+    // FBX pelvis height from skeleton viz data (Y component in Y-up space = height)
+    let fbx_hips_height = fbx_viz.as_ref()
+        .and_then(|v| v.data.bone_positions.get("DHIbody:pelvis"))
+        .and_then(|p| p.first())
+        .map(|p| p[1]) // Y component in Y-up space = height
         .unwrap_or(0.939);
 
     // VRM hips world Y position at rest
@@ -809,7 +808,7 @@ fn apply_retarget_animation(
                 .unwrap_or(Vec3::ZERO);
 
             // For hips: use FBX skeleton viz world positions directly
-            // Convert world offset to root-local, then negate X,Z for 180°Y parent
+            // Compute delta from FBX rest, scale to VRM proportions, add to VRM rest
             let use_fbx_viz_pos = track.vrm_bone_name == "hips" && fbx_viz.is_some();
             let fbx_pelvis_positions = fbx_viz.as_ref()
                 .and_then(|v| v.data.bone_positions.get("DHIbody:pelvis"));
@@ -817,6 +816,25 @@ fn apply_retarget_animation(
                 .and_then(|v| v.data.bone_positions.get("DHIbody:root"));
             let fbx_root_rotations = fbx_viz.as_ref()
                 .and_then(|v| v.data.bone_rotations.get("DHIbody:root"));
+
+            // FBX pelvis rest position in root-local space (frame 0)
+            let fbx_hips_rest_local = if use_fbx_viz_pos {
+                let pelvis_rest = fbx_pelvis_positions
+                    .and_then(|p| p.first())
+                    .map(|p| Vec3::new(p[0], p[1], p[2]))
+                    .unwrap_or(Vec3::ZERO);
+                let root_rest = fbx_root_positions
+                    .and_then(|p| p.first())
+                    .map(|p| Vec3::new(p[0], p[1], p[2]))
+                    .unwrap_or(Vec3::ZERO);
+                let root_rot_rest = fbx_root_rotations
+                    .and_then(|r| r.first().copied())
+                    .unwrap_or(Quat::IDENTITY);
+                let root_rot_rest_yup = coord_rot * root_rot_rest * coord_rot_inv;
+                root_rot_rest_yup.inverse() * (pelvis_rest - root_rest)
+            } else {
+                Vec3::ZERO
+            };
 
             let local_translations: Vec<Vec3> = (0..translations.len())
                 .map(|i| {
@@ -827,7 +845,7 @@ fn apply_retarget_animation(
                         // rotateVRM0: negate X,Z for 180°Y parent
                         bone_rest_translation + Vec3::new(-scaled.x, scaled.y, -scaled.z)
                     } else if use_fbx_viz_pos {
-                        // Hips: world offset → root-local offset
+                        // Hips: FBX world → root-local, then delta from rest → scale → VRM rest
                         let pelvis_w = fbx_pelvis_positions
                             .and_then(|p| p.get(i))
                             .map(|p| Vec3::new(p[0], p[1], p[2]))
@@ -842,11 +860,13 @@ fn apply_retarget_animation(
                         let root_rot_yup = coord_rot * root_rot_zup * coord_rot_inv;
 
                         // World offset → root-local (undo root rotation)
-                        let world_offset = pelvis_w - root_w;
-                        let local_offset = root_rot_yup.inverse() * world_offset;
+                        let local_offset = root_rot_yup.inverse() * (pelvis_w - root_w);
+                        // Delta from FBX rest, scaled to VRM proportions
+                        let motion_delta = (local_offset - fbx_hips_rest_local) * scale_ratio;
+                        let result = bone_rest_translation + motion_delta;
 
                         // Negate X,Z for 180°Y scene parent
-                        Vec3::new(-local_offset.x, local_offset.y, -local_offset.z)
+                        Vec3::new(-result.x, result.y, -result.z)
                     } else {
                         bone_rest_translation + scaled
                     }
