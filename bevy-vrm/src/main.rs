@@ -77,7 +77,7 @@ impl Default for BoneVizState {
 const HIPS_ONLY: bool = false;
 
 /// Auto-load VRM and FBX on startup
-const AUTO_LOAD_VRM: &str = "models/Yoya.vrm";
+const AUTO_LOAD_VRM: &str = "models/GhostPumpking.vrm";
 const AUTO_LOAD_FBX: &str = "/Users/younsoolim/Desktop/archive/untitled folder/notwww/vrm/25_06672_F_DNTSuperSukiShukiRush_260113.fbx";
 
 #[derive(Component)]
@@ -242,14 +242,43 @@ fn setup(
 
     // Auto-load VRM and FBX for quick iteration
     if !AUTO_LOAD_VRM.is_empty() {
-        let handle = asset_server.load::<VrmAsset>(AUTO_LOAD_VRM);
-        // rotateVRM0: 180°Y on scene to match FBX facing direction
-        commands.spawn((
-            LoadedVrm,
-            VrmHandle(handle),
-            Transform::from_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
-        ));
-        log.push(format!("[AUTO] VRM: {} (rotateVRM0)", AUTO_LOAD_VRM));
+        let full_path = format!("assets/{}", AUTO_LOAD_VRM);
+        match fs::read(&full_path) {
+            Ok(file_bytes) => {
+                let vrm_version = detect_vrm_version(&file_bytes);
+                match vrm_version {
+                    VrmVersionTag::Vrm0 => {
+                        log.push("[AUTO] VRM 0.x detected — converting...");
+                        match vrm0_compat::convert(&file_bytes) {
+                            Ok(converted) => {
+                                fs::write(&full_path, &converted).ok();
+                                log.push("[AUTO] VRM 0.x → 1.0 conversion done");
+                            }
+                            Err(e) => {
+                                log.push(format!("[AUTO] VRM 0.x conversion failed: {}", e));
+                            }
+                        }
+                    }
+                    VrmVersionTag::Vrm1 => {
+                        log.push("[AUTO] VRM 1.0 detected");
+                    }
+                    VrmVersionTag::Unknown => {
+                        log.push("[AUTO] VRM version unknown — attempting load");
+                    }
+                }
+                let handle = asset_server.load::<VrmAsset>(AUTO_LOAD_VRM);
+                // rotateVRM0: 180°Y on scene to match FBX facing direction
+                commands.spawn((
+                    LoadedVrm,
+                    VrmHandle(handle),
+                    Transform::from_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
+                ));
+                log.push(format!("[AUTO] VRM: {} (rotateVRM0)", AUTO_LOAD_VRM));
+            }
+            Err(e) => {
+                log.push(format!("[AUTO] VRM file not found: {} — {}", full_path, e));
+            }
+        }
     }
 }
 
