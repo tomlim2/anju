@@ -256,20 +256,14 @@ fn setup(
             Ok(file_bytes) => {
                 let vrm_version = detect_vrm_version(&file_bytes);
                 let is_vrm0 = matches!(vrm_version, VrmVersionTag::Vrm0);
-                // For 0.x: convert and save to .v1.vrm cache, load that instead
-                let load_asset_path = if is_vrm0 {
-                    log.push("[AUTO] VRM 0.x detected — converting...");
+                if is_vrm0 {
                     match vrm0_compat::convert(&file_bytes) {
                         Ok(converted) => {
-                            let cache_path = full_path.replace(".vrm", ".v1.vrm");
-                            let cache_asset = AUTO_LOAD_VRM.replace(".vrm", ".v1.vrm");
-                            fs::write(&cache_path, &converted).ok();
+                            fs::write(&full_path, &converted).ok();
                             log.push("[AUTO] VRM 0.x → 1.0 conversion done");
-                            cache_asset
                         }
-                        Err(e) => {
-                            log.push(format!("[AUTO] VRM 0.x conversion failed: {}", e));
-                            AUTO_LOAD_VRM.to_string()
+                        Err(_) => {
+                            log.push("[AUTO] VRM 0.x (already converted) — loading as-is");
                         }
                     }
                 } else {
@@ -277,9 +271,8 @@ fn setup(
                         VrmVersionTag::Vrm1 => log.push("[AUTO] VRM 1.0 detected"),
                         _ => log.push("[AUTO] VRM version unknown — attempting load as 1.0"),
                     }
-                    AUTO_LOAD_VRM.to_string()
-                };
-                let handle = asset_server.load::<VrmAsset>(&load_asset_path);
+                }
+                let handle = asset_server.load::<VrmAsset>(AUTO_LOAD_VRM);
                 let loaded_version = if is_vrm0 { LoadedVrmVersion::Vrm0 } else { LoadedVrmVersion::Vrm1 };
                 let spawn_transform = if is_vrm0 {
                     Transform::from_rotation(Quat::from_rotation_y(std::f32::consts::PI))
@@ -292,7 +285,7 @@ fn setup(
                     spawn_transform,
                 ));
                 let tag = if is_vrm0 { "rotateVRM0" } else { "native1.0" };
-                log.push(format!("[AUTO] VRM: {} ({})", load_asset_path, tag));
+                log.push(format!("[AUTO] VRM: {} ({})", AUTO_LOAD_VRM, tag));
             }
             Err(e) => {
                 log.push(format!("[AUTO] VRM file not found: {} — {}", full_path, e));
@@ -828,8 +821,13 @@ fn apply_retarget_animation(
                 let normalized = (parent_rest_yup * anim_local_yup * bone_rest_yup_inv).normalize();
 
                 // VRM spec full formula: dst_rest * inv(dst_rest_g) * normalized * dst_rest_g
-                // For VRM 0.x (identity rest): this is a no-op
-                let mut result = (dst_rest_local * dst_rest_global_inv * normalized * dst_rest_global).normalize();
+                // Skip for VRM 0.x: bones have identity rest, but RestGlobalTransform includes
+                // 180°Y scene parent which would corrupt the result
+                let mut result = if is_vrm0 {
+                    normalized
+                } else {
+                    (dst_rest_local * dst_rest_global_inv * normalized * dst_rest_global).normalize()
+                };
 
                 // Apply A-pose correction: rotate VRM T-pose → FBX A-pose rest orientation
                 if let Some(correction) = apose_correction {
