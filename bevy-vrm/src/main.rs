@@ -82,6 +82,61 @@ impl Default for BoneVizState {
     }
 }
 
+#[derive(Resource)]
+struct TimelineState {
+    paused: bool,
+    current_frame: usize,
+    total_frames: usize,
+    duration: f32,           // total animation duration in seconds
+    current_time: f32,       // accumulated time in seconds (master clock)
+    scrubbing: bool,
+    visible: bool,
+    clip_index: Option<AnimationNodeIndex>,
+}
+
+impl Default for TimelineState {
+    fn default() -> Self {
+        Self {
+            paused: false,
+            current_frame: 0,
+            total_frames: 0,
+            duration: 0.0,
+            current_time: 0.0,
+            scrubbing: false,
+            visible: true,
+            clip_index: None,
+        }
+    }
+}
+
+impl TimelineState {
+    /// Convert current_time → frame index
+    fn frame_from_time(&self) -> usize {
+        if self.duration <= 0.0 || self.total_frames == 0 { return 0; }
+        let pct = self.current_time / self.duration;
+        let f = (pct * self.total_frames as f32) as usize;
+        f.min(self.total_frames.saturating_sub(1))
+    }
+
+    /// Convert frame → seconds
+    fn time_from_frame(&self) -> f32 {
+        if self.total_frames <= 1 || self.duration <= 0.0 { return 0.0; }
+        self.current_frame as f32 * self.duration / (self.total_frames - 1) as f32
+    }
+}
+
+#[derive(Component)]
+struct TimelineBar;
+
+#[derive(Component)]
+struct TimelineProgress;
+
+#[derive(Component)]
+struct TimelineText;
+
+#[derive(Component)]
+struct TimelineDebugText;
+
 /// Debug: only apply retarget to hips (isolate hips rotation)
 const HIPS_ONLY: bool = false;
 
@@ -95,7 +150,6 @@ struct BoneLabel;
 #[derive(Resource)]
 struct FbxSkeletonViz {
     data: cinev_retarget::FbxSkeletonFrames,
-    start_time: f64,
 }
 
 #[derive(Resource)]
@@ -173,22 +227,43 @@ fn main() {
         .init_resource::<AppLog>()
         .init_resource::<RetargetState>()
         .init_resource::<BoneVizState>()
+        .init_resource::<TimelineState>()
         .add_systems(Startup, (setup, auto_load_fbx))
         .add_systems(Update, (
-            toggle_debug,
-            toggle_log,
-            update_debug_panel,
-            update_log_panel,
-            open_file_dialog,
-            handle_vrm_loaded,
-            handle_fbx_loaded,
-            apply_retarget_animation,
-            start_playback,
-            log_root_hips_world,
-            toggle_bone_viz,
-            draw_bone_viz,
-            camera_presets,
-        ))
+            // Phase 1: input + file loading (may spawn/despawn entities, insert resources)
+            (
+                toggle_debug,
+                toggle_log,
+                open_file_dialog,
+                handle_vrm_loaded,
+                handle_fbx_loaded,
+                camera_presets,
+                timeline_keyboard_input,
+                timeline_mouse_scrub,
+            ),
+            // Flush deferred commands (entity spawn/despawn, FbxSkeletonViz insert)
+            ApplyDeferred,
+            // Phase 2: retarget + playback (needs flushed entities + resources)
+            (
+                apply_retarget_animation,
+            ),
+            ApplyDeferred,
+            // Phase 3: playback start (needs AnimationGraphHandle from phase 2)
+            (
+                start_playback,
+            ),
+            // Phase 4: rendering + UI (reads final state)
+            (
+                timeline_track_frame,
+                timeline_sync_playback,
+                log_root_hips_world,
+                toggle_bone_viz,
+                draw_bone_viz,
+                update_debug_panel,
+                update_log_panel,
+                timeline_update_ui,
+            ),
+        ).chain())
         .run();
 }
 
@@ -227,7 +302,7 @@ fn setup(
         TextColor(Color::srgba(0.0, 1.0, 0.0, 0.7)),
         Node {
             position_type: PositionType::Absolute,
-            bottom: Val::Px(12.0),
+            bottom: Val::Px(130.0),
             left: Val::Px(12.0),
             ..default()
         },
@@ -247,7 +322,70 @@ fn setup(
         },
     ));
 
-    log.push("[INIT] O:VRM F:FBX G:bones 1:front 2:side 3:top 4:persp F3:stats F4:log");
+    log.push("[INIT] O:VRM F:FBX G:bones 1-4:cam F3:stats F4:log T:timeline Space:pause ←→:frame");
+
+    // --- Timeline bar (bottom of screen) ---
+    commands.spawn((
+        TimelineBar,
+        Node {
+            position_type: PositionType::Absolute,
+            bottom: Val::Px(0.0),
+            left: Val::Px(0.0),
+            width: Val::Percent(100.0),
+            height: Val::Px(30.0),
+            flex_direction: FlexDirection::Row,
+            align_items: AlignItems::Center,
+            padding: UiRect::horizontal(Val::Px(8.0)),
+            ..default()
+        },
+        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.7)),
+    )).with_children(|parent| {
+        // Progress bar background
+        parent.spawn((
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Px(6.0),
+                position_type: PositionType::Absolute,
+                bottom: Val::Px(22.0),
+                left: Val::Px(8.0),
+                right: Val::Px(8.0),
+                ..default()
+            },
+            BackgroundColor(Color::srgba(0.3, 0.3, 0.3, 0.8)),
+        )).with_children(|bg| {
+            // Progress fill
+            bg.spawn((
+                TimelineProgress,
+                Node {
+                    width: Val::Percent(0.0),
+                    height: Val::Percent(100.0),
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.2, 0.8, 1.0, 0.9)),
+            ));
+        });
+        // Frame/time text
+        parent.spawn((
+            TimelineText,
+            Text::new("Frame 0/0 | 0.00s/0.00s"),
+            TextFont { font_size: 11.0, ..default() },
+            TextColor(Color::srgba(0.9, 0.9, 0.9, 0.9)),
+        ));
+    });
+
+    // Debug text for bone rotation / position diff (shown above timeline bar)
+    commands.spawn((
+        TimelineDebugText,
+        Text::new(""),
+        TextFont { font_size: 10.0, ..default() },
+        TextColor(Color::srgba(1.0, 0.8, 0.3, 0.9)),
+        Node {
+            position_type: PositionType::Absolute,
+            bottom: Val::Px(34.0),
+            left: Val::Px(12.0),
+            ..default()
+        },
+    ));
 
     // Auto-load VRM and FBX for quick iteration
     if !AUTO_LOAD_VRM.is_empty() {
@@ -342,7 +480,7 @@ fn auto_load_fbx(
     match cinev_retarget::compute_fbx_skeleton(&fbx_bytes) {
         Ok(skel) => {
             log.push(format!("[AUTO] FBX skeleton: {} bones", skel.bone_positions.len()));
-            commands.insert_resource(FbxSkeletonViz { data: skel, start_time: 0.0 });
+            commands.insert_resource(FbxSkeletonViz { data: skel });
         }
         Err(e) => log.push(format!("[AUTO] FBX skeleton viz: {}", e)),
     }
@@ -440,7 +578,8 @@ fn handle_vrm_loaded(
             log.push(format!("[LOAD] despawned {} previous", count));
         }
 
-        // Reset retarget applied state so animation can be re-applied to new VRM
+        // Reset retarget so animation re-applies to new VRM
+        // Keep timeline position — FBX hasn't changed, just the character
         retarget_state.applied = false;
 
         let asset_path = format!("models/{}", ev.file_name);
@@ -468,7 +607,8 @@ fn handle_fbx_loaded(
     mut ev_loaded: MessageReader<DialogFileLoaded<FbxLoad>>,
     mut retarget_state: ResMut<RetargetState>,
     mut log: ResMut<AppLog>,
-    time: Res<Time<Real>>,
+    mut timeline: ResMut<TimelineState>,
+    mut player_query: Query<&mut AnimationPlayer>,
 ) {
     for ev in ev_loaded.read() {
         log.push(format!(
@@ -476,6 +616,13 @@ fn handle_fbx_loaded(
             ev.file_name,
             ev.contents.len() as f64 / 1048576.0
         ));
+
+        // Stop old animation immediately to prevent stale transforms during transition
+        for mut player in &mut player_query {
+            player.stop_all();
+        }
+        // Reset timeline for new FBX
+        *timeline = TimelineState::default();
 
         if retarget_state.config_json.is_none() {
             match fs::read_to_string("assets/retarget/cinev_female_body.json") {
@@ -528,10 +675,7 @@ fn handle_fbx_loaded(
                 match cinev_retarget::compute_fbx_skeleton(&ev.contents) {
                     Ok(skel) => {
                         log.push(format!("[VIZ] FBX skeleton: {} bones, {} frames", skel.bone_positions.len(), skel.frame_count));
-                        commands.insert_resource(FbxSkeletonViz {
-                            data: skel,
-                            start_time: time.elapsed_secs_f64(),
-                        });
+                        commands.insert_resource(FbxSkeletonViz { data: skel });
                     }
                     Err(e) => log.push(format!("[WARN] FBX skeleton viz: {}", e)),
                 }
@@ -556,7 +700,6 @@ fn apply_retarget_animation(
     mut animation_graphs: ResMut<Assets<AnimationGraph>>,
     fbx_viz: Option<Res<FbxSkeletonViz>>,
     vrm_version_query: Query<&LoadedVrmVersion>,
-    time: Res<Time<Real>>,
 ) {
     if retarget_state.applied || retarget_state.pending_anim.is_none() {
         return;
@@ -974,7 +1117,9 @@ fn apply_retarget_animation(
 
     // Find the AnimationPlayer entity and start playback
     for (player_entity, _) in &player_query {
-        commands.entity(player_entity).insert(AnimationGraphHandle(graph_handle.clone()));
+        if let Ok(mut ec) = commands.get_entity(player_entity) {
+            ec.insert(AnimationGraphHandle(graph_handle.clone()));
+        }
     }
 
     // Need to start playback after graph is attached — use a one-shot approach
@@ -988,50 +1133,74 @@ fn apply_retarget_animation(
         applied_count, duration
     ));
 
-    // Store clip index + FBX elapsed for synced playback
-    let fbx_elapsed = fbx_viz.as_ref()
-        .map(|viz| time.elapsed_secs_f64() - viz.start_time)
-        .unwrap_or(0.0);
-    commands.insert_resource(PendingPlayback { clip_index, fbx_elapsed });
+    commands.insert_resource(PendingPlayback { clip_index });
 }
 
 #[derive(Resource)]
 struct PendingPlayback {
     clip_index: AnimationNodeIndex,
-    fbx_elapsed: f64,
 }
 
 fn start_playback(
     mut commands: Commands,
     pending: Option<Res<PendingPlayback>>,
     mut player_query: Query<&mut AnimationPlayer>,
+    mut timeline: ResMut<TimelineState>,
+    fbx_viz: Option<Res<FbxSkeletonViz>>,
 ) {
     let Some(pending) = pending else { return; };
 
     for mut player in &mut player_query {
         player.stop_all();
         let active = player.start(pending.clip_index);
+        // RepeatAnimation needed so seek_to works beyond duration
         active.set_repeat(bevy::animation::RepeatAnimation::Forever);
-        // Seek to FBX elapsed captured at clip creation time
-        if pending.fbx_elapsed > 0.0 {
-            active.seek_to(pending.fbx_elapsed as f32);
-        }
+        // Immediately pause — timeline_sync_playback drives seek each frame
+        active.pause();
+    }
+
+    // Initialize timeline: frame 0, playing
+    timeline.clip_index = Some(pending.clip_index);
+    timeline.paused = false;
+    timeline.current_frame = 0;
+    timeline.current_time = 0.0;
+    if let Some(ref fbx) = fbx_viz {
+        timeline.total_frames = fbx.data.frame_count;
+        timeline.duration = fbx.data.duration;
     }
 
     commands.remove_resource::<PendingPlayback>();
 }
 
-/// Log root_bone and hips world transform every 60 frames
+/// Log root_bone and hips world transform — only when paused and frame changes, or every 120 render frames
 fn log_root_hips_world(
     root_q: Query<(&Name, &GlobalTransform), (With<AnimationPlayer>, Without<VrmBone>)>,
     bone_q: Query<(&VrmBone, &GlobalTransform)>,
     fbx_viz: Option<Res<FbxSkeletonViz>>,
-    anim_player_query: Query<&AnimationPlayer>,
-    _time: Res<Time>,
-    mut frame_count: Local<u32>,
+    mut render_tick: Local<u32>,
+    mut last_logged_frame: Local<usize>,
     mut log: ResMut<AppLog>,
+    timeline: Res<TimelineState>,
 ) {
-    *frame_count += 1;
+    *render_tick += 1;
+
+    let Some(ref fbx) = fbx_viz else { return; };
+    let skel = &fbx.data;
+    if skel.frame_count == 0 { return; }
+
+    // Always use timeline frame (single source of truth)
+    let frame = timeline.current_frame.min(skel.frame_count.saturating_sub(1));
+    let anim_time = timeline.current_time as f64;
+
+    // Skip logging unless: paused + frame changed, or playing + every 120 ticks
+    let should_log = if timeline.paused || timeline.scrubbing {
+        if frame == *last_logged_frame { return; }
+        true
+    } else {
+        *render_tick % 120 == 0
+    };
+    if !should_log { return; }
+    *last_logged_frame = frame;
 
     // --- VRM hips world position ---
     let mut vrm_hips_pos = Vec3::ZERO;
@@ -1040,16 +1209,6 @@ fn log_root_hips_world(
             vrm_hips_pos = gtf.translation();
         }
     }
-
-    // --- FBX: root + pelvis world positions ---
-    let Some(ref fbx) = fbx_viz else { return; };
-    let skel = &fbx.data;
-    if skel.frame_count == 0 { return; }
-
-    let elapsed = _time.elapsed_secs_f64() - fbx.start_time;
-    let anim_time = elapsed % skel.duration as f64;
-    let frame = ((anim_time / skel.duration as f64) * skel.frame_count as f64) as usize;
-    let frame = frame.min(skel.frame_count.saturating_sub(1));
 
     let fbx_pelvis_pos = skel.bone_positions.get("DHIbody:pelvis")
         .and_then(|p| p.get(frame))
@@ -1071,9 +1230,8 @@ fn log_root_hips_world(
     let hips_d = vrm_hips_pos - fbx_pelvis_pos;
     let hips_dist = hips_d.length();
 
-    // Only log when hips diverges significantly
+    // Only log divergence details when significant
     if hips_dist > 0.03 {
-        // VRM root/hips world rotations
         let vrm_root_rot = root_q.iter()
             .find(|(n, _)| n.as_str() == Vrm::ROOT_BONE)
             .map(|(_, gtf)| gtf.to_scale_rotation_translation().1)
@@ -1083,13 +1241,10 @@ fn log_root_hips_world(
             .map(|(_, gtf)| gtf.to_scale_rotation_translation().1)
             .unwrap_or(Quat::IDENTITY);
 
-        // Compare rotations: angle between VRM and FBX world rotations
         let root_rot_diff = (vrm_root_rot * fbx_root_rot_yup.inverse()).to_axis_angle();
         let hips_rot_diff = (vrm_hips_rot * fbx_pelvis_rot_yup.inverse()).to_axis_angle();
 
-        // FBX pelvis local rotation (relative to root)
         let fbx_pelvis_local = fbx_root_rot_yup.inverse() * fbx_pelvis_rot_yup;
-        // VRM hips local (relative to root in world)
         let vrm_hips_local = vrm_root_rot.inverse() * vrm_hips_rot;
         let local_diff = (vrm_hips_local * fbx_pelvis_local.inverse()).to_axis_angle();
 
@@ -1110,8 +1265,7 @@ fn log_root_hips_world(
         ));
     }
 
-    // --- Limb bone comparison (every 30 frames) ---
-    if *frame_count % 30 != 0 { return; }
+    // --- Limb bone comparison ---
 
     // Forward vector comparison: compare bone DIRECTION (parent→child) rather than full rotation.
     // VRM bones have identity rest → bone direction = parent→child translation direction.
@@ -1330,8 +1484,7 @@ fn draw_bone_viz(
     all_bones: Query<(&GlobalTransform, Option<&VrmBone>, Option<&Name>, &ChildOf)>,
     parent_transforms: Query<&GlobalTransform>,
     fbx_viz: Option<Res<FbxSkeletonViz>>,
-    time: Res<Time<Real>>,
-    anim_player_query: Query<&AnimationPlayer>,
+    timeline: Res<TimelineState>,
 ) {
     if !state.enabled {
         return;
@@ -1391,16 +1544,12 @@ fn draw_bone_viz(
     gizmos.sphere(Isometry3d::from_translation(Vec3::Z * axis_len), tip, Color::srgb(0.0, 0.0, 1.0));
 
     // --- FBX source skeleton (cyan, offset +1.5m on X) ---
-    // FBX positions are in UE Z-up space, convert to Y-up: (x, z, -y) * 0.01
     let Some(fbx_viz) = fbx_viz else { return; };
     let skel = &fbx_viz.data;
     if skel.frame_count == 0 { return; }
 
-    // FBX viz always runs on its own clock (independent of AnimationPlayer)
-    let elapsed = time.elapsed_secs_f64() - fbx_viz.start_time;
-    let anim_time = elapsed % skel.duration as f64;
-    let frame = ((anim_time / skel.duration as f64) * skel.frame_count as f64) as usize;
-    let frame = frame.min(skel.frame_count - 1);
+    // Always use timeline frame (single source of truth)
+    let frame = timeline.current_frame.min(skel.frame_count.saturating_sub(1));
 
     let offset = Vec3::new(1.5, 0.0, 0.0); // offset FBX skeleton to the right for comparison
 
@@ -1419,5 +1568,227 @@ fn draw_bone_viz(
                 }
             }
         }
+    }
+}
+
+// =============================================================================
+// Timeline systems
+// =============================================================================
+
+/// Master clock: accumulate time when playing, derive frame
+fn timeline_track_frame(
+    mut timeline: ResMut<TimelineState>,
+    time: Res<Time>,
+) {
+    if timeline.paused || timeline.scrubbing { return; }
+    if timeline.duration <= 0.0 || timeline.total_frames == 0 { return; }
+
+    timeline.current_time += time.delta_secs();
+    // Loop
+    if timeline.current_time >= timeline.duration {
+        timeline.current_time %= timeline.duration;
+    }
+    timeline.current_frame = timeline.frame_from_time();
+}
+
+fn timeline_keyboard_input(
+    input: Res<ButtonInput<KeyCode>>,
+    mut timeline: ResMut<TimelineState>,
+    mut bar_q: Query<&mut Visibility, With<TimelineBar>>,
+    mut debug_q: Query<&mut Visibility, (With<TimelineDebugText>, Without<TimelineBar>)>,
+    mut log: ResMut<AppLog>,
+) {
+    // T: toggle timeline visibility
+    if input.just_pressed(KeyCode::KeyT) {
+        timeline.visible = !timeline.visible;
+        let vis = if timeline.visible { Visibility::Inherited } else { Visibility::Hidden };
+        for mut v in &mut bar_q { *v = vis; }
+        for mut v in &mut debug_q { *v = vis; }
+    }
+
+    if timeline.total_frames == 0 { return; }
+    let max_frame = timeline.total_frames.saturating_sub(1);
+
+    // Space: toggle pause
+    if input.just_pressed(KeyCode::Space) {
+        timeline.paused = !timeline.paused;
+        log.push(format!("[TIMELINE] {}", if timeline.paused { "PAUSED" } else { "PLAYING" }));
+    }
+
+    if !timeline.paused { return; }
+
+    let shift = input.pressed(KeyCode::ShiftLeft) || input.pressed(KeyCode::ShiftRight);
+    let step: usize = if shift { 10 } else { 1 };
+
+    // Arrow keys: step frames
+    if input.just_pressed(KeyCode::ArrowLeft) {
+        timeline.current_frame = timeline.current_frame.saturating_sub(step);
+    }
+    if input.just_pressed(KeyCode::ArrowRight) {
+        timeline.current_frame = (timeline.current_frame + step).min(max_frame);
+    }
+    // Home/End
+    if input.just_pressed(KeyCode::Home) {
+        timeline.current_frame = 0;
+    }
+    if input.just_pressed(KeyCode::End) {
+        timeline.current_frame = max_frame;
+    }
+    // Sync current_time from frame
+    timeline.current_time = timeline.time_from_frame();
+}
+
+fn timeline_mouse_scrub(
+    mut timeline: ResMut<TimelineState>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    windows: Query<&Window>,
+) {
+    if timeline.total_frames == 0 { return; }
+
+    let Ok(window) = windows.single() else { return; };
+    let win_w = window.width();
+    let win_h = window.height();
+
+    // Timeline bar is bottom 30px
+    let bar_top = win_h - 30.0;
+    let Some(cursor) = window.cursor_position() else {
+        if timeline.scrubbing && mouse.just_released(MouseButton::Left) {
+            timeline.scrubbing = false;
+        }
+        return;
+    };
+
+    let in_bar = cursor.y >= bar_top && cursor.y <= win_h;
+
+    if mouse.just_pressed(MouseButton::Left) && in_bar {
+        timeline.scrubbing = true;
+        timeline.paused = true;
+    }
+
+    if timeline.scrubbing {
+        let pct = (cursor.x / win_w).clamp(0.0, 1.0);
+        let max_frame = timeline.total_frames.saturating_sub(1);
+        timeline.current_frame = (pct * max_frame as f32) as usize;
+        timeline.current_time = timeline.time_from_frame();
+
+        if mouse.just_released(MouseButton::Left) {
+            timeline.scrubbing = false;
+        }
+    }
+}
+
+/// Every frame: sync AnimationPlayer to TimelineState.current_time
+fn timeline_sync_playback(
+    timeline: Res<TimelineState>,
+    mut player_query: Query<&mut AnimationPlayer>,
+) {
+    if timeline.total_frames == 0 { return; }
+    let Some(clip_idx) = timeline.clip_index else { return; };
+
+    for mut player in &mut player_query {
+        if let Some(active) = player.animation_mut(clip_idx) {
+            active.seek_to(timeline.current_time);
+            // Always paused — timeline drives time, not Bevy's animation clock
+            active.pause();
+        }
+    }
+}
+
+fn timeline_update_ui(
+    timeline: Res<TimelineState>,
+    mut progress_q: Query<&mut Node, With<TimelineProgress>>,
+    mut text_q: Query<&mut Text, (With<TimelineText>, Without<TimelineDebugText>)>,
+    mut debug_text_q: Query<&mut Text, (With<TimelineDebugText>, Without<TimelineText>)>,
+    bone_q: Query<(&VrmBone, &GlobalTransform)>,
+    fbx_viz: Option<Res<FbxSkeletonViz>>,
+) {
+    // Progress bar width
+    let pct = if timeline.total_frames > 1 {
+        timeline.current_frame as f32 / (timeline.total_frames - 1) as f32 * 100.0
+    } else {
+        0.0
+    };
+    for mut node in &mut progress_q {
+        node.width = Val::Percent(pct);
+    }
+
+    // Frame / time text
+    let pause_indicator = if timeline.paused { " ||" } else { " >" };
+    for mut text in &mut text_q {
+        **text = format!(
+            "Frame {}/{} | {:.2}s/{:.2}s{}",
+            timeline.current_frame, timeline.total_frames,
+            timeline.current_time, timeline.duration,
+            pause_indicator,
+        );
+    }
+
+    // Debug info: bone rotations + FBX-VRM position diff (when paused)
+    if !timeline.paused {
+        for mut text in &mut debug_text_q {
+            **text = String::new();
+        }
+        return;
+    }
+
+    let frame = timeline.current_frame;
+
+    // VRM hips world
+    let vrm_hips = bone_q.iter()
+        .find(|(vb, _)| vb.0 == "hips")
+        .map(|(_, gtf)| (gtf.translation(), gtf.to_scale_rotation_translation().1));
+
+    // FBX pelvis world at this frame
+    let fbx_pelvis = fbx_viz.as_ref().and_then(|fbx| {
+        let pos = fbx.data.bone_positions.get("DHIbody:pelvis")
+            .and_then(|p| p.get(frame))
+            .map(|p| Vec3::new(p[0], p[1], p[2]));
+        let coord_rot = Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2);
+        let coord_rot_inv = coord_rot.inverse();
+        let rot = fbx.data.bone_rotations.get("DHIbody:pelvis")
+            .and_then(|r| r.get(frame).copied())
+            .map(|r| coord_rot * r * coord_rot_inv);
+        pos.map(|p| (p, rot.unwrap_or(Quat::IDENTITY)))
+    });
+
+    let mut debug_lines = Vec::new();
+
+    if let Some((vrm_pos, vrm_rot)) = vrm_hips {
+        let (ex, ey, ez) = vrm_rot.to_euler(EulerRot::XYZ);
+        debug_lines.push(format!(
+            "VRM hips pos=({:.3},{:.3},{:.3}) euler=({:.1},{:.1},{:.1})",
+            vrm_pos.x, vrm_pos.y, vrm_pos.z,
+            ex.to_degrees(), ey.to_degrees(), ez.to_degrees(),
+        ));
+
+        if let Some((fbx_pos, fbx_rot)) = fbx_pelvis {
+            let diff = vrm_pos - fbx_pos;
+            let (fx, fy, fz) = fbx_rot.to_euler(EulerRot::XYZ);
+            debug_lines.push(format!(
+                "FBX pelvis pos=({:.3},{:.3},{:.3}) euler=({:.1},{:.1},{:.1})",
+                fbx_pos.x, fbx_pos.y, fbx_pos.z,
+                fx.to_degrees(), fy.to_degrees(), fz.to_degrees(),
+            ));
+            debug_lines.push(format!(
+                "Diff xyz=({:.3},{:.3},{:.3}) mag={:.3}m",
+                diff.x, diff.y, diff.z, diff.length(),
+            ));
+        }
+    }
+
+    // Spine chain rotations
+    for bone_name in &["spine", "chest", "upperChest", "neck"] {
+        if let Some((_, gtf)) = bone_q.iter().find(|(vb, _)| vb.0 == *bone_name) {
+            let rot = gtf.to_scale_rotation_translation().1;
+            let (ex, ey, ez) = rot.to_euler(EulerRot::XYZ);
+            debug_lines.push(format!(
+                "{} euler=({:.1},{:.1},{:.1})",
+                bone_name, ex.to_degrees(), ey.to_degrees(), ez.to_degrees(),
+            ));
+        }
+    }
+
+    for mut text in &mut debug_text_q {
+        **text = debug_lines.join("\n");
     }
 }
