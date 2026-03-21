@@ -1159,11 +1159,9 @@ fn start_playback(
         active.pause();
     }
 
-    // Initialize timeline: frame 0, playing
+    // Update clip reference + FBX metadata, keep current time position
+    // FBX switch resets timeline in handle_fbx_loaded; VRM switch preserves it
     timeline.clip_index = Some(pending.clip_index);
-    timeline.paused = false;
-    timeline.current_frame = 0;
-    timeline.current_time = 0.0;
     if let Some(ref fbx) = fbx_viz {
         timeline.total_frames = fbx.data.frame_count;
         timeline.duration = fbx.data.duration;
