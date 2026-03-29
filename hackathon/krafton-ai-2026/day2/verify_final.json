@@ -1,0 +1,71 @@
+{
+  "offsets": [
+    5,
+    14,
+    21,
+    29,
+    36,
+    42,
+    50,
+    57
+  ],
+  "S": 8,
+  "W": 57,
+  "source": "2\ud638\uae30 BKW",
+  "verification": {
+    "training_accuracy": 0.799688,
+    "expected": 0.8,
+    "verdict": "PASS",
+    "split_first_half": 0.799221,
+    "split_second_half": 0.800156,
+    "split_diff": 0.000935,
+    "position_min": 0.778,
+    "position_max": 0.8235,
+    "bad_positions": 0,
+    "bootstrap_ci": [
+      0.798118,
+      0.801742
+    ]
+  },
+  "leave_one_out": {
+    "d=5": {
+      "acc_without": 0.502289,
+      "critical": true
+    },
+    "d=14": {
+      "acc_without": 0.500736,
+      "critical": true
+    },
+    "d=21": {
+      "acc_without": 0.500935,
+      "critical": true
+    },
+    "d=29": {
+      "acc_without": 0.500877,
+      "critical": true
+    },
+    "d=36": {
+      "acc_without": 0.501035,
+      "critical": true
+    },
+    "d=42": {
+      "acc_without": 0.501045,
+      "critical": true
+    },
+    "d=50": {
+      "acc_without": 0.500352,
+      "critical": true
+    },
+    "d=57": {
+      "acc_without": 0.500653,
+      "critical": true
+    }
+  },
+  "superset_test": "Adding any extra offset drops accuracy to ~50% \u2014 no missing offsets",
+  "prediction": {
+    "match_rate": 1.0,
+    "self_check": "PASS \u2014 all 199 positions satisfy XOR rule",
+    "answer_192": "111101101100111001011111000011010101101100100011000100000001000011100000110101010000010101011111000111001010001011100010110100010111111101100111001101110110010001110110110010011001001011111001"
+  },
+  "overall_verdict": "CONFIRMED \u2014 offsets are correct"
+}

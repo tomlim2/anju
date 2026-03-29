@@ -1,0 +1,40 @@
+__pycache__/
+*.pyc
+
+# Day 2 intermediate solvers (merged into solution.py)
+day2/solve_*.py
+day2/solver_*.py
+day2/solver.py
+day2/gd_solver.py
+day2/verify_offsets.py
+day2/verify_prediction.py
+day2/make_pdf.py
+day2/solve_minimal.py
+
+# Day 2 intermediate results (kept: solver_results, verify_final, results_mitm)
+day2/gd_results.json
+day2/results_bkw_gemini.json
+day2/results_correlation.json
+day2/results_gd_v2.json
+day2/results_gf2.json
+day2/results_gradient.json
+day2/results_greedy.json
+day2/results_lasso.json
+day2/results_ransac_v2.json
+day2/results_rl.json
+day2/results_sa.json
+day2/rl_results.json
+day2/train_results.json
+day2/verify_results.json
+day2/verify_prediction_results.json
+
+# Day 2 templates (pre-built, not used for this problem)
+day2/diffusion_template.py
+day2/rl_template.py
+day2/run_experiment.py
+day2/report_template.md
+
+# Day 2 temp files
+day2/init_*.md
+day2/test_samples.png
+day2/data/

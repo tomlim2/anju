@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SparseTap — The Sparse Dependency Discovery Challenge</title>
+<style>
+  :root {
+    --fg: #111; --muted: #6b6b6b; --light: #a8a179;
+    --yellow: #FBD45B; --card: #F5F4EF; --card-alt: #EEECE4;
+    --border: #C0BDAD; --border-light: #E6E0CB; --shadow: #C0BDAD;
+    --red: #c0392b; --green: #1a7a3a; --blue: #1a4a8a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #fff; color: var(--fg);
+    max-width: 816px; margin: 0 auto;
+    padding: 48px 24px 80px; line-height: 1.7; font-size: 14px;
+  }
+  h1 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 2rem; font-weight: 400; line-height: 1.2;
+    margin-bottom: 8px; letter-spacing: -0.5px;
+  }
+  h2 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 1.25rem; font-weight: 400;
+    margin: 48px 0 16px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  h3 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 1.05rem; font-weight: 400;
+    margin: 28px 0 10px;
+  }
+  p { margin: 8px 0; }
+  .sub {
+    font-family: 'SF Mono', 'Fira Mono', Consolas, monospace;
+    font-size: 0.78rem; color: var(--light); margin-bottom: 36px;
+  }
+  code {
+    font-family: 'SF Mono', 'Fira Mono', Consolas, monospace;
+    font-size: 0.82em; background: var(--card);
+    padding: 1px 5px; border-radius: 2px; border: 1px solid var(--border-light);
+  }
+  .box {
+    border: 1px solid var(--border); padding: 28px 16px 14px; margin: 12px 0;
+    font-family: 'SF Mono', 'Fira Mono', Consolas, monospace;
+    font-size: 0.78rem; line-height: 1.6; position: relative; background: #fff;
+  }
+  .tag {
+    position: absolute; top: -1px; right: -1px;
+    font-family: -apple-system, Helvetica, sans-serif;
+    font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; padding: 2px 8px;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    box-shadow: 3px 3px 0px var(--shadow); padding: 20px; margin: 16px 0;
+  }
+  .card pre {
+    font-family: 'SF Mono', 'Fira Mono', Consolas, monospace;
+    font-size: 0.78rem; white-space: pre-wrap; line-height: 1.5;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.82rem; }
+  th { text-align: left; padding: 8px 10px; border-bottom: 2px solid var(--fg); font-weight: 600; }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--border-light); }
+  td:last-child, th:last-child { text-align: right; }
+  .divider { border: none; border-top: 1px solid var(--border-light); margin: 40px 0; }
+  .cap {
+    font-family: 'SF Mono', Consolas, monospace;
+    font-size: 0.7rem; color: var(--light); text-align: center; margin: 8px 0;
+  }
+  .hl { background: var(--yellow); padding: 0 3px; }
+  .red { color: var(--red); }
+  .green { color: var(--green); }
+  .muted { color: var(--muted); }
+  a { color: var(--fg); }
+  a:hover { color: var(--blue); }
+  .callout {
+    background: var(--card); border: 1px solid var(--border);
+    padding: 14px 18px; margin: 16px 0; font-size: 0.85rem;
+    border-left: 3px solid var(--yellow);
+  }
+  ol, ul { margin: 8px 0 8px 24px; }
+  li { margin: 4px 0; }
+  .bit-stream {
+    font-family: 'SF Mono', 'Fira Mono', Consolas, monospace;
+    font-size: 0.72rem; letter-spacing: 1px; line-height: 1.8;
+    word-break: break-all; padding: 12px; background: #fff;
+    border: 1px solid var(--border);
+  }
+
+  /* Language toggle */
+  .lang-toggle {
+    display: flex; gap: 0; margin-bottom: 32px;
+  }
+  .lang-toggle button {
+    font-family: 'SF Mono', 'Fira Mono', Consolas, monospace;
+    font-size: 0.78rem; font-weight: 600;
+    padding: 6px 18px; border: 1px solid var(--border);
+    cursor: pointer; background: #fff; color: var(--muted);
+    transition: background 0.15s, color 0.15s;
+  }
+  .lang-toggle button:first-child {
+    border-radius: 4px 0 0 4px; border-right: none;
+  }
+  .lang-toggle button:last-child {
+    border-radius: 0 4px 4px 0;
+  }
+  .lang-toggle button.active {
+    background: var(--fg); color: #fff; border-color: var(--fg);
+  }
+  .lang-content { display: none; }
+  .lang-content.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="lang-toggle">
+  <button id="btn-en" class="active" onclick="switchLang('en')">English</button>
+  <button id="btn-ko" onclick="switchLang('ko')">한국어</button>
+</div>
+
+<!-- ==================== ENGLISH ==================== -->
+<div id="content-en" class="lang-content active">
+
+<h1>SparseTap</h1>
+<p class="sub">KRAFTON AI R&amp;D Hackathon &middot; Round 1 &middot; Day 2 &middot; 4 Hours &middot; Spring 2026</p>
+
+<p>A binary signal has been intercepted.
+It looks random &mdash; but it isn&rsquo;t.
+Every bit after an initial random seed is generated by
+<b>XOR-ing some specific earlier bits</b> &mdash; but with <b>noise</b>.
+Your mission:</p>
+
+<div class="callout">
+<b>Find the hidden offsets, then predict.</b>&ensp;
+We give you 2,000 <em>noisy</em> example sequences generated by a hidden XOR rule.
+We also give you the first 64 bits of a <em>new, noise-free</em> test sequence.
+<b>Submit the next 192 bits.</b>
+</div>
+
+<!-- ======================================== -->
+<h2>The Rule</h2>
+
+<div class="card">
+<pre>seq[0], seq[1], ..., seq[W-1]  &larr;  random i.i.d. Bernoulli(0.5)
+
+For n &ge; W:
+    seq[n] = seq[n - d<sub>1</sub>] &oplus; seq[n - d<sub>2</sub>] &oplus; &hellip; &oplus; seq[n - d<sub>S</sub>] &oplus; <b>e[n]</b>
+
+    where e[n] &sim; Bernoulli(0.2)  i.i.d.  (noise)
+
+&bull;  d<sub>1</sub> &lt; d<sub>2</sub> &lt; &hellip; &lt; d<sub>S</sub>  are the hidden offsets
+&bull;  S (how many offsets) is also hidden
+&bull;  W = d<sub>S</sub>  (first W bits are the random seed)
+&bull;  The function is XOR &mdash; that much is given
+&bull;  Each bit is flipped independently with probability 0.2
+&bull;  Bounds: <b>S &le; 16</b>,  <b>W &le; 64</b></pre>
+</div>
+
+<!-- ======================================== -->
+<h2>Data</h2>
+
+<div class="callout" style="border-left-color: var(--blue);">
+<b>File.</b>&ensp;<code>problem2_data.txt</code> &mdash; 2,000 noisy sequences, each 256 bits.<br>
+<b>Format.</b>&ensp;One sequence per line. Each character is <code>0</code> or <code>1</code>.<br>
+<b>Same rule.</b>&ensp;All 2,000 sequences use the same hidden offsets, different random seeds.<br>
+<b>Noise.</b>&ensp;Each bit after the seed is flipped with 20% probability. The noise is already baked into the data.
+</div>
+
+<!-- ======================================== -->
+<h2>Test Sequence</h2>
+
+<p>Here are the first 64 bits of a new sequence generated by the same rule <b>without noise</b>.
+Predict the remaining 192 bits.</p>
+
+<div class="box" style="background:#fff3e0;border-color:#f57c00;">
+  <span class="tag" style="background:#f57c00;color:#fff;">test prefix &middot; 64 bits</span>
+  <span style="font-size:0.82rem;letter-spacing:1.5px;">
+  <code>0000010100011010010101100101001110100011110010110011010000111010</code>
+  </span>
+</div>
+
+<!-- ======================================== -->
+<h2>Submission</h2>
+
+<table>
+<tr><th>Field</th><th>Type</th><th style="text-align:right;">Description</th></tr>
+<tr><td><code>answer</code></td><td>string</td><td style="text-align:right;">192 bits &mdash; the continuation of the test sequence (positions 64&ndash;255)</td></tr>
+</table>
+
+<p>Submit exactly 192 characters of <code>0</code> and <code>1</code>, plus a ZIP file.</p>
+
+<h3>Submission File (ZIP)</h3>
+
+<p>Submit a single <code>.zip</code> file containing:</p>
+
+<ol>
+  <li><b>Report</b> (PDF, max 2 pages) covering:
+    <ul>
+      <li><b>At least two different approaches.</b>
+          Describe each method step by step.
+          At least one method must use a numerical method such as gradient descent.</li>
+      <li><b>Failed attempts.</b>
+          What did you try that <em>didn&rsquo;t</em> work?</li>
+    </ul>
+  </li>
+  <li><b>Code</b> &mdash; a single Python file (<code>.py</code>) that reproduces your results.</li>
+</ol>
+
+<hr class="divider">
+
+<p style="font-size:0.78rem;color:var(--light);text-align:center;">
+SparseTap &middot; KRAFTON AI R&amp;D Hackathon &middot; Round 1, Day 2
+</p>
+
+</div>
+
+<!-- ==================== KOREAN ==================== -->
+<div id="content-ko" class="lang-content">
+
+<h1>SparseTap</h1>
+<p class="sub">KRAFTON AI R&amp;D Hackathon &middot; Round 1 &middot; Day 2 &middot; 4 Hours &middot; Spring 2026</p>
+
+<p>이진 신호가 수신되었습니다.
+무작위로 보이지만 &mdash; 그렇지 않습니다.
+초기 무작위 시드 이후의 모든 비트는
+<b>특정 이전 비트들의 XOR</b>로 생성됩니다 &mdash; 단, <b>노이즈</b>가 있습니다.
+미션:</p>
+
+<div class="callout">
+<b>숨겨진 오프셋을 찾고, 예측하세요.</b>&ensp;
+숨겨진 XOR 규칙으로 생성된 2,000개의 <em>노이즈가 포함된</em> 예시 시퀀스가 주어집니다.
+또한 <em>새로운, 노이즈 없는</em> 테스트 시퀀스의 처음 64비트가 주어집니다.
+<b>다음 192비트를 제출하세요.</b>
+</div>
+
+<!-- ======================================== -->
+<h2>규칙</h2>
+
+<div class="card">
+<pre>seq[0], seq[1], ..., seq[W-1]  &larr;  무작위 i.i.d. Bernoulli(0.5)
+
+n &ge; W 인 경우:
+    seq[n] = seq[n - d<sub>1</sub>] &oplus; seq[n - d<sub>2</sub>] &oplus; &hellip; &oplus; seq[n - d<sub>S</sub>] &oplus; <b>e[n]</b>
+
+    여기서 e[n] &sim; Bernoulli(0.2)  i.i.d.  (노이즈)
+
+&bull;  d<sub>1</sub> &lt; d<sub>2</sub> &lt; &hellip; &lt; d<sub>S</sub>  는 숨겨진 오프셋
+&bull;  S (오프셋의 수)도 숨겨져 있음
+&bull;  W = d<sub>S</sub>  (처음 W 비트는 무작위 시드)
+&bull;  함수는 XOR &mdash; 이것은 주어진 정보
+&bull;  각 비트는 독립적으로 20% 확률로 뒤집힘
+&bull;  범위: <b>S &le; 16</b>,  <b>W &le; 64</b></pre>
+</div>
+
+<!-- ======================================== -->
+<h2>데이터</h2>
+
+<div class="callout" style="border-left-color: var(--blue);">
+<b>파일.</b>&ensp;<code>problem2_data.txt</code> &mdash; 2,000개 노이즈 시퀀스, 각 256비트.<br>
+<b>형식.</b>&ensp;한 줄에 한 시퀀스. 각 문자는 <code>0</code> 또는 <code>1</code>.<br>
+<b>동일한 규칙.</b>&ensp;2,000개 시퀀스 모두 동일한 숨겨진 오프셋, 다른 무작위 시드.<br>
+<b>노이즈.</b>&ensp;시드 이후 각 비트는 20% 확률로 뒤집혀 있습니다. 노이즈는 이미 데이터에 포함되어 있습니다.
+</div>
+
+<!-- ======================================== -->
+<h2>테스트 시퀀스</h2>
+
+<p>동일한 규칙으로 <b>노이즈 없이</b> 생성된 새 시퀀스의 처음 64비트입니다.
+나머지 192비트를 예측하세요.</p>
+
+<div class="box" style="background:#fff3e0;border-color:#f57c00;">
+  <span class="tag" style="background:#f57c00;color:#fff;">테스트 프리픽스 &middot; 64 비트</span>
+  <span style="font-size:0.82rem;letter-spacing:1.5px;">
+  <code>0000010100011010010101100101001110100011110010110011010000111010</code>
+  </span>
+</div>
+
+<!-- ======================================== -->
+<h2>제출</h2>
+
+<table>
+<tr><th>필드</th><th>타입</th><th style="text-align:right;">설명</th></tr>
+<tr><td><code>answer</code></td><td>string</td><td style="text-align:right;">192 비트 &mdash; 테스트 시퀀스의 연속 (위치 64&ndash;255)</td></tr>
+</table>
+
+<p><code>0</code>과 <code>1</code>로 된 정확히 192자와 ZIP 파일을 제출하세요.</p>
+
+<h3>제출 파일 (ZIP)</h3>
+
+<p>다음을 포함하는 단일 <code>.zip</code> 파일을 제출하세요:</p>
+
+<ol>
+  <li><b>보고서</b> (PDF, 최대 2페이지) 포함 내용:
+    <ul>
+      <li><b>최소 두 가지 다른 접근법.</b>
+          각 방법을 단계별로 기술하세요.
+          최소 하나의 방법은 경사 하강법 등 수치적 방법을 사용해야 합니다.</li>
+      <li><b>실패한 시도.</b>
+          무엇을 시도했지만 <em>효과가 없었나요</em>?</li>
+    </ul>
+  </li>
+  <li><b>코드</b> &mdash; 결과를 재현할 수 있는 단일 Python 파일 (<code>.py</code>).</li>
+</ol>
+
+<hr class="divider">
+
+<p style="font-size:0.78rem;color:var(--light);text-align:center;">
+SparseTap &middot; KRAFTON AI R&amp;D Hackathon &middot; Round 1, Day 2
+</p>
+
+</div>
+
+<script>
+function switchLang(lang) {
+  document.getElementById('content-en').classList.toggle('active', lang === 'en');
+  document.getElementById('content-ko').classList.toggle('active', lang === 'ko');
+  document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+  document.getElementById('btn-ko').classList.toggle('active', lang === 'ko');
+  document.documentElement.lang = lang;
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MultiplierBoard — The Tiny Transformer Multiplication Challenge</title>
+<style>
+  :root {
+    --fg: #111; --muted: #6b6b6b; --light: #a8a179;
+    --yellow: #FBD45B; --card: #F5F4EF; --card-alt: #EEECE4;
+    --border: #C0BDAD; --border-light: #E6E0CB; --shadow: #C0BDAD;
+    --red: #c0392b; --green: #1a7a3a; --blue: #1a4a8a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #fff; color: var(--fg);
+    max-width: 816px; margin: 0 auto;
+    padding: 48px 24px 80px; line-height: 1.7; font-size: 14px;
+  }
+  h1 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 2rem; font-weight: 400; line-height: 1.2;
+    margin-bottom: 8px; letter-spacing: -0.5px;
+  }
+  h2 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 1.25rem; font-weight: 400;
+    margin: 48px 0 16px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  h3 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 1.05rem; font-weight: 400;
+    margin: 28px 0 10px;
+  }
+  p { margin: 8px 0; }
+  .sub {
+    font-family: 'SF Mono', 'Fira Mono', Consolas, monospace;
+    font-size: 0.78rem; color: var(--light); margin-bottom: 36px;
+  }
+  code {
+    font-family: 'SF Mono', 'Fira Mono', Consolas, monospace;
+    font-size: 0.82em; background: var(--card);
+    padding: 1px 5px; border-radius: 2px; border: 1px solid var(--border-light);
+  }
+  .box {
+    border: 1px solid var(--border); padding: 28px 16px 14px; margin: 12px 0;
+    font-family: 'SF Mono', 'Fira Mono', Consolas, monospace;
+    font-size: 0.78rem; line-height: 1.6; position: relative; background: #fff;
+  }
+  .tag {
+    position: absolute; top: -1px; right: -1px;
+    font-family: -apple-system, Helvetica, sans-serif;
+    font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; padding: 2px 8px;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    box-shadow: 3px 3px 0px var(--shadow); padding: 20px; margin: 16px 0;
+  }
+  .card pre {
+    font-family: 'SF Mono', 'Fira Mono', Consolas, monospace;
+    font-size: 0.78rem; white-space: pre-wrap; line-height: 1.5;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.82rem; }
+  th { text-align: left; padding: 8px 10px; border-bottom: 2px solid var(--fg); font-weight: 600; }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--border-light); }
+  td:last-child, th:last-child { text-align: right; }
+  .divider { border: none; border-top: 1px solid var(--border-light); margin: 40px 0; }
+  .cap {
+    font-family: 'SF Mono', Consolas, monospace;
+    font-size: 0.7rem; color: var(--light); text-align: center; margin: 8px 0;
+  }
+  .hl { background: var(--yellow); padding: 0 3px; }
+  .red { color: var(--red); }
+  .green { color: var(--green); }
+  .muted { color: var(--muted); }
+  a { color: var(--fg); }
+  a:hover { color: var(--blue); }
+  .ext::after {
+    content: "\2197"; font-size: 0.5em; margin-left: 1px;
+    vertical-align: super; text-decoration: none; display: inline-block;
+  }
+  .arrow { text-align: center; color: var(--border); font-size: 1.1rem; margin: 2px 0; }
+  .callout {
+    background: var(--card); border: 1px solid var(--border);
+    padding: 14px 18px; margin: 16px 0; font-size: 0.85rem;
+    border-left: 3px solid var(--yellow);
+  }
+  ol, ul { margin: 8px 0 8px 24px; }
+  li { margin: 4px 0; }
+  .num-box {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border: 1px solid var(--border);
+    font-family: 'SF Mono', Consolas, monospace; font-size: 0.82rem;
+    background: #fff; margin: 1px;
+  }
+  .num-box.op { background: var(--card-alt); font-weight: 600; width: 20px; }
+  .num-box.out { background: #e8f5e9; border-color: var(--green); }
+
+  /* Language toggle */
+  .lang-toggle {
+    display: flex; gap: 0; margin-bottom: 32px;
+  }
+  .lang-toggle button {
+    font-family: 'SF Mono', 'Fira Mono', Consolas, monospace;
+    font-size: 0.78rem; font-weight: 600;
+    padding: 6px 18px; border: 1px solid var(--border);
+    cursor: pointer; background: #fff; color: var(--muted);
+    transition: background 0.15s, color 0.15s;
+  }
+  .lang-toggle button:first-child {
+    border-radius: 4px 0 0 4px; border-right: none;
+  }
+  .lang-toggle button:last-child {
+    border-radius: 0 4px 4px 0;
+  }
+  .lang-toggle button.active {
+    background: var(--fg); color: #fff; border-color: var(--fg);
+  }
+  .lang-content { display: none; }
+  .lang-content.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="lang-toggle">
+  <button id="btn-en" class="active" onclick="switchLang('en')">English</button>
+  <button id="btn-ko" onclick="switchLang('ko')">한국어</button>
+</div>
+
+<!-- ==================== ENGLISH ==================== -->
+<div id="content-en" class="lang-content active">
+
+<h1>MultiplierBoard</h1>
+<p class="sub">KRAFTON AI R&amp;D Hackathon &middot; Round 1 &middot; Day 1 &middot; 4 Hours &middot; Spring 2026</p>
+
+<p><a href="https://github.com/anadim/AdderBoard" class="ext">AdderBoard</a> challenged the community
+to build the smallest transformer that can add two numbers.
+We do the same for <b>binary multiplication.</b>
+Your mission over the next four hours:</p>
+
+<div class="callout">
+<b>Build the smallest transformer that can multiply two 6-bit binary numbers.</b><br>
+Two problems: (1-1)&nbsp;hand-coded weights with a correctness proof,
+(1-2)&nbsp;trained weights. You must solve both.
+Submit three numbers and a short report.
+</div>
+
+<!-- ======================================== -->
+<h2>Binary Multiplication</h2>
+
+<div class="card">
+<pre>         1 0 1 1          A = 11
+       &times; 1 1 0 1          B = 13
+       ─────────
+         1 0 1 1          A &times; b₀
+       0 0 0 0 &middot;          A &times; b₁, shifted
+     1 0 1 1 &middot; &middot;          A &times; b₂, shifted
+   1 0 1 1 &middot; &middot; &middot;          A &times; b₃, shifted
+   ─────────────
+   1 0 0 0 1 1 1 1      Product = 143</pre>
+</div>
+<p class="cap">Binary long multiplication: generate partial products (AND + shift), then sum them.</p>
+
+<!-- ======================================== -->
+<h2>Problem Specification</h2>
+
+<div class="callout" style="border-left-color: var(--green);">
+<b>Task.</b>&ensp;6-bit binary multiplication.
+Given <em>a</em>, <em>b</em> &isin; {0, 1, &hellip;, 63}, compute <em>a</em> &times; <em>b</em>
+using a transformer model.<br>
+<b>Problem 1-1.</b>&ensp;Find transformer <em>weights</em> that perform exact multiplication,
+using as few parameters as possible. Prove correctness.<br>
+<b>Problem 1-2.</b>&ensp;Find a transformer <em>architecture</em> that can be <em>trained</em> to
+&ge;99% accuracy on multiplication, using as few parameters as possible.<br>
+<b>Metric.</b>&ensp;Estimate your test accuracy by randomly sampling 10,000 pairs.<br>
+<b>Decoding.</b>&ensp;Greedy decoding (argmax) at every output position.
+</div>
+
+<h3>Fixed Format: LSB-First Binary</h3>
+
+<p>All submissions must use the following format. No exceptions.</p>
+
+<div class="callout" style="border-left-color: var(--blue);">
+<b>Vocabulary.</b>&ensp;2 tokens: <code>0</code>, <code>1</code>&ensp;(token IDs 0, 1).<br>
+<b>Input.</b>&ensp;<code>A₀ A₁ A₂ A₃ A₄ A₅ B₀ B₁ B₂ B₃ B₄ B₅</code>&ensp;(12 tokens).
+Operands are 6-bit, zero-padded, <b>LSB first</b>. Positions are fixed &mdash; no separators needed.<br>
+<b>Output.</b>&ensp;<code>P₀ P₁ &hellip; P₁₁</code>&ensp;(12 tokens).
+Product is 12-bit, zero-padded, <b>LSB first</b>.<br>
+<b>Full sequence.</b>&ensp;24 tokens total. The model generates P₀&hellip;P₁₁ autoregressively,
+conditioned on the 12-token input.
+</div>
+
+<h3>Worked Examples</h3>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0;">
+
+<div class="box" style="margin:0;">
+  <span class="tag" style="background:var(--green);color:#fff;">23 &times; 37 = 851</span>
+  <span style="font-size:0.75rem;">
+  A = 23 = <b>010111</b><br>
+  B = 37 = <b>100101</b><br>
+  P = 851 = <b>001101010011</b><br><br>
+  <code>1 1 1 0 1 0 1 0 1 0 0 1 1 1 0 0 1 0 1 0 1 1 0 0</code>
+  </span>
+</div>
+
+<div class="box" style="margin:0;">
+  <span class="tag" style="background:var(--green);color:#fff;">63 &times; 63 = 3969</span>
+  <span style="font-size:0.75rem;">
+  A = 63 = <b>111111</b><br>
+  B = 63 = <b>111111</b><br>
+  P = 3969 = <b>111110000001</b><br><br>
+  <code>1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 1 1 1 1 1</code>
+  </span>
+</div>
+
+</div>
+
+<!-- ======================================== -->
+<h2>Architecture Rules</h2>
+
+
+<div class="callout" style="border-left-color: var(--red);">
+<ol style="margin-left:18px;">
+  <li><b>Python + PyTorch.</b> All code must be in Python using PyTorch.</li>
+  <li><b>Self-attention required.</b> At least one self-attention layer.</li>
+  <li><b>Autoregressive.</b> The model receives a token sequence and predicts the next token,
+      one at a time.</li>
+  <li><b>Standard forward pass.</b> <code>forward()</code> takes a tensor of token IDs
+      and returns logits. No <code>if/else</code> branches, lookup tables, or control flow
+      that encodes multiplication logic.</li>
+  <li><b>Generic inference.</b> Problem-specific knowledge lives only in the <em>weights</em>,
+      not in the code.</li>
+</ol>
+</div>
+
+<h3>What&rsquo;s Allowed</h3>
+
+<ul>
+  <li>Any positional encoding: learned, sinusoidal, RoPE, ALiBi, etc.</li>
+  <li>Any activation function: ReLU, GELU, SwiGLU, etc.</li>
+  <li>Weight tying and parameter sharing of all kinds</li>
+  <li>Low-rank / factorized projections</li>
+  <li>Custom embedding strategies for the fixed 2-token vocabulary</li>
+  <li>Any architecture choices for Problem 1-2 (training protocol is fixed)</li>
+</ul>
+
+<h3>Parameter Counting</h3>
+
+<ul>
+  <li>Count <b>unique parameters</b> after weight tying/deduplication.</li>
+  <li><b>Fixed</b> positional encodings (sinusoidal, RoPE with fixed &theta;) <b>do not count</b>,
+      following the original Transformer paper.</li>
+  <li><b>Learned</b> positional encodings <b>do count</b>.</li>
+  <li>Bias terms count. All <code>nn.Parameter</code> values count.</li>
+  <li>If in doubt: if <code>requires_grad=True</code> would apply in training, it counts.</li>
+</ul>
+
+<!-- ======================================== -->
+<h2>Problem 1-1: Hand-Coded Weights</h2>
+
+<div class="callout" style="border-left-color: var(--red);">
+<b>Proof required.</b>&ensp;You must provide a written correctness argument
+explaining <em>why</em> your hand-coded weights produce the right answer.
+Walk through the computation layer by layer:
+what does each attention head attend to, what does each MLP compute,
+and how do the outputs compose into the final product bits.
+A numerical dump of weights without explanation will receive no credit.
+</div>
+
+<!-- ======================================== -->
+<h2>Problem 1-2: Trained Weights</h2>
+
+<p>You only submit the architecture (a <code>build_model()</code> function that returns an untrained <code>nn.Module</code>).
+We train and evaluate it using the fixed procedure below.</p>
+
+<div class="callout" style="border-left-color: var(--red);">
+<b>Fixed training protocol.</b>&ensp;You may <em>not</em> modify any of the following.<br><br>
+<b>Initialization.</b>&ensp;PyTorch defaults.<br>
+<b>Training data.</b>&ensp;100,000 random pairs, each <em>a</em>, <em>b</em> &isin; [0, 63].<br>
+<b>Optimizer.</b>&ensp;<code>AdamW(lr=1e-3, weight_decay=0.01)</code>.<br>
+<b>Schedule.</b>&ensp;Cosine annealing over 200 epochs, batch size 256.<br>
+<b>Loss.</b>&ensp;Cross-entropy on the 12 output-token positions only.
+</div>
+
+<!-- ======================================== -->
+<h2>Submission Format</h2>
+
+<h3>Three Numbers</h3>
+
+<p>Submit exactly these values (e.g., via a form or spreadsheet row):</p>
+
+<table>
+<tr><th>Field</th><th>Type</th><th style="text-align:right;">Description</th></tr>
+<tr><td><code>P_1</code></td><td>int</td><td style="text-align:right;">Parameter count, Problem 1-1 (hand-coded). <b>&minus;1</b> if no solution found.</td></tr>
+<tr><td><code>P_2</code></td><td>int</td><td style="text-align:right;">Parameter count, Problem 1-2 (architecture for training)</td></tr>
+<tr><td><code>Acc_2</code></td><td>float</td><td style="text-align:right;">Accuracy, Problem 1-2 (0.0 &ndash; 1.0), from the fixed training protocol</td></tr>
+</table>
+
+<h3>Submission File (ZIP)</h3>
+
+<p>Submit a single <code>.zip</code> file containing:</p>
+
+<ol>
+  <li><b>Report</b> (PDF, max 2 pages) covering:
+    <ul>
+      <li><b>Architecture description.</b>
+          Diagram your transformer&rsquo;s structure: number of layers, heads, hidden dimension,
+          positional encoding type, activation functions, and any weight-tying schemes.</li>
+      <li><b>Problem 1-1 approach &amp; correctness proof.</b>
+          What algorithm does the transformer implement?
+          Provide a <b>layer-by-layer proof</b> of why it works:
+          which bits each attention head attends to, what each MLP computes,
+          and how the outputs compose into the correct product.
+          This is not optional &mdash; weights without a proof receive no credit.</li>
+      <li><b>Problem 1-2 approach.</b>
+          What architecture did you choose and why?
+          Show a training curve (loss and/or accuracy vs. epoch).
+          How does accuracy change with model size?</li>
+      <li><b>Ablations &amp; failed attempts.</b>
+          What design choices mattered most?
+          What did you try that <em>didn&rsquo;t</em> work?</li>
+    </ul>
+  </li>
+  <li><b>Code</b> &mdash; a single Python file (<code>.py</code>) that defines your model
+      and reproduces your results.</li>
+</ol>
+
+<hr class="divider">
+
+<p style="font-size:0.78rem;color:var(--light);text-align:center;">
+MultiplierBoard &middot; KRAFTON AI R&amp;D Hackathon &middot; Round 1, Day 1
+</p>
+
+</div>
+
+<!-- ==================== KOREAN ==================== -->
+<div id="content-ko" class="lang-content">
+
+<h1>MultiplierBoard</h1>
+<p class="sub">KRAFTON AI R&amp;D Hackathon &middot; Round 1 &middot; Day 1 &middot; 4 Hours &middot; Spring 2026</p>
+
+<p><a href="https://github.com/anadim/AdderBoard" class="ext">AdderBoard</a>는 두 수를 더할 수 있는
+가장 작은 트랜스포머를 만드는 도전을 제시했습니다.
+우리는 같은 도전을 <b>이진 곱셈</b>으로 확장합니다.
+앞으로 4시간 동안의 미션:</p>
+
+<div class="callout">
+<b>두 개의 6비트 이진수를 곱할 수 있는 가장 작은 트랜스포머를 만드세요.</b><br>
+두 가지 문제: (1-1)&nbsp;정확성 증명이 포함된 수동 설정 가중치,
+(1-2)&nbsp;학습된 가중치. 두 문제 모두 풀어야 합니다.
+세 개의 숫자와 짧은 보고서를 제출하세요.
+</div>
+
+<!-- ======================================== -->
+<h2>이진 곱셈</h2>
+
+<div class="card">
+<pre>         1 0 1 1          A = 11
+       &times; 1 1 0 1          B = 13
+       ─────────
+         1 0 1 1          A &times; b₀
+       0 0 0 0 &middot;          A &times; b₁, 시프트
+     1 0 1 1 &middot; &middot;          A &times; b₂, 시프트
+   1 0 1 1 &middot; &middot; &middot;          A &times; b₃, 시프트
+   ─────────────
+   1 0 0 0 1 1 1 1      곱 = 143</pre>
+</div>
+<p class="cap">이진 긴 곱셈: 부분곱(AND + 시프트)을 생성한 후 합산합니다.</p>
+
+<!-- ======================================== -->
+<h2>문제 명세</h2>
+
+<div class="callout" style="border-left-color: var(--green);">
+<b>과제.</b>&ensp;6비트 이진 곱셈.
+<em>a</em>, <em>b</em> &isin; {0, 1, &hellip;, 63}이 주어졌을 때, 트랜스포머 모델을 사용하여
+<em>a</em> &times; <em>b</em>를 계산합니다.<br>
+<b>문제 1-1.</b>&ensp;가능한 적은 파라미터로 정확한 곱셈을 수행하는
+트랜스포머 <em>가중치</em>를 찾으세요. 정확성을 증명하세요.<br>
+<b>문제 1-2.</b>&ensp;가능한 적은 파라미터로 곱셈에 대해
+&ge;99% 정확도로 <em>학습</em>될 수 있는 트랜스포머 <em>아키텍처</em>를 찾으세요.<br>
+<b>평가 지표.</b>&ensp;10,000개의 무작위 쌍을 샘플링하여 테스트 정확도를 추정합니다.<br>
+<b>디코딩.</b>&ensp;모든 출력 위치에서 그리디 디코딩(argmax).
+</div>
+
+<h3>고정 형식: LSB-우선 이진수</h3>
+
+<p>모든 제출은 다음 형식을 사용해야 합니다. 예외 없음.</p>
+
+<div class="callout" style="border-left-color: var(--blue);">
+<b>어휘.</b>&ensp;2개의 토큰: <code>0</code>, <code>1</code>&ensp;(토큰 ID 0, 1).<br>
+<b>입력.</b>&ensp;<code>A₀ A₁ A₂ A₃ A₄ A₅ B₀ B₁ B₂ B₃ B₄ B₅</code>&ensp;(12개 토큰).
+피연산자는 6비트, 제로 패딩, <b>LSB 우선</b>. 위치가 고정되어 있으므로 구분자가 필요 없습니다.<br>
+<b>출력.</b>&ensp;<code>P₀ P₁ &hellip; P₁₁</code>&ensp;(12개 토큰).
+곱은 12비트, 제로 패딩, <b>LSB 우선</b>.<br>
+<b>전체 시퀀스.</b>&ensp;총 24개 토큰. 모델은 12개 토큰 입력을 조건으로
+P₀&hellip;P₁₁을 자기회귀적으로 생성합니다.
+</div>
+
+<h3>계산 예시</h3>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0;">
+
+<div class="box" style="margin:0;">
+  <span class="tag" style="background:var(--green);color:#fff;">23 &times; 37 = 851</span>
+  <span style="font-size:0.75rem;">
+  A = 23 = <b>010111</b><br>
+  B = 37 = <b>100101</b><br>
+  P = 851 = <b>001101010011</b><br><br>
+  <code>1 1 1 0 1 0 1 0 1 0 0 1 1 1 0 0 1 0 1 0 1 1 0 0</code>
+  </span>
+</div>
+
+<div class="box" style="margin:0;">
+  <span class="tag" style="background:var(--green);color:#fff;">63 &times; 63 = 3969</span>
+  <span style="font-size:0.75rem;">
+  A = 63 = <b>111111</b><br>
+  B = 63 = <b>111111</b><br>
+  P = 3969 = <b>111110000001</b><br><br>
+  <code>1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 1 1 1 1 1</code>
+  </span>
+</div>
+
+</div>
+
+<!-- ======================================== -->
+<h2>아키텍처 규칙</h2>
+
+
+<div class="callout" style="border-left-color: var(--red);">
+<ol style="margin-left:18px;">
+  <li><b>Python + PyTorch.</b> 모든 코드는 PyTorch를 사용한 Python이어야 합니다.</li>
+  <li><b>셀프 어텐션 필수.</b> 최소 하나의 셀프 어텐션 레이어가 필요합니다.</li>
+  <li><b>자기회귀.</b> 모델은 토큰 시퀀스를 받아 다음 토큰을 하나씩 예측합니다.</li>
+  <li><b>표준 순전파.</b> <code>forward()</code>는 토큰 ID 텐서를 입력받아 로짓을 반환합니다.
+      곱셈 로직을 인코딩하는 <code>if/else</code> 분기, 룩업 테이블, 제어 흐름은 허용되지 않습니다.</li>
+  <li><b>범용 추론.</b> 문제 특화 지식은 코드가 아닌 <em>가중치</em>에만 존재해야 합니다.</li>
+</ol>
+</div>
+
+<h3>허용 사항</h3>
+
+<ul>
+  <li>모든 위치 인코딩: learned, sinusoidal, RoPE, ALiBi 등</li>
+  <li>모든 활성화 함수: ReLU, GELU, SwiGLU 등</li>
+  <li>모든 종류의 가중치 공유(weight tying) 및 파라미터 공유</li>
+  <li>저랭크 / 인수분해 프로젝션</li>
+  <li>고정된 2-토큰 어휘에 대한 커스텀 임베딩 전략</li>
+  <li>문제 1-2의 모든 아키텍처 선택 (학습 프로토콜은 고정)</li>
+</ul>
+
+<h3>파라미터 카운팅</h3>
+
+<ul>
+  <li>가중치 공유/중복 제거 후 <b>고유 파라미터</b>를 카운트합니다.</li>
+  <li><b>고정</b> 위치 인코딩(sinusoidal, 고정 &theta;의 RoPE)은 원래 Transformer 논문에 따라
+      <b>카운트하지 않습니다</b>.</li>
+  <li><b>학습된</b> 위치 인코딩은 <b>카운트합니다</b>.</li>
+  <li>바이어스 항도 카운트합니다. 모든 <code>nn.Parameter</code> 값을 카운트합니다.</li>
+  <li>판단이 어려운 경우: 학습 시 <code>requires_grad=True</code>가 적용된다면 카운트합니다.</li>
+</ul>
+
+<!-- ======================================== -->
+<h2>문제 1-1: 수동 설정 가중치</h2>
+
+<div class="callout" style="border-left-color: var(--red);">
+<b>증명 필수.</b>&ensp;수동 설정된 가중치가 올바른 답을 생성하는 <em>이유</em>를
+설명하는 정확성 논증을 제공해야 합니다.
+레이어별로 계산 과정을 설명하세요:
+각 어텐션 헤드가 무엇에 주의를 기울이는지, 각 MLP가 무엇을 계산하는지,
+그리고 출력이 어떻게 최종 곱 비트로 구성되는지.
+설명 없이 가중치만 나열하면 점수를 받을 수 없습니다.
+</div>
+
+<!-- ======================================== -->
+<h2>문제 1-2: 학습된 가중치</h2>
+
+<p>학습되지 않은 <code>nn.Module</code>을 반환하는 <code>build_model()</code> 함수인 아키텍처만 제출합니다.
+아래의 고정된 절차를 사용하여 학습 및 평가합니다.</p>
+
+<div class="callout" style="border-left-color: var(--red);">
+<b>고정 학습 프로토콜.</b>&ensp;다음 사항은 수정할 수 <em>없습니다</em>.<br><br>
+<b>초기화.</b>&ensp;PyTorch 기본값.<br>
+<b>학습 데이터.</b>&ensp;100,000개의 무작위 쌍, 각 <em>a</em>, <em>b</em> &isin; [0, 63].<br>
+<b>옵티마이저.</b>&ensp;<code>AdamW(lr=1e-3, weight_decay=0.01)</code>.<br>
+<b>스케줄.</b>&ensp;200 에폭에 대한 코사인 어닐링, 배치 크기 256.<br>
+<b>손실 함수.</b>&ensp;12개 출력 토큰 위치에 대해서만 크로스 엔트로피.
+</div>
+
+<!-- ======================================== -->
+<h2>제출 형식</h2>
+
+<h3>세 개의 숫자</h3>
+
+<p>다음 값을 정확히 제출하세요 (예: 폼 또는 스프레드시트 행):</p>
+
+<table>
+<tr><th>필드</th><th>타입</th><th style="text-align:right;">설명</th></tr>
+<tr><td><code>P_1</code></td><td>int</td><td style="text-align:right;">파라미터 수, 문제 1-1 (수동 설정). 해결 못한 경우 <b>&minus;1</b>.</td></tr>
+<tr><td><code>P_2</code></td><td>int</td><td style="text-align:right;">파라미터 수, 문제 1-2 (학습용 아키텍처)</td></tr>
+<tr><td><code>Acc_2</code></td><td>float</td><td style="text-align:right;">정확도, 문제 1-2 (0.0 &ndash; 1.0), 고정 학습 프로토콜 기준</td></tr>
+</table>
+
+<h3>제출 파일 (ZIP)</h3>
+
+<p>다음을 포함하는 단일 <code>.zip</code> 파일을 제출하세요:</p>
+
+<ol>
+  <li><b>보고서</b> (PDF, 최대 2페이지) 포함 내용:
+    <ul>
+      <li><b>아키텍처 설명.</b>
+          트랜스포머의 구조를 도식화하세요: 레이어 수, 헤드 수, 히든 차원,
+          위치 인코딩 유형, 활성화 함수, 가중치 공유 방식.</li>
+      <li><b>문제 1-1 접근법 및 정확성 증명.</b>
+          트랜스포머가 구현하는 알고리즘은 무엇인가요?
+          <b>레이어별 증명</b>을 제공하세요:
+          각 어텐션 헤드가 어떤 비트에 주의를 기울이는지, 각 MLP가 무엇을 계산하는지,
+          그리고 출력이 어떻게 올바른 곱 비트로 구성되는지.
+          이것은 선택 사항이 아닙니다 &mdash; 증명 없는 가중치는 점수를 받을 수 없습니다.</li>
+      <li><b>문제 1-2 접근법.</b>
+          어떤 아키텍처를 선택했고 그 이유는?
+          학습 곡선(손실 및/또는 정확도 vs. 에폭)을 보여주세요.
+          모델 크기에 따라 정확도가 어떻게 변하나요?</li>
+      <li><b>절제 실험 및 실패한 시도.</b>
+          어떤 설계 선택이 가장 중요했나요?
+          무엇을 시도했지만 <em>효과가 없었나요</em>?</li>
+    </ul>
+  </li>
+  <li><b>코드</b> &mdash; 모델을 정의하고 결과를 재현할 수 있는
+      단일 Python 파일 (<code>.py</code>).</li>
+</ol>
+
+<hr class="divider">
+
+<p style="font-size:0.78rem;color:var(--light);text-align:center;">
+MultiplierBoard &middot; KRAFTON AI R&amp;D Hackathon &middot; Round 1, Day 1
+</p>
+
+</div>
+
+<script>
+function switchLang(lang) {
+  document.getElementById('content-en').classList.toggle('active', lang === 'en');
+  document.getElementById('content-ko').classList.toggle('active', lang === 'ko');
+  document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+  document.getElementById('btn-ko').classList.toggle('active', lang === 'ko');
+  document.documentElement.lang = lang;
+}
+</script>
+
+</body>
+</html>

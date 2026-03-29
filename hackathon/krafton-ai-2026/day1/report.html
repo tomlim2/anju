@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<title>MultiplierBoard Report — #179</title>
+<style>
+  body { font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 720px; margin: 0 auto; padding: 20px; font-size: 11px; line-height: 1.5; color: #111; }
+  h1 { font-size: 18px; margin-bottom: 2px; }
+  h2 { font-size: 14px; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-top: 18px; }
+  h3 { font-size: 12px; margin-top: 12px; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 10px; }
+  th, td { border: 1px solid #ccc; padding: 3px 6px; text-align: left; }
+  th { background: #f5f5f5; font-weight: 600; }
+  code { font-family: 'SF Mono', Consolas, monospace; font-size: 10px; background: #f5f5f5; padding: 1px 3px; }
+  pre { background: #f5f5f5; padding: 8px; font-size: 9.5px; line-height: 1.4; overflow-x: auto; }
+  .sub { font-size: 10px; color: #666; margin-bottom: 12px; }
+  .key { background: #fffde7; padding: 6px 10px; border-left: 3px solid #fbc02d; margin: 8px 0; font-size: 10.5px; }
+  @media print { body { padding: 0; } }
+  @page { size: A4; margin: 15mm; }
+</style>
+</head><body>
+
+<h1>MultiplierBoard: Minimal Transformer for 6-bit Binary Multiplication</h1>
+<p class="sub">Participant #179 &middot; KRAFTON AI R&amp;D Hackathon &middot; Round 1, Day 1</p>
+
+<div class="key"><b>Submission:</b> P_1 = &minus;1, P_2 = 17,280, Acc_2 = 1.0</div>
+
+<h2>1. Architecture</h2>
+
+<p>Decoder-only transformer with sinusoidal positional encoding (free, not counted).</p>
+
+<pre>Input (12 tokens) → Embedding(2, 32) + SinPE
+  → [TransformerBlock × 2]
+      LN → MultiHeadAttn(2 heads) → Residual
+      LN → FFN(32→64→32, GELU) → Residual
+  → LayerNorm → Linear(32, 2)
+  → Output (12 tokens, autoregressive greedy decoding)</pre>
+
+<table>
+<tr><th>Component</th><th>Choice</th><th>Rationale</th></tr>
+<tr><td>d_model</td><td>32</td><td>Smallest stable dimension (d=24 seed-unstable)</td></tr>
+<tr><td>n_heads</td><td>2</td><td>Sufficient for input bit routing</td></tr>
+<tr><td>n_layers</td><td>2</td><td>Minimum for multiplication (1-layer insufficient)</td></tr>
+<tr><td>d_ff</td><td>64</td><td>Standard 2× ratio</td></tr>
+<tr><td>PE</td><td>Sinusoidal (free)</td><td>Fixed, not counted per rules</td></tr>
+<tr><td>Activation</td><td>GELU</td><td>Standard</td></tr>
+</table>
+
+<p><b>P_2 = 17,280 parameters. Acc_2 = 1.0 (100%).</b></p>
+
+<h2>2. Problem 1-2: Training &amp; Results</h2>
+
+<h3>Dimension Sweep</h3>
+<table>
+<tr><th>d_model</th><th>Params</th><th>Accuracy</th><th>Seed-stable?</th></tr>
+<tr><td>48</td><td>38,208</td><td>100%</td><td>Yes</td></tr>
+<tr><td><b>32</b></td><td><b>17,280</b></td><td><b>99.89–100%</b></td><td><b>Yes</b> (4 seeds verified)</td></tr>
+<tr><td>24</td><td>9,888</td><td>74–99.78%</td><td><b>No</b> — varies by seed</td></tr>
+<tr><td>16</td><td>4,544</td><td>37.8%</td><td>N/A — fails</td></tr>
+</table>
+
+<div class="key"><b>Key finding:</b> d=32 is the stability threshold for 6-bit multiplication. Below d=32, accuracy becomes seed-dependent. d=24 ranged 74–99.78% across seeds. d=16 fails entirely.</div>
+
+<h3>Weight Tying Experiments</h3>
+<table>
+<tr><th>Tying</th><th>d</th><th>Params</th><th>Acc</th><th>Stable?</th></tr>
+<tr><td>None (standard)</td><td>32</td><td>17,280</td><td>100%</td><td>Yes</td></tr>
+<tr><td>Embed + V=Q</td><td>32</td><td>14,912</td><td>78–99.95%</td><td>No</td></tr>
+<tr><td>K=Q + V=Q</td><td>32</td><td>—</td><td>~50%</td><td>No</td></tr>
+<tr><td>Embed + V=Q</td><td>24</td><td>8,496</td><td>99.46%</td><td>No</td></tr>
+</table>
+
+<p>VQ tying reduces params but introduces seed instability. K=Q forces symmetric attention — the model can no longer distinguish A and B operands.</p>
+
+<h3>Low-Rank Factorization</h3>
+<p>Rank-2 factorization of all projections: d=32 → 2,432 params, 9.3% accuracy. Insufficient capacity for multiplication's quadratic bit interactions.</p>
+
+<h3>Training Curve (d=32 baseline)</h3>
+<p>Loss decreases steadily. Accuracy reaches 99%+ at epoch ~90, 100% by epoch ~150. Stable convergence with no signs of overfitting.</p>
+
+<h2>3. Problem 1-1: Hand-Coded Approach</h2>
+
+<p>We decomposed multiplication as iterated shift-and-add:</p>
+<pre>P = A[0]*(B&lt;&lt;0) + A[1]*(B&lt;&lt;1) + ... + A[5]*(B&lt;&lt;5)</pre>
+
+<h3>Building Blocks</h3>
+<table>
+<tr><th>Operation</th><th>Implementation</th><th>Params</th></tr>
+<tr><td>AND(a,b)</td><td>ReLU(a + b − 1)</td><td>3</td></tr>
+<tr><td>XOR(a,b)</td><td>a + b − 2·AND(a,b)</td><td>~5</td></tr>
+<tr><td>Carry</td><td>ReLU(sum − 1)</td><td>~3</td></tr>
+</table>
+
+<h3>Implementation Attempt &amp; Fundamental Dilemma</h3>
+
+<p>We built a 1-layer model (d=24, 12 heads) with PE-based attention routing (10/12 heads achieved one-hot patterns) and PE annihilation in V projections for clean bit extraction.</p>
+
+<table>
+<tr><th>Design</th><th>Bit Extraction</th><th>Position Info</th><th>Verdict</th></tr>
+<tr><td>With residual</td><td>Contaminated by PE</td><td>Available</td><td>MLP can't compute AND</td></tr>
+<tr><td>Without residual</td><td>Clean</td><td>Lost</td><td>MLP identical for all positions</td></tr>
+</table>
+
+<p>The MLP's shared weights require position info to distinguish output positions, but the residual connection contaminates bit values with PE signals. Resolution requires ≥2 layers (layer 1: gather bits, layer 2: position routing + carry). Full solution estimated at ~6 hours. <b>P_1 = −1.</b></p>
+
+<h2>4. Ablations &amp; Failed Attempts</h2>
+
+<h3>What mattered most</h3>
+<ol>
+<li><b>d_model ≥ 32</b> — most critical. Below this, learning is unstable across seeds.</li>
+<li><b>n_layers = 2</b> — minimum for multiplication. 1-layer insufficient (empirically confirmed).</li>
+<li><b>Seed stability</b> — tying reduces params but introduces training variance.</li>
+</ol>
+
+<h3>What didn't work</h3>
+<ul>
+<li><b>Low-rank (rank=2):</b> 9.3% — multiplication needs full-rank projections.</li>
+<li><b>K=Q tying:</b> ~50% — symmetric attention can't distinguish operands.</li>
+<li><b>Aggressive VQ tying at d≤24:</b> seed-unstable (74–99%).</li>
+<li><b>d=16 and below:</b> insufficient capacity (37.8%).</li>
+</ul>
+
+<h3>Key Insight</h3>
+<p>Multiplication is fundamentally harder than addition for transformers. While AdderBoard achieved 6 parameters for 10-digit addition, multiplication's quadratic bit interactions (A_i × B_j for all i+j=k) and multi-bit carry propagation demand significantly more capacity. The stability boundary (d=32) reflects this complexity gap.</p>
+
+</body></html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>SparseTap Report — Team 179</title>
+<style>
+@page {
+    size: A4;
+    margin: 16mm 18mm 16mm 18mm;
+}
+@media print {
+    body { font-size: 9pt; }
+    h1 { font-size: 15pt; }
+    h2 { font-size: 10.5pt; page-break-after: avoid; }
+    pre { font-size: 7pt; }
+    .no-break { page-break-inside: avoid; }
+}
+body {
+    font-family: -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 9.5pt;
+    line-height: 1.42;
+    color: #111;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 12px;
+}
+h1 {
+    font-size: 16pt;
+    font-weight: 700;
+    margin: 0 0 2pt 0;
+    border-bottom: 2px solid #111;
+    padding-bottom: 4pt;
+}
+h2 {
+    font-size: 11pt;
+    font-weight: 700;
+    margin: 10pt 0 4pt 0;
+    color: #1a1a1a;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 2pt;
+}
+p {
+    margin: 3pt 0;
+    text-align: justify;
+}
+blockquote {
+    margin: 4pt 0 4pt 8pt;
+    padding: 4pt 8pt;
+    background: #f7f7f2;
+    border-left: 3px solid #bbb;
+    font-family: 'SF Mono', 'Fira Mono', Consolas, monospace;
+    font-size: 8.5pt;
+    line-height: 1.35;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 6pt 0;
+    font-size: 9pt;
+}
+th {
+    text-align: left;
+    padding: 4pt 6pt;
+    border-bottom: 2px solid #333;
+    font-weight: 700;
+    background: #f5f5f0;
+}
+td {
+    padding: 3pt 6pt;
+    border-bottom: 1px solid #ddd;
+}
+code {
+    font-family: 'SF Mono', 'Fira Mono', Consolas, monospace;
+    font-size: 8.5pt;
+    background: #f0f0ea;
+    padding: 0 2pt;
+    border-radius: 2pt;
+}
+pre {
+    font-size: 7.5pt;
+    line-height: 1.25;
+    background: #f5f5f0;
+    padding: 6pt 8pt;
+    border: 1px solid #ddd;
+    border-radius: 2pt;
+    word-break: break-all;
+    white-space: pre-wrap;
+}
+ul, ol {
+    margin: 3pt 0 3pt 16pt;
+    padding: 0;
+}
+li {
+    margin: 1pt 0;
+}
+</style>
+</head><body>
+<h1>SparseTap — Report</h1>
+<p><strong>KRAFTON AI R&amp;D Hackathon · Round 1 · Day 2 · Team #179</strong></p>
+<h2>1. Problem Analysis</h2>
+<p>SparseTap asks us to recover S hidden offsets d₁ &lt; d₂ &lt; … &lt; dₛ (S ≤ 16, dₛ ≤ 64) from 2,000 noisy binary sequences of length 256, where each bit after position W = dₛ satisfies:</p>
+<blockquote>
+<p>seq[n] = seq[n−d₁] ⊕ seq[n−d₂] ⊕ … ⊕ seq[n−dₛ] ⊕ e[n],  e[n] ~ Bernoulli(0.2)</p>
+</blockquote>
+<p><strong>This is the Sparse Learning Parity with Noise (LPN) problem</strong> — equivalent to a Fast Correlation Attack on a stream cipher's LFSR (Meier &amp; Staffelbach, 1989).</p>
+<p><strong>Information-theoretic feasibility.</strong> Each equation carries 1 − H(0.2) ≈ 0.278 bits of information about the secret. With 2,000 × 192 = 384,000 equations and 64 unknowns, we have ~106,700 bits of usable information — vastly more than the 64 bits needed.</p>
+<p><strong>The core difficulty: Piling-up Lemma.</strong> In GF(2), correlation of XOR of k independent ε-biased bits decays as (1−2ε)^k. For a single offset d, the observed signal is seq[n] ⊕ seq[n−d] = (XOR of S−1 other offsets) ⊕ noise. When S = 8, the per-offset bias is 0.6⁸ ≈ 0.017 — indistinguishable from random with our sample size. This is why greedy, LASSO, and single-offset correlation methods structurally fail: <strong>there is no partial credit in GF(2)</strong>.</p>
+<h2>2. Approach 1: BKW + Hierarchical FWHT (Main — Success)</h2>
+<p>We used the Blum–Kalai–Wasserman (BKW) algorithm, the standard attack on LPN.</p>
+<p><strong>Step 1: Build equation system.</strong> From 2,000 sequences × 192 positions = 384,000 equations of the form <strong>A</strong>·<strong>s</strong> = <strong>b</strong> (mod 2) with 20% noise, where <strong>s</strong> ∈ {0,1}⁶⁴ is the secret offset indicator vector.</p>
+<p><strong>Step 2: BKW dimension reduction.</strong> We partition the 64 columns into blocks of 16. For each block, we group equations by their values in that block and XOR pairs within each group, zeroing out those 16 columns. After each round, noise roughly doubles: round 1 noise ≈ 0.32, round 2 noise ≈ 0.435 (via P_new = 2p(1−p)). This trades equations for reduced dimensionality.</p>
+<p><strong>Step 3: FWHT subspace search.</strong> After 2 BKW rounds, only 32 columns remain. We perform the Fast Walsh–Hadamard Transform on the reduced system to find the 32-bit partial secret maximizing the bias. FWHT searches all 2¹⁶ candidates per 16-bit sub-block in O(16 · 2¹⁶) time.</p>
+<p><strong>Step 4: Hierarchical back-substitution.</strong> We substitute the recovered bits back into the round-1 equations and run FWHT on the next 16-bit block, then repeat for the first block. This avoids ever searching 2³² or 2⁶⁴ spaces.</p>
+<p><strong>Result:</strong> Offsets <strong>[5, 14, 21, 29, 36, 42, 50, 57]</strong> (S = 8, W = 57) recovered in <strong>0.78 seconds</strong> on CPU. Training accuracy = <strong>79.97%</strong> (expected 80.0%). Bootstrap 95% CI: [79.8%, 80.2%]. Leave-one-out: removing any single offset drops accuracy to ~50%. Adding any extra offset also drops to ~50%.</p>
+<h2>3. Approach 2: Meet-in-the-Middle (Independent Success)</h2>
+<p>Brute-force over C(64,8) ≈ 4.4 billion offset combinations is infeasible. Meet-in-the-Middle (MitM) splits the search space to reduce complexity dramatically.</p>
+<p><strong>Step 1: Split.</strong> Partition the 64 candidate positions into LEFT (1–32) and RIGHT (33–64). Assuming S = 8 with a (4,4) split, enumerate C(32,4) = 35,960 masks per side — only 71,920 total.</p>
+<p><strong>Step 2: Precompute.</strong> For each left mask, compute adjusted_output = output ⊕ parity_L for all 384,000 equations. Store as a lookup table keyed by the left-side parity pattern.</p>
+<p><strong>Step 3: Match.</strong> For each right mask, compute parity_R and find the left mask whose adjusted output maximally correlates with parity_R. The (left, right) pair with the highest combined correlation reveals the true offsets.</p>
+<p><strong>Result:</strong> Offsets <strong>[5, 14, 21, 29, 36, 42, 50, 57]</strong> independently recovered in <strong>3.19 seconds</strong>. Training accuracy = <strong>79.99%</strong>. This provides independent confirmation of the BKW result. Complexity reduction: C(64,8) ≈ 4.4B → 2 × C(32,4) ≈ 72K — a <strong>60,000× speedup</strong>. In general, one should also try (3,5) and (2,6) splits for robustness when the true split is unknown.</p>
+<h2>4. Approach 3: Gradient Descent with Continuous Relaxation (Numerical Method)</h2>
+<p><strong>Formulation.</strong> Replace <strong>s</strong> ∈ {0,1}⁶⁴ with continuous weights via sigmoid: w_d = σ(α_d). Map {0,1} → {±1} so XOR becomes multiplication, giving a differentiable loss. Optimize with Adam (lr=0.01, 5000 steps) with temperature annealing.</p>
+<p><strong>Result: This approach failed.</strong> All 64 weights converged to ~0.45, producing no differentiation. The Piling-up Lemma causes <strong>gradient starvation</strong>: ∂L/∂α_d involves a product of (S−1) near-zero terms, making gradients exponentially small in S. The loss landscape has 2⁶⁴ local minima of nearly equal depth — a structural limitation of gradient methods on XOR parity problems, not a hyperparameter issue. An MLP with a 32-unit hidden layer also failed for the same reason.</p>
+<h2>5. Failed Attempts</h2>
+<p><strong>Greedy single-offset correlation.</strong> All 64 offsets showed accuracy ≈ 50% (max |z| &lt; 2). Per the Piling-up Lemma, single-offset bias is 0.6⁸ ≈ 0.017 — undetectable with 2,000 sequences.</p>
+<p><strong>Exhaustive search (S = 1..6).</strong> All C(64,S) combinations for S ≤ 6 gave ~50% accuracy, confirming S ≥ 7.</p>
+<p><strong>RANSAC (162K trials).</strong> P(all 64 equations noise-free) = 0.8⁶⁴ ≈ 6×10⁻⁷. No solution found in 55 seconds.</p>
+<p><strong>Bootstrap GF(2) majority vote (1000 trials).</strong> A single flipped bit in GF(2) Gaussian elimination propagates to corrupt the entire solution. Majority voting across corrupted solutions produced only noise.</p>
+<h2>6. Results</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Offsets</strong></td>
+<td>[5, 14, 21, 29, 36, 42, 50, 57]</td>
+</tr>
+<tr>
+<td><strong>S / W</strong></td>
+<td>8 / 57</td>
+</tr>
+<tr>
+<td><strong>Training accuracy</strong></td>
+<td>79.97% (expected 80%)</td>
+</tr>
+<tr>
+<td><strong>Bootstrap 95% CI</strong></td>
+<td>[79.8%, 80.2%]</td>
+</tr>
+<tr>
+<td><strong>Successful methods</strong></td>
+<td>BKW + FWHT (0.78s), Meet-in-the-Middle (3.19s)</td>
+</tr>
+<tr>
+<td><strong>Independent verification</strong></td>
+<td>Two methods converge on identical offsets</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Answer (192 bits, positions 64–255):</strong></p>
+<pre><code>111101101100111001011111000011010101101100100011000100000001000011100000
+110101010000010101011111000111001010001011100010110100010111111101100111
+001101110110010001110110110010011001001011111001
+</code></pre>
+</body></html>
