@@ -1,4 +1,7 @@
 {
+  "name": "anju",
+  "version": "0.1.0",
+  "private": true,
   "dependencies": {
     "three": "^0.172.0"
   }
