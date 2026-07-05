@@ -157,7 +157,10 @@
     const icons = ["⊙", "◇", "✣", "✕", "＋", "⌾", "◎", "◌", "◈", "✦", "⚡"];
     const panelModes = ["mixed", "barcode", "table", "wave", "qr", "boxed"];
     const tableLabels = ["LOT", "SPEC", "FREQ", "LOAD", "REV", "TEMP", "POWER", "LAT", "CFG"];
+    const componentBorderModes = ["stroke", "no-stroke", "corner-stroke"];
     let seed = randomSeed();
+    let activeComponentLabel = "";
+    let activeBorderMode = "";
     let dark = false;
 
     function randomSeed() {
@@ -174,6 +177,26 @@
 
     function cssVar(name) {
       return getComputedStyle(document.body).getPropertyValue(name).trim();
+    }
+
+    // Fit a single Component into the Stage while preserving its own ratio.
+    function fitBox(containerW, containerH, ratio, scale = 0.72) {
+      const maxW = containerW * scale;
+      const maxH = containerH * scale;
+      let boxW = maxW;
+      let boxH = boxW * ratio.height / ratio.width;
+
+      if (boxH > maxH) {
+        boxH = maxH;
+        boxW = boxH * ratio.width / ratio.height;
+      }
+
+      return {
+        x: (containerW - boxW) / 2,
+        y: (containerH - boxH) / 2,
+        width: boxW,
+        height: boxH
+      };
     }
 
     function mulberry32(value) {
@@ -289,24 +312,6 @@
       return value.split("").join("   ");
     }
 
-    function frame(g, x, y, w, h, inset = 0) {
-      const s = 36 + r(-8, 14);
-      const x0 = x + inset;
-      const y0 = y + inset;
-      const x1 = x + w - inset;
-      const y1 = y + h - inset;
-      g.append(
-        line(x0, y0, x0 + s, y0, { width: 2, rough: true, opacity: 0.82 }),
-        line(x0, y0, x0, y0 + s, { width: 2, rough: true, opacity: 0.82 }),
-        line(x1, y0, x1 - s, y0, { width: 2, rough: true, opacity: 0.82 }),
-        line(x1, y0, x1, y0 + s, { width: 2, rough: true, opacity: 0.82 }),
-        line(x0, y1, x0 + s, y1, { width: 2, rough: true, opacity: 0.82 }),
-        line(x0, y1, x0, y1 - s, { width: 2, rough: true, opacity: 0.82 }),
-        line(x1, y1, x1 - s, y1, { width: 2, rough: true, opacity: 0.82 }),
-        line(x1, y1, x1, y1 - s, { width: 2, rough: true, opacity: 0.82 })
-      );
-    }
-
     function label(g, x, y, w, value = pick(wordsEn), fill = false) {
       if (fill) {
         g.appendChild(rect(x, y, w, 28, { fill: "currentColor", stroke: false, opacity: 0.96 }));
@@ -387,24 +392,16 @@
       g.appendChild(polyline(pts, { width: 2.2, rough: true }));
     }
 
-    function sun(g, x, y, radius = 22) {
-      g.appendChild(make("circle", { cx: x, cy: y, r: radius * 0.42, fill: "none", stroke: "currentColor", "stroke-width": 2 }));
-      for (let i = 0; i < 12; i++) {
-        const a = (Math.PI * 2 * i) / 12;
-        g.appendChild(line(x + Math.cos(a) * radius * 0.68, y + Math.sin(a) * radius * 0.68, x + Math.cos(a) * radius, y + Math.sin(a) * radius, { width: 2, rough: true }));
-      }
-    }
-
-    function panel(x, y, w, h, mode = "mixed") {
+    function panel(x, y, w, h, mode = "mixed", options = {}) {
       const g = make("g", { transform: `translate(${r(-3, 3)} ${r(-3, 3)})`, opacity: r(0.78, 1) });
+      const drawShell = options.shell !== false;
       const title = pick(wordsEn);
       const ko = pick(wordsKo);
       const org = `${pick(orgs)} ${pick(suffixes)}`;
       const top = y + 22;
       const big = chance(0.55) ? code() : ko;
 
-      if (chance(0.42) || mode === "boxed") g.appendChild(rect(x, y, w, h, { width: r(1.4, 2.8), rough: true, opacity: 0.9 }));
-      if (chance(0.34)) frame(g, x, y, w, h, 0);
+      if (drawShell && (chance(0.42) || mode === "boxed")) g.appendChild(rect(x, y, w, h, { width: r(1.4, 2.8), rough: true, opacity: 0.9 }));
 
       g.appendChild(textNode(x + 10, top, `${pick(icons)} @${org}`, { size: Math.max(10, Math.min(15, w / 24)), weight: 800, opacity: 0.9 }));
       if (chance(0.56)) microBadge(g, x + w - 70, y + 8, chance(0.5) ? `V${ri(1, 7)}.${ri(0, 9)}` : `REV ${String.fromCharCode(65 + ri(0, 25))}`);
@@ -447,7 +444,6 @@
 
     function singleLayout(w, h) {
       const g = make("g");
-      frame(g, w * 0.16, h * 0.28, w * 0.68, h * 0.44);
       const px = w * r(0.22, 0.28);
       const py = h * r(0.38, 0.43);
       const pw = w * r(0.48, 0.58);
@@ -462,47 +458,6 @@
       return g;
     }
 
-    function gridLayout(w, h, dense = false) {
-      const g = make("g");
-      const margin = dense ? 76 : 110;
-      const cols = dense ? ri(4, 6) : ri(3, 4);
-      const rows = dense ? ri(4, 6) : ri(3, 4);
-      const gapX = dense ? 30 : 58;
-      const gapY = dense ? 28 : 58;
-      const cw = (w - margin * 2 - gapX * (cols - 1)) / cols;
-      const ch = (h - margin * 2 - gapY * (rows - 1)) / rows;
-      for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-          if (!dense && chance(0.13)) continue;
-          const x = margin + col * (cw + gapX) + r(-8, 8);
-          const y = margin + row * (ch + gapY) + r(-8, 8);
-          const mode = pick(panelModes);
-          g.appendChild(panel(x, y, cw * r(0.84, 1.08), ch * r(0.76, 1.1), mode));
-        }
-      }
-      return g;
-    }
-
-    function stripLayout(w, h) {
-      const g = make("g");
-      const count = ri(7, 12);
-      let y = h * 0.14;
-      for (let i = 0; i < count; i++) {
-        const x = w * r(0.08, 0.48);
-        const pw = w * r(0.3, 0.72);
-        const ph = r(42, 92);
-        if (chance(0.38)) label(g, x, y, pw, pick(wordsEn), chance(0.36));
-        else {
-          g.appendChild(textNode(x, y + 26, `${pick(icons)} ${pick(wordsKo)} ${spaced(pick(wordsEn))}`, { ko: chance(0.35), size: r(20, 42), weight: 950 }));
-          g.appendChild(line(x, y + 42, x + pw, y + 42, { width: 2, rough: true, dash: chance(0.5) ? "7 7" : "" }));
-        }
-        if (chance(0.38)) barcode(g, x, y + ph * 0.75, pw, r(18, 34));
-        y += ph + r(18, 46);
-      }
-      frame(g, w * 0.08, h * 0.08, w * 0.84, h * 0.84);
-      return g;
-    }
-
     function specimenLayout(w, h) {
       const g = make("g");
       const cx = w * 0.5;
@@ -513,7 +468,13 @@
       g.appendChild(line(cx - w * 0.24, cy + 70, cx + w * 0.24, cy + 70, { width: 2.2, rough: true }));
       barcode(g, cx - w * 0.2, cy + 102, w * 0.4, 58);
       g.appendChild(textNode(cx, cy + 188, `CODE ${code()} / PORT ${ri(10, 999)} / REV ${String.fromCharCode(65 + ri(0, 25))}`, { size: 18, weight: 800, anchor: "middle" }));
-      frame(g, w * 0.16, h * 0.22, w * 0.68, h * 0.56);
+      return g;
+    }
+
+    function focusPanelLayout(w, h) {
+      const g = make("g");
+      const pad = Math.min(w, h) * 0.08;
+      g.appendChild(panel(pad, pad, w - pad * 2, h - pad * 2, pick(panelModes), { shell: false }));
       return g;
     }
 
@@ -535,13 +496,100 @@
       return g;
     }
 
-    const layouts = [
-      (w, h) => singleLayout(w, h),
-      (w, h) => gridLayout(w, h, false),
-      (w, h) => gridLayout(w, h, true),
-      (w, h) => stripLayout(w, h),
-      (w, h) => specimenLayout(w, h)
+    // A Component is the bordered unit; its ratio drives internal composition.
+    const componentDefinitions = [
+      {
+        label: "component 1:1",
+        ratio: { width: 1, height: 1 },
+        scale: 0.72,
+        render: specimenLayout
+      },
+      {
+        label: "component 2:3",
+        ratio: { width: 2, height: 3 },
+        scale: 0.78,
+        render: focusPanelLayout
+      },
+      {
+        label: "component 2:5",
+        ratio: { width: 2, height: 5 },
+        scale: 0.82,
+        render: focusPanelLayout
+      },
+      {
+        label: "component 3:2",
+        ratio: { width: 3, height: 2 },
+        scale: 0.78,
+        render: singleLayout
+      },
+      {
+        label: "component 5:2",
+        ratio: { width: 5, height: 2 },
+        scale: 0.82,
+        render: singleLayout
+      },
+      {
+        label: "component 4:3",
+        ratio: { width: 4, height: 3 },
+        scale: 0.8,
+        render: singleLayout
+      },
+      {
+        label: "component 3:4",
+        ratio: { width: 3, height: 4 },
+        scale: 0.8,
+        render: focusPanelLayout
+      }
     ];
+
+    function componentBorder(w, h, mode) {
+      const g = make("g", { "data-border": mode });
+      if (mode === "no-stroke") return g;
+
+      if (mode === "stroke") {
+        g.appendChild(rect(1, 1, w - 2, h - 2, { width: 2, rough: true, opacity: 0.9 }));
+        return g;
+      }
+
+      const inset = 8;
+      const x0 = inset;
+      const y0 = inset;
+      const x1 = w - inset;
+      const y1 = h - inset;
+      const length = Math.min(72, Math.max(38, Math.min(w, h) * 0.18));
+      const attrs = { width: 2.4, opacity: 0.94 };
+      g.append(
+        line(x0, y0, x0 + length, y0, attrs),
+        line(x0, y0, x0, y0 + length, attrs),
+        line(x1, y0, x1 - length, y0, attrs),
+        line(x1, y0, x1, y0 + length, attrs),
+        line(x0, y1, x0 + length, y1, attrs),
+        line(x0, y1, x0, y1 - length, attrs),
+        line(x1, y1, x1 - length, y1, attrs),
+        line(x1, y1, x1, y1 - length, attrs)
+      );
+      return g;
+    }
+
+    function componentLayer(boardW, boardH) {
+      const component = pick(componentDefinitions);
+      const borderMode = pick(componentBorderModes);
+      activeComponentLabel = component.label.replace("component ", "");
+      activeBorderMode = borderMode;
+      const box = fitBox(boardW, boardH, component.ratio, component.scale);
+      const layer = make("svg", {
+        x: box.x,
+        y: box.y,
+        width: box.width,
+        height: box.height,
+        viewBox: `0 0 ${box.width} ${box.height}`,
+        overflow: "hidden",
+        "data-component": component.label
+      });
+      layer.appendChild(component.render(box.width, box.height));
+      layer.appendChild(componentBorder(box.width, box.height, borderMode));
+      return layer;
+    }
 
     function render(nextSeed = randomSeed()) {
       seed = nextSeed;
@@ -552,23 +600,12 @@
       art.setAttribute("style", "color: var(--ink)");
       art.replaceChildren(defs());
       document.body.classList.toggle("is-dark", dark);
-      seedLabel.textContent = `SEED ${seedHex()}`;
 
       const bg = make("rect", { x: 0, y: 0, width: w, height: h, fill: "var(--bg)" });
       art.appendChild(bg);
       art.appendChild(textureLayer(w, h));
-      art.appendChild(pick(layouts)(w, h));
-
-      if (chance(0.42)) {
-        const g = make("g", { opacity: r(0.55, 0.92) });
-        if (chance(0.5)) sun(g, w * r(0.1, 0.9), h * r(0.12, 0.9), r(18, 42));
-        else {
-          const x = w * r(0.08, 0.88);
-          const y = h * r(0.1, 0.88);
-          g.appendChild(rect(x, y, r(30, 72), r(30, 72), { width: 2, rough: true, transform: "" }));
-        }
-        art.appendChild(g);
-      }
+      art.appendChild(componentLayer(w, h));
+      seedLabel.textContent = `SEED ${seedHex()} / COMP ${activeComponentLabel} / BORDER ${activeBorderMode}`;
     }
 
     function downloadBlob(blob, filename) {
