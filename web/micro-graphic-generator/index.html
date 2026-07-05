@@ -123,8 +123,19 @@
 
   <script>
     const SVG_NS = "http://www.w3.org/2000/svg";
+    const EXPORT_SCALE = 2;
+    const MIN_VIEWPORT = { width: 900, height: 620 };
+    const MONO_FONT = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+    const KO_FONT = "\"Apple SD Gothic Neo\", \"Noto Sans KR\", ui-sans-serif, sans-serif";
+
     const art = document.querySelector("#art");
     const seedLabel = document.querySelector("#seedLabel");
+    const controls = {
+      lucky: document.querySelector("#lucky"),
+      png: document.querySelector("#png"),
+      svg: document.querySelector("#svg"),
+      tone: document.querySelector("#tone")
+    };
 
     const wordsKo = [
       "접속", "검증", "회로", "출력", "신호", "제어", "기록", "연산",
@@ -144,8 +155,26 @@
 
     const suffixes = ["LABS", "WORKS", "STUDIO", "DIVISION", "SYSTEMS", "ENGINEERING", "INDUSTRIES", "OFFICE"];
     const icons = ["⊙", "◇", "✣", "✕", "＋", "⌾", "◎", "◌", "◈", "✦", "⚡"];
-    let seed = crypto.getRandomValues(new Uint32Array(1))[0] >>> 0;
+    const panelModes = ["mixed", "barcode", "table", "wave", "qr", "boxed"];
+    const tableLabels = ["LOT", "SPEC", "FREQ", "LOAD", "REV", "TEMP", "POWER", "LAT", "CFG"];
+    let seed = randomSeed();
     let dark = false;
+
+    function randomSeed() {
+      return crypto.getRandomValues(new Uint32Array(1))[0] >>> 0;
+    }
+
+    function seedHex() {
+      return seed.toString(16).toUpperCase().padStart(8, "0");
+    }
+
+    function seedSlug() {
+      return seed.toString(16);
+    }
+
+    function cssVar(name) {
+      return getComputedStyle(document.body).getPropertyValue(name).trim();
+    }
 
     function mulberry32(value) {
       return function random() {
@@ -188,7 +217,7 @@
         x,
         y,
         fill: "currentColor",
-        "font-family": attrs.ko ? "\"Apple SD Gothic Neo\", \"Noto Sans KR\", ui-sans-serif, sans-serif" : "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+        "font-family": attrs.ko ? KO_FONT : MONO_FONT,
         "font-size": attrs.size || 18,
         "font-weight": attrs.weight || 700,
         "letter-spacing": attrs.tracking || 0,
@@ -220,7 +249,8 @@
         "stroke-width": attrs.width || 2,
         "stroke-dasharray": attrs.dash || "",
         opacity: attrs.opacity ?? 1,
-        filter: attrs.rough ? "url(#roughen)" : ""
+        filter: attrs.rough ? "url(#roughen)" : "",
+        transform: attrs.transform || ""
       });
     }
 
@@ -337,14 +367,12 @@
       const rows = ri(3, 5);
       const rowH = 24;
       const h = rows * rowH;
-      rect(x, y, w, h, { width: 1.5, rough: true });
       g.appendChild(rect(x, y, w, h, { width: 1.5, rough: true }));
       g.appendChild(line(x + w * 0.48, y, x + w * 0.48, y + h, { width: 1.3, rough: true }));
       for (let i = 1; i < rows; i++) g.appendChild(line(x, y + i * rowH, x + w, y + i * rowH, { width: 1.2, rough: true }));
-      const labels = ["LOT", "SPEC", "FREQ", "LOAD", "REV", "TEMP", "POWER", "LAT", "CFG"];
       for (let i = 0; i < rows; i++) {
-        g.appendChild(textNode(x + 9, y + 17 + i * rowH, `${pick(labels)} ${ri(10, 99)}`, { size: 11, weight: 800 }));
-        g.appendChild(textNode(x + w * 0.48 + 9, y + 17 + i * rowH, `${pick(labels)} ${ri(1, 99)}${chance(0.5) ? "%" : ""}`, { size: 11, weight: 800 }));
+        g.appendChild(textNode(x + 9, y + 17 + i * rowH, `${pick(tableLabels)} ${ri(10, 99)}`, { size: 11, weight: 800 }));
+        g.appendChild(textNode(x + w * 0.48 + 9, y + 17 + i * rowH, `${pick(tableLabels)} ${ri(1, 99)}${chance(0.5) ? "%" : ""}`, { size: 11, weight: 800 }));
       }
     }
 
@@ -448,7 +476,7 @@
           if (!dense && chance(0.13)) continue;
           const x = margin + col * (cw + gapX) + r(-8, 8);
           const y = margin + row * (ch + gapY) + r(-8, 8);
-          const mode = pick(["mixed", "barcode", "table", "wave", "qr", "boxed"]);
+          const mode = pick(panelModes);
           g.appendChild(panel(x, y, cw * r(0.84, 1.08), ch * r(0.76, 1.1), mode));
         }
       }
@@ -507,27 +535,29 @@
       return g;
     }
 
-    function render(nextSeed = crypto.getRandomValues(new Uint32Array(1))[0] >>> 0) {
+    const layouts = [
+      (w, h) => singleLayout(w, h),
+      (w, h) => gridLayout(w, h, false),
+      (w, h) => gridLayout(w, h, true),
+      (w, h) => stripLayout(w, h),
+      (w, h) => specimenLayout(w, h)
+    ];
+
+    function render(nextSeed = randomSeed()) {
       seed = nextSeed;
       random = mulberry32(seed);
-      const w = Math.max(900, window.innerWidth);
-      const h = Math.max(620, window.innerHeight);
+      const w = Math.max(MIN_VIEWPORT.width, window.innerWidth);
+      const h = Math.max(MIN_VIEWPORT.height, window.innerHeight);
       art.setAttribute("viewBox", `0 0 ${w} ${h}`);
       art.setAttribute("style", "color: var(--ink)");
       art.replaceChildren(defs());
       document.body.classList.toggle("is-dark", dark);
-      seedLabel.textContent = `SEED ${seed.toString(16).toUpperCase().padStart(8, "0")}`;
+      seedLabel.textContent = `SEED ${seedHex()}`;
 
       const bg = make("rect", { x: 0, y: 0, width: w, height: h, fill: "var(--bg)" });
       art.appendChild(bg);
       art.appendChild(textureLayer(w, h));
-
-      const layout = pick(["single", "grid", "dense", "strip", "specimen"]);
-      if (layout === "single") art.appendChild(singleLayout(w, h));
-      if (layout === "grid") art.appendChild(gridLayout(w, h, false));
-      if (layout === "dense") art.appendChild(gridLayout(w, h, true));
-      if (layout === "strip") art.appendChild(stripLayout(w, h));
-      if (layout === "specimen") art.appendChild(specimenLayout(w, h));
+      art.appendChild(pick(layouts)(w, h));
 
       if (chance(0.42)) {
         const g = make("g", { opacity: r(0.55, 0.92) });
@@ -557,10 +587,10 @@
       clone.setAttribute("xmlns", SVG_NS);
       clone.setAttribute("width", String(window.innerWidth));
       clone.setAttribute("height", String(window.innerHeight));
-      clone.style.background = getComputedStyle(document.body).getPropertyValue("--bg").trim();
+      clone.style.background = cssVar("--bg");
       const style = document.createElementNS(SVG_NS, "style");
       style.textContent = `
-        svg { color: ${getComputedStyle(document.body).getPropertyValue("--ink").trim()}; }
+        svg { color: ${cssVar("--ink")}; }
         text { dominant-baseline: auto; }
       `;
       clone.insertBefore(style, clone.firstChild);
@@ -575,31 +605,34 @@
       img.decoding = "async";
       img.src = url;
       await img.decode();
-      const scale = 2;
       const canvas = document.createElement("canvas");
-      canvas.width = window.innerWidth * scale;
-      canvas.height = window.innerHeight * scale;
+      canvas.width = window.innerWidth * EXPORT_SCALE;
+      canvas.height = window.innerHeight * EXPORT_SCALE;
       const ctx = canvas.getContext("2d");
-      ctx.fillStyle = getComputedStyle(document.body).getPropertyValue("--bg").trim();
+      ctx.fillStyle = cssVar("--bg");
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       URL.revokeObjectURL(url);
-      canvas.toBlob(pngBlob => downloadBlob(pngBlob, `micro-graphic-${seed.toString(16)}.png`), "image/png");
+      canvas.toBlob(pngBlob => downloadBlob(pngBlob, `micro-graphic-${seedSlug()}.png`), "image/png");
     }
 
     function exportSvg() {
-      downloadBlob(new Blob([svgText()], { type: "image/svg+xml;charset=utf-8" }), `micro-graphic-${seed.toString(16)}.svg`);
+      downloadBlob(new Blob([svgText()], { type: "image/svg+xml;charset=utf-8" }), `micro-graphic-${seedSlug()}.svg`);
     }
 
-    document.querySelector("#lucky").addEventListener("click", () => render());
-    document.querySelector("#png").addEventListener("click", exportPng);
-    document.querySelector("#svg").addEventListener("click", exportSvg);
-    document.querySelector("#tone").addEventListener("click", () => {
-      dark = !dark;
-      render(seed);
-    });
-    art.addEventListener("click", () => render());
-    window.addEventListener("resize", () => render(seed));
+    function bindEvents() {
+      controls.lucky.addEventListener("click", () => render());
+      controls.png.addEventListener("click", exportPng);
+      controls.svg.addEventListener("click", exportSvg);
+      controls.tone.addEventListener("click", () => {
+        dark = !dark;
+        render(seed);
+      });
+      art.addEventListener("click", () => render());
+      window.addEventListener("resize", () => render(seed));
+    }
+
+    bindEvents();
     render(seed);
   </script>
 </body>
