@@ -41,7 +41,7 @@ TA toolkit for Unreal Engine. Asset management, camera control, character tools,
 
 ## Web
 
-Three.js experiments in `web/` and `webgl/`. Render targets, boid simulation, interactive flow.
+Three.js experiments in `web/` and `webgl/`. Render targets, boid simulation, interactive flow, and the HTML-based `web/micro-graphic-generator/` typography generator.
 
 ## Conventions
 
