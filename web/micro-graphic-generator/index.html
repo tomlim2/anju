@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Micro Graphic Generator</title>
+  <style>
+    :root {
+      --bg: #f4f4ef;
+      --ink: #10110f;
+      --panel: rgba(244, 244, 239, 0.86);
+      --hair: rgba(16, 17, 15, 0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+    }
+
+    body.is-dark {
+      --bg: #111210;
+      --ink: #f1f1e7;
+      --panel: rgba(17, 18, 16, 0.86);
+      --hair: rgba(241, 241, 231, 0.24);
+    }
+
+    main {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      display: grid;
+      place-items: center;
+    }
+
+    #art {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      background: var(--bg);
+      cursor: crosshair;
+    }
+
+    .controls {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 10;
+      display: flex;
+      gap: 7px;
+      padding: 7px;
+      border: 1px solid var(--ink);
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+    }
+
+    button {
+      appearance: none;
+      min-width: 42px;
+      height: 32px;
+      border: 1px solid var(--ink);
+      border-radius: 0;
+      background: transparent;
+      color: var(--ink);
+      font: 700 11px/1 ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    button:hover,
+    button:focus-visible {
+      background: var(--ink);
+      color: var(--bg);
+      outline: none;
+    }
+
+    .seed {
+      position: fixed;
+      left: 18px;
+      bottom: 16px;
+      z-index: 10;
+      color: var(--ink);
+      font: 700 10px/1.2 ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      opacity: 0.62;
+      user-select: none;
+    }
+
+    @media (max-width: 720px) {
+      .controls {
+        top: auto;
+        right: 12px;
+        bottom: 12px;
+      }
+
+      .seed {
+        left: 12px;
+        bottom: 58px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <svg id="art" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Generated typographic micro graphic"></svg>
+  </main>
+  <div class="controls" aria-label="Generator controls">
+    <button id="lucky" type="button">Lucky</button>
+    <button id="png" type="button">PNG</button>
+    <button id="svg" type="button">SVG</button>
+    <button id="tone" type="button">Tone</button>
+  </div>
+  <div class="seed" id="seedLabel"></div>
+
+  <script>
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    const art = document.querySelector("#art");
+    const seedLabel = document.querySelector("#seedLabel");
+
+    const wordsKo = [
+      "접속", "검증", "회로", "출력", "신호", "제어", "기록", "연산",
+      "동기", "방식", "전원", "해석", "단말", "기준", "응답", "흐름"
+    ];
+
+    const wordsEn = [
+      "ACCESS", "OUTPUT", "VERIFIED", "STANDBY", "RUNNING", "SIGNAL",
+      "VECTOR", "STATUS", "MODULE", "CIRCUIT", "LOCKED", "SYSTEM",
+      "FIELD", "REPORT", "QUEUE", "INPUT"
+    ];
+
+    const orgs = [
+      "RADIAN", "NOVA", "ATLAS", "ORBITAL", "CARGO", "COBALT",
+      "SUMMIT", "VECTOR", "MERIDIAN", "HELIX", "AXIOM", "DELTA"
+    ];
+
+    const suffixes = ["LABS", "WORKS", "STUDIO", "DIVISION", "SYSTEMS", "ENGINEERING", "INDUSTRIES", "OFFICE"];
+    const icons = ["⊙", "◇", "✣", "✕", "＋", "⌾", "◎", "◌", "◈", "✦", "⚡"];
+    let seed = crypto.getRandomValues(new Uint32Array(1))[0] >>> 0;
+    let dark = false;
+
+    function mulberry32(value) {
+      return function random() {
+        let t = value += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    let random = mulberry32(seed);
+
+    function r(min = 0, max = 1) {
+      return min + (max - min) * random();
+    }
+
+    function ri(min, max) {
+      return Math.floor(r(min, max + 1));
+    }
+
+    function pick(list) {
+      return list[ri(0, list.length - 1)];
+    }
+
+    function chance(value) {
+      return random() < value;
+    }
+
+    function make(tag, attrs = {}, children = []) {
+      const el = document.createElementNS(SVG_NS, tag);
+      Object.entries(attrs).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) el.setAttribute(key, value);
+      });
+      children.forEach(child => el.appendChild(child));
+      return el;
+    }
+
+    function textNode(x, y, text, attrs = {}) {
+      const el = make("text", {
+        x,
+        y,
+        fill: "currentColor",
+        "font-family": attrs.ko ? "\"Apple SD Gothic Neo\", \"Noto Sans KR\", ui-sans-serif, sans-serif" : "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+        "font-size": attrs.size || 18,
+        "font-weight": attrs.weight || 700,
+        "letter-spacing": attrs.tracking || 0,
+        "text-anchor": attrs.anchor || "start",
+        opacity: attrs.opacity ?? 1,
+        transform: attrs.transform || ""
+      });
+      el.textContent = text;
+      return el;
+    }
+
+    function line(x1, y1, x2, y2, attrs = {}) {
+      return make("line", {
+        x1, y1, x2, y2,
+        stroke: "currentColor",
+        "stroke-width": attrs.width || 2,
+        "stroke-dasharray": attrs.dash || "",
+        "stroke-linecap": "square",
+        opacity: attrs.opacity ?? 1,
+        filter: attrs.rough ? "url(#roughen)" : ""
+      });
+    }
+
+    function rect(x, y, w, h, attrs = {}) {
+      return make("rect", {
+        x, y, width: w, height: h,
+        fill: attrs.fill || "none",
+        stroke: attrs.stroke === false ? "none" : "currentColor",
+        "stroke-width": attrs.width || 2,
+        "stroke-dasharray": attrs.dash || "",
+        opacity: attrs.opacity ?? 1,
+        filter: attrs.rough ? "url(#roughen)" : ""
+      });
+    }
+
+    function polyline(points, attrs = {}) {
+      return make("polyline", {
+        points: points.map(point => point.join(",")).join(" "),
+        fill: "none",
+        stroke: "currentColor",
+        "stroke-width": attrs.width || 2,
+        "stroke-dasharray": attrs.dash || "",
+        opacity: attrs.opacity ?? 1,
+        filter: attrs.rough ? "url(#roughen)" : ""
+      });
+    }
+
+    function defs() {
+      const d = make("defs");
+      const filter = make("filter", { id: "roughen", x: "-8%", y: "-8%", width: "116%", height: "116%" });
+      filter.append(
+        make("feTurbulence", { type: "fractalNoise", baseFrequency: "0.022", numOctaves: "2", seed: String(seed % 997), result: "noise" }),
+        make("feDisplacementMap", { in: "SourceGraphic", in2: "noise", scale: "1.6", xChannelSelector: "R", yChannelSelector: "G" })
+      );
+      d.appendChild(filter);
+
+      const dot = make("pattern", { id: "dotgrid", width: "12", height: "12", patternUnits: "userSpaceOnUse" });
+      dot.appendChild(make("circle", { cx: "1.5", cy: "1.5", r: "1.5", fill: "currentColor", opacity: "0.55" }));
+      d.appendChild(dot);
+      return d;
+    }
+
+    function code() {
+      return chance(0.46) ? `0X${ri(0, 255).toString(16).toUpperCase().padStart(2, "0")}` : `${ri(2, 9)}${ri(0, 9)}${ri(0, 9)}`;
+    }
+
+    function spaced(value) {
+      return value.split("").join("   ");
+    }
+
+    function frame(g, x, y, w, h, inset = 0) {
+      const s = 36 + r(-8, 14);
+      const x0 = x + inset;
+      const y0 = y + inset;
+      const x1 = x + w - inset;
+      const y1 = y + h - inset;
+      g.append(
+        line(x0, y0, x0 + s, y0, { width: 2, rough: true, opacity: 0.82 }),
+        line(x0, y0, x0, y0 + s, { width: 2, rough: true, opacity: 0.82 }),
+        line(x1, y0, x1 - s, y0, { width: 2, rough: true, opacity: 0.82 }),
+        line(x1, y0, x1, y0 + s, { width: 2, rough: true, opacity: 0.82 }),
+        line(x0, y1, x0 + s, y1, { width: 2, rough: true, opacity: 0.82 }),
+        line(x0, y1, x0, y1 - s, { width: 2, rough: true, opacity: 0.82 }),
+        line(x1, y1, x1 - s, y1, { width: 2, rough: true, opacity: 0.82 }),
+        line(x1, y1, x1, y1 - s, { width: 2, rough: true, opacity: 0.82 })
+      );
+    }
+
+    function label(g, x, y, w, value = pick(wordsEn), fill = false) {
+      if (fill) {
+        g.appendChild(rect(x, y, w, 28, { fill: "currentColor", stroke: false, opacity: 0.96 }));
+        g.appendChild(textNode(x + w / 2, y + 20, spaced(value), { size: 15, anchor: "middle", weight: 800, transform: "", opacity: 1 }));
+        g.lastChild.setAttribute("fill", "var(--bg)");
+      } else {
+        g.appendChild(rect(x, y, w, 28, { width: 2, rough: true }));
+        g.appendChild(textNode(x + w / 2, y + 20, spaced(value), { size: 15, anchor: "middle", weight: 800 }));
+      }
+    }
+
+    function microBadge(g, x, y, value) {
+      const w = Math.max(48, value.length * 8 + 18);
+      g.appendChild(rect(x, y, w, 21, { fill: chance(0.45) ? "currentColor" : "none", width: 1.5, rough: true }));
+      const t = textNode(x + w / 2, y + 15, value, { size: 11, anchor: "middle", weight: 900 });
+      if (g.lastChild.getAttribute("fill") === "currentColor") t.setAttribute("fill", "var(--bg)");
+      g.appendChild(t);
+    }
+
+    function ticks(g, x, y, w, count = 54) {
+      g.appendChild(line(x, y, x + w, y, { width: 2, rough: true }));
+      for (let i = 0; i <= count; i++) {
+        const tx = x + w * (i / count);
+        const tall = i % 10 === 0 ? 22 : i % 5 === 0 ? 16 : 9;
+        g.appendChild(line(tx, y, tx, y - tall, { width: i % 10 === 0 ? 2 : 1.2, rough: true, opacity: 0.88 }));
+      }
+    }
+
+    function barcode(g, x, y, w, h) {
+      let cursor = x;
+      while (cursor < x + w) {
+        const bw = ri(2, 8);
+        if (chance(0.66)) {
+          g.appendChild(rect(cursor, y + r(0, 5), bw, h - r(0, 8), { fill: "currentColor", stroke: false, opacity: r(0.74, 0.98) }));
+        }
+        cursor += bw + ri(1, 5);
+      }
+    }
+
+    function qr(g, x, y, size, cells = 15) {
+      const step = size / cells;
+      g.appendChild(rect(x, y, size, size, { width: 0, fill: "transparent", stroke: false }));
+      for (let row = 0; row < cells; row++) {
+        for (let col = 0; col < cells; col++) {
+          const finder =
+            (row < 5 && col < 5) ||
+            (row < 5 && col >= cells - 5) ||
+            (row >= cells - 5 && col < 5);
+          const ring = finder && (row === 0 || col === 0 || row === 4 || col === 4 || row === 1 && col === 1 || row === 2 && col === 2 || row === 3 && col === 3);
+          if (ring || chance(0.42)) {
+            g.appendChild(rect(x + col * step, y + row * step, step * 0.9, step * 0.9, { fill: "currentColor", stroke: false }));
+          }
+        }
+      }
+    }
+
+    function miniTable(g, x, y, w) {
+      const rows = ri(3, 5);
+      const rowH = 24;
+      const h = rows * rowH;
+      rect(x, y, w, h, { width: 1.5, rough: true });
+      g.appendChild(rect(x, y, w, h, { width: 1.5, rough: true }));
+      g.appendChild(line(x + w * 0.48, y, x + w * 0.48, y + h, { width: 1.3, rough: true }));
+      for (let i = 1; i < rows; i++) g.appendChild(line(x, y + i * rowH, x + w, y + i * rowH, { width: 1.2, rough: true }));
+      const labels = ["LOT", "SPEC", "FREQ", "LOAD", "REV", "TEMP", "POWER", "LAT", "CFG"];
+      for (let i = 0; i < rows; i++) {
+        g.appendChild(textNode(x + 9, y + 17 + i * rowH, `${pick(labels)} ${ri(10, 99)}`, { size: 11, weight: 800 }));
+        g.appendChild(textNode(x + w * 0.48 + 9, y + 17 + i * rowH, `${pick(labels)} ${ri(1, 99)}${chance(0.5) ? "%" : ""}`, { size: 11, weight: 800 }));
+      }
+    }
+
+    function wave(g, x, y, w, h) {
+      const pts = [];
+      const steps = 14;
+      for (let i = 0; i <= steps; i++) {
+        pts.push([x + w * (i / steps), y + h / 2 + Math.sin(i * r(0.9, 1.4)) * h * r(0.18, 0.42) + r(-8, 8)]);
+      }
+      g.appendChild(rect(x, y, w, h, { width: 1.5, rough: true, opacity: 0.75 }));
+      for (let i = 1; i < 4; i++) g.appendChild(line(x, y + h * (i / 4), x + w, y + h * (i / 4), { width: 1, dash: "2 9", opacity: 0.45 }));
+      g.appendChild(polyline(pts, { width: 2.2, rough: true }));
+    }
+
+    function sun(g, x, y, radius = 22) {
+      g.appendChild(make("circle", { cx: x, cy: y, r: radius * 0.42, fill: "none", stroke: "currentColor", "stroke-width": 2 }));
+      for (let i = 0; i < 12; i++) {
+        const a = (Math.PI * 2 * i) / 12;
+        g.appendChild(line(x + Math.cos(a) * radius * 0.68, y + Math.sin(a) * radius * 0.68, x + Math.cos(a) * radius, y + Math.sin(a) * radius, { width: 2, rough: true }));
+      }
+    }
+
+    function panel(x, y, w, h, mode = "mixed") {
+      const g = make("g", { transform: `translate(${r(-3, 3)} ${r(-3, 3)})`, opacity: r(0.78, 1) });
+      const title = pick(wordsEn);
+      const ko = pick(wordsKo);
+      const org = `${pick(orgs)} ${pick(suffixes)}`;
+      const top = y + 22;
+      const big = chance(0.55) ? code() : ko;
+
+      if (chance(0.42) || mode === "boxed") g.appendChild(rect(x, y, w, h, { width: r(1.4, 2.8), rough: true, opacity: 0.9 }));
+      if (chance(0.34)) frame(g, x, y, w, h, 0);
+
+      g.appendChild(textNode(x + 10, top, `${pick(icons)} @${org}`, { size: Math.max(10, Math.min(15, w / 24)), weight: 800, opacity: 0.9 }));
+      if (chance(0.56)) microBadge(g, x + w - 70, y + 8, chance(0.5) ? `V${ri(1, 7)}.${ri(0, 9)}` : `REV ${String.fromCharCode(65 + ri(0, 25))}`);
+
+      g.appendChild(textNode(x + 10, y + 58, spaced(chance(0.5) ? "STATUS" : title), { size: Math.max(10, Math.min(14, w / 22)), tracking: 5, opacity: 0.85 }));
+      const mainY = y + (h > 190 ? 112 : 94);
+      const isKo = !/^0|^[A-Z]/.test(big);
+      g.appendChild(textNode(x + 10, mainY, big, {
+        ko: isKo,
+        size: Math.min(h * 0.28, isKo ? w * 0.16 : w * 0.19, 78),
+        weight: 950,
+        opacity: 0.98
+      }));
+
+      const subY = mainY + Math.min(42, h * 0.16);
+      if (chance(0.68)) g.appendChild(textNode(x + 10, subY, isKo ? pick(wordsEn) : ko, { ko: isKo === false, size: Math.min(21, w / 10), weight: 800, opacity: 0.92 }));
+
+      const detailY = y + h - 48;
+      if (mode === "barcode" || chance(0.33)) {
+        barcode(g, x + 10, y + h - 78, w - 20, 36);
+        g.appendChild(textNode(x + 10, y + h - 26, `SN ${ri(1000, 9999)}-${ri(1000, 9999)}-${String.fromCharCode(65 + ri(0, 25))}${String.fromCharCode(65 + ri(0, 25))}`, { size: 11, weight: 800 }));
+      } else if (mode === "qr" || chance(0.22)) {
+        const q = Math.min(96, h - 120, w * 0.33);
+        qr(g, x + 10, y + h - q - 18, q);
+        g.appendChild(textNode(x + q + 24, y + h - q + 10, "ID", { size: 15, weight: 900 }));
+        g.appendChild(textNode(x + q + 24, y + h - q + 34, `CODE ${code()}`, { size: 13, weight: 800 }));
+        g.appendChild(textNode(x + q + 24, y + h - q + 58, "INPUT VERIFIED / OUTPUT OK", { size: 13, weight: 800 }));
+      } else if (mode === "wave" || chance(0.18)) {
+        wave(g, x + 10, y + h - 92, w - 20, 62);
+      } else if (mode === "table" || chance(0.26)) {
+        miniTable(g, x + 10, Math.max(y + 118, y + h - 138), w - 20);
+      } else {
+        ticks(g, x + 10, detailY, w - 20, ri(24, 64));
+        g.appendChild(textNode(x + 10, y + h - 18, `MOD ${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 12, weight: 800 }));
+      }
+
+      if (chance(0.32)) g.appendChild(line(x + 10, y + h * r(0.5, 0.76), x + w - 10, y + h * r(0.5, 0.76), { width: 1.4, rough: true, dash: "7 7", opacity: 0.82 }));
+      return g;
+    }
+
+    function singleLayout(w, h) {
+      const g = make("g");
+      frame(g, w * 0.16, h * 0.28, w * 0.68, h * 0.44);
+      const px = w * r(0.22, 0.28);
+      const py = h * r(0.38, 0.43);
+      const pw = w * r(0.48, 0.58);
+      const ph = h * r(0.18, 0.26);
+      if (chance(0.45)) label(g, px, py, pw, pick(wordsEn), true);
+      g.appendChild(line(px, py + 60, px + pw, py + 60, { width: 2, rough: true, dash: chance(0.5) ? "9 7" : "" }));
+      g.appendChild(textNode(px + pw / 2, py + 112, `< ${ri(1000, 9999)} ${ri(1000, 9999)} ${ri(10, 99)} >`, { size: Math.min(42, pw / 18), weight: 900, anchor: "middle" }));
+      g.appendChild(line(px, py + 128, px + pw, py + 128, { width: 2, rough: true }));
+      g.appendChild(textNode(px, py + 168, `CODE ${code()}${ri(10, 99)}`, { size: 18, weight: 800 }));
+      g.appendChild(textNode(px, py + 210, `MOD P${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 20, weight: 800 }));
+      if (chance(0.35)) barcode(g, px, py + 232, pw, 48);
+      return g;
+    }
+
+    function gridLayout(w, h, dense = false) {
+      const g = make("g");
+      const margin = dense ? 76 : 110;
+      const cols = dense ? ri(4, 6) : ri(3, 4);
+      const rows = dense ? ri(4, 6) : ri(3, 4);
+      const gapX = dense ? 30 : 58;
+      const gapY = dense ? 28 : 58;
+      const cw = (w - margin * 2 - gapX * (cols - 1)) / cols;
+      const ch = (h - margin * 2 - gapY * (rows - 1)) / rows;
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          if (!dense && chance(0.13)) continue;
+          const x = margin + col * (cw + gapX) + r(-8, 8);
+          const y = margin + row * (ch + gapY) + r(-8, 8);
+          const mode = pick(["mixed", "barcode", "table", "wave", "qr", "boxed"]);
+          g.appendChild(panel(x, y, cw * r(0.84, 1.08), ch * r(0.76, 1.1), mode));
+        }
+      }
+      return g;
+    }
+
+    function stripLayout(w, h) {
+      const g = make("g");
+      const count = ri(7, 12);
+      let y = h * 0.14;
+      for (let i = 0; i < count; i++) {
+        const x = w * r(0.08, 0.48);
+        const pw = w * r(0.3, 0.72);
+        const ph = r(42, 92);
+        if (chance(0.38)) label(g, x, y, pw, pick(wordsEn), chance(0.36));
+        else {
+          g.appendChild(textNode(x, y + 26, `${pick(icons)} ${pick(wordsKo)} ${spaced(pick(wordsEn))}`, { ko: chance(0.35), size: r(20, 42), weight: 950 }));
+          g.appendChild(line(x, y + 42, x + pw, y + 42, { width: 2, rough: true, dash: chance(0.5) ? "7 7" : "" }));
+        }
+        if (chance(0.38)) barcode(g, x, y + ph * 0.75, pw, r(18, 34));
+        y += ph + r(18, 46);
+      }
+      frame(g, w * 0.08, h * 0.08, w * 0.84, h * 0.84);
+      return g;
+    }
+
+    function specimenLayout(w, h) {
+      const g = make("g");
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+      const word = chance(0.55) ? pick(wordsKo) : pick(wordsEn);
+      g.appendChild(textNode(cx, cy - 74, spaced("MICRO GRAPHIC"), { size: 16, tracking: 8, anchor: "middle", opacity: 0.78 }));
+      g.appendChild(textNode(cx, cy + 28, word, { ko: /[가-힣]/.test(word), size: Math.min(w * 0.13, 150), weight: 950, anchor: "middle" }));
+      g.appendChild(line(cx - w * 0.24, cy + 70, cx + w * 0.24, cy + 70, { width: 2.2, rough: true }));
+      barcode(g, cx - w * 0.2, cy + 102, w * 0.4, 58);
+      g.appendChild(textNode(cx, cy + 188, `CODE ${code()} / PORT ${ri(10, 999)} / REV ${String.fromCharCode(65 + ri(0, 25))}`, { size: 18, weight: 800, anchor: "middle" }));
+      frame(g, w * 0.16, h * 0.22, w * 0.68, h * 0.56);
+      return g;
+    }
+
+    function textureLayer(w, h) {
+      const g = make("g", { opacity: 0.12 });
+      const count = Math.floor((w * h) / 32000);
+      for (let i = 0; i < count; i++) {
+        if (chance(0.5)) {
+          g.appendChild(line(r(0, w), r(0, h), r(0, w), r(0, h), { width: r(0.4, 1.2), opacity: r(0.2, 0.75) }));
+        } else {
+          g.appendChild(make("circle", { cx: r(0, w), cy: r(0, h), r: r(0.4, 1.4), fill: "currentColor" }));
+        }
+      }
+      if (chance(0.34)) {
+        const dg = make("g", { opacity: 0.35 });
+        for (let y = 0; y < h; y += 18) dg.appendChild(line(0, y, w, y, { width: 0.7, opacity: 0.12 }));
+        g.appendChild(dg);
+      }
+      return g;
+    }
+
+    function render(nextSeed = crypto.getRandomValues(new Uint32Array(1))[0] >>> 0) {
+      seed = nextSeed;
+      random = mulberry32(seed);
+      const w = Math.max(900, window.innerWidth);
+      const h = Math.max(620, window.innerHeight);
+      art.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      art.setAttribute("style", "color: var(--ink)");
+      art.replaceChildren(defs());
+      document.body.classList.toggle("is-dark", dark);
+      seedLabel.textContent = `SEED ${seed.toString(16).toUpperCase().padStart(8, "0")}`;
+
+      const bg = make("rect", { x: 0, y: 0, width: w, height: h, fill: "var(--bg)" });
+      art.appendChild(bg);
+      art.appendChild(textureLayer(w, h));
+
+      const layout = pick(["single", "grid", "dense", "strip", "specimen"]);
+      if (layout === "single") art.appendChild(singleLayout(w, h));
+      if (layout === "grid") art.appendChild(gridLayout(w, h, false));
+      if (layout === "dense") art.appendChild(gridLayout(w, h, true));
+      if (layout === "strip") art.appendChild(stripLayout(w, h));
+      if (layout === "specimen") art.appendChild(specimenLayout(w, h));
+
+      if (chance(0.42)) {
+        const g = make("g", { opacity: r(0.55, 0.92) });
+        if (chance(0.5)) sun(g, w * r(0.1, 0.9), h * r(0.12, 0.9), r(18, 42));
+        else {
+          const x = w * r(0.08, 0.88);
+          const y = h * r(0.1, 0.88);
+          g.appendChild(rect(x, y, r(30, 72), r(30, 72), { width: 2, rough: true, transform: "" }));
+        }
+        art.appendChild(g);
+      }
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function svgText() {
+      const clone = art.cloneNode(true);
+      clone.setAttribute("xmlns", SVG_NS);
+      clone.setAttribute("width", String(window.innerWidth));
+      clone.setAttribute("height", String(window.innerHeight));
+      clone.style.background = getComputedStyle(document.body).getPropertyValue("--bg").trim();
+      const style = document.createElementNS(SVG_NS, "style");
+      style.textContent = `
+        svg { color: ${getComputedStyle(document.body).getPropertyValue("--ink").trim()}; }
+        text { dominant-baseline: auto; }
+      `;
+      clone.insertBefore(style, clone.firstChild);
+      return `<?xml version="1.0" encoding="UTF-8"?>\n${new XMLSerializer().serializeToString(clone)}`;
+    }
+
+    async function exportPng() {
+      const source = svgText();
+      const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.decoding = "async";
+      img.src = url;
+      await img.decode();
+      const scale = 2;
+      const canvas = document.createElement("canvas");
+      canvas.width = window.innerWidth * scale;
+      canvas.height = window.innerHeight * scale;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = getComputedStyle(document.body).getPropertyValue("--bg").trim();
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(pngBlob => downloadBlob(pngBlob, `micro-graphic-${seed.toString(16)}.png`), "image/png");
+    }
+
+    function exportSvg() {
+      downloadBlob(new Blob([svgText()], { type: "image/svg+xml;charset=utf-8" }), `micro-graphic-${seed.toString(16)}.svg`);
+    }
+
+    document.querySelector("#lucky").addEventListener("click", () => render());
+    document.querySelector("#png").addEventListener("click", exportPng);
+    document.querySelector("#svg").addEventListener("click", exportSvg);
+    document.querySelector("#tone").addEventListener("click", () => {
+      dark = !dark;
+      render(seed);
+    });
+    art.addEventListener("click", () => render());
+    window.addEventListener("resize", () => render(seed));
+    render(seed);
+  </script>
+</body>
+</html>
