@@ -137,29 +137,29 @@
       tone: document.querySelector("#tone")
     };
 
-    const wordsKo = [
-      "접속", "검증", "회로", "출력", "신호", "제어", "기록", "연산",
-      "동기", "방식", "전원", "해석", "단말", "기준", "응답", "흐름"
-    ];
+    // Extension point: add vocabulary, symbols, and fake data labels here.
+    const visualTokens = {
+      koreanKeywords: [
+        "접속", "검증", "회로", "출력", "신호", "제어", "기록", "연산",
+        "동기", "방식", "전원", "해석", "단말", "기준", "응답", "흐름"
+      ],
+      englishKeywords: [
+        "ACCESS", "OUTPUT", "VERIFIED", "STANDBY", "RUNNING", "SIGNAL",
+        "VECTOR", "STATUS", "MODULE", "CIRCUIT", "LOCKED", "SYSTEM",
+        "FIELD", "REPORT", "QUEUE", "INPUT"
+      ],
+      organizationPrefixes: [
+        "RADIAN", "NOVA", "ATLAS", "ORBITAL", "CARGO", "COBALT",
+        "SUMMIT", "VECTOR", "MERIDIAN", "HELIX", "AXIOM", "DELTA"
+      ],
+      organizationSuffixes: ["LABS", "WORKS", "STUDIO", "DIVISION", "SYSTEMS", "ENGINEERING", "INDUSTRIES", "OFFICE"],
+      symbolMarks: ["⊙", "◇", "✣", "✕", "＋", "⌾", "◎", "◌", "◈", "✦", "⚡"],
+      tableFieldLabels: ["LOT", "SPEC", "FREQ", "LOAD", "REV", "TEMP", "POWER", "LAT", "CFG"]
+    };
 
-    const wordsEn = [
-      "ACCESS", "OUTPUT", "VERIFIED", "STANDBY", "RUNNING", "SIGNAL",
-      "VECTOR", "STATUS", "MODULE", "CIRCUIT", "LOCKED", "SYSTEM",
-      "FIELD", "REPORT", "QUEUE", "INPUT"
-    ];
-
-    const orgs = [
-      "RADIAN", "NOVA", "ATLAS", "ORBITAL", "CARGO", "COBALT",
-      "SUMMIT", "VECTOR", "MERIDIAN", "HELIX", "AXIOM", "DELTA"
-    ];
-
-    const suffixes = ["LABS", "WORKS", "STUDIO", "DIVISION", "SYSTEMS", "ENGINEERING", "INDUSTRIES", "OFFICE"];
-    const icons = ["⊙", "◇", "✣", "✕", "＋", "⌾", "◎", "◌", "◈", "✦", "⚡"];
-    const panelModes = ["mixed", "barcode", "table", "wave", "qr", "boxed"];
-    const tableLabels = ["LOT", "SPEC", "FREQ", "LOAD", "REV", "TEMP", "POWER", "LAT", "CFG"];
     const componentBorderModes = ["stroke", "no-stroke", "corner-stroke"];
     let seed = randomSeed();
-    let activeComponentLabel = "";
+    let activeComponentRatio = "";
     let activeBorderMode = "";
     let dark = false;
 
@@ -179,8 +179,8 @@
       return getComputedStyle(document.body).getPropertyValue(name).trim();
     }
 
-    // Fit a single Component into the Stage while preserving its own ratio.
-    function fitBox(containerW, containerH, ratio, scale = 0.72) {
+    // Fit a single Component into the Canvas while preserving its own ratio.
+    function fitComponentBox(containerW, containerH, ratio, scale = 0.72) {
       const maxW = containerW * scale;
       const maxH = containerH * scale;
       let boxW = maxW;
@@ -226,6 +226,7 @@
       return random() < value;
     }
 
+    // SVG helpers.
     function make(tag, attrs = {}, children = []) {
       const el = document.createElementNS(SVG_NS, tag);
       Object.entries(attrs).forEach(([key, value]) => {
@@ -304,22 +305,24 @@
       return d;
     }
 
-    function code() {
+    // Visual token helpers.
+    function codeToken() {
       return chance(0.46) ? `0X${ri(0, 255).toString(16).toUpperCase().padStart(2, "0")}` : `${ri(2, 9)}${ri(0, 9)}${ri(0, 9)}`;
     }
 
-    function spaced(value) {
+    function trackedText(value) {
       return value.split("").join("   ");
     }
 
-    function label(g, x, y, w, value = pick(wordsEn), fill = false) {
+    // Graphic primitives.
+    function label(g, x, y, w, value = pick(visualTokens.englishKeywords), fill = false) {
       if (fill) {
         g.appendChild(rect(x, y, w, 28, { fill: "currentColor", stroke: false, opacity: 0.96 }));
-        g.appendChild(textNode(x + w / 2, y + 20, spaced(value), { size: 15, anchor: "middle", weight: 800, transform: "", opacity: 1 }));
+        g.appendChild(textNode(x + w / 2, y + 20, trackedText(value), { size: 15, anchor: "middle", weight: 800, transform: "", opacity: 1 }));
         g.lastChild.setAttribute("fill", "var(--bg)");
       } else {
         g.appendChild(rect(x, y, w, 28, { width: 2, rough: true }));
-        g.appendChild(textNode(x + w / 2, y + 20, spaced(value), { size: 15, anchor: "middle", weight: 800 }));
+        g.appendChild(textNode(x + w / 2, y + 20, trackedText(value), { size: 15, anchor: "middle", weight: 800 }));
       }
     }
 
@@ -351,7 +354,7 @@
       }
     }
 
-    function qr(g, x, y, size, cells = 15) {
+    function pseudoQr(g, x, y, size, cells = 15) {
       const step = size / cells;
       g.appendChild(rect(x, y, size, size, { width: 0, fill: "transparent", stroke: false }));
       for (let row = 0; row < cells; row++) {
@@ -376,8 +379,8 @@
       g.appendChild(line(x + w * 0.48, y, x + w * 0.48, y + h, { width: 1.3, rough: true }));
       for (let i = 1; i < rows; i++) g.appendChild(line(x, y + i * rowH, x + w, y + i * rowH, { width: 1.2, rough: true }));
       for (let i = 0; i < rows; i++) {
-        g.appendChild(textNode(x + 9, y + 17 + i * rowH, `${pick(tableLabels)} ${ri(10, 99)}`, { size: 11, weight: 800 }));
-        g.appendChild(textNode(x + w * 0.48 + 9, y + 17 + i * rowH, `${pick(tableLabels)} ${ri(1, 99)}${chance(0.5) ? "%" : ""}`, { size: 11, weight: 800 }));
+        g.appendChild(textNode(x + 9, y + 17 + i * rowH, `${pick(visualTokens.tableFieldLabels)} ${ri(10, 99)}`, { size: 11, weight: 800 }));
+        g.appendChild(textNode(x + w * 0.48 + 9, y + 17 + i * rowH, `${pick(visualTokens.tableFieldLabels)} ${ri(1, 99)}${chance(0.5) ? "%" : ""}`, { size: 11, weight: 800 }));
       }
     }
 
@@ -392,21 +395,75 @@
       g.appendChild(polyline(pts, { width: 2.2, rough: true }));
     }
 
-    function panel(x, y, w, h, mode = "mixed", options = {}) {
+    // Content detail renderers.
+    function renderBarcodeDetail(g, x, y, w, h) {
+      barcode(g, x + 10, y + h - 78, w - 20, 36);
+      g.appendChild(textNode(x + 10, y + h - 26, `SN ${ri(1000, 9999)}-${ri(1000, 9999)}-${String.fromCharCode(65 + ri(0, 25))}${String.fromCharCode(65 + ri(0, 25))}`, { size: 11, weight: 800 }));
+    }
+
+    function renderPseudoQrDetail(g, x, y, w, h) {
+      const q = Math.min(96, h - 120, w * 0.33);
+      pseudoQr(g, x + 10, y + h - q - 18, q);
+      g.appendChild(textNode(x + q + 24, y + h - q + 10, "ID", { size: 15, weight: 900 }));
+      g.appendChild(textNode(x + q + 24, y + h - q + 34, `CODE ${codeToken()}`, { size: 13, weight: 800 }));
+      g.appendChild(textNode(x + q + 24, y + h - q + 58, "INPUT VERIFIED / OUTPUT OK", { size: 13, weight: 800 }));
+    }
+
+    function renderWaveDetail(g, x, y, w, h) {
+      wave(g, x + 10, y + h - 92, w - 20, 62);
+    }
+
+    function renderTableDetail(g, x, y, w, h) {
+      miniTable(g, x + 10, Math.max(y + 118, y + h - 138), w - 20);
+    }
+
+    function renderTicksDetail(g, x, y, w, h) {
+      ticks(g, x + 10, y + h - 48, w - 20, ri(24, 64));
+      g.appendChild(textNode(x + 10, y + h - 18, `MOD ${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 12, weight: 800 }));
+    }
+
+    // Extension point: add a detail renderer here, then use its id from a layout.
+    const contentDetailModes = [
+      { id: "barcode", weight: 34, render: renderBarcodeDetail },
+      { id: "pseudo-qr", weight: 16, render: renderPseudoQrDetail },
+      { id: "table", weight: 18, render: renderTableDetail },
+      { id: "wave", weight: 14, render: renderWaveDetail },
+      { id: "ticks", weight: 18, render: renderTicksDetail }
+    ];
+
+    function pickContentDetailMode(mode = "mixed") {
+      if (mode !== "mixed") {
+        return contentDetailModes.find(detail => detail.id === mode) || contentDetailModes[contentDetailModes.length - 1];
+      }
+
+      const totalWeight = contentDetailModes.reduce((sum, detail) => sum + detail.weight, 0);
+      let cursor = r(0, totalWeight);
+      for (const detail of contentDetailModes) {
+        cursor -= detail.weight;
+        if (cursor <= 0) return detail;
+      }
+      return contentDetailModes[contentDetailModes.length - 1];
+    }
+
+    function renderContentDetail(g, x, y, w, h, mode = "mixed") {
+      pickContentDetailMode(mode).render(g, x, y, w, h);
+    }
+
+    function contentPanel(x, y, w, h, mode = "mixed", options = {}) {
       const g = make("g", { transform: `translate(${r(-3, 3)} ${r(-3, 3)})`, opacity: r(0.78, 1) });
       const drawShell = options.shell !== false;
-      const title = pick(wordsEn);
-      const ko = pick(wordsKo);
-      const org = `${pick(orgs)} ${pick(suffixes)}`;
+      const title = pick(visualTokens.englishKeywords);
+      const ko = pick(visualTokens.koreanKeywords);
+      const org = `${pick(visualTokens.organizationPrefixes)} ${pick(visualTokens.organizationSuffixes)}`;
       const top = y + 22;
-      const big = chance(0.55) ? code() : ko;
+      const big = chance(0.55) ? codeToken() : ko;
 
-      if (drawShell && (chance(0.42) || mode === "boxed")) g.appendChild(rect(x, y, w, h, { width: r(1.4, 2.8), rough: true, opacity: 0.9 }));
+      if (drawShell && chance(0.42)) g.appendChild(rect(x, y, w, h, { width: r(1.4, 2.8), rough: true, opacity: 0.9 }));
 
-      g.appendChild(textNode(x + 10, top, `${pick(icons)} @${org}`, { size: Math.max(10, Math.min(15, w / 24)), weight: 800, opacity: 0.9 }));
+      g.appendChild(textNode(x + 10, top, `${pick(visualTokens.symbolMarks)} @${org}`, { size: Math.max(10, Math.min(15, w / 24)), weight: 800, opacity: 0.9 }));
       if (chance(0.56)) microBadge(g, x + w - 70, y + 8, chance(0.5) ? `V${ri(1, 7)}.${ri(0, 9)}` : `REV ${String.fromCharCode(65 + ri(0, 25))}`);
 
-      g.appendChild(textNode(x + 10, y + 58, spaced(chance(0.5) ? "STATUS" : title), { size: Math.max(10, Math.min(14, w / 22)), tracking: 5, opacity: 0.85 }));
+      g.appendChild(textNode(x + 10, y + 58, trackedText(chance(0.5) ? "STATUS" : title), { size: Math.max(10, Math.min(14, w / 22)), tracking: 5, opacity: 0.85 }));
       const mainY = y + (h > 190 ? 112 : 94);
       const isKo = !/^0|^[A-Z]/.test(big);
       g.appendChild(textNode(x + 10, mainY, big, {
@@ -417,68 +474,53 @@
       }));
 
       const subY = mainY + Math.min(42, h * 0.16);
-      if (chance(0.68)) g.appendChild(textNode(x + 10, subY, isKo ? pick(wordsEn) : ko, { ko: isKo === false, size: Math.min(21, w / 10), weight: 800, opacity: 0.92 }));
+      if (chance(0.68)) g.appendChild(textNode(x + 10, subY, isKo ? pick(visualTokens.englishKeywords) : ko, { ko: isKo === false, size: Math.min(21, w / 10), weight: 800, opacity: 0.92 }));
 
-      const detailY = y + h - 48;
-      if (mode === "barcode" || chance(0.33)) {
-        barcode(g, x + 10, y + h - 78, w - 20, 36);
-        g.appendChild(textNode(x + 10, y + h - 26, `SN ${ri(1000, 9999)}-${ri(1000, 9999)}-${String.fromCharCode(65 + ri(0, 25))}${String.fromCharCode(65 + ri(0, 25))}`, { size: 11, weight: 800 }));
-      } else if (mode === "qr" || chance(0.22)) {
-        const q = Math.min(96, h - 120, w * 0.33);
-        qr(g, x + 10, y + h - q - 18, q);
-        g.appendChild(textNode(x + q + 24, y + h - q + 10, "ID", { size: 15, weight: 900 }));
-        g.appendChild(textNode(x + q + 24, y + h - q + 34, `CODE ${code()}`, { size: 13, weight: 800 }));
-        g.appendChild(textNode(x + q + 24, y + h - q + 58, "INPUT VERIFIED / OUTPUT OK", { size: 13, weight: 800 }));
-      } else if (mode === "wave" || chance(0.18)) {
-        wave(g, x + 10, y + h - 92, w - 20, 62);
-      } else if (mode === "table" || chance(0.26)) {
-        miniTable(g, x + 10, Math.max(y + 118, y + h - 138), w - 20);
-      } else {
-        ticks(g, x + 10, detailY, w - 20, ri(24, 64));
-        g.appendChild(textNode(x + 10, y + h - 18, `MOD ${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 12, weight: 800 }));
-      }
+      renderContentDetail(g, x, y, w, h, mode);
 
       if (chance(0.32)) g.appendChild(line(x + 10, y + h * r(0.5, 0.76), x + w - 10, y + h * r(0.5, 0.76), { width: 1.4, rough: true, dash: "7 7", opacity: 0.82 }));
       return g;
     }
 
-    function singleLayout(w, h) {
+    // Layout renderers.
+    function renderStripLayout(w, h) {
       const g = make("g");
       const px = w * r(0.22, 0.28);
       const py = h * r(0.38, 0.43);
       const pw = w * r(0.48, 0.58);
       const ph = h * r(0.18, 0.26);
-      if (chance(0.45)) label(g, px, py, pw, pick(wordsEn), true);
+      if (chance(0.45)) label(g, px, py, pw, pick(visualTokens.englishKeywords), true);
       g.appendChild(line(px, py + 60, px + pw, py + 60, { width: 2, rough: true, dash: chance(0.5) ? "9 7" : "" }));
       g.appendChild(textNode(px + pw / 2, py + 112, `< ${ri(1000, 9999)} ${ri(1000, 9999)} ${ri(10, 99)} >`, { size: Math.min(42, pw / 18), weight: 900, anchor: "middle" }));
       g.appendChild(line(px, py + 128, px + pw, py + 128, { width: 2, rough: true }));
-      g.appendChild(textNode(px, py + 168, `CODE ${code()}${ri(10, 99)}`, { size: 18, weight: 800 }));
+      g.appendChild(textNode(px, py + 168, `CODE ${codeToken()}${ri(10, 99)}`, { size: 18, weight: 800 }));
       g.appendChild(textNode(px, py + 210, `MOD P${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 20, weight: 800 }));
       if (chance(0.35)) barcode(g, px, py + 232, pw, 48);
       return g;
     }
 
-    function specimenLayout(w, h) {
+    function renderSpecimenLayout(w, h) {
       const g = make("g");
       const cx = w * 0.5;
       const cy = h * 0.5;
-      const word = chance(0.55) ? pick(wordsKo) : pick(wordsEn);
-      g.appendChild(textNode(cx, cy - 74, spaced("MICRO GRAPHIC"), { size: 16, tracking: 8, anchor: "middle", opacity: 0.78 }));
+      const word = chance(0.55) ? pick(visualTokens.koreanKeywords) : pick(visualTokens.englishKeywords);
+      g.appendChild(textNode(cx, cy - 74, trackedText("MICRO GRAPHIC"), { size: 16, tracking: 8, anchor: "middle", opacity: 0.78 }));
       g.appendChild(textNode(cx, cy + 28, word, { ko: /[가-힣]/.test(word), size: Math.min(w * 0.13, 150), weight: 950, anchor: "middle" }));
       g.appendChild(line(cx - w * 0.24, cy + 70, cx + w * 0.24, cy + 70, { width: 2.2, rough: true }));
       barcode(g, cx - w * 0.2, cy + 102, w * 0.4, 58);
-      g.appendChild(textNode(cx, cy + 188, `CODE ${code()} / PORT ${ri(10, 999)} / REV ${String.fromCharCode(65 + ri(0, 25))}`, { size: 18, weight: 800, anchor: "middle" }));
+      g.appendChild(textNode(cx, cy + 188, `CODE ${codeToken()} / PORT ${ri(10, 999)} / REV ${String.fromCharCode(65 + ri(0, 25))}`, { size: 18, weight: 800, anchor: "middle" }));
       return g;
     }
 
-    function focusPanelLayout(w, h) {
+    function renderPanelLayout(w, h) {
       const g = make("g");
       const pad = Math.min(w, h) * 0.08;
-      g.appendChild(panel(pad, pad, w - pad * 2, h - pad * 2, pick(panelModes), { shell: false }));
+      g.appendChild(contentPanel(pad, pad, w - pad * 2, h - pad * 2, "mixed", { shell: false }));
       return g;
     }
 
-    function textureLayer(w, h) {
+    // Canvas-level texture.
+    function renderCanvasTexture(w, h) {
       const g = make("g", { opacity: 0.12 });
       const count = Math.floor((w * h) / 32000);
       for (let i = 0; i < count; i++) {
@@ -496,53 +538,53 @@
       return g;
     }
 
-    // A Component is the bordered unit; its ratio drives internal composition.
-    const componentDefinitions = [
+    // Extension point: add Component ratio templates here.
+    const componentTemplates = [
       {
         label: "component 1:1",
         ratio: { width: 1, height: 1 },
         scale: 0.72,
-        render: specimenLayout
+        render: renderSpecimenLayout
       },
       {
         label: "component 2:3",
         ratio: { width: 2, height: 3 },
         scale: 0.78,
-        render: focusPanelLayout
+        render: renderPanelLayout
       },
       {
         label: "component 2:5",
         ratio: { width: 2, height: 5 },
         scale: 0.82,
-        render: focusPanelLayout
+        render: renderPanelLayout
       },
       {
         label: "component 3:2",
         ratio: { width: 3, height: 2 },
         scale: 0.78,
-        render: singleLayout
+        render: renderStripLayout
       },
       {
         label: "component 5:2",
         ratio: { width: 5, height: 2 },
         scale: 0.82,
-        render: singleLayout
+        render: renderStripLayout
       },
       {
         label: "component 4:3",
         ratio: { width: 4, height: 3 },
         scale: 0.8,
-        render: singleLayout
+        render: renderStripLayout
       },
       {
         label: "component 3:4",
         ratio: { width: 3, height: 4 },
         scale: 0.8,
-        render: focusPanelLayout
+        render: renderPanelLayout
       }
     ];
 
-    function componentBorder(w, h, mode) {
+    function renderComponentBorder(w, h, mode) {
       const g = make("g", { "data-border": mode });
       if (mode === "no-stroke") return g;
 
@@ -571,12 +613,12 @@
       return g;
     }
 
-    function componentLayer(boardW, boardH) {
-      const component = pick(componentDefinitions);
+    function renderComponent(boardW, boardH) {
+      const component = pick(componentTemplates);
       const borderMode = pick(componentBorderModes);
-      activeComponentLabel = component.label.replace("component ", "");
+      activeComponentRatio = component.label.replace("component ", "");
       activeBorderMode = borderMode;
-      const box = fitBox(boardW, boardH, component.ratio, component.scale);
+      const box = fitComponentBox(boardW, boardH, component.ratio, component.scale);
       const layer = make("svg", {
         x: box.x,
         y: box.y,
@@ -587,7 +629,7 @@
         "data-component": component.label
       });
       layer.appendChild(component.render(box.width, box.height));
-      layer.appendChild(componentBorder(box.width, box.height, borderMode));
+      layer.appendChild(renderComponentBorder(box.width, box.height, borderMode));
       return layer;
     }
 
@@ -603,9 +645,9 @@
 
       const bg = make("rect", { x: 0, y: 0, width: w, height: h, fill: "var(--bg)" });
       art.appendChild(bg);
-      art.appendChild(textureLayer(w, h));
-      art.appendChild(componentLayer(w, h));
-      seedLabel.textContent = `SEED ${seedHex()} / COMP ${activeComponentLabel} / BORDER ${activeBorderMode}`;
+      art.appendChild(renderCanvasTexture(w, h));
+      art.appendChild(renderComponent(w, h));
+      seedLabel.textContent = `SEED ${seedHex()} / COMP ${activeComponentRatio} / BORDER ${activeBorderMode}`;
     }
 
     function downloadBlob(blob, filename) {

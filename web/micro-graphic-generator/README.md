@@ -37,7 +37,8 @@
 - `Aspect ratio`: Component의 가로:세로 비율. 현재 `1:1`, `2:3`, `2:5`, `3:2`, `5:2`, `4:3`, `3:4`를 쓰며, 이 비율이 내부 디자인 요소들의 배치를 정한다.
 - `Stroke`: Component 외곽선 방식. 현재 `stroke`, `no-stroke`, `corner-stroke` 세 가지를 쓴다.
 - `Graphic primitive`: Component를 구성하는 작은 그래픽 재료. barcode, pseudo-QR, tick mark, mini table, wave graph, label, badge, symbol 등이 여기에 속한다.
-- `Layout renderer`: Component 안쪽 내용을 그리는 함수. 예: `singleLayout`, `focusPanelLayout`, `specimenLayout`.
+- `Content detail`: Content block 안쪽 하단에 들어가는 정보 묶음. barcode detail, pseudo-QR detail, table detail, wave detail, ticks detail이 여기에 속한다.
+- `Layout renderer`: Component 안쪽 내용을 그리는 함수. 예: `renderStripLayout`, `renderPanelLayout`, `renderSpecimenLayout`.
 - `Seed`: 랜덤 결과를 다시 추적하기 위한 값. 화면 왼쪽 아래에 표시한다.
 
 ## 현재 시각 규칙
@@ -87,11 +88,47 @@
 - `Roughness`: 선을 얼마나 흔들지, 어떤 요소에는 roughness를 쓰지 않을지.
 - `Iconography`: 기호, 아이콘, logo-like mark의 종류, 크기, 위치, 의미 없는 장식 허용 범위.
 - `Language mix`: 한글/영어/숫자/코드가 어떤 비율로 섞이는지, archetype별 주 언어.
-- `Data realism`: barcode, QR, serial, price, status, graph가 실제 데이터처럼 보여야 하는지, 단순 visual fake로 둘지.
+- `Data realism`: barcode, pseudo-QR, serial, price, status, graph가 실제 데이터처럼 보여야 하는지, 단순 visual fake로 둘지.
 - `Legibility`: 작게 출력해도 읽혀야 하는 정보와 texture처럼 읽히지 않아도 되는 정보의 구분.
 - `Export`: PNG scale, SVG 편집 가능성, 파일명 규칙, seed/aspect ratio/stroke/archetype 기록 방식.
 - `Interaction`: Lucky, Tone 외에 archetype lock, aspect ratio lock, stroke lock, seed input을 둘지.
 - `Curation`: 좋은 결과를 저장하는 기준, seed log 형식, reject할 결과의 조건.
+
+## Current Element System
+
+현재 쓰는 element는 아래 층위로 정리한다. 위쪽 층위는 아래쪽 층위를 직접 건너뛰지 않는다.
+
+- `Visual tokens`: 단어, 조직명, 기호, 가짜 data label이다. 코드에서는 `visualTokens`에 모은다. 새 단어나 기호는 여기만 수정한다.
+- `SVG helpers`: `make`, `textNode`, `line`, `rect`, `polyline`, `defs`처럼 SVG node를 만드는 낮은 수준의 도구다. 의미 있는 디자인 결정을 하지 않는다.
+- `Graphic primitives`: `label`, `microBadge`, `ticks`, `barcode`, `pseudoQr`, `miniTable`, `wave`처럼 하나의 작은 그래픽 형태를 그린다.
+- `Content details`: `renderBarcodeDetail`, `renderPseudoQrDetail`, `renderTableDetail`, `renderWaveDetail`, `renderTicksDetail`처럼 content block 하단에 들어갈 정보 묶음이다. 코드에서는 `contentDetailModes` registry로 관리한다.
+- `Content block`: `contentPanel`이다. header, badge, main value, sub value, detail의 내부 위계를 가진다. Component border는 그리지 않는다.
+- `Layout renderers`: `renderStripLayout`, `renderPanelLayout`, `renderSpecimenLayout`이다. Component 안에서 content block과 primitive를 배치한다.
+- `Component layer`: `componentTemplates`, `renderComponentBorder`, `renderComponent`다. Component의 ratio, scale, border, layout renderer 선택을 담당한다.
+- `Canvas layer`: `renderCanvasTexture`, `render`다. 화면 배경, 전체 texture, export 대상 화면을 담당한다.
+
+## Boundary Contracts
+
+- `visualTokens`는 data source다. 위치, 크기, 획, 레이아웃 결정을 하지 않는다.
+- `SVG helpers`는 shape만 만든다. 특정 archetype이나 Component ratio를 알면 안 된다.
+- `Graphic primitive`는 전달받은 `g`, `x`, `y`, `w`, `h` 안에서만 그린다. Canvas 배경, Component border, seed label을 만지지 않는다.
+- `Content detail renderer`는 content block의 detail 영역만 책임진다. header, main value, Component border를 만들지 않는다.
+- `contentPanel`은 하나의 정보 block이다. 내부 정보 위계는 만들 수 있지만 Component 전체의 aspect ratio나 Canvas placement를 결정하지 않는다.
+- `Layout renderer`는 Component 내부의 배치만 책임진다. Component border를 직접 그리지 않고, Canvas texture를 만들지 않는다.
+- `componentTemplates`는 ratio, scale, layout renderer 연결만 가진다. 실제 SVG node 생성은 renderer에 맡긴다.
+- `renderComponent`는 Canvas 안에 Component 하나를 배치하고 Component border를 붙인다. Content detail의 종류를 직접 알지 않는다.
+- `render`는 Canvas orchestration만 담당한다. background, texture, Component를 순서대로 붙이고 export에 쓰이는 viewBox를 정한다.
+
+## Extension Points
+
+새 요소를 추가할 때는 아래 위치에만 손대는 것을 기본 규칙으로 한다.
+
+- 새 한글/영어 단어, 조직명, 기호, table label: `visualTokens`에 추가한다.
+- 새 graphic primitive: primitive 함수를 만든 뒤 content detail이나 layout renderer에서 호출한다.
+- 새 content detail: `renderSomethingDetail` 함수를 만들고 `contentDetailModes`에 `{ id, weight, render }`로 등록한다.
+- 새 layout renderer: `renderSomethingLayout` 함수를 만들고 필요한 `componentTemplates` 항목에 연결한다.
+- 새 Component ratio: `componentTemplates`에 `{ label, ratio, scale, render }`를 추가한다.
+- 새 border mode: `componentBorderModes`에 id를 추가하고 `renderComponentBorder`에 그리는 방식을 추가한다.
 
 ## Rule Gap Inventory
 
@@ -101,35 +138,35 @@
 
 현재 화면 생성에 직접 영향을 주는 파트다.
 
-- `textureLayer`: Canvas 전체에 얇은 랜덤 선, 점, 가끔 수평 scan line을 뿌린다. Component와 관계없는 배경 texture다.
-- `componentBorder`: Component 외곽선이다. `stroke`, `no-stroke`, `corner-stroke` 세 가지가 있다.
-- `panel`: 조직명, icon, badge, status/title, 큰 code 또는 한글 단어, 보조 텍스트, barcode/QR/wave/table/ticks 중 하나를 조합하는 핵심 content block이다.
+- `renderCanvasTexture`: Canvas 전체에 얇은 랜덤 선, 점, 가끔 수평 scan line을 뿌린다. Component와 관계없는 배경 texture다.
+- `renderComponentBorder`: Component 외곽선이다. `stroke`, `no-stroke`, `corner-stroke` 세 가지가 있다.
+- `contentPanel`: 조직명, icon, badge, status/title, 큰 code 또는 한글 단어, 보조 텍스트, barcode/pseudo-QR/wave/table/ticks 중 하나를 조합하는 핵심 content block이다.
 - `label`: 테두리 또는 반전 fill을 가진 짧은 title strip이다.
 - `microBadge`: `V1.2`, `REV A`, `BUILD 859` 같은 작은 badge다.
 - `ticks`: 자 또는 measurement line처럼 보이는 tick mark다.
 - `barcode`: 실제 데이터가 아닌 visual fake barcode다.
-- `qr`: 실제 스캔용이 아닌 pseudo-QR graphic이다.
+- `pseudoQr`: 실제 스캔용이 아닌 pseudo-QR graphic이다.
 - `miniTable`: lot/spec/freq/load 같은 가짜 data table이다.
 - `wave`: 작은 signal graph 또는 stock graph처럼 보이는 line chart다.
-- `singleLayout`: 넓은 비율에서 중앙 strip, code, port, barcode를 배치하는 layout renderer다.
-- `specimenLayout`: 큰 한글/영어 단어, barcode, code line을 중앙에 배치하는 layout renderer다.
-- `focusPanelLayout`: Component 안에 하나의 `panel`을 크게 넣는 layout renderer다.
+- `renderStripLayout`: 넓은 비율에서 중앙 strip, code, port, barcode를 배치하는 layout renderer다.
+- `renderSpecimenLayout`: 큰 한글/영어 단어, barcode, code line을 중앙에 배치하는 layout renderer다.
+- `renderPanelLayout`: Component 안에 하나의 `contentPanel`을 크게 넣는 layout renderer다.
 
 ### Unruled Decisions Per Part
 
-- `textureLayer`: Canvas 전체에 둘지, Component 내부에만 둘지, export에서 유지할지.
-- `componentBorder`: border mode별 권장 aspect ratio, 선 두께, corner length, roughness 기준.
-- `panel`: 하나의 panel이 layout renderer인지, primitive인지, archetype별 template인지.
+- `renderCanvasTexture`: Canvas 전체에 둘지, Component 내부에만 둘지, export에서 유지할지.
+- `renderComponentBorder`: border mode별 권장 aspect ratio, 선 두께, corner length, roughness 기준.
+- `contentPanel`: 하나의 content block인지, archetype별 template으로 쪼갤지.
 - `label`: title 용도인지, status badge 용도인지, 단순 divider인지.
 - `microBadge`: revision/build/version만 허용할지, status나 warning에도 쓸지.
 - `ticks`: measurement 의미를 갖게 할지, decorative rhythm으로 둘지.
 - `barcode`: Critical info 전용인지, Identity/Verification에서도 쓸지.
-- `qr`: 실제 QR처럼 보이는 것을 허용할지, pseudo-QR로 명확히 유지할지.
+- `pseudoQr`: 실제 QR처럼 보이는 것을 허용할지, pseudo-QR로 명확히 유지할지.
 - `miniTable`: Data archetype 전용으로 묶을지, 다른 archetype의 보조 정보로도 쓸지.
 - `wave`: signal/status/data 중 어느 의미로 쓸지.
-- `singleLayout`: `Critical info`인지 `Instruction`인지 `Verification`인지 역할을 정해야 한다.
-- `specimenLayout`: `Title`인지 `Identity`인지 역할을 정해야 한다.
-- `focusPanelLayout`: `panel`의 mode에 따라 archetype을 바꿀지, 별도 archetype renderer로 쪼갤지.
+- `renderStripLayout`: `Critical info`인지 `Instruction`인지 `Verification`인지 역할을 정해야 한다.
+- `renderSpecimenLayout`: `Title`인지 `Identity`인지 역할을 정해야 한다.
+- `renderPanelLayout`: `contentPanel`의 mode에 따라 archetype을 바꿀지, 별도 archetype renderer로 쪼갤지.
 
 ## 추적 방법
 
@@ -180,3 +217,5 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-05: Component 내부 정보 구조를 정하는 `Layout archetype` 8종(`Title`, `Data`, `Critical info`, `Status`, `Identity`, `Warning`, `Instruction`, `Verification`) 정의.
 - 2026-07-05: 아직 룰 없이 쓰는 active graphic parts를 `Rule Gap Inventory`로 정리.
 - 2026-07-05: 보류/legacy graphic parts인 `frame`, `sun`, `gridLayout`, `stripLayout` 삭제.
+- 2026-07-05: 현재 element를 `Visual tokens`, `SVG helpers`, `Graphic primitives`, `Content details`, `Content block`, `Layout renderers`, `Component layer`, `Canvas layer`로 재분류.
+- 2026-07-05: boundary contract와 extension point를 문서화하고, 코드 네이밍을 해당 층위에 맞게 정리.
