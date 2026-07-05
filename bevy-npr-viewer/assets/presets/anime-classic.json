@@ -1,0 +1,23 @@
+{
+  "name": "Anime Classic",
+  "shader_index": 0,
+  "toon": {
+    "base_color": [1.0, 0.9, 0.85, 1.0],
+    "shadow_color": [0.4, 0.2, 0.3, 1.0],
+    "rim_color": [1.0, 1.0, 1.0, 0.3],
+    "bands": 2,
+    "softness": 0.01,
+    "rim_power": 4.0,
+    "_padding": 0.0
+  },
+  "outline": {
+    "outline_color": [0.0, 0.0, 0.0, 1.0],
+    "outline_width": 0.003,
+    "_padding0": 0.0,
+    "_padding1": 0.0,
+    "_padding2": 0.0
+  },
+  "outline_enabled": true,
+  "turntable_speed": 0.3,
+  "bg_color": [0.15, 0.15, 0.18, 1.0]
+}

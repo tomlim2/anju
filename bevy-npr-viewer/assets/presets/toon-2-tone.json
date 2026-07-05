@@ -1,0 +1,47 @@
+{
+  "name": "Toon 2-Tone",
+  "shader_index": 0,
+  "toon": {
+    "base_color": [
+      1.0,
+      0.33333278,
+      0.0,
+      1.0
+    ],
+    "shadow_color": [
+      0.017904216,
+      0.017297545,
+      0.015562935,
+      1.0
+    ],
+    "rim_color": [
+      1.0,
+      0.0,
+      0.0,
+      0.5
+    ],
+    "bands": 1,
+    "softness": 0.085,
+    "rim_power": 5.4,
+    "_padding": 0.0
+  },
+  "outline": {
+    "outline_color": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "outline_width": 0.0155,
+    "_padding0": 0.0,
+    "_padding1": 0.0,
+    "_padding2": 0.0
+  },
+  "outline_enabled": true,
+  "turntable_speed": 2.0,
+  "bg_color": [
+    0.7912687,
+    0.7912687,
+    0.7912687
+  ]
+}
