@@ -5,11 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Micro Graphic Generator</title>
   <style>
+    @import url("./fonts/fonts.css");
+
     :root {
       --bg: #f4f4ef;
       --ink: #10110f;
       --panel: rgba(244, 244, 239, 0.86);
       --hair: rgba(16, 17, 15, 0.2);
+      --font-ui: "Noto Sans", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
     }
 
     * {
@@ -24,7 +27,7 @@
       overflow: hidden;
       background: var(--bg);
       color: var(--ink);
-      font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      font-family: var(--font-ui);
     }
 
     body.is-dark {
@@ -71,7 +74,7 @@
       border-radius: 0;
       background: transparent;
       color: var(--ink);
-      font: 700 11px/1 ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      font: 700 11px/1 var(--font-ui);
       letter-spacing: 0;
       text-transform: uppercase;
       cursor: pointer;
@@ -90,7 +93,7 @@
       bottom: 16px;
       z-index: 10;
       color: var(--ink);
-      font: 700 10px/1.2 ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      font: 700 10px/1.2 var(--font-ui);
       opacity: 0.62;
       user-select: none;
     }
@@ -125,8 +128,41 @@
     const SVG_NS = "http://www.w3.org/2000/svg";
     const EXPORT_SCALE = 2;
     const MIN_VIEWPORT = { width: 900, height: 620 };
-    const MONO_FONT = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
-    const KO_FONT = "\"Apple SD Gothic Neo\", \"Noto Sans KR\", ui-sans-serif, sans-serif";
+    const PADDING_TOKENS = {
+      small: { ratio: 0.04, min: 10, max: 24 },
+      medium: { ratio: 0.075, min: 16, max: 34 },
+      large: { ratio: 0.1, min: 28, max: 64 }
+    };
+    const MARGIN_TOKENS = {
+      small: { ratio: 0.018, min: 4, max: 10 },
+      medium: { ratio: 0.035, min: 8, max: 18 },
+      large: { ratio: 0.06, min: 14, max: 32 }
+    };
+    const TEXT_ALIGNMENTS = {
+      left: "start",
+      center: "middle",
+      right: "end"
+    };
+    const TOKEN_ALIGNMENTS = ["left", "center", "right"];
+    const DESIGN_TOKEN_SIZES = {
+      small: { rowMode: "pairable", maxPerRow: 2 },
+      medium: { rowMode: "single", maxPerRow: 1 },
+      large: { rowMode: "exclusive", maxPerRow: 1 }
+    };
+    const SPIN_TOKENS = {
+      none: 0,
+      subtle: 1.2,
+      medium: 2.8
+    };
+    const FONT_CSS_PATH = "./fonts/fonts.css";
+    const TYPEFACES = {
+      english: "\"Noto Sans\", \"Helvetica Neue\", Arial, sans-serif",
+      mono: "\"Noto Sans Mono\", \"SFMono-Regular\", Menlo, Monaco, Consolas, monospace",
+      korean: "\"Noto Sans KR\", \"Apple SD Gothic Neo\", sans-serif",
+      hanja: "\"Noto Sans KR\", \"Noto Sans SC\", \"Apple SD Gothic Neo\", sans-serif",
+      chinese: "\"Noto Sans SC\", \"Noto Sans KR\", \"Apple SD Gothic Neo\", sans-serif",
+      ui: "\"Noto Sans\", \"Noto Sans KR\", \"Noto Sans SC\", \"Apple SD Gothic Neo\", sans-serif"
+    };
 
     const art = document.querySelector("#art");
     const seedLabel = document.querySelector("#seedLabel");
@@ -137,11 +173,17 @@
       tone: document.querySelector("#tone")
     };
 
-    // Extension point: add vocabulary, symbols, and fake data labels here.
+    // Extension point: add vocabulary, date labels, and fake data labels here.
     const visualTokens = {
       koreanKeywords: [
         "접속", "검증", "회로", "출력", "신호", "제어", "기록", "연산",
         "동기", "방식", "전원", "해석", "단말", "기준", "응답", "흐름"
+      ],
+      hanjaKeywords: ["林"],
+      greetingTokens: [
+        { value: "안녕?", typeface: "korean" },
+        { value: "你好?", typeface: "chinese" },
+        { value: "HELLO?", typeface: "english" }
       ],
       englishKeywords: [
         "ACCESS", "OUTPUT", "VERIFIED", "STANDBY", "RUNNING", "SIGNAL",
@@ -153,8 +195,22 @@
         "SUMMIT", "VECTOR", "MERIDIAN", "HELIX", "AXIOM", "DELTA"
       ],
       organizationSuffixes: ["LABS", "WORKS", "STUDIO", "DIVISION", "SYSTEMS", "ENGINEERING", "INDUSTRIES", "OFFICE"],
-      symbolMarks: ["⊙", "◇", "✣", "✕", "＋", "⌾", "◎", "◌", "◈", "✦", "⚡"],
-      tableFieldLabels: ["LOT", "SPEC", "FREQ", "LOAD", "REV", "TEMP", "POWER", "LAT", "CFG"]
+      tableFieldLabels: ["LOT", "SPEC", "FREQ", "LOAD", "REV", "TEMP", "POWER", "LAT", "CFG"],
+      dateTypography: {
+        englishMonths: ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"],
+        englishMonthShort: ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"],
+        chineseDigits: ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九"],
+        refreshedLabels: {
+          korean: "갱신",
+          english: "REFRESHED",
+          chinese: "刷新"
+        },
+        timestampLabels: {
+          korean: "타임스탬프",
+          english: "TIMESTAMP",
+          chinese: "时间戳"
+        }
+      }
     };
 
     const componentBorderModes = ["stroke", "no-stroke", "corner-stroke"];
@@ -226,7 +282,221 @@
       return random() < value;
     }
 
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function paddingSize(w, h, size = "medium") {
+      const token = PADDING_TOKENS[size] || PADDING_TOKENS.medium;
+      const edge = Math.min(w, h);
+      const cap = Math.max(4, edge * 0.24);
+      return Math.min(cap, clamp(edge * token.ratio, token.min, token.max));
+    }
+
+    function marginSize(w, h, size = "medium") {
+      const token = MARGIN_TOKENS[size] || MARGIN_TOKENS.medium;
+      const edge = Math.min(w, h);
+      const cap = Math.max(2, edge * 0.28);
+      return Math.min(cap, clamp(edge * token.ratio, token.min, token.max));
+    }
+
+    function normalizeTokenAlign(align = "left") {
+      return TOKEN_ALIGNMENTS.includes(align) ? align : "left";
+    }
+
+    function pickTokenAlign(preferred = "left", looseness = 0.35) {
+      if (!chance(looseness)) return normalizeTokenAlign(preferred);
+      return pick(TOKEN_ALIGNMENTS);
+    }
+
+    function normalizeDesignTokenSize(size = "medium") {
+      return DESIGN_TOKEN_SIZES[size] ? size : "medium";
+    }
+
+    function tokenSizeAttrs(size = "medium") {
+      const normalized = normalizeDesignTokenSize(size);
+      return {
+        "data-token-size": normalized,
+        "data-row-mode": DESIGN_TOKEN_SIZES[normalized].rowMode
+      };
+    }
+
+    function alignedBoxX(box, tokenWidth, align = "left") {
+      const safeWidth = Math.min(tokenWidth, box.width);
+      const normalized = normalizeTokenAlign(align);
+      if (normalized === "center") return box.x + (box.width - safeWidth) / 2;
+      if (normalized === "right") return box.x + box.width - safeWidth;
+      return box.x;
+    }
+
+    function alignedTextX(box, align = "left") {
+      const normalized = normalizeTokenAlign(align);
+      if (normalized === "center") return box.x + box.width / 2;
+      if (normalized === "right") return box.x + box.width;
+      return box.x;
+    }
+
+    function spinAngle(size = "subtle", probability = 0.24) {
+      const limit = SPIN_TOKENS[size] ?? SPIN_TOKENS.subtle;
+      if (!limit || !chance(probability)) return 0;
+      return r(-limit, limit);
+    }
+
+    function spinTransform(x, y, w, h, angle = 0) {
+      if (!angle) return "";
+      return `rotate(${angle.toFixed(2)} ${(x + w / 2).toFixed(2)} ${(y + h / 2).toFixed(2)})`;
+    }
+
+    function textSpinTransform(x, y, angle = 0) {
+      if (!angle) return "";
+      return `rotate(${angle.toFixed(2)} ${x.toFixed(2)} ${y.toFixed(2)})`;
+    }
+
+    function designTokenGroup(parent, x, y, w, h, attrs = {}) {
+      const tokenSize = normalizeDesignTokenSize(attrs.tokenSize || "medium");
+      const transform = spinTransform(x, y, w, h, attrs.spin || 0);
+      const group = make("g", {
+        ...tokenSizeAttrs(tokenSize),
+        transform
+      });
+      parent.appendChild(group);
+      return group;
+    }
+
+    function smallTokenPairZones(zone, rightWidth) {
+      const gap = marginSize(zone.width, zone.height, "medium");
+      const rightW = clamp(rightWidth, Math.min(48, zone.width * 0.36), zone.width * 0.46);
+      return {
+        left: {
+          x: zone.x,
+          y: zone.y,
+          width: Math.max(1, zone.width - rightW - gap),
+          height: zone.height
+        },
+        right: {
+          x: zone.x + zone.width - rightW,
+          y: zone.y,
+          width: rightW,
+          height: zone.height
+        },
+        gap
+      };
+    }
+
+    function stackTextToken(g, zone, text, attrs = {}) {
+      const align = normalizeTokenAlign(attrs.align || "left");
+      const tokenSize = normalizeDesignTokenSize(attrs.tokenSize || "medium");
+      const y = zone.y + zone.height * (attrs.baseline ?? 0.72);
+      const x = alignedTextX(zone, align);
+      const spin = attrs.spin || 0;
+      g.appendChild(textNode(x, y, text, {
+        ...attrs,
+        align,
+        tokenSize,
+        maxWidth: attrs.maxWidth || zone.width,
+        transform: attrs.transform || textSpinTransform(x, y, spin)
+      }));
+    }
+
+    function paddedBox(x, y, w, h, size = "medium") {
+      const pad = paddingSize(w, h, size);
+      return {
+        x: x + pad,
+        y: y + pad,
+        width: Math.max(1, w - pad * 2),
+        height: Math.max(1, h - pad * 2),
+        pad
+      };
+    }
+
+    function componentPadding(w, h) {
+      return paddingSize(w, h, "large");
+    }
+
+    function contentPadding(w, h) {
+      return paddingSize(w, h, "medium");
+    }
+
+    function detailPadding(w, h) {
+      return paddingSize(w, h, "small");
+    }
+
+    function contentZones(x, y, w, h) {
+      const box = paddedBox(x, y, w, h, "medium");
+      const gap = marginSize(box.width, box.height, "medium");
+      const headerH = clamp(box.height * 0.1, 22, 38);
+      const labelH = clamp(box.height * 0.085, 18, 32);
+      const subH = clamp(box.height * 0.09, 18, 30);
+      const detailH = clamp(box.height * 0.3, 64, Math.min(150, box.height * 0.38));
+
+      const header = { x: box.x, y: box.y, width: box.width, height: headerH };
+      const label = { x: box.x, y: header.y + header.height + gap, width: box.width, height: labelH };
+      const detail = { x: box.x, y: box.y + box.height - detailH, width: box.width, height: detailH };
+      const sub = { x: box.x, y: detail.y - gap - subH, width: box.width, height: subH };
+      const mainY = label.y + label.height + gap;
+      const main = {
+        x: box.x,
+        y: mainY,
+        width: box.width,
+        height: Math.max(28, sub.y - gap - mainY)
+      };
+
+      return { box, gap, header, label, main, sub, detail };
+    }
+
     // SVG helpers.
+    function hasHangul(value) {
+      return /[가-힣]/.test(value);
+    }
+
+    function hasHanja(value) {
+      return /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/.test(value);
+    }
+
+    function resolveTypeface(text, attrs = {}) {
+      if (attrs.typeface && TYPEFACES[attrs.typeface]) return TYPEFACES[attrs.typeface];
+      if (attrs.mono) return TYPEFACES.mono;
+      if (attrs.hanja || hasHanja(text)) return TYPEFACES.hanja;
+      if (attrs.ko || hasHangul(text)) return TYPEFACES.korean;
+      return TYPEFACES.english;
+    }
+
+    function estimateTextWidth(text, size, tracking = 0) {
+      const value = String(text);
+      const units = [...value].reduce((sum, char) => {
+        if (/\s/.test(char)) return sum + 0.34;
+        if (/[가-힣\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/.test(char)) return sum + 1.02;
+        if (/[MW@#%]/.test(char)) return sum + 0.82;
+        if (/[A-Z0-9]/.test(char)) return sum + 0.64;
+        if (/[a-z]/.test(char)) return sum + 0.56;
+        if (/[.,:;'"!?/\\|()[\]{}<>-]/.test(char)) return sum + 0.38;
+        return sum + 0.62;
+      }, 0);
+      return units * size + Math.max(0, value.length - 1) * tracking;
+    }
+
+    function estimateTextHeight(text, size) {
+      const hasCjk = /[가-힣\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/.test(String(text));
+      return size * (hasCjk ? 1.14 : 1.02);
+    }
+
+    function fitTextSize(text, attrs = {}) {
+      const size = attrs.size || 18;
+      if (!attrs.maxWidth && !attrs.maxHeight) return size;
+      const estimatedWidth = estimateTextWidth(text, size, attrs.tracking || 0);
+      const estimatedHeight = estimateTextHeight(text, size);
+      const widthRatio = attrs.maxWidth ? attrs.maxWidth / estimatedWidth : 1;
+      const heightRatio = attrs.maxHeight ? attrs.maxHeight / estimatedHeight : 1;
+      const fitRatio = Math.min(1, widthRatio, heightRatio);
+      if (fitRatio >= 1) return size;
+      const minSize = attrs.minSize || Math.max(8, size * 0.48);
+      return Math.max(minSize, size * fitRatio);
+    }
+
+    function resolveTextAlignment(attrs = {}) {
+      return TEXT_ALIGNMENTS[attrs.align] || TEXT_ALIGNMENTS.left;
+    }
+
     function make(tag, attrs = {}, children = []) {
       const el = document.createElementNS(SVG_NS, tag);
       Object.entries(attrs).forEach(([key, value]) => {
@@ -237,18 +507,28 @@
     }
 
     function textNode(x, y, text, attrs = {}) {
+      const fontSize = fitTextSize(text, attrs);
+      const tokenSize = attrs.tokenSize ? normalizeDesignTokenSize(attrs.tokenSize) : null;
       const el = make("text", {
         x,
         y,
         fill: "currentColor",
-        "font-family": attrs.ko ? KO_FONT : MONO_FONT,
-        "font-size": attrs.size || 18,
+        "font-family": resolveTypeface(text, attrs),
+        "font-size": fontSize,
         "font-weight": attrs.weight || 700,
         "letter-spacing": attrs.tracking || 0,
-        "text-anchor": attrs.anchor || "start",
+        "text-anchor": resolveTextAlignment(attrs),
         opacity: attrs.opacity ?? 1,
-        transform: attrs.transform || ""
+        transform: attrs.transform || "",
+        ...(tokenSize ? tokenSizeAttrs(tokenSize) : {})
       });
+      if (attrs.maxWidth) {
+        const fittedWidth = estimateTextWidth(text, fontSize, attrs.tracking || 0);
+        if (fittedWidth > attrs.maxWidth) {
+          el.setAttribute("textLength", attrs.maxWidth);
+          el.setAttribute("lengthAdjust", "spacingAndGlyphs");
+        }
+      }
       el.textContent = text;
       return el;
     }
@@ -310,31 +590,115 @@
       return chance(0.46) ? `0X${ri(0, 255).toString(16).toUpperCase().padStart(2, "0")}` : `${ri(2, 9)}${ri(0, 9)}${ri(0, 9)}`;
     }
 
-    function trackedText(value) {
-      return value.split("").join("   ");
+    function token(value, typeface, size = "medium") {
+      return { value, typeface, size: normalizeDesignTokenSize(size) };
+    }
+
+    function pad2(value) {
+      return String(value).padStart(2, "0");
+    }
+
+    function chineseDigitSequence(value) {
+      return String(value)
+        .split("")
+        .map(char => visualTokens.dateTypography.chineseDigits[Number(char)])
+        .join("");
+    }
+
+    function chineseNumber(value) {
+      if (value < 10) return visualTokens.dateTypography.chineseDigits[value];
+      if (value === 10) return "十";
+      if (value < 20) return `十${visualTokens.dateTypography.chineseDigits[value - 10]}`;
+      const tens = Math.floor(value / 10);
+      const ones = value % 10;
+      return `${visualTokens.dateTypography.chineseDigits[tens]}十${ones ? visualTokens.dateTypography.chineseDigits[ones] : ""}`;
+    }
+
+    function todayDateTypographyTokens(date = new Date()) {
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const hour = date.getHours();
+      const minute = date.getMinutes();
+      const second = date.getSeconds();
+      const englishMonth = visualTokens.dateTypography.englishMonths[month - 1];
+      const englishMonthShort = visualTokens.dateTypography.englishMonthShort[month - 1];
+      const timestamp = `${pad2(hour)}:${pad2(minute)}:${pad2(second)}`;
+      const epochTimestamp = String(date.getTime());
+      const koreanMeridiem = hour < 12 ? "오전" : "오후";
+      const koreanHour = hour % 12 || 12;
+      const labels = visualTokens.dateTypography.refreshedLabels;
+      const timestampLabels = visualTokens.dateTypography.timestampLabels;
+
+      return [
+        token(`${year}년 ${month}월 ${day}일`, "korean", "large"),
+        token(`${year}년 ${month}월 ${day}일 ${koreanMeridiem} ${koreanHour}시 ${minute}분`, "korean", "large"),
+        token(`${labels.korean} ${timestamp}`, "korean", "large"),
+        token(`${timestampLabels.korean} ${epochTimestamp}`, "korean", "large"),
+        token(`${month}월 ${day}일`, "korean", "large"),
+        token(`${englishMonth} ${day}, ${year}`, "english", "large"),
+        token(`${englishMonth} ${day}, ${year} ${timestamp}`, "english", "large"),
+        token(`${pad2(day)} ${englishMonthShort} ${year}`, "english", "large"),
+        token(`${labels.english} ${timestamp}`, "english", "large"),
+        token(`${timestampLabels.english} ${epochTimestamp}`, "english", "large"),
+        token(`${year}年${month}月${day}日`, "chinese", "large"),
+        token(`${year}年${month}月${day}日 ${timestamp}`, "chinese", "large"),
+        token(`${chineseDigitSequence(year)}年${chineseNumber(month)}月${chineseNumber(day)}日`, "chinese", "large"),
+        token(`${labels.chinese} ${timestamp}`, "chinese", "large"),
+        token(`${timestampLabels.chinese} ${epochTimestamp}`, "chinese", "large")
+      ];
+    }
+
+    function pickDisplayTypography() {
+      const displayTokens = [
+        ...visualTokens.koreanKeywords.map(value => token(value, "korean", "large")),
+        ...visualTokens.hanjaKeywords.map(value => token(value, "hanja", "large")),
+        ...visualTokens.greetingTokens.map(item => token(item.value, item.typeface, "large")),
+        ...visualTokens.englishKeywords.map(value => token(value, "english", "large")),
+        ...todayDateTypographyTokens()
+      ];
+
+      return pick(displayTokens);
+    }
+
+    function pickPrimaryDisplayTypography() {
+      if (chance(0.72)) return pickDisplayTypography();
+      return token(codeToken(), "mono", "large");
     }
 
     // Graphic primitives.
-    function label(g, x, y, w, value = pick(visualTokens.englishKeywords), fill = false) {
+    function label(g, x, y, w, value = pick(visualTokens.englishKeywords), fill = false, options = {}) {
+      const tokenSize = normalizeDesignTokenSize(options.tokenSize || "medium");
+      const target = designTokenGroup(g, x, y, w, 28, { tokenSize, spin: options.spin || 0 });
+      const margin = marginSize(w, 28, "small");
       if (fill) {
-        g.appendChild(rect(x, y, w, 28, { fill: "currentColor", stroke: false, opacity: 0.96 }));
-        g.appendChild(textNode(x + w / 2, y + 20, trackedText(value), { size: 15, anchor: "middle", weight: 800, transform: "", opacity: 1 }));
-        g.lastChild.setAttribute("fill", "var(--bg)");
+        target.appendChild(rect(x, y, w, 28, { fill: "currentColor", stroke: false, opacity: 0.96 }));
+        const text = textNode(x + w / 2, y + 20, value, { size: 15, align: "center", tokenSize, weight: 800, transform: "", opacity: 1, typeface: "english", maxWidth: w - margin * 2 });
+        text.setAttribute("fill", "var(--bg)");
+        target.appendChild(text);
       } else {
-        g.appendChild(rect(x, y, w, 28, { width: 2, rough: true }));
-        g.appendChild(textNode(x + w / 2, y + 20, trackedText(value), { size: 15, anchor: "middle", weight: 800 }));
+        target.appendChild(rect(x, y, w, 28, { width: 2, rough: true }));
+        target.appendChild(textNode(x + w / 2, y + 20, value, { size: 15, align: "center", tokenSize, weight: 800, typeface: "english", maxWidth: w - margin * 2 }));
       }
     }
 
-    function microBadge(g, x, y, value) {
-      const w = Math.max(48, value.length * 8 + 18);
-      g.appendChild(rect(x, y, w, 21, { fill: chance(0.45) ? "currentColor" : "none", width: 1.5, rough: true }));
-      const t = textNode(x + w / 2, y + 15, value, { size: 11, anchor: "middle", weight: 900 });
-      if (g.lastChild.getAttribute("fill") === "currentColor") t.setAttribute("fill", "var(--bg)");
-      g.appendChild(t);
+    function microBadgeWidth(value) {
+      return Math.max(48, estimateTextWidth(value, 11) + marginSize(80, 21, "small") * 2);
+    }
+
+    function microBadge(g, x, y, value, options = {}) {
+      const w = microBadgeWidth(value);
+      const margin = marginSize(w, 21, "small");
+      const target = designTokenGroup(g, x, y, w, 21, { tokenSize: "small", spin: options.spin || 0 });
+      const badgeRect = rect(x, y, w, 21, { fill: chance(0.45) ? "currentColor" : "none", width: 1.5, rough: true });
+      target.appendChild(badgeRect);
+      const t = textNode(x + w / 2, y + 15, value, { size: 11, align: "center", tokenSize: "small", weight: 900, typeface: "mono", maxWidth: w - margin * 2 });
+      if (badgeRect.getAttribute("fill") === "currentColor") t.setAttribute("fill", "var(--bg)");
+      target.appendChild(t);
     }
 
     function ticks(g, x, y, w, count = 54) {
+      if (w <= 0) return;
       g.appendChild(line(x, y, x + w, y, { width: 2, rough: true }));
       for (let i = 0; i <= count; i++) {
         const tx = x + w * (i / count);
@@ -343,18 +707,79 @@
       }
     }
 
-    function barcode(g, x, y, w, h) {
-      let cursor = x;
-      while (cursor < x + w) {
-        const bw = ri(2, 8);
-        if (chance(0.66)) {
-          g.appendChild(rect(cursor, y + r(0, 5), bw, h - r(0, 8), { fill: "currentColor", stroke: false, opacity: r(0.74, 0.98) }));
-        }
-        cursor += bw + ri(1, 5);
+    function barcodeDigits(length = 12) {
+      return Array.from({ length }, () => String(ri(0, 9))).join("");
+    }
+
+    function upcChecksum(digits) {
+      const sum = digits.split("").reduce((total, digit, index) => total + Number(digit) * (index % 2 === 0 ? 3 : 1), 0);
+      return String((10 - (sum % 10)) % 10);
+    }
+
+    function upcPattern(digits) {
+      const left = [
+        "0001101", "0011001", "0010011", "0111101", "0100011",
+        "0110001", "0101111", "0111011", "0110111", "0001011"
+      ];
+      const right = [
+        "1110010", "1100110", "1101100", "1000010", "1011100",
+        "1001110", "1010000", "1000100", "1001000", "1110100"
+      ];
+      const value = `${digits}${upcChecksum(digits)}`;
+      const leftDigits = value.slice(0, 6);
+      const rightDigits = value.slice(6, 12);
+      const leftPattern = [...leftDigits].map(digit => left[Number(digit)]).join("");
+      const rightPattern = [...rightDigits].map(digit => right[Number(digit)]).join("");
+      return {
+        value,
+        pattern: `101${leftPattern}01010${rightPattern}101`
+      };
+    }
+
+    function barcode(g, x, y, w, h, options = {}) {
+      if (w <= 0 || h <= 0) return;
+      const digits = options.digits || barcodeDigits(11);
+      const { value, pattern } = upcPattern(digits);
+      const captionH = options.caption === false || h < 34 ? 0 : Math.min(12, h * 0.22);
+      const quiet = marginSize(w, h, "large");
+      const availableW = Math.max(1, w - quiet * 2);
+      const moduleW = availableW / pattern.length;
+      const captionGap = captionH ? marginSize(w, h, "small") * 0.35 : 0;
+      const barH = Math.max(6, h - captionH - captionGap);
+      const guardRanges = [
+        [0, 2],
+        [45, 49],
+        [92, 94]
+      ];
+
+      for (let i = 0; i < pattern.length; i++) {
+        if (pattern[i] !== "1") continue;
+        const isGuard = guardRanges.some(([start, end]) => i >= start && i <= end);
+        const barX = x + quiet + i * moduleW;
+        const barY = y + (isGuard ? 0 : Math.max(0, barH * 0.06));
+        const height = isGuard ? Math.min(h - captionH * 0.35, barH + captionH * 0.45) : barH * r(0.84, 1);
+        g.appendChild(rect(barX, barY, Math.max(0.7, moduleW * r(0.86, 1.06)), height, {
+          fill: "currentColor",
+          stroke: false,
+          opacity: isGuard ? 0.98 : r(0.82, 0.96)
+        }));
+      }
+
+      if (captionH) {
+        const captionY = y + h - 1;
+        const first = value[0];
+        const leftDigits = value.slice(1, 6);
+        const rightDigits = value.slice(6, 11);
+        const last = value[11];
+        g.appendChild(textNode(x, captionY, first, { size: captionH, minSize: 7, maxWidth: quiet * 0.8, tokenSize: "small", weight: 800, typeface: "mono" }));
+        g.appendChild(textNode(x + quiet + availableW * 0.29, captionY, leftDigits, { size: captionH, minSize: 7, maxWidth: availableW * 0.32, tokenSize: "small", weight: 800, align: "center", typeface: "mono" }));
+        g.appendChild(textNode(x + quiet + availableW * 0.72, captionY, rightDigits, { size: captionH, minSize: 7, maxWidth: availableW * 0.32, tokenSize: "small", weight: 800, align: "center", typeface: "mono" }));
+        g.appendChild(textNode(x + w, captionY, last, { size: captionH, minSize: 7, maxWidth: quiet * 0.8, tokenSize: "small", weight: 800, align: "right", typeface: "mono" }));
       }
     }
 
     function pseudoQr(g, x, y, size, cells = 15) {
+      if (size <= 0) return;
       const step = size / cells;
       g.appendChild(rect(x, y, size, size, { width: 0, fill: "transparent", stroke: false }));
       for (let row = 0; row < cells; row++) {
@@ -371,20 +796,26 @@
       }
     }
 
-    function miniTable(g, x, y, w) {
-      const rows = ri(3, 5);
+    function miniTable(g, x, y, w, options = {}) {
+      if (w <= 0) return;
       const rowH = 24;
+      const maxRows = clamp(Math.floor((options.maxHeight || rowH * 5) / rowH), 2, 5);
+      const rows = ri(Math.min(3, maxRows), maxRows);
       const h = rows * rowH;
+      const cellMargin = marginSize(w, h, "small");
+      const leftCellWidth = Math.max(10, w * 0.48 - cellMargin * 2);
+      const rightCellWidth = Math.max(10, w * 0.52 - cellMargin * 2);
       g.appendChild(rect(x, y, w, h, { width: 1.5, rough: true }));
       g.appendChild(line(x + w * 0.48, y, x + w * 0.48, y + h, { width: 1.3, rough: true }));
       for (let i = 1; i < rows; i++) g.appendChild(line(x, y + i * rowH, x + w, y + i * rowH, { width: 1.2, rough: true }));
       for (let i = 0; i < rows; i++) {
-        g.appendChild(textNode(x + 9, y + 17 + i * rowH, `${pick(visualTokens.tableFieldLabels)} ${ri(10, 99)}`, { size: 11, weight: 800 }));
-        g.appendChild(textNode(x + w * 0.48 + 9, y + 17 + i * rowH, `${pick(visualTokens.tableFieldLabels)} ${ri(1, 99)}${chance(0.5) ? "%" : ""}`, { size: 11, weight: 800 }));
+        g.appendChild(textNode(x + cellMargin, y + 17 + i * rowH, `${pick(visualTokens.tableFieldLabels)} ${ri(10, 99)}`, { size: 11, tokenSize: "small", weight: 800, typeface: "mono", maxWidth: leftCellWidth }));
+        g.appendChild(textNode(x + w * 0.48 + cellMargin, y + 17 + i * rowH, `${pick(visualTokens.tableFieldLabels)} ${ri(1, 99)}${chance(0.5) ? "%" : ""}`, { size: 11, tokenSize: "small", weight: 800, typeface: "mono", maxWidth: rightCellWidth }));
       }
     }
 
     function wave(g, x, y, w, h) {
+      if (w <= 0 || h <= 0) return;
       const pts = [];
       const steps = 14;
       for (let i = 0; i <= steps; i++) {
@@ -397,29 +828,44 @@
 
     // Content detail renderers.
     function renderBarcodeDetail(g, x, y, w, h) {
-      barcode(g, x + 10, y + h - 78, w - 20, 36);
-      g.appendChild(textNode(x + 10, y + h - 26, `SN ${ri(1000, 9999)}-${ri(1000, 9999)}-${String.fromCharCode(65 + ri(0, 25))}${String.fromCharCode(65 + ri(0, 25))}`, { size: 11, weight: 800 }));
+      const inset = detailPadding(w, h);
+      const barH = Math.min(58, Math.max(26, h * 0.58));
+      const barY = y + inset;
+      barcode(g, x + inset, barY, w - inset * 2, barH);
+      g.appendChild(textNode(x + inset, y + h - 26, `SN ${ri(1000, 9999)}-${ri(1000, 9999)}-${String.fromCharCode(65 + ri(0, 25))}${String.fromCharCode(65 + ri(0, 25))}`, { size: 11, tokenSize: "small", weight: 800, typeface: "mono", maxWidth: w - inset * 2 }));
     }
 
     function renderPseudoQrDetail(g, x, y, w, h) {
-      const q = Math.min(96, h - 120, w * 0.33);
-      pseudoQr(g, x + 10, y + h - q - 18, q);
-      g.appendChild(textNode(x + q + 24, y + h - q + 10, "ID", { size: 15, weight: 900 }));
-      g.appendChild(textNode(x + q + 24, y + h - q + 34, `CODE ${codeToken()}`, { size: 13, weight: 800 }));
-      g.appendChild(textNode(x + q + 24, y + h - q + 58, "INPUT VERIFIED / OUTPUT OK", { size: 13, weight: 800 }));
+      const inset = detailPadding(w, h);
+      const q = Math.max(28, Math.min(96, w * 0.33, h * 0.42));
+      const qrY = y + h - inset - q;
+      const textGap = marginSize(w, h, "medium");
+      const textX = x + inset + q + textGap;
+      const textMax = Math.max(28, x + w - inset - textX);
+      pseudoQr(g, x + inset, qrY, q);
+      g.appendChild(textNode(textX, qrY + q * 0.27, "ID", { size: 15, tokenSize: "medium", weight: 900, typeface: "mono", maxWidth: textMax }));
+      g.appendChild(textNode(textX, qrY + q * 0.5, `CODE ${codeToken()}`, { size: 13, tokenSize: "small", weight: 800, typeface: "mono", maxWidth: textMax }));
+      g.appendChild(textNode(textX, qrY + q * 0.74, "INPUT VERIFIED / OUTPUT OK", { size: 13, tokenSize: "small", weight: 800, typeface: "mono", maxWidth: textMax }));
     }
 
     function renderWaveDetail(g, x, y, w, h) {
-      wave(g, x + 10, y + h - 92, w - 20, 62);
+      const inset = detailPadding(w, h);
+      const waveH = Math.min(62, Math.max(28, h - inset * 2));
+      wave(g, x + inset, y + h - inset - waveH, w - inset * 2, waveH);
     }
 
     function renderTableDetail(g, x, y, w, h) {
-      miniTable(g, x + 10, Math.max(y + 118, y + h - 138), w - 20);
+      const inset = detailPadding(w, h);
+      const maxTableHeight = Math.max(48, h - inset * 2);
+      const tableHeight = Math.min(120, maxTableHeight);
+      miniTable(g, x + inset, y + h - inset - tableHeight, w - inset * 2, { maxHeight: tableHeight });
     }
 
     function renderTicksDetail(g, x, y, w, h) {
-      ticks(g, x + 10, y + h - 48, w - 20, ri(24, 64));
-      g.appendChild(textNode(x + 10, y + h - 18, `MOD ${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 12, weight: 800 }));
+      const inset = detailPadding(w, h);
+      const tickY = y + Math.max(inset + 22, h - 48);
+      ticks(g, x + inset, tickY, w - inset * 2, ri(24, 64));
+      g.appendChild(textNode(x + inset, y + h - 18, `MOD ${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 12, tokenSize: "small", weight: 800, typeface: "mono", maxWidth: w - inset * 2 }));
     }
 
     // Extension point: add a detail renderer here, then use its id from a layout.
@@ -446,76 +892,146 @@
     }
 
     function renderContentDetail(g, x, y, w, h, mode = "mixed") {
-      pickContentDetailMode(mode).render(g, x, y, w, h);
+      const detailBox = paddedBox(x, y, w, h, "medium");
+      pickContentDetailMode(mode).render(g, detailBox.x, detailBox.y, detailBox.width, detailBox.height);
     }
 
     function contentPanel(x, y, w, h, mode = "mixed", options = {}) {
-      const g = make("g", { transform: `translate(${r(-3, 3)} ${r(-3, 3)})`, opacity: r(0.78, 1) });
+      const g = make("g", { opacity: r(0.78, 1) });
       const drawShell = options.shell !== false;
+      const zones = contentZones(x, y, w, h);
       const title = pick(visualTokens.englishKeywords);
       const ko = pick(visualTokens.koreanKeywords);
       const org = `${pick(visualTokens.organizationPrefixes)} ${pick(visualTokens.organizationSuffixes)}`;
-      const top = y + 22;
-      const big = chance(0.55) ? codeToken() : ko;
+      const primary = pickPrimaryDisplayTypography();
+      const big = primary.value;
+      const isCjk = hasHangul(big) || hasHanja(big);
+      const showBadge = chance(0.56);
+      const badgeValue = chance(0.5) ? `V${ri(1, 7)}.${ri(0, 9)}` : `REV ${String.fromCharCode(65 + ri(0, 25))}`;
+      const badgeW = microBadgeWidth(badgeValue);
+      const textMaxWidth = Math.max(36, zones.box.width);
+      const headerPair = showBadge ? smallTokenPairZones(zones.header, badgeW) : null;
+      const stackAlign = {
+        header: showBadge ? "left" : pickTokenAlign("left", 0.55),
+        badge: "right",
+        label: pickTokenAlign("left", 0.5),
+        main: pickTokenAlign("left", 0.58),
+        sub: pickTokenAlign("left", 0.5)
+      };
+      const orgZone = headerPair ? headerPair.left : zones.header;
 
       if (drawShell && chance(0.42)) g.appendChild(rect(x, y, w, h, { width: r(1.4, 2.8), rough: true, opacity: 0.9 }));
 
-      g.appendChild(textNode(x + 10, top, `${pick(visualTokens.symbolMarks)} @${org}`, { size: Math.max(10, Math.min(15, w / 24)), weight: 800, opacity: 0.9 }));
-      if (chance(0.56)) microBadge(g, x + w - 70, y + 8, chance(0.5) ? `V${ri(1, 7)}.${ri(0, 9)}` : `REV ${String.fromCharCode(65 + ri(0, 25))}`);
+      stackTextToken(g, orgZone, `@${org}`, {
+        align: stackAlign.header,
+        tokenSize: "small",
+        size: Math.max(10, Math.min(15, w / 24, zones.header.height * 0.72)),
+        weight: 800,
+        opacity: 0.9,
+        typeface: "english",
+        spin: spinAngle("subtle", 0.16)
+      });
+      if (showBadge) {
+        microBadge(g, alignedBoxX(headerPair.right, badgeW, stackAlign.badge), headerPair.right.y, badgeValue, { spin: spinAngle("subtle", 0.18) });
+      }
 
-      g.appendChild(textNode(x + 10, y + 58, trackedText(chance(0.5) ? "STATUS" : title), { size: Math.max(10, Math.min(14, w / 22)), tracking: 5, opacity: 0.85 }));
-      const mainY = y + (h > 190 ? 112 : 94);
-      const isKo = !/^0|^[A-Z]/.test(big);
-      g.appendChild(textNode(x + 10, mainY, big, {
-        ko: isKo,
-        size: Math.min(h * 0.28, isKo ? w * 0.16 : w * 0.19, 78),
-        weight: 950,
-        opacity: 0.98
-      }));
+      stackTextToken(g, zones.label, chance(0.5) ? "STATUS" : title, {
+        align: stackAlign.label,
+        tokenSize: "medium",
+        size: Math.max(10, Math.min(14, w / 22, zones.label.height * 0.72)),
+        weight: 800,
+        opacity: 0.85,
+        typeface: "english",
+        spin: spinAngle("subtle", 0.14)
+      });
+      stackTextToken(g, zones.main, big, {
+        align: stackAlign.main,
+        tokenSize: primary.size || "large",
+        baseline: 0.76,
+        size: Math.min(zones.main.height * 0.58, isCjk ? zones.main.width * 0.16 : zones.main.width * 0.19, 78),
+        minSize: Math.min(18, zones.main.height * 0.5),
+        maxWidth: textMaxWidth,
+        maxHeight: zones.main.height * 0.68,
+        weight: 900,
+        opacity: 0.98,
+        typeface: primary.typeface,
+        spin: spinAngle("subtle", 0.18)
+      });
 
-      const subY = mainY + Math.min(42, h * 0.16);
-      if (chance(0.68)) g.appendChild(textNode(x + 10, subY, isKo ? pick(visualTokens.englishKeywords) : ko, { ko: isKo === false, size: Math.min(21, w / 10), weight: 800, opacity: 0.92 }));
+      if (chance(0.68)) {
+        stackTextToken(g, zones.sub, isCjk ? pick(visualTokens.englishKeywords) : ko, {
+          align: stackAlign.sub,
+          tokenSize: "medium",
+          baseline: 0.76,
+          size: Math.min(21, w / 10, zones.sub.height * 0.78),
+          weight: 800,
+          opacity: 0.92,
+          typeface: isCjk ? "english" : "korean",
+          maxWidth: textMaxWidth,
+          spin: spinAngle("subtle", 0.12)
+        });
+      }
 
-      renderContentDetail(g, x, y, w, h, mode);
+      renderContentDetail(g, zones.detail.x, zones.detail.y, zones.detail.width, zones.detail.height, mode);
 
-      if (chance(0.32)) g.appendChild(line(x + 10, y + h * r(0.5, 0.76), x + w - 10, y + h * r(0.5, 0.76), { width: 1.4, rough: true, dash: "7 7", opacity: 0.82 }));
+      if (chance(0.32)) {
+        const dividerY = zones.detail.y - zones.gap * 0.5;
+        g.appendChild(line(zones.box.x, dividerY, zones.box.x + zones.box.width, dividerY, { width: 1.4, rough: true, dash: "7 7", opacity: 0.82 }));
+      }
       return g;
     }
 
     // Layout renderers.
     function renderStripLayout(w, h) {
       const g = make("g");
-      const px = w * r(0.22, 0.28);
-      const py = h * r(0.38, 0.43);
-      const pw = w * r(0.48, 0.58);
-      const ph = h * r(0.18, 0.26);
-      if (chance(0.45)) label(g, px, py, pw, pick(visualTokens.englishKeywords), true);
-      g.appendChild(line(px, py + 60, px + pw, py + 60, { width: 2, rough: true, dash: chance(0.5) ? "9 7" : "" }));
-      g.appendChild(textNode(px + pw / 2, py + 112, `< ${ri(1000, 9999)} ${ri(1000, 9999)} ${ri(10, 99)} >`, { size: Math.min(42, pw / 18), weight: 900, anchor: "middle" }));
-      g.appendChild(line(px, py + 128, px + pw, py + 128, { width: 2, rough: true }));
-      g.appendChild(textNode(px, py + 168, `CODE ${codeToken()}${ri(10, 99)}`, { size: 18, weight: 800 }));
-      g.appendChild(textNode(px, py + 210, `MOD P${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 20, weight: 800 }));
-      if (chance(0.35)) barcode(g, px, py + 232, pw, 48);
+      const safe = paddedBox(0, 0, w, h, "large");
+      const pw = safe.width * r(0.56, 0.68);
+      const px = alignedBoxX(safe, pw, pickTokenAlign("center", 0.62));
+      const py = safe.y + safe.height * r(0.22, 0.28);
+      const ph = safe.height * r(0.5, 0.62);
+      const y1 = py + ph * 0.24;
+      const mainY = py + ph * 0.45;
+      const y2 = py + ph * 0.52;
+      const codeY = py + ph * 0.68;
+      const modY = py + ph * 0.84;
+      const barcodeY = Math.min(py + ph * 0.88, safe.y + safe.height - 48);
+      if (chance(0.45)) label(g, px, py, pw, pick(visualTokens.englishKeywords), true, { tokenSize: "medium", spin: spinAngle("subtle", 0.16) });
+      g.appendChild(line(px, y1, px + pw, y1, { width: 2, rough: true, dash: chance(0.5) ? "9 7" : "" }));
+      g.appendChild(textNode(px + pw / 2, mainY, `< ${ri(1000, 9999)} ${ri(1000, 9999)} ${ri(10, 99)} >`, { size: Math.min(42, pw / 18), minSize: 14, maxWidth: pw, tokenSize: "large", weight: 900, align: "center", typeface: "mono" }));
+      g.appendChild(line(px, y2, px + pw, y2, { width: 2, rough: true }));
+      g.appendChild(textNode(px, codeY, `CODE ${codeToken()}${ri(10, 99)}`, { size: 18, maxWidth: pw, tokenSize: "medium", weight: 800, typeface: "mono" }));
+      g.appendChild(textNode(px, modY, `MOD P${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 20, maxWidth: pw, tokenSize: "medium", weight: 800, typeface: "mono" }));
+      if (chance(0.35)) barcode(g, px, barcodeY, pw, Math.min(56, safe.y + safe.height - barcodeY));
       return g;
     }
 
     function renderSpecimenLayout(w, h) {
       const g = make("g");
-      const cx = w * 0.5;
-      const cy = h * 0.5;
-      const word = chance(0.55) ? pick(visualTokens.koreanKeywords) : pick(visualTokens.englishKeywords);
-      g.appendChild(textNode(cx, cy - 74, trackedText("MICRO GRAPHIC"), { size: 16, tracking: 8, anchor: "middle", opacity: 0.78 }));
-      g.appendChild(textNode(cx, cy + 28, word, { ko: /[가-힣]/.test(word), size: Math.min(w * 0.13, 150), weight: 950, anchor: "middle" }));
-      g.appendChild(line(cx - w * 0.24, cy + 70, cx + w * 0.24, cy + 70, { width: 2.2, rough: true }));
-      barcode(g, cx - w * 0.2, cy + 102, w * 0.4, 58);
-      g.appendChild(textNode(cx, cy + 188, `CODE ${codeToken()} / PORT ${ri(10, 999)} / REV ${String.fromCharCode(65 + ri(0, 25))}`, { size: 18, weight: 800, anchor: "middle" }));
+      const safe = paddedBox(0, 0, w, h, "large");
+      const footerMargin = marginSize(safe.width, safe.height, "medium");
+      const cx = safe.x + safe.width * 0.5;
+      const titleY = safe.y + safe.height * 0.22;
+      const mainZone = {
+        y: safe.y + safe.height * 0.3,
+        height: safe.height * 0.22
+      };
+      const mainY = mainZone.y + mainZone.height * 0.76;
+      const lineY = safe.y + safe.height * 0.64;
+      const barcodeY = safe.y + safe.height * 0.72;
+      const codeY = Math.min(safe.y + safe.height - footerMargin, safe.y + safe.height * 0.88);
+      const word = pickDisplayTypography();
+      g.appendChild(textNode(cx, titleY, "MICRO GRAPHIC", { size: 16, tokenSize: "medium", weight: 800, align: "center", opacity: 0.78, typeface: "english", maxWidth: safe.width }));
+      g.appendChild(textNode(cx, mainY, word.value, { typeface: word.typeface, tokenSize: word.size || "large", size: Math.min(safe.width * 0.18, mainZone.height * 0.58, 150), minSize: Math.min(24, mainZone.height * 0.5), maxWidth: safe.width * 0.92, maxHeight: mainZone.height * 0.68, weight: 900, align: "center" }));
+      g.appendChild(line(cx - safe.width * 0.26, lineY, cx + safe.width * 0.26, lineY, { width: 2.2, rough: true }));
+      barcode(g, cx - safe.width * 0.22, barcodeY, safe.width * 0.44, Math.min(64, safe.y + safe.height - barcodeY - footerMargin * 2));
+      g.appendChild(textNode(cx, codeY, `CODE ${codeToken()} / PORT ${ri(10, 999)} / REV ${String.fromCharCode(65 + ri(0, 25))}`, { size: 18, minSize: 10, maxWidth: safe.width * 0.92, tokenSize: "medium", weight: 800, align: "center", typeface: "mono" }));
       return g;
     }
 
     function renderPanelLayout(w, h) {
       const g = make("g");
-      const pad = Math.min(w, h) * 0.08;
-      g.appendChild(contentPanel(pad, pad, w - pad * 2, h - pad * 2, "mixed", { shell: false }));
+      const box = paddedBox(0, 0, w, h, "large");
+      g.appendChild(contentPanel(box.x, box.y, box.width, box.height, "mixed", { shell: false }));
       return g;
     }
 
@@ -669,6 +1185,7 @@
       clone.style.background = cssVar("--bg");
       const style = document.createElementNS(SVG_NS, "style");
       style.textContent = `
+        @import url("${new URL(FONT_CSS_PATH, window.location.href).href}");
         svg { color: ${cssVar("--ink")}; }
         text { dominant-baseline: auto; }
       `;
@@ -711,8 +1228,31 @@
       window.addEventListener("resize", () => render(seed));
     }
 
-    bindEvents();
-    render(seed);
+    function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function loadTypefaces() {
+      if (!document.fonts) return;
+
+      const ready = Promise.allSettled([
+        document.fonts.load(`900 80px ${TYPEFACES.english}`),
+        document.fonts.load(`900 80px ${TYPEFACES.korean}`),
+        document.fonts.load(`900 80px ${TYPEFACES.mono}`),
+        document.fonts.load(`900 80px ${TYPEFACES.chinese}`)
+      ]).then(() => document.fonts.ready);
+
+      ready.then(() => render(seed)).catch(() => {});
+      await Promise.race([ready, wait(900)]);
+    }
+
+    async function start() {
+      bindEvents();
+      await loadTypefaces();
+      render(seed);
+    }
+
+    start();
   </script>
 </body>
 </html>
