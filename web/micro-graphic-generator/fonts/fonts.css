@@ -1,0 +1,127 @@
+@font-face {
+  font-family: "Noto Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("./NotoSans-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("./NotoSans-Bold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Sans";
+  font-style: normal;
+  font-weight: 800;
+  font-display: block;
+  src: url("./NotoSans-ExtraBold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Sans";
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+  src: url("./NotoSans-Black.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Sans KR";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("./NotoSansKR-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Sans KR";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("./NotoSansKR-Bold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Sans KR";
+  font-style: normal;
+  font-weight: 800;
+  font-display: block;
+  src: url("./NotoSansKR-ExtraBold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Sans KR";
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+  src: url("./NotoSansKR-Black.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Sans SC";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("./NotoSansSC-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Sans SC";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("./NotoSansSC-Bold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Sans SC";
+  font-style: normal;
+  font-weight: 800;
+  font-display: block;
+  src: url("./NotoSansSC-ExtraBold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Sans SC";
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+  src: url("./NotoSansSC-Black.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Sans Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("./NotoSansMono-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Sans Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("./NotoSansMono-Bold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Sans Mono";
+  font-style: normal;
+  font-weight: 800;
+  font-display: block;
+  src: url("./NotoSansMono-ExtraBold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Sans Mono";
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+  src: url("./NotoSansMono-Black.ttf") format("truetype");
+}
