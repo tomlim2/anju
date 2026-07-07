@@ -81,7 +81,8 @@
     }
 
     button:hover,
-    button:focus-visible {
+    button:focus-visible,
+    button[aria-pressed="true"] {
       background: var(--ink);
       color: var(--bg);
       outline: none;
@@ -118,6 +119,7 @@
   </main>
   <div class="controls" aria-label="Generator controls">
     <button id="lucky" type="button">Lucky</button>
+    <button id="mode" type="button" aria-pressed="false">Tokens</button>
     <button id="png" type="button">PNG</button>
     <button id="svg" type="button">SVG</button>
     <button id="tone" type="button">Tone</button>
@@ -147,7 +149,12 @@
     const DESIGN_TOKEN_SIZES = {
       small: { rowMode: "pairable", maxPerRow: 2 },
       medium: { rowMode: "single", maxPerRow: 1 },
-      large: { rowMode: "exclusive", maxPerRow: 1 }
+      large: { rowMode: "exclusive", maxPerRow: 1 },
+      xlarge: { rowMode: "exclusive", maxPerRow: 1 }
+    };
+    const MAJOR_TOKEN_RULES = {
+      minSize: "large",
+      maxPerLayout: 1
     };
     const SPIN_TOKENS = {
       none: 0,
@@ -168,6 +175,7 @@
     const seedLabel = document.querySelector("#seedLabel");
     const controls = {
       lucky: document.querySelector("#lucky"),
+      mode: document.querySelector("#mode"),
       png: document.querySelector("#png"),
       svg: document.querySelector("#svg"),
       tone: document.querySelector("#tone")
@@ -217,6 +225,7 @@
     let seed = randomSeed();
     let activeComponentRatio = "";
     let activeBorderMode = "";
+    let appMode = "random";
     let dark = false;
 
     function randomSeed() {
@@ -649,21 +658,39 @@
       ];
     }
 
-    function pickDisplayTypography() {
-      const displayTokens = [
+    function largeTypographyTokens() {
+      return [
         ...visualTokens.koreanKeywords.map(value => token(value, "korean", "large")),
-        ...visualTokens.hanjaKeywords.map(value => token(value, "hanja", "large")),
-        ...visualTokens.greetingTokens.map(item => token(item.value, item.typeface, "large")),
         ...visualTokens.englishKeywords.map(value => token(value, "english", "large")),
         ...todayDateTypographyTokens()
       ];
+    }
 
-      return pick(displayTokens);
+    function xlargeTypographyTokens() {
+      const heroKorean = visualTokens.koreanKeywords
+        .filter(value => ["접속", "검증", "출력"].includes(value))
+        .map(value => token(value, "korean", "xlarge"));
+      const heroEnglish = visualTokens.englishKeywords
+        .filter(value => ["ACCESS", "OUTPUT", "STATUS"].includes(value))
+        .map(value => token(value, "english", "xlarge"));
+      return [
+        ...heroKorean,
+        ...visualTokens.hanjaKeywords.map(value => token(value, "hanja", "xlarge")),
+        ...visualTokens.greetingTokens.map(item => token(item.value, item.typeface, "xlarge")),
+        ...heroEnglish
+      ];
+    }
+
+    function pickXlargeTypography() {
+      const tokens = [
+        ...xlargeTypographyTokens(),
+        token(codeToken(), "mono", "xlarge")
+      ];
+      return pick(tokens);
     }
 
     function pickPrimaryDisplayTypography() {
-      if (chance(0.72)) return pickDisplayTypography();
-      return token(codeToken(), "mono", "large");
+      return pickXlargeTypography();
     }
 
     // Graphic primitives.
@@ -906,6 +933,7 @@
       const primary = pickPrimaryDisplayTypography();
       const big = primary.value;
       const isCjk = hasHangul(big) || hasHanja(big);
+      const isXlarge = primary.size === "xlarge";
       const showBadge = chance(0.56);
       const badgeValue = chance(0.5) ? `V${ri(1, 7)}.${ri(0, 9)}` : `REV ${String.fromCharCode(65 + ri(0, 25))}`;
       const badgeW = microBadgeWidth(badgeValue);
@@ -948,10 +976,10 @@
         align: stackAlign.main,
         tokenSize: primary.size || "large",
         baseline: 0.76,
-        size: Math.min(zones.main.height * 0.58, isCjk ? zones.main.width * 0.16 : zones.main.width * 0.19, 78),
-        minSize: Math.min(18, zones.main.height * 0.5),
+        size: Math.min(zones.main.height * (isXlarge ? 1.65 : 0.7), isCjk ? zones.main.width * (isXlarge ? 0.5 : 0.2) : zones.main.width * (isXlarge ? 0.56 : 0.22), isXlarge ? 292 : 104),
+        minSize: Math.min(isXlarge ? 64 : 22, zones.main.height * (isXlarge ? 0.9 : 0.58)),
         maxWidth: textMaxWidth,
-        maxHeight: zones.main.height * 0.68,
+        maxHeight: zones.main.height * (isXlarge ? 1.85 : 0.8),
         weight: 900,
         opacity: 0.98,
         typeface: primary.typeface,
@@ -995,9 +1023,10 @@
       const codeY = py + ph * 0.68;
       const modY = py + ph * 0.84;
       const barcodeY = Math.min(py + ph * 0.88, safe.y + safe.height - 48);
+      const hero = token(`< ${ri(1000, 9999)} ${ri(1000, 9999)} ${ri(10, 99)} >`, "mono", "xlarge");
       if (chance(0.45)) label(g, px, py, pw, pick(visualTokens.englishKeywords), true, { tokenSize: "medium", spin: spinAngle("subtle", 0.16) });
       g.appendChild(line(px, y1, px + pw, y1, { width: 2, rough: true, dash: chance(0.5) ? "9 7" : "" }));
-      g.appendChild(textNode(px + pw / 2, mainY, `< ${ri(1000, 9999)} ${ri(1000, 9999)} ${ri(10, 99)} >`, { size: Math.min(42, pw / 18), minSize: 14, maxWidth: pw, tokenSize: "large", weight: 900, align: "center", typeface: "mono" }));
+      g.appendChild(textNode(px + pw / 2, mainY, hero.value, { size: Math.min(116, pw / 8, ph * 0.42), minSize: Math.min(34, ph * 0.24), maxWidth: pw, maxHeight: ph * 0.42, tokenSize: hero.size, weight: 900, align: "center", typeface: hero.typeface }));
       g.appendChild(line(px, y2, px + pw, y2, { width: 2, rough: true }));
       g.appendChild(textNode(px, codeY, `CODE ${codeToken()}${ri(10, 99)}`, { size: 18, maxWidth: pw, tokenSize: "medium", weight: 800, typeface: "mono" }));
       g.appendChild(textNode(px, modY, `MOD P${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 20, maxWidth: pw, tokenSize: "medium", weight: 800, typeface: "mono" }));
@@ -1012,16 +1041,17 @@
       const cx = safe.x + safe.width * 0.5;
       const titleY = safe.y + safe.height * 0.22;
       const mainZone = {
-        y: safe.y + safe.height * 0.3,
-        height: safe.height * 0.22
+        y: safe.y + safe.height * 0.28,
+        height: safe.height * 0.28
       };
       const mainY = mainZone.y + mainZone.height * 0.76;
       const lineY = safe.y + safe.height * 0.64;
       const barcodeY = safe.y + safe.height * 0.72;
       const codeY = Math.min(safe.y + safe.height - footerMargin, safe.y + safe.height * 0.88);
-      const word = pickDisplayTypography();
+      const word = pickXlargeTypography();
+      const isXlarge = word.size === "xlarge";
       g.appendChild(textNode(cx, titleY, "MICRO GRAPHIC", { size: 16, tokenSize: "medium", weight: 800, align: "center", opacity: 0.78, typeface: "english", maxWidth: safe.width }));
-      g.appendChild(textNode(cx, mainY, word.value, { typeface: word.typeface, tokenSize: word.size || "large", size: Math.min(safe.width * 0.18, mainZone.height * 0.58, 150), minSize: Math.min(24, mainZone.height * 0.5), maxWidth: safe.width * 0.92, maxHeight: mainZone.height * 0.68, weight: 900, align: "center" }));
+      g.appendChild(textNode(cx, mainY, word.value, { typeface: word.typeface, tokenSize: word.size || "large", size: Math.min(safe.width * (isXlarge ? 0.56 : 0.22), mainZone.height * (isXlarge ? 1.8 : 0.72), isXlarge ? 500 : 178), minSize: Math.min(isXlarge ? 84 : 30, mainZone.height * (isXlarge ? 1 : 0.6)), maxWidth: safe.width * 0.92, maxHeight: mainZone.height * (isXlarge ? 1.8 : 0.84), weight: 900, align: "center" }));
       g.appendChild(line(cx - safe.width * 0.26, lineY, cx + safe.width * 0.26, lineY, { width: 2.2, rough: true }));
       barcode(g, cx - safe.width * 0.22, barcodeY, safe.width * 0.44, Math.min(64, safe.y + safe.height - barcodeY - footerMargin * 2));
       g.appendChild(textNode(cx, codeY, `CODE ${codeToken()} / PORT ${ri(10, 999)} / REV ${String.fromCharCode(65 + ri(0, 25))}`, { size: 18, minSize: 10, maxWidth: safe.width * 0.92, tokenSize: "medium", weight: 800, align: "center", typeface: "mono" }));
@@ -1032,6 +1062,148 @@
       const g = make("g");
       const box = paddedBox(0, 0, w, h, "large");
       g.appendChild(contentPanel(box.x, box.y, box.width, box.height, "mixed", { shell: false }));
+      return g;
+    }
+
+    function tokenGalleryItems() {
+      const orgs = visualTokens.organizationPrefixes.map((prefix, index) => {
+        const suffix = visualTokens.organizationSuffixes[index % visualTokens.organizationSuffixes.length];
+        return token(`@${prefix} ${suffix}`, "english", "small");
+      });
+      const tableTokens = visualTokens.tableFieldLabels.map((labelName, index) => token(`${labelName} ${index % 3 === 0 ? ri(10, 99) : index % 3 === 1 ? `${ri(1, 99)}%` : codeToken()}`, "mono", "small"));
+      const small = [
+        ...orgs,
+        ...tableTokens,
+        token("V1.2", "mono", "small"),
+        token("REV A", "mono", "small"),
+        token("BUILD 859", "mono", "small"),
+        token("SN 3886-9487-TC", "mono", "small"),
+        token("PORT 117", "mono", "small"),
+        token("LOT C2", "mono", "small"),
+        token("QC PASS", "mono", "small"),
+        token("LAT 50MS", "mono", "small")
+      ];
+
+      const medium = [
+        token("STATUS", "english", "medium"),
+        token("REPORT", "english", "medium"),
+        token("MODULE", "english", "medium"),
+        token("INPUT VERIFIED", "mono", "medium"),
+        token("OUTPUT OK", "mono", "medium"),
+        token("ACCESS GRANTED", "english", "medium"),
+        token("MICRO GRAPHIC", "english", "medium"),
+        token("CODE 0X7F", "mono", "medium"),
+        token("MOD P31 / PORT 97", "mono", "medium"),
+        token("RUNNING // PORT 640", "mono", "medium"),
+        token("검증 완료", "korean", "medium"),
+        token("출력 대기", "korean", "medium")
+      ];
+
+      const large = [
+        ...largeTypographyTokens()
+      ];
+      const xlarge = [
+        ...xlargeTypographyTokens(),
+        token(codeToken(), "mono", "xlarge")
+      ];
+
+      return { small, medium, large, xlarge };
+    }
+
+    function renderTokenGallerySection(g, title, items, box, size) {
+      const headerH = size === "xlarge" ? 32 : size === "large" ? 28 : 22;
+      const gap = marginSize(box.width, box.height, "small");
+      const bodyY = box.y + headerH + gap;
+      const bodyH = Math.max(1, box.height - headerH - gap);
+      const desiredCellW = size === "small" ? 108 : size === "medium" ? 145 : size === "large" ? 112 : 260;
+      const cols = Math.max(1, Math.min(items.length, Math.floor(box.width / desiredCellW) || 1));
+      const rows = Math.max(1, Math.ceil(items.length / cols));
+      const cellW = box.width / cols;
+      const cellH = bodyH / rows;
+      const fontMax = size === "small" ? 11 : size === "medium" ? 15 : size === "large" ? 28 : 92;
+      const fontScale = size === "xlarge" ? 1.7 : size === "large" ? 0.76 : 0.62;
+      const fontSize = Math.max(6, Math.min(fontMax, cellH * fontScale));
+      const titleSize = size === "xlarge" ? 18 : size === "large" ? 16 : 12;
+
+      g.appendChild(textNode(box.x, box.y + headerH * 0.72, `${title} / ${items.length}`, { size: titleSize, tokenSize: "small", weight: 900, typeface: "english", maxWidth: box.width }));
+      g.appendChild(line(box.x, box.y + headerH, box.x + box.width, box.y + headerH, { width: 1.4, rough: true, opacity: 0.75 }));
+
+      items.forEach((item, index) => {
+        const col = index % cols;
+        const row = Math.floor(index / cols);
+        const cell = {
+          x: box.x + col * cellW,
+          y: bodyY + row * cellH,
+          width: cellW - gap,
+          height: cellH
+        };
+        const align = TOKEN_ALIGNMENTS[index % TOKEN_ALIGNMENTS.length];
+        stackTextToken(g, cell, item.value, {
+          align,
+          tokenSize: size,
+          baseline: 0.68,
+          size: fontSize,
+          minSize: 7,
+          weight: size === "large" || size === "xlarge" ? 900 : 800,
+          typeface: item.typeface,
+          opacity: size === "small" ? 0.78 : 0.92,
+          maxWidth: cell.width
+        });
+      });
+    }
+
+    function renderPrimitiveGallery(g, box) {
+      const gap = marginSize(box.width, box.height, "medium");
+      const titleH = 22;
+      const bodyY = box.y + titleH + gap;
+      const cellW = (box.width - gap * 4) / 5;
+      const cellH = Math.max(28, box.height - titleH - gap);
+      g.appendChild(textNode(box.x, box.y + titleH * 0.72, "GRAPHIC PRIMITIVES", { size: 12, tokenSize: "small", weight: 900, typeface: "english", maxWidth: box.width }));
+      g.appendChild(line(box.x, box.y + titleH, box.x + box.width, box.y + titleH, { width: 1.4, rough: true, opacity: 0.75 }));
+
+      const cells = Array.from({ length: 5 }, (_, index) => ({
+        x: box.x + index * (cellW + gap),
+        y: bodyY,
+        width: cellW,
+        height: cellH
+      }));
+
+      barcode(g, cells[0].x, cells[0].y + cellH * 0.2, cells[0].width, cellH * 0.58, { caption: true });
+      miniTable(g, cells[1].x, cells[1].y + cellH * 0.08, cells[1].width, { maxHeight: cellH * 0.86 });
+      wave(g, cells[2].x, cells[2].y + cellH * 0.16, cells[2].width, cellH * 0.62);
+      ticks(g, cells[3].x, cells[3].y + cellH * 0.72, cells[3].width, 36);
+      pseudoQr(g, cells[4].x, cells[4].y + cellH * 0.08, Math.min(cells[4].width, cellH * 0.82), 15);
+    }
+
+    function renderTokenGallery(w, h) {
+      const g = make("g", { "data-mode": "token-gallery" });
+      const safe = paddedBox(0, 0, w, h, "large");
+      const gap = marginSize(safe.width, safe.height, "medium");
+      const headerH = 46;
+      const primitiveH = Math.max(64, Math.min(96, safe.height * 0.14));
+      const sectionH = Math.max(1, safe.height - headerH - primitiveH - gap * 4);
+      const smallH = sectionH * 0.15;
+      const mediumH = sectionH * 0.16;
+      const largeH = sectionH * 0.29;
+      const xlargeH = sectionH - smallH - mediumH - largeH - gap * 3;
+      const items = tokenGalleryItems();
+
+      g.appendChild(textNode(safe.x, safe.y + 26, "DESIGN TOKEN CATALOG", { size: 18, tokenSize: "medium", weight: 900, typeface: "english", maxWidth: safe.width * 0.62 }));
+      g.appendChild(textNode(safe.x + safe.width, safe.y + 26, `S ${items.small.length} / M ${items.medium.length} / L ${items.large.length} / XL ${items.xlarge.length}`, { size: 12, tokenSize: "small", weight: 800, align: "right", typeface: "mono", maxWidth: safe.width * 0.36 }));
+      g.appendChild(line(safe.x, safe.y + headerH, safe.x + safe.width, safe.y + headerH, { width: 1.6, rough: true, opacity: 0.85 }));
+
+      const smallBox = { x: safe.x, y: safe.y + headerH + gap, width: safe.width, height: smallH };
+      const mediumBox = { x: safe.x, y: smallBox.y + smallBox.height + gap, width: safe.width, height: mediumH };
+      const largeBox = { x: safe.x, y: mediumBox.y + mediumBox.height + gap, width: safe.width, height: largeH };
+      const xlargeBox = { x: safe.x, y: largeBox.y + largeBox.height + gap, width: safe.width, height: xlargeH };
+      const primitiveBox = { x: safe.x, y: xlargeBox.y + xlargeBox.height + gap, width: safe.width, height: primitiveH };
+
+      renderTokenGallerySection(g, "SMALL TOKENS", items.small, smallBox, "small");
+      renderTokenGallerySection(g, "MEDIUM TOKENS", items.medium, mediumBox, "medium");
+      renderTokenGallerySection(g, "LARGE TOKENS", items.large, largeBox, "large");
+      renderTokenGallerySection(g, "XLARGE TOKENS", items.xlarge, xlargeBox, "xlarge");
+      renderPrimitiveGallery(g, primitiveBox);
+
       return g;
     }
 
@@ -1162,8 +1334,15 @@
       const bg = make("rect", { x: 0, y: 0, width: w, height: h, fill: "var(--bg)" });
       art.appendChild(bg);
       art.appendChild(renderCanvasTexture(w, h));
-      art.appendChild(renderComponent(w, h));
-      seedLabel.textContent = `SEED ${seedHex()} / COMP ${activeComponentRatio} / BORDER ${activeBorderMode}`;
+      if (appMode === "tokens") {
+        activeComponentRatio = "token gallery";
+        activeBorderMode = "catalog";
+        art.appendChild(renderTokenGallery(w, h));
+        seedLabel.textContent = `MODE TOKENS / SEED ${seedHex()}`;
+      } else {
+        art.appendChild(renderComponent(w, h));
+        seedLabel.textContent = `SEED ${seedHex()} / COMP ${activeComponentRatio} / BORDER ${activeBorderMode}`;
+      }
     }
 
     function downloadBlob(blob, filename) {
@@ -1218,6 +1397,12 @@
 
     function bindEvents() {
       controls.lucky.addEventListener("click", () => render());
+      controls.mode.addEventListener("click", () => {
+        appMode = appMode === "random" ? "tokens" : "random";
+        controls.mode.textContent = appMode === "tokens" ? "Random" : "Tokens";
+        controls.mode.setAttribute("aria-pressed", String(appMode === "tokens"));
+        render(seed);
+      });
       controls.png.addEventListener("click", exportPng);
       controls.svg.addEventListener("click", exportSvg);
       controls.tone.addEventListener("click", () => {

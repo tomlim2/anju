@@ -24,6 +24,7 @@
 - SVG 기반 렌더링.
 - Lucky 버튼으로 새 랜덤 seed 생성.
 - 캔버스 클릭으로 새 결과 생성.
+- Tokens 버튼으로 디자인 토큰 카탈로그 모드 전환.
 - Tone 버튼으로 light/dark 반전.
 - 화면 크기 기준 2x PNG 내보내기.
 - SVG 내보내기로 벡터 후작업 가능.
@@ -56,8 +57,9 @@
 - 디자인 토큰 사이의 간격은 `MARGIN_TOKENS.small`, `MARGIN_TOKENS.medium`, `MARGIN_TOKENS.large`만 쓴다.
 - 모든 display token, greeting token, date/time token, data token은 자신이 받은 padded box 안에서만 spawn한다. 긴 문자는 `maxWidth` 기준으로 축소한다.
 - 텍스트 정렬은 `left`, `center`, `right` 세 가지만 허용한다. SVG의 `start`, `middle`, `end`는 내부 변환값으로만 쓴다.
-- 디자인 토큰은 `small`, `medium`, `large` 세 크기 단계로 나누고, 크기 단계가 한 행을 어떻게 점유하는지 정한다.
+- 디자인 토큰은 `small`, `medium`, `large`, `xlarge` 네 크기 단계로 나누고, 크기 단계가 한 행을 어떻게 점유하는지 정한다.
 - 모든 디자인 토큰의 배치 축도 `left`, `center`, `right` 세 가지만 쓴다. 토큰은 세 축 위에서 테트리스 블록처럼 행 단위로 쌓일 수 있고, 작은 spin 회전은 허용한다.
+- `Tokens` mode는 현재 vocabulary, date/time token, metadata token, graphic primitive 샘플을 한 화면에 모아보는 catalog view다.
 - barcode, pseudo-QR, tick mark, mini table, wave graph, label, badge, symbol을 재사용 가능한 graphic primitive로 둔다.
 - 복잡한 컨트롤보다 Component 변주를 우선한다.
 
@@ -106,15 +108,20 @@ margin은 디자인 토큰 사이의 거리다. padding이 Component나 content 
 
 ## Token Size System
 
-디자인 토큰은 시각적 중요도와 행 점유 방식에 따라 `small`, `medium`, `large`로 나눈다. 코드에서는 `DESIGN_TOKEN_SIZES`와 `tokenSize` 속성으로 기록한다.
+디자인 토큰은 시각적 중요도와 행 점유 방식에 따라 `small`, `medium`, `large`, `xlarge`로 나눈다. 코드에서는 `DESIGN_TOKEN_SIZES`와 `tokenSize` 속성으로 기록한다.
 
 - `small`: 조직명, revision badge, serial, barcode caption, table cell, port/code caption처럼 보조 정보다. 한 행에 최대 두 개까지 올 수 있고, 기본 조합은 `left` + `right`다. 작은 토큰이 하나만 있을 때는 `left`, `center`, `right` 중 하나에 단독 배치할 수 있다.
 - `medium`: `STATUS`, `REPORT`, section label, subtitle, short command처럼 중간 위계의 정보다. 한 행에 하나만 둔다. 좌/중/우 정렬은 가능하지만 같은 행에서 다른 토큰과 나란히 놓지 않는다.
-- `large`: main display word, 큰 숫자, greeting, date/time display처럼 한 component에서 시선을 먼저 받는 정보다. 무조건 한 행에 하나만 둔다. 큰 토큰 행에는 small badge나 caption을 얹지 않는다.
+- `large`: main display word, 큰 숫자, date/time display처럼 한 component에서 시선을 먼저 받는 정보다. 무조건 한 행에 하나만 두고, medium과 명확히 구분되도록 크게 운용한다. 큰 토큰 행에는 small badge나 caption을 얹지 않는다.
+- `xlarge`: 특대 토큰이다. greeting, 대표 한글/영문 단어, 독립 한자, 아주 큰 code처럼 화면을 장악해야 하는 hero token에만 쓴다. 한 행을 독점하고, large의 약 두 배 체감 크기를 목표로 더 적은 개수와 더 강한 스케일로 운용한다.
 
-작은 요소만 같은 행에서 왼쪽 정렬과 오른쪽 정렬을 동시에 가질 수 있다. 중간/큰 요소는 행을 독점한다. 특히 큰 토큰은 content zone의 `main` row를 혼자 차지해야 하며, 다른 토큰이 그 row를 침범하면 안 된다.
+작은 요소만 같은 행에서 왼쪽 정렬과 오른쪽 정렬을 동시에 가질 수 있다. 중간/큰/특대 요소는 행을 독점한다. 특히 큰 토큰과 특대 토큰은 content zone의 `main` row를 혼자 차지해야 하며, 다른 토큰이 그 row를 침범하면 안 된다.
+
+상위 토큰 수량은 코드의 `MAJOR_TOKEN_RULES`를 따른다. `large`부터는 major token으로 취급하고, 한 생성 layout 안에서 major token은 총 하나만 허용한다. 즉 `large`와 `xlarge`는 둘 다 pair로 배치하지 않는다.
 
 이 규칙은 Component-level stacking 기준이다. barcode caption, mini table cell처럼 graphic primitive 내부에서 생기는 작은 data token은 해당 primitive의 내부 grid를 따른다.
+
+`Tokens` mode는 이 분류를 검토하기 위한 catalog view다. small, medium, large, xlarge section을 따로 렌더링하고, 하단에 barcode, table, wave, tick, pseudo-QR 같은 graphic primitive 샘플을 함께 둔다. 새 token을 추가했을 때 이 모드에서 한 번에 누락과 밀도를 확인한다. catalog view는 목록 검토가 목적이므로 생성 layout의 xlarge/large 수량 제한을 적용하지 않는다.
 
 ## Token Placement System
 
@@ -243,6 +250,8 @@ spin은 토큰 자체에 주는 작은 회전이다. spin은 alignment를 대체
 - 디자인 토큰 사이 간격은 `MARGIN_TOKENS`와 `marginSize()`에서 조정한다.
 - 디자인 토큰의 크기 단계는 `DESIGN_TOKEN_SIZES`와 `tokenSize`에서 조정한다.
 - 디자인 토큰의 좌/중/우 배치와 spin은 `TOKEN_ALIGNMENTS`, `alignedBoxX()`, `alignedTextX()`, `smallTokenPairZones()`, `stackTextToken()`, `spinAngle()`에서 조정한다.
+- Tokens catalog에 보이는 token 묶음은 `tokenGalleryItems()`에서 조정한다.
+- 새 generator mode는 `appMode`, controls binding, `render()`의 mode 분기에서 추가한다.
 
 ## Rule Gap Inventory
 
@@ -356,3 +365,8 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-06: 디자인 토큰 배치를 `left`, `center`, `right` alignment slot으로 제한하고, content panel의 토큰을 행 단위로 Tetris stacking 하며 작은 spin 회전을 허용.
 - 2026-07-06: 디자인 토큰 크기를 `small`, `medium`, `large`로 분류하고, small token만 한 행에서 left/right pair를 허용하며 large token은 한 행 독점으로 고정.
 - 2026-07-06: barcode 위쪽에 겹쳐 보이던 `UPC ####` overlay를 제거하고 하단 human-readable 숫자만 남김.
+- 2026-07-06: `Tokens` mode를 추가해 small/medium/large 디자인 토큰과 주요 graphic primitive를 한 화면에서 검토할 수 있게 함.
+- 2026-07-07: large token이 medium과 더 강하게 구분되도록 main display, specimen, strip, Tokens catalog의 large scale을 키움.
+- 2026-07-07: `xlarge` 특대 token size를 추가하고 greeting, 대표 한글/영문 단어, 독립 한자, hero code를 별도 섹션과 main display 후보로 분리.
+- 2026-07-07: `xlarge`를 large의 약 두 배 체감 크기로 키우고, 후보 수를 줄여 hero token처럼 보이게 조정.
+- 2026-07-07: 상위 토큰 수량 규칙을 `large` 이상 총 1개로 정리해 생성 layout 안에서 `large`와 `xlarge`가 pair로 나오지 않게 함.
