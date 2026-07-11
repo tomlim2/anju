@@ -119,7 +119,7 @@
   </main>
   <div class="controls" aria-label="Generator controls">
     <button id="lucky" type="button">Lucky</button>
-    <button id="mode" type="button" aria-pressed="false">Tokens</button>
+    <button id="mode" type="button" aria-pressed="false">All Tokens</button>
     <button id="png" type="button">PNG</button>
     <button id="svg" type="button">SVG</button>
     <button id="tone" type="button">Tone</button>
@@ -156,6 +156,9 @@
       minSize: "large",
       maxPerLayout: 1
     };
+    const TOKEN_FORMS = ["typography", "graphic"];
+    const TOKEN_FUNCTIONS = ["content", "data", "symbol", "sign"];
+    const TOKEN_CONTEXTS = ["component", "primitive-detail", "catalog-ui"];
     const SPIN_TOKENS = {
       none: 0,
       subtle: 1.2,
@@ -330,6 +333,24 @@
       };
     }
 
+    function tokenTaxonomyAttrs({ form, tokenFunction, role, typeface = null, context = "component" }) {
+      if (!TOKEN_FORMS.includes(form)) throw new Error(`Unknown token form: ${form}`);
+      if (!TOKEN_FUNCTIONS.includes(tokenFunction)) throw new Error(`Unknown token function: ${tokenFunction}`);
+      if (!role) throw new Error("Token role is required");
+      if (!TOKEN_CONTEXTS.includes(context)) throw new Error(`Unknown token context: ${context}`);
+      if (form === "typography" && !TYPEFACES[typeface]) {
+        throw new Error(`Typography token requires a known typeface: ${typeface}`);
+      }
+
+      return {
+        "data-token-form": form,
+        "data-token-function": tokenFunction,
+        "data-token-role": role,
+        "data-token-context": context,
+        ...(form === "typography" ? { "data-token-typeface": typeface } : {})
+      };
+    }
+
     function alignedBoxX(box, tokenWidth, align = "left") {
       const safeWidth = Math.min(tokenWidth, box.width);
       const normalized = normalizeTokenAlign(align);
@@ -366,8 +387,26 @@
       const transform = spinTransform(x, y, w, h, attrs.spin || 0);
       const group = make("g", {
         ...tokenSizeAttrs(tokenSize),
+        ...tokenTaxonomyAttrs({
+          form: attrs.form || "graphic",
+          tokenFunction: attrs.tokenFunction,
+          role: attrs.tokenRole,
+          typeface: attrs.typeface,
+          context: attrs.tokenContext || "component"
+        }),
         transform
       });
+      parent.appendChild(group);
+      return group;
+    }
+
+    function graphicTokenGroup(parent, tokenFunction, tokenRole, tokenContext = "primitive-detail") {
+      const group = make("g", tokenTaxonomyAttrs({
+        form: "graphic",
+        tokenFunction,
+        role: tokenRole,
+        context: tokenContext
+      }));
       parent.appendChild(group);
       return group;
     }
@@ -518,6 +557,13 @@
     function textNode(x, y, text, attrs = {}) {
       const fontSize = fitTextSize(text, attrs);
       const tokenSize = attrs.tokenSize ? normalizeDesignTokenSize(attrs.tokenSize) : null;
+      const taxonomyAttrs = tokenSize ? tokenTaxonomyAttrs({
+        form: "typography",
+        tokenFunction: attrs.tokenFunction,
+        role: attrs.tokenRole,
+        typeface: attrs.typeface,
+        context: attrs.tokenContext || "component"
+      }) : {};
       const el = make("text", {
         x,
         y,
@@ -529,7 +575,8 @@
         "text-anchor": resolveTextAlignment(attrs),
         opacity: attrs.opacity ?? 1,
         transform: attrs.transform || "",
-        ...(tokenSize ? tokenSizeAttrs(tokenSize) : {})
+        ...(tokenSize ? tokenSizeAttrs(tokenSize) : {}),
+        ...taxonomyAttrs
       });
       if (attrs.maxWidth) {
         const fittedWidth = estimateTextWidth(text, fontSize, attrs.tracking || 0);
@@ -599,8 +646,25 @@
       return chance(0.46) ? `0X${ri(0, 255).toString(16).toUpperCase().padStart(2, "0")}` : `${ri(2, 9)}${ri(0, 9)}${ri(0, 9)}`;
     }
 
-    function token(value, typeface, size = "medium") {
-      return { value, typeface, size: normalizeDesignTokenSize(size) };
+    function typographyToken(value, options) {
+      const definition = {
+        value,
+        form: "typography",
+        function: options.function,
+        role: options.role,
+        typeface: options.typeface,
+        size: normalizeDesignTokenSize(options.size || "medium"),
+        weight: options.weight || 800,
+        context: options.context || "component"
+      };
+      tokenTaxonomyAttrs({
+        form: definition.form,
+        tokenFunction: definition.function,
+        role: definition.role,
+        typeface: definition.typeface,
+        context: definition.context
+      });
+      return definition;
     }
 
     function pad2(value) {
@@ -638,30 +702,43 @@
       const koreanHour = hour % 12 || 12;
       const labels = visualTokens.dateTypography.refreshedLabels;
       const timestampLabels = visualTokens.dateTypography.timestampLabels;
+      const dateToken = (value, typeface) => typographyToken(value, {
+        typeface,
+        size: "large",
+        function: "content",
+        role: "date-time",
+        weight: 900
+      });
 
       return [
-        token(`${year}년 ${month}월 ${day}일`, "korean", "large"),
-        token(`${year}년 ${month}월 ${day}일 ${koreanMeridiem} ${koreanHour}시 ${minute}분`, "korean", "large"),
-        token(`${labels.korean} ${timestamp}`, "korean", "large"),
-        token(`${timestampLabels.korean} ${epochTimestamp}`, "korean", "large"),
-        token(`${month}월 ${day}일`, "korean", "large"),
-        token(`${englishMonth} ${day}, ${year}`, "english", "large"),
-        token(`${englishMonth} ${day}, ${year} ${timestamp}`, "english", "large"),
-        token(`${pad2(day)} ${englishMonthShort} ${year}`, "english", "large"),
-        token(`${labels.english} ${timestamp}`, "english", "large"),
-        token(`${timestampLabels.english} ${epochTimestamp}`, "english", "large"),
-        token(`${year}年${month}月${day}日`, "chinese", "large"),
-        token(`${year}年${month}月${day}日 ${timestamp}`, "chinese", "large"),
-        token(`${chineseDigitSequence(year)}年${chineseNumber(month)}月${chineseNumber(day)}日`, "chinese", "large"),
-        token(`${labels.chinese} ${timestamp}`, "chinese", "large"),
-        token(`${timestampLabels.chinese} ${epochTimestamp}`, "chinese", "large")
+        dateToken(`${year}년 ${month}월 ${day}일`, "korean"),
+        dateToken(`${year}년 ${month}월 ${day}일 ${koreanMeridiem} ${koreanHour}시 ${minute}분`, "korean"),
+        dateToken(`${labels.korean} ${timestamp}`, "korean"),
+        dateToken(`${timestampLabels.korean} ${epochTimestamp}`, "korean"),
+        dateToken(`${month}월 ${day}일`, "korean"),
+        dateToken(`${englishMonth} ${day}, ${year}`, "english"),
+        dateToken(`${englishMonth} ${day}, ${year} ${timestamp}`, "english"),
+        dateToken(`${pad2(day)} ${englishMonthShort} ${year}`, "english"),
+        dateToken(`${labels.english} ${timestamp}`, "english"),
+        dateToken(`${timestampLabels.english} ${epochTimestamp}`, "english"),
+        dateToken(`${year}年${month}月${day}日`, "chinese"),
+        dateToken(`${year}年${month}月${day}日 ${timestamp}`, "chinese"),
+        dateToken(`${chineseDigitSequence(year)}年${chineseNumber(month)}月${chineseNumber(day)}日`, "chinese"),
+        dateToken(`${labels.chinese} ${timestamp}`, "chinese"),
+        dateToken(`${timestampLabels.chinese} ${epochTimestamp}`, "chinese")
       ];
     }
 
     function largeTypographyTokens() {
+      const reservedForMedium = new Set(["STATUS", "REPORT", "MODULE"]);
+      const reservedForXlarge = new Set(["접속", "검증", "출력", "ACCESS", "OUTPUT"]);
       return [
-        ...visualTokens.koreanKeywords.map(value => token(value, "korean", "large")),
-        ...visualTokens.englishKeywords.map(value => token(value, "english", "large")),
+        ...visualTokens.koreanKeywords
+          .filter(value => !reservedForXlarge.has(value))
+          .map(value => typographyToken(value, { typeface: "korean", size: "large", function: "content", role: "display-keyword", weight: 900 })),
+        ...visualTokens.englishKeywords
+          .filter(value => !reservedForMedium.has(value) && !reservedForXlarge.has(value))
+          .map(value => typographyToken(value, { typeface: "english", size: "large", function: "content", role: "display-keyword", weight: 900 })),
         ...todayDateTypographyTokens()
       ];
     }
@@ -669,14 +746,14 @@
     function xlargeTypographyTokens() {
       const heroKorean = visualTokens.koreanKeywords
         .filter(value => ["접속", "검증", "출력"].includes(value))
-        .map(value => token(value, "korean", "xlarge"));
+        .map(value => typographyToken(value, { typeface: "korean", size: "xlarge", function: "content", role: "hero-keyword", weight: 900 }));
       const heroEnglish = visualTokens.englishKeywords
         .filter(value => ["ACCESS", "OUTPUT", "STATUS"].includes(value))
-        .map(value => token(value, "english", "xlarge"));
+        .map(value => typographyToken(value, { typeface: "english", size: "xlarge", function: "content", role: "hero-keyword", weight: 900 }));
       return [
         ...heroKorean,
-        ...visualTokens.hanjaKeywords.map(value => token(value, "hanja", "xlarge")),
-        ...visualTokens.greetingTokens.map(item => token(item.value, item.typeface, "xlarge")),
+        ...visualTokens.hanjaKeywords.map(value => typographyToken(value, { typeface: "hanja", size: "xlarge", function: "content", role: "hero-glyph", weight: 900 })),
+        ...visualTokens.greetingTokens.map(item => typographyToken(item.value, { typeface: item.typeface, size: "xlarge", function: "sign", role: "greeting", weight: 900 })),
         ...heroEnglish
       ];
     }
@@ -684,28 +761,41 @@
     function pickXlargeTypography() {
       const tokens = [
         ...xlargeTypographyTokens(),
-        token(codeToken(), "mono", "xlarge")
+        typographyToken(codeToken(), { typeface: "mono", size: "xlarge", function: "data", role: "hero-code", weight: 900 })
       ];
       return pick(tokens);
     }
 
     function pickPrimaryDisplayTypography() {
-      return pickXlargeTypography();
+      return chance(0.42) ? pickXlargeTypography() : pick(largeTypographyTokens());
     }
 
     // Graphic primitives.
     function label(g, x, y, w, value = pick(visualTokens.englishKeywords), fill = false, options = {}) {
       const tokenSize = normalizeDesignTokenSize(options.tokenSize || "medium");
-      const target = designTokenGroup(g, x, y, w, 28, { tokenSize, spin: options.spin || 0 });
+      const tokenFunction = options.tokenFunction || "sign";
+      const tokenRole = options.tokenRole || "section-label";
+      const tokenContext = options.tokenContext || "component";
+      const target = designTokenGroup(g, x, y, w, 28, {
+        tokenSize,
+        spin: options.spin || 0,
+        form: "graphic",
+        tokenFunction,
+        tokenRole,
+        tokenContext
+      });
       const margin = marginSize(w, 28, "small");
+      const align = normalizeTokenAlign(options.align || "left");
+      const textBox = { x: x + margin, y, width: Math.max(1, w - margin * 2), height: 28 };
+      const textX = alignedTextX(textBox, align);
       if (fill) {
         target.appendChild(rect(x, y, w, 28, { fill: "currentColor", stroke: false, opacity: 0.96 }));
-        const text = textNode(x + w / 2, y + 20, value, { size: 15, align: "center", tokenSize, weight: 800, transform: "", opacity: 1, typeface: "english", maxWidth: w - margin * 2 });
+        const text = textNode(textX, y + 20, value, { size: 15, align, tokenSize, tokenFunction, tokenRole, tokenContext, weight: 800, transform: "", opacity: 1, typeface: "english", maxWidth: textBox.width });
         text.setAttribute("fill", "var(--bg)");
         target.appendChild(text);
       } else {
         target.appendChild(rect(x, y, w, 28, { width: 2, rough: true }));
-        target.appendChild(textNode(x + w / 2, y + 20, value, { size: 15, align: "center", tokenSize, weight: 800, typeface: "english", maxWidth: w - margin * 2 }));
+        target.appendChild(textNode(textX, y + 20, value, { size: 15, align, tokenSize, tokenFunction, tokenRole, tokenContext, weight: 800, typeface: "english", maxWidth: textBox.width }));
       }
     }
 
@@ -716,21 +806,29 @@
     function microBadge(g, x, y, value, options = {}) {
       const w = microBadgeWidth(value);
       const margin = marginSize(w, 21, "small");
-      const target = designTokenGroup(g, x, y, w, 21, { tokenSize: "small", spin: options.spin || 0 });
+      const target = designTokenGroup(g, x, y, w, 21, {
+        tokenSize: "small",
+        spin: options.spin || 0,
+        form: "graphic",
+        tokenFunction: "sign",
+        tokenRole: "metadata-badge",
+        tokenContext: options.tokenContext || "component"
+      });
       const badgeRect = rect(x, y, w, 21, { fill: chance(0.45) ? "currentColor" : "none", width: 1.5, rough: true });
       target.appendChild(badgeRect);
-      const t = textNode(x + w / 2, y + 15, value, { size: 11, align: "center", tokenSize: "small", weight: 900, typeface: "mono", maxWidth: w - margin * 2 });
+      const t = textNode(x + w / 2, y + 15, value, { size: 11, align: "center", tokenSize: "small", tokenFunction: "data", tokenRole: "revision", tokenContext: options.tokenContext || "component", weight: 900, typeface: "mono", maxWidth: w - margin * 2 });
       if (badgeRect.getAttribute("fill") === "currentColor") t.setAttribute("fill", "var(--bg)");
       target.appendChild(t);
     }
 
-    function ticks(g, x, y, w, count = 54) {
+    function ticks(g, x, y, w, count = 54, options = {}) {
       if (w <= 0) return;
-      g.appendChild(line(x, y, x + w, y, { width: 2, rough: true }));
+      const target = graphicTokenGroup(g, "data", "measurement-ticks", options.tokenContext || "primitive-detail");
+      target.appendChild(line(x, y, x + w, y, { width: 2, rough: true }));
       for (let i = 0; i <= count; i++) {
         const tx = x + w * (i / count);
         const tall = i % 10 === 0 ? 22 : i % 5 === 0 ? 16 : 9;
-        g.appendChild(line(tx, y, tx, y - tall, { width: i % 10 === 0 ? 2 : 1.2, rough: true, opacity: 0.88 }));
+        target.appendChild(line(tx, y, tx, y - tall, { width: i % 10 === 0 ? 2 : 1.2, rough: true, opacity: 0.88 }));
       }
     }
 
@@ -765,6 +863,7 @@
 
     function barcode(g, x, y, w, h, options = {}) {
       if (w <= 0 || h <= 0) return;
+      const target = graphicTokenGroup(g, "data", "barcode", options.tokenContext || "primitive-detail");
       const digits = options.digits || barcodeDigits(11);
       const { value, pattern } = upcPattern(digits);
       const captionH = options.caption === false || h < 34 ? 0 : Math.min(12, h * 0.22);
@@ -785,7 +884,7 @@
         const barX = x + quiet + i * moduleW;
         const barY = y + (isGuard ? 0 : Math.max(0, barH * 0.06));
         const height = isGuard ? Math.min(h - captionH * 0.35, barH + captionH * 0.45) : barH * r(0.84, 1);
-        g.appendChild(rect(barX, barY, Math.max(0.7, moduleW * r(0.86, 1.06)), height, {
+        target.appendChild(rect(barX, barY, Math.max(0.7, moduleW * r(0.86, 1.06)), height, {
           fill: "currentColor",
           stroke: false,
           opacity: isGuard ? 0.98 : r(0.82, 0.96)
@@ -798,17 +897,18 @@
         const leftDigits = value.slice(1, 6);
         const rightDigits = value.slice(6, 11);
         const last = value[11];
-        g.appendChild(textNode(x, captionY, first, { size: captionH, minSize: 7, maxWidth: quiet * 0.8, tokenSize: "small", weight: 800, typeface: "mono" }));
-        g.appendChild(textNode(x + quiet + availableW * 0.29, captionY, leftDigits, { size: captionH, minSize: 7, maxWidth: availableW * 0.32, tokenSize: "small", weight: 800, align: "center", typeface: "mono" }));
-        g.appendChild(textNode(x + quiet + availableW * 0.72, captionY, rightDigits, { size: captionH, minSize: 7, maxWidth: availableW * 0.32, tokenSize: "small", weight: 800, align: "center", typeface: "mono" }));
-        g.appendChild(textNode(x + w, captionY, last, { size: captionH, minSize: 7, maxWidth: quiet * 0.8, tokenSize: "small", weight: 800, align: "right", typeface: "mono" }));
+        target.appendChild(textNode(x, captionY, first, { size: captionH, minSize: 7, maxWidth: quiet * 0.8, tokenSize: "small", tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", weight: 800, typeface: "mono" }));
+        target.appendChild(textNode(x + quiet + availableW * 0.29, captionY, leftDigits, { size: captionH, minSize: 7, maxWidth: availableW * 0.32, tokenSize: "small", tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", weight: 800, align: "center", typeface: "mono" }));
+        target.appendChild(textNode(x + quiet + availableW * 0.72, captionY, rightDigits, { size: captionH, minSize: 7, maxWidth: availableW * 0.32, tokenSize: "small", tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", weight: 800, align: "center", typeface: "mono" }));
+        target.appendChild(textNode(x + w, captionY, last, { size: captionH, minSize: 7, maxWidth: quiet * 0.8, tokenSize: "small", tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", weight: 800, align: "right", typeface: "mono" }));
       }
     }
 
-    function pseudoQr(g, x, y, size, cells = 15) {
+    function pseudoQr(g, x, y, size, cells = 15, options = {}) {
       if (size <= 0) return;
+      const target = graphicTokenGroup(g, "data", "pseudo-qr", options.tokenContext || "primitive-detail");
       const step = size / cells;
-      g.appendChild(rect(x, y, size, size, { width: 0, fill: "transparent", stroke: false }));
+      target.appendChild(rect(x, y, size, size, { width: 0, fill: "transparent", stroke: false }));
       for (let row = 0; row < cells; row++) {
         for (let col = 0; col < cells; col++) {
           const finder =
@@ -817,7 +917,7 @@
             (row >= cells - 5 && col < 5);
           const ring = finder && (row === 0 || col === 0 || row === 4 || col === 4 || row === 1 && col === 1 || row === 2 && col === 2 || row === 3 && col === 3);
           if (ring || chance(0.42)) {
-            g.appendChild(rect(x + col * step, y + row * step, step * 0.9, step * 0.9, { fill: "currentColor", stroke: false }));
+            target.appendChild(rect(x + col * step, y + row * step, step * 0.9, step * 0.9, { fill: "currentColor", stroke: false }));
           }
         }
       }
@@ -825,6 +925,7 @@
 
     function miniTable(g, x, y, w, options = {}) {
       if (w <= 0) return;
+      const target = graphicTokenGroup(g, "data", "table", options.tokenContext || "primitive-detail");
       const rowH = 24;
       const maxRows = clamp(Math.floor((options.maxHeight || rowH * 5) / rowH), 2, 5);
       const rows = ri(Math.min(3, maxRows), maxRows);
@@ -832,25 +933,27 @@
       const cellMargin = marginSize(w, h, "small");
       const leftCellWidth = Math.max(10, w * 0.48 - cellMargin * 2);
       const rightCellWidth = Math.max(10, w * 0.52 - cellMargin * 2);
-      g.appendChild(rect(x, y, w, h, { width: 1.5, rough: true }));
-      g.appendChild(line(x + w * 0.48, y, x + w * 0.48, y + h, { width: 1.3, rough: true }));
-      for (let i = 1; i < rows; i++) g.appendChild(line(x, y + i * rowH, x + w, y + i * rowH, { width: 1.2, rough: true }));
+      target.appendChild(rect(x, y, w, h, { width: 1.5, rough: true }));
+      target.appendChild(line(x + w * 0.48, y, x + w * 0.48, y + h, { width: 1.3, rough: true }));
+      for (let i = 1; i < rows; i++) target.appendChild(line(x, y + i * rowH, x + w, y + i * rowH, { width: 1.2, rough: true }));
       for (let i = 0; i < rows; i++) {
-        g.appendChild(textNode(x + cellMargin, y + 17 + i * rowH, `${pick(visualTokens.tableFieldLabels)} ${ri(10, 99)}`, { size: 11, tokenSize: "small", weight: 800, typeface: "mono", maxWidth: leftCellWidth }));
-        g.appendChild(textNode(x + w * 0.48 + cellMargin, y + 17 + i * rowH, `${pick(visualTokens.tableFieldLabels)} ${ri(1, 99)}${chance(0.5) ? "%" : ""}`, { size: 11, tokenSize: "small", weight: 800, typeface: "mono", maxWidth: rightCellWidth }));
+        target.appendChild(textNode(x + cellMargin, y + 17 + i * rowH, `${pick(visualTokens.tableFieldLabels)} ${ri(10, 99)}`, { size: 11, tokenSize: "small", tokenFunction: "data", tokenRole: "table-cell", tokenContext: options.tokenContext || "primitive-detail", weight: 800, typeface: "mono", maxWidth: leftCellWidth }));
+        target.appendChild(textNode(x + w * 0.48 + cellMargin, y + 17 + i * rowH, `${pick(visualTokens.tableFieldLabels)} ${ri(1, 99)}${chance(0.5) ? "%" : ""}`, { size: 11, tokenSize: "small", tokenFunction: "data", tokenRole: "table-cell", tokenContext: options.tokenContext || "primitive-detail", weight: 800, typeface: "mono", maxWidth: rightCellWidth }));
       }
     }
 
-    function wave(g, x, y, w, h) {
+    function wave(g, x, y, w, h, options = {}) {
       if (w <= 0 || h <= 0) return;
+      const target = graphicTokenGroup(g, "data", "wave", options.tokenContext || "primitive-detail");
       const pts = [];
       const steps = 14;
       for (let i = 0; i <= steps; i++) {
-        pts.push([x + w * (i / steps), y + h / 2 + Math.sin(i * r(0.9, 1.4)) * h * r(0.18, 0.42) + r(-8, 8)]);
+        const pointY = y + h / 2 + Math.sin(i * r(0.9, 1.4)) * h * r(0.18, 0.42) + r(-8, 8);
+        pts.push([x + w * (i / steps), clamp(pointY, y, y + h)]);
       }
-      g.appendChild(rect(x, y, w, h, { width: 1.5, rough: true, opacity: 0.75 }));
-      for (let i = 1; i < 4; i++) g.appendChild(line(x, y + h * (i / 4), x + w, y + h * (i / 4), { width: 1, dash: "2 9", opacity: 0.45 }));
-      g.appendChild(polyline(pts, { width: 2.2, rough: true }));
+      target.appendChild(rect(x, y, w, h, { width: 1.5, rough: true, opacity: 0.75 }));
+      for (let i = 1; i < 4; i++) target.appendChild(line(x, y + h * (i / 4), x + w, y + h * (i / 4), { width: 1, dash: "2 9", opacity: 0.45 }));
+      target.appendChild(polyline(pts, { width: 2.2, rough: true }));
     }
 
     // Content detail renderers.
@@ -859,7 +962,7 @@
       const barH = Math.min(58, Math.max(26, h * 0.58));
       const barY = y + inset;
       barcode(g, x + inset, barY, w - inset * 2, barH);
-      g.appendChild(textNode(x + inset, y + h - 26, `SN ${ri(1000, 9999)}-${ri(1000, 9999)}-${String.fromCharCode(65 + ri(0, 25))}${String.fromCharCode(65 + ri(0, 25))}`, { size: 11, tokenSize: "small", weight: 800, typeface: "mono", maxWidth: w - inset * 2 }));
+      g.appendChild(textNode(x + inset, y + h - 26, `SN ${ri(1000, 9999)}-${ri(1000, 9999)}-${String.fromCharCode(65 + ri(0, 25))}${String.fromCharCode(65 + ri(0, 25))}`, { size: 11, tokenSize: "small", tokenFunction: "data", tokenRole: "serial", tokenContext: "primitive-detail", weight: 800, typeface: "mono", maxWidth: w - inset * 2 }));
     }
 
     function renderPseudoQrDetail(g, x, y, w, h) {
@@ -870,9 +973,9 @@
       const textX = x + inset + q + textGap;
       const textMax = Math.max(28, x + w - inset - textX);
       pseudoQr(g, x + inset, qrY, q);
-      g.appendChild(textNode(textX, qrY + q * 0.27, "ID", { size: 15, tokenSize: "medium", weight: 900, typeface: "mono", maxWidth: textMax }));
-      g.appendChild(textNode(textX, qrY + q * 0.5, `CODE ${codeToken()}`, { size: 13, tokenSize: "small", weight: 800, typeface: "mono", maxWidth: textMax }));
-      g.appendChild(textNode(textX, qrY + q * 0.74, "INPUT VERIFIED / OUTPUT OK", { size: 13, tokenSize: "small", weight: 800, typeface: "mono", maxWidth: textMax }));
+      g.appendChild(textNode(textX, qrY + q * 0.27, "ID", { size: 15, tokenSize: "medium", tokenFunction: "data", tokenRole: "identifier-label", tokenContext: "primitive-detail", weight: 900, typeface: "mono", maxWidth: textMax }));
+      g.appendChild(textNode(textX, qrY + q * 0.5, `CODE ${codeToken()}`, { size: 13, tokenSize: "small", tokenFunction: "data", tokenRole: "code-caption", tokenContext: "primitive-detail", weight: 800, typeface: "mono", maxWidth: textMax }));
+      g.appendChild(textNode(textX, qrY + q * 0.74, "INPUT VERIFIED / OUTPUT OK", { size: 13, tokenSize: "small", tokenFunction: "sign", tokenRole: "verification", tokenContext: "primitive-detail", weight: 800, typeface: "english", maxWidth: textMax }));
     }
 
     function renderWaveDetail(g, x, y, w, h) {
@@ -892,7 +995,7 @@
       const inset = detailPadding(w, h);
       const tickY = y + Math.max(inset + 22, h - 48);
       ticks(g, x + inset, tickY, w - inset * 2, ri(24, 64));
-      g.appendChild(textNode(x + inset, y + h - 18, `MOD ${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 12, tokenSize: "small", weight: 800, typeface: "mono", maxWidth: w - inset * 2 }));
+      g.appendChild(textNode(x + inset, y + h - 18, `MOD ${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 12, tokenSize: "small", tokenFunction: "data", tokenRole: "port-caption", tokenContext: "primitive-detail", weight: 800, typeface: "mono", maxWidth: w - inset * 2 }));
     }
 
     // Extension point: add a detail renderer here, then use its id from a layout.
@@ -939,6 +1042,7 @@
       const badgeW = microBadgeWidth(badgeValue);
       const textMaxWidth = Math.max(36, zones.box.width);
       const headerPair = showBadge ? smallTokenPairZones(zones.header, badgeW) : null;
+      const labelValue = chance(0.5) ? "STATUS" : title;
       const stackAlign = {
         header: showBadge ? "left" : pickTokenAlign("left", 0.55),
         badge: "right",
@@ -953,6 +1057,8 @@
       stackTextToken(g, orgZone, `@${org}`, {
         align: stackAlign.header,
         tokenSize: "small",
+        tokenFunction: "content",
+        tokenRole: "organization",
         size: Math.max(10, Math.min(15, w / 24, zones.header.height * 0.72)),
         weight: 800,
         opacity: 0.9,
@@ -963,9 +1069,11 @@
         microBadge(g, alignedBoxX(headerPair.right, badgeW, stackAlign.badge), headerPair.right.y, badgeValue, { spin: spinAngle("subtle", 0.18) });
       }
 
-      stackTextToken(g, zones.label, chance(0.5) ? "STATUS" : title, {
+      stackTextToken(g, zones.label, labelValue, {
         align: stackAlign.label,
         tokenSize: "medium",
+        tokenFunction: labelValue === "STATUS" ? "sign" : "content",
+        tokenRole: labelValue === "STATUS" ? "status" : "display-keyword",
         size: Math.max(10, Math.min(14, w / 22, zones.label.height * 0.72)),
         weight: 800,
         opacity: 0.85,
@@ -975,12 +1083,14 @@
       stackTextToken(g, zones.main, big, {
         align: stackAlign.main,
         tokenSize: primary.size || "large",
+        tokenFunction: primary.function,
+        tokenRole: primary.role,
         baseline: 0.76,
-        size: Math.min(zones.main.height * (isXlarge ? 1.65 : 0.7), isCjk ? zones.main.width * (isXlarge ? 0.5 : 0.2) : zones.main.width * (isXlarge ? 0.56 : 0.22), isXlarge ? 292 : 104),
-        minSize: Math.min(isXlarge ? 64 : 22, zones.main.height * (isXlarge ? 0.9 : 0.58)),
+        size: Math.min(zones.main.height * (isXlarge ? 0.92 : 0.7), isCjk ? zones.main.width * (isXlarge ? 0.5 : 0.2) : zones.main.width * (isXlarge ? 0.56 : 0.22), isXlarge ? 292 : 104),
+        minSize: Math.min(isXlarge ? 42 : 22, zones.main.height * (isXlarge ? 0.76 : 0.58)),
         maxWidth: textMaxWidth,
-        maxHeight: zones.main.height * (isXlarge ? 1.85 : 0.8),
-        weight: 900,
+        maxHeight: zones.main.height * 0.92,
+        weight: primary.weight,
         opacity: 0.98,
         typeface: primary.typeface,
         spin: spinAngle("subtle", 0.18)
@@ -990,6 +1100,8 @@
         stackTextToken(g, zones.sub, isCjk ? pick(visualTokens.englishKeywords) : ko, {
           align: stackAlign.sub,
           tokenSize: "medium",
+          tokenFunction: "content",
+          tokenRole: "display-keyword",
           baseline: 0.76,
           size: Math.min(21, w / 10, zones.sub.height * 0.78),
           weight: 800,
@@ -1023,13 +1135,13 @@
       const codeY = py + ph * 0.68;
       const modY = py + ph * 0.84;
       const barcodeY = Math.min(py + ph * 0.88, safe.y + safe.height - 48);
-      const hero = token(`< ${ri(1000, 9999)} ${ri(1000, 9999)} ${ri(10, 99)} >`, "mono", "xlarge");
-      if (chance(0.45)) label(g, px, py, pw, pick(visualTokens.englishKeywords), true, { tokenSize: "medium", spin: spinAngle("subtle", 0.16) });
+      const hero = typographyToken(`< ${ri(1000, 9999)} ${ri(1000, 9999)} ${ri(10, 99)} >`, { typeface: "mono", size: "xlarge", function: "data", role: "hero-code", weight: 900 });
+      if (chance(0.45)) label(g, px, py, pw, pick(visualTokens.englishKeywords), true, { tokenSize: "medium", tokenFunction: "content", tokenRole: "display-keyword", spin: spinAngle("subtle", 0.16) });
       g.appendChild(line(px, y1, px + pw, y1, { width: 2, rough: true, dash: chance(0.5) ? "9 7" : "" }));
-      g.appendChild(textNode(px + pw / 2, mainY, hero.value, { size: Math.min(116, pw / 8, ph * 0.42), minSize: Math.min(34, ph * 0.24), maxWidth: pw, maxHeight: ph * 0.42, tokenSize: hero.size, weight: 900, align: "center", typeface: hero.typeface }));
+      g.appendChild(textNode(px + pw / 2, mainY, hero.value, { size: Math.min(116, pw / 8, ph * 0.28), minSize: Math.min(34, ph * 0.2), maxWidth: pw, maxHeight: ph * 0.28, tokenSize: hero.size, tokenFunction: hero.function, tokenRole: hero.role, weight: hero.weight, align: "center", typeface: hero.typeface }));
       g.appendChild(line(px, y2, px + pw, y2, { width: 2, rough: true }));
-      g.appendChild(textNode(px, codeY, `CODE ${codeToken()}${ri(10, 99)}`, { size: 18, maxWidth: pw, tokenSize: "medium", weight: 800, typeface: "mono" }));
-      g.appendChild(textNode(px, modY, `MOD P${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 20, maxWidth: pw, tokenSize: "medium", weight: 800, typeface: "mono" }));
+      g.appendChild(textNode(px, codeY, `CODE ${codeToken()}${ri(10, 99)}`, { size: 14, maxWidth: pw, tokenSize: "small", tokenFunction: "data", tokenRole: "code-caption", weight: 800, typeface: "mono" }));
+      g.appendChild(textNode(px, modY, `MOD P${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 14, maxWidth: pw, tokenSize: "small", tokenFunction: "data", tokenRole: "port-caption", weight: 800, typeface: "mono" }));
       if (chance(0.35)) barcode(g, px, barcodeY, pw, Math.min(56, safe.y + safe.height - barcodeY));
       return g;
     }
@@ -1048,13 +1160,13 @@
       const lineY = safe.y + safe.height * 0.64;
       const barcodeY = safe.y + safe.height * 0.72;
       const codeY = Math.min(safe.y + safe.height - footerMargin, safe.y + safe.height * 0.88);
-      const word = pickXlargeTypography();
+      const word = pickPrimaryDisplayTypography();
       const isXlarge = word.size === "xlarge";
-      g.appendChild(textNode(cx, titleY, "MICRO GRAPHIC", { size: 16, tokenSize: "medium", weight: 800, align: "center", opacity: 0.78, typeface: "english", maxWidth: safe.width }));
-      g.appendChild(textNode(cx, mainY, word.value, { typeface: word.typeface, tokenSize: word.size || "large", size: Math.min(safe.width * (isXlarge ? 0.56 : 0.22), mainZone.height * (isXlarge ? 1.8 : 0.72), isXlarge ? 500 : 178), minSize: Math.min(isXlarge ? 84 : 30, mainZone.height * (isXlarge ? 1 : 0.6)), maxWidth: safe.width * 0.92, maxHeight: mainZone.height * (isXlarge ? 1.8 : 0.84), weight: 900, align: "center" }));
+      g.appendChild(textNode(cx, titleY, "MICRO GRAPHIC", { size: 16, tokenSize: "medium", tokenFunction: "content", tokenRole: "title", weight: 800, align: "center", opacity: 0.78, typeface: "english", maxWidth: safe.width }));
+      g.appendChild(textNode(cx, mainY, word.value, { typeface: word.typeface, tokenSize: word.size || "large", tokenFunction: word.function, tokenRole: word.role, size: Math.min(safe.width * (isXlarge ? 0.56 : 0.22), mainZone.height * (isXlarge ? 0.92 : 0.72), isXlarge ? 500 : 178), minSize: Math.min(isXlarge ? 56 : 30, mainZone.height * (isXlarge ? 0.76 : 0.6)), maxWidth: safe.width * 0.92, maxHeight: mainZone.height * 0.92, weight: word.weight, align: "center" }));
       g.appendChild(line(cx - safe.width * 0.26, lineY, cx + safe.width * 0.26, lineY, { width: 2.2, rough: true }));
       barcode(g, cx - safe.width * 0.22, barcodeY, safe.width * 0.44, Math.min(64, safe.y + safe.height - barcodeY - footerMargin * 2));
-      g.appendChild(textNode(cx, codeY, `CODE ${codeToken()} / PORT ${ri(10, 999)} / REV ${String.fromCharCode(65 + ri(0, 25))}`, { size: 18, minSize: 10, maxWidth: safe.width * 0.92, tokenSize: "medium", weight: 800, align: "center", typeface: "mono" }));
+      g.appendChild(textNode(cx, codeY, `CODE ${codeToken()} / PORT ${ri(10, 999)} / REV ${String.fromCharCode(65 + ri(0, 25))}`, { size: 14, minSize: 9, maxWidth: safe.width * 0.92, tokenSize: "small", tokenFunction: "data", tokenRole: "code-caption", weight: 800, align: "center", typeface: "mono" }));
       return g;
     }
 
@@ -1068,35 +1180,35 @@
     function tokenGalleryItems() {
       const orgs = visualTokens.organizationPrefixes.map((prefix, index) => {
         const suffix = visualTokens.organizationSuffixes[index % visualTokens.organizationSuffixes.length];
-        return token(`@${prefix} ${suffix}`, "english", "small");
+        return typographyToken(`@${prefix} ${suffix}`, { typeface: "english", size: "small", function: "content", role: "organization" });
       });
-      const tableTokens = visualTokens.tableFieldLabels.map((labelName, index) => token(`${labelName} ${index % 3 === 0 ? ri(10, 99) : index % 3 === 1 ? `${ri(1, 99)}%` : codeToken()}`, "mono", "small"));
+      const tableTokens = visualTokens.tableFieldLabels.map((labelName, index) => typographyToken(`${labelName} ${index % 3 === 0 ? ri(10, 99) : index % 3 === 1 ? `${ri(1, 99)}%` : codeToken()}`, { typeface: "mono", size: "small", function: "data", role: "table-cell" }));
       const small = [
         ...orgs,
         ...tableTokens,
-        token("V1.2", "mono", "small"),
-        token("REV A", "mono", "small"),
-        token("BUILD 859", "mono", "small"),
-        token("SN 3886-9487-TC", "mono", "small"),
-        token("PORT 117", "mono", "small"),
-        token("LOT C2", "mono", "small"),
-        token("QC PASS", "mono", "small"),
-        token("LAT 50MS", "mono", "small")
+        typographyToken("V1.2", { typeface: "mono", size: "small", function: "data", role: "version" }),
+        typographyToken("REV A", { typeface: "mono", size: "small", function: "data", role: "revision" }),
+        typographyToken("BUILD 859", { typeface: "mono", size: "small", function: "data", role: "build" }),
+        typographyToken("SN 3886-9487-TC", { typeface: "mono", size: "small", function: "data", role: "serial" }),
+        typographyToken("PORT 117", { typeface: "mono", size: "small", function: "data", role: "port-caption" }),
+        typographyToken("LOT C2", { typeface: "mono", size: "small", function: "data", role: "lot" }),
+        typographyToken("LAT 50MS", { typeface: "mono", size: "small", function: "data", role: "latency" }),
+        typographyToken("CODE 0X7F", { typeface: "mono", size: "small", function: "data", role: "code-caption" }),
+        typographyToken("MOD P31 / PORT 97", { typeface: "mono", size: "small", function: "data", role: "port-caption" })
       ];
 
       const medium = [
-        token("STATUS", "english", "medium"),
-        token("REPORT", "english", "medium"),
-        token("MODULE", "english", "medium"),
-        token("INPUT VERIFIED", "mono", "medium"),
-        token("OUTPUT OK", "mono", "medium"),
-        token("ACCESS GRANTED", "english", "medium"),
-        token("MICRO GRAPHIC", "english", "medium"),
-        token("CODE 0X7F", "mono", "medium"),
-        token("MOD P31 / PORT 97", "mono", "medium"),
-        token("RUNNING // PORT 640", "mono", "medium"),
-        token("검증 완료", "korean", "medium"),
-        token("출력 대기", "korean", "medium")
+        typographyToken("STATUS", { typeface: "english", size: "medium", function: "sign", role: "status" }),
+        typographyToken("REPORT", { typeface: "english", size: "medium", function: "content", role: "section-label" }),
+        typographyToken("MODULE", { typeface: "english", size: "medium", function: "content", role: "section-label" }),
+        typographyToken("INPUT VERIFIED", { typeface: "english", size: "medium", function: "sign", role: "verification" }),
+        typographyToken("OUTPUT OK", { typeface: "english", size: "medium", function: "sign", role: "verification" }),
+        typographyToken("ACCESS GRANTED", { typeface: "english", size: "medium", function: "sign", role: "access-status" }),
+        typographyToken("QC PASS", { typeface: "english", size: "medium", function: "sign", role: "verification" }),
+        typographyToken("RUNNING", { typeface: "english", size: "medium", function: "sign", role: "status" }),
+        typographyToken("MICRO GRAPHIC", { typeface: "english", size: "medium", function: "content", role: "title" }),
+        typographyToken("검증 완료", { typeface: "korean", size: "medium", function: "sign", role: "verification" }),
+        typographyToken("출력 대기", { typeface: "korean", size: "medium", function: "sign", role: "status" })
       ];
 
       const large = [
@@ -1104,7 +1216,7 @@
       ];
       const xlarge = [
         ...xlargeTypographyTokens(),
-        token(codeToken(), "mono", "xlarge")
+        typographyToken(codeToken(), { typeface: "mono", size: "xlarge", function: "data", role: "hero-code", weight: 900 })
       ];
 
       return { small, medium, large, xlarge };
@@ -1125,7 +1237,7 @@
       const fontSize = Math.max(6, Math.min(fontMax, cellH * fontScale));
       const titleSize = size === "xlarge" ? 18 : size === "large" ? 16 : 12;
 
-      g.appendChild(textNode(box.x, box.y + headerH * 0.72, `${title} / ${items.length}`, { size: titleSize, tokenSize: "small", weight: 900, typeface: "english", maxWidth: box.width }));
+      g.appendChild(textNode(box.x, box.y + headerH * 0.72, `${title} / ${items.length}`, { size: titleSize, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-section-label", tokenContext: "catalog-ui", weight: 900, typeface: "english", maxWidth: box.width }));
       g.appendChild(line(box.x, box.y + headerH, box.x + box.width, box.y + headerH, { width: 1.4, rough: true, opacity: 0.75 }));
 
       items.forEach((item, index) => {
@@ -1141,6 +1253,9 @@
         stackTextToken(g, cell, item.value, {
           align,
           tokenSize: size,
+          tokenFunction: item.function,
+          tokenRole: item.role,
+          tokenContext: item.context,
           baseline: 0.68,
           size: fontSize,
           minSize: 7,
@@ -1152,31 +1267,68 @@
       });
     }
 
-    function renderPrimitiveGallery(g, box) {
+    function graphicTokenGalleryItems() {
+      return [
+        {
+          function: "data",
+          role: "barcode",
+          render: (g, cell) => barcode(g, cell.x, cell.y + cell.height * 0.18, cell.width, cell.height * 0.62, { caption: true, tokenContext: "catalog-ui" })
+        },
+        {
+          function: "data",
+          role: "table",
+          render: (g, cell) => miniTable(g, cell.x, cell.y + cell.height * 0.06, cell.width, { maxHeight: cell.height * 0.9, tokenContext: "catalog-ui" })
+        },
+        {
+          function: "data",
+          role: "wave",
+          render: (g, cell) => wave(g, cell.x, cell.y + cell.height * 0.14, cell.width, cell.height * 0.66, { tokenContext: "catalog-ui" })
+        },
+        {
+          function: "data",
+          role: "measurement-ticks",
+          render: (g, cell) => ticks(g, cell.x, cell.y + cell.height * 0.76, cell.width, 36, { tokenContext: "catalog-ui" })
+        },
+        {
+          function: "data",
+          role: "pseudo-qr",
+          render: (g, cell) => pseudoQr(g, cell.x, cell.y + cell.height * 0.04, Math.min(cell.width, cell.height * 0.86), 15, { tokenContext: "catalog-ui" })
+        },
+        {
+          function: "sign",
+          role: "status-label",
+          render: (g, cell) => label(g, cell.x, cell.y + cell.height * 0.28, cell.width, "STATUS", true, { tokenSize: "medium", tokenFunction: "sign", tokenRole: "status-label", tokenContext: "catalog-ui", align: "left" })
+        },
+        {
+          function: "sign",
+          role: "metadata-badge",
+          render: (g, cell) => microBadge(g, cell.x, cell.y + cell.height * 0.34, "REV A", { tokenContext: "catalog-ui" })
+        }
+      ];
+    }
+
+    function renderGraphicTokenGallery(g, box, items) {
       const gap = marginSize(box.width, box.height, "medium");
       const titleH = 22;
       const bodyY = box.y + titleH + gap;
-      const cellW = (box.width - gap * 4) / 5;
+      const cellW = (box.width - gap * (items.length - 1)) / items.length;
       const cellH = Math.max(28, box.height - titleH - gap);
-      g.appendChild(textNode(box.x, box.y + titleH * 0.72, "GRAPHIC PRIMITIVES", { size: 12, tokenSize: "small", weight: 900, typeface: "english", maxWidth: box.width }));
+      g.appendChild(textNode(box.x, box.y + titleH * 0.72, `GRAPHIC TOKENS / ${items.length}`, { size: 12, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-section-label", tokenContext: "catalog-ui", weight: 900, typeface: "english", maxWidth: box.width }));
       g.appendChild(line(box.x, box.y + titleH, box.x + box.width, box.y + titleH, { width: 1.4, rough: true, opacity: 0.75 }));
 
-      const cells = Array.from({ length: 5 }, (_, index) => ({
+      const cells = items.map((item, index) => ({
         x: box.x + index * (cellW + gap),
         y: bodyY,
         width: cellW,
-        height: cellH
+        height: cellH,
+        item
       }));
 
-      barcode(g, cells[0].x, cells[0].y + cellH * 0.2, cells[0].width, cellH * 0.58, { caption: true });
-      miniTable(g, cells[1].x, cells[1].y + cellH * 0.08, cells[1].width, { maxHeight: cellH * 0.86 });
-      wave(g, cells[2].x, cells[2].y + cellH * 0.16, cells[2].width, cellH * 0.62);
-      ticks(g, cells[3].x, cells[3].y + cellH * 0.72, cells[3].width, 36);
-      pseudoQr(g, cells[4].x, cells[4].y + cellH * 0.08, Math.min(cells[4].width, cellH * 0.82), 15);
+      cells.forEach(cell => cell.item.render(g, cell));
     }
 
-    function renderTokenGallery(w, h) {
-      const g = make("g", { "data-mode": "token-gallery" });
+    function renderAllTokensMode(w, h) {
+      const g = make("g", { "data-mode": "all-tokens" });
       const safe = paddedBox(0, 0, w, h, "large");
       const gap = marginSize(safe.width, safe.height, "medium");
       const headerH = 46;
@@ -1187,9 +1339,13 @@
       const largeH = sectionH * 0.29;
       const xlargeH = sectionH - smallH - mediumH - largeH - gap * 3;
       const items = tokenGalleryItems();
+      const typographyItems = [...items.small, ...items.medium, ...items.large, ...items.xlarge];
+      const graphicItems = graphicTokenGalleryItems();
+      const signCount = typographyItems.filter(item => item.function === "sign").length + graphicItems.filter(item => item.function === "sign").length;
+      const symbolCount = typographyItems.filter(item => item.function === "symbol").length + graphicItems.filter(item => item.function === "symbol").length;
 
-      g.appendChild(textNode(safe.x, safe.y + 26, "DESIGN TOKEN CATALOG", { size: 18, tokenSize: "medium", weight: 900, typeface: "english", maxWidth: safe.width * 0.62 }));
-      g.appendChild(textNode(safe.x + safe.width, safe.y + 26, `S ${items.small.length} / M ${items.medium.length} / L ${items.large.length} / XL ${items.xlarge.length}`, { size: 12, tokenSize: "small", weight: 800, align: "right", typeface: "mono", maxWidth: safe.width * 0.36 }));
+      g.appendChild(textNode(safe.x, safe.y + 26, "ALL TOKENS", { size: 18, tokenSize: "medium", tokenFunction: "content", tokenRole: "catalog-title", tokenContext: "catalog-ui", weight: 900, typeface: "english", maxWidth: safe.width * 0.4 }));
+      g.appendChild(textNode(safe.x + safe.width, safe.y + 26, `TYPE ${typographyItems.length} / GRAPHIC ${graphicItems.length} / SIGN ${signCount} / SYMBOL ${symbolCount}`, { size: 12, tokenSize: "small", tokenFunction: "data", tokenRole: "catalog-count", tokenContext: "catalog-ui", weight: 800, align: "right", typeface: "mono", maxWidth: safe.width * 0.56 }));
       g.appendChild(line(safe.x, safe.y + headerH, safe.x + safe.width, safe.y + headerH, { width: 1.6, rough: true, opacity: 0.85 }));
 
       const smallBox = { x: safe.x, y: safe.y + headerH + gap, width: safe.width, height: smallH };
@@ -1202,7 +1358,7 @@
       renderTokenGallerySection(g, "MEDIUM TOKENS", items.medium, mediumBox, "medium");
       renderTokenGallerySection(g, "LARGE TOKENS", items.large, largeBox, "large");
       renderTokenGallerySection(g, "XLARGE TOKENS", items.xlarge, xlargeBox, "xlarge");
-      renderPrimitiveGallery(g, primitiveBox);
+      renderGraphicTokenGallery(g, primitiveBox, graphicItems);
 
       return g;
     }
@@ -1321,6 +1477,38 @@
       return layer;
     }
 
+    function validateRenderedTokenRules() {
+      const violations = [];
+      const classified = [...art.querySelectorAll("[data-token-form]")];
+      const unclassified = [...art.querySelectorAll("[data-token-size]")]
+        .filter(node => !node.hasAttribute("data-token-form"));
+      if (unclassified.length) violations.push(`unclassified:${unclassified.length}`);
+
+      const typographyWithoutTypeface = classified.filter(node =>
+        node.getAttribute("data-token-form") === "typography" &&
+        !node.hasAttribute("data-token-typeface")
+      );
+      if (typographyWithoutTypeface.length) {
+        violations.push(`typography-without-typeface:${typographyWithoutTypeface.length}`);
+      }
+
+      const component = art.querySelector("svg[data-component]");
+      if (component) {
+        const sizeOrder = Object.keys(DESIGN_TOKEN_SIZES);
+        const majorStart = sizeOrder.indexOf(MAJOR_TOKEN_RULES.minSize);
+        const majorSizes = sizeOrder.slice(majorStart);
+        const majorTokens = [...component.querySelectorAll('text[data-token-form="typography"][data-token-context="component"]')]
+          .filter(node => majorSizes.includes(node.getAttribute("data-token-size")));
+        if (majorTokens.length > MAJOR_TOKEN_RULES.maxPerLayout) {
+          violations.push(`major-token-count:${majorTokens.length}`);
+        }
+      }
+
+      art.setAttribute("data-rule-violations", String(violations.length));
+      if (violations.length) console.warn("Token rule violations", violations);
+      return violations;
+    }
+
     function render(nextSeed = randomSeed()) {
       seed = nextSeed;
       random = mulberry32(seed);
@@ -1334,15 +1522,16 @@
       const bg = make("rect", { x: 0, y: 0, width: w, height: h, fill: "var(--bg)" });
       art.appendChild(bg);
       art.appendChild(renderCanvasTexture(w, h));
-      if (appMode === "tokens") {
-        activeComponentRatio = "token gallery";
+      if (appMode === "all-tokens") {
+        activeComponentRatio = "all tokens";
         activeBorderMode = "catalog";
-        art.appendChild(renderTokenGallery(w, h));
-        seedLabel.textContent = `MODE TOKENS / SEED ${seedHex()}`;
+        art.appendChild(renderAllTokensMode(w, h));
+        seedLabel.textContent = `MODE ALL TOKENS / SEED ${seedHex()}`;
       } else {
         art.appendChild(renderComponent(w, h));
         seedLabel.textContent = `SEED ${seedHex()} / COMP ${activeComponentRatio} / BORDER ${activeBorderMode}`;
       }
+      validateRenderedTokenRules();
     }
 
     function downloadBlob(blob, filename) {
@@ -1398,9 +1587,9 @@
     function bindEvents() {
       controls.lucky.addEventListener("click", () => render());
       controls.mode.addEventListener("click", () => {
-        appMode = appMode === "random" ? "tokens" : "random";
-        controls.mode.textContent = appMode === "tokens" ? "Random" : "Tokens";
-        controls.mode.setAttribute("aria-pressed", String(appMode === "tokens"));
+        appMode = appMode === "random" ? "all-tokens" : "random";
+        controls.mode.textContent = appMode === "all-tokens" ? "Random" : "All Tokens";
+        controls.mode.setAttribute("aria-pressed", String(appMode === "all-tokens"));
         render(seed);
       });
       controls.png.addEventListener("click", exportPng);

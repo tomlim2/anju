@@ -24,7 +24,7 @@
 - SVG 기반 렌더링.
 - Lucky 버튼으로 새 랜덤 seed 생성.
 - 캔버스 클릭으로 새 결과 생성.
-- Tokens 버튼으로 디자인 토큰 카탈로그 모드 전환.
+- All Tokens 버튼으로 전체 디자인 토큰 모드 전환.
 - Tone 버튼으로 light/dark 반전.
 - 화면 크기 기준 2x PNG 내보내기.
 - SVG 내보내기로 벡터 후작업 가능.
@@ -58,8 +58,10 @@
 - 모든 display token, greeting token, date/time token, data token은 자신이 받은 padded box 안에서만 spawn한다. 긴 문자는 `maxWidth` 기준으로 축소한다.
 - 텍스트 정렬은 `left`, `center`, `right` 세 가지만 허용한다. SVG의 `start`, `middle`, `end`는 내부 변환값으로만 쓴다.
 - 디자인 토큰은 `small`, `medium`, `large`, `xlarge` 네 크기 단계로 나누고, 크기 단계가 한 행을 어떻게 점유하는지 정한다.
+- 토큰의 형태는 `typography`, `graphic`으로 나누고 기능은 `content`, `data`, `symbol`, `sign`으로 별도 기록한다.
+- 모든 `typography` token은 `typeface` role을 필수로 기록한다. `graphic` token에는 `typeface`를 넣지 않는다.
 - 모든 디자인 토큰의 배치 축도 `left`, `center`, `right` 세 가지만 쓴다. 토큰은 세 축 위에서 테트리스 블록처럼 행 단위로 쌓일 수 있고, 작은 spin 회전은 허용한다.
-- `Tokens` mode는 현재 vocabulary, date/time token, metadata token, graphic primitive 샘플을 한 화면에 모아보는 catalog view다.
+- `All Tokens` mode는 현재 vocabulary, date/time token, metadata token, graphic data token, graphic sign을 한 화면에 모아보는 catalog view다.
 - barcode, pseudo-QR, tick mark, mini table, wave graph, label, badge, symbol을 재사용 가능한 graphic primitive로 둔다.
 - 복잡한 컨트롤보다 Component 변주를 우선한다.
 
@@ -121,7 +123,33 @@ margin은 디자인 토큰 사이의 거리다. padding이 Component나 content 
 
 이 규칙은 Component-level stacking 기준이다. barcode caption, mini table cell처럼 graphic primitive 내부에서 생기는 작은 data token은 해당 primitive의 내부 grid를 따른다.
 
-`Tokens` mode는 이 분류를 검토하기 위한 catalog view다. small, medium, large, xlarge section을 따로 렌더링하고, 하단에 barcode, table, wave, tick, pseudo-QR 같은 graphic primitive 샘플을 함께 둔다. 새 token을 추가했을 때 이 모드에서 한 번에 누락과 밀도를 확인한다. catalog view는 목록 검토가 목적이므로 생성 layout의 xlarge/large 수량 제한을 적용하지 않는다.
+`All Tokens` mode는 이 분류를 검토하기 위한 단일 catalog view다. small, medium, large, xlarge typography section을 따로 렌더링하고, 하단에 barcode, table, wave, tick, pseudo-QR, status label, metadata badge를 함께 둔다. header에는 typography, graphic, sign, symbol 총수를 표시한다. 새 token을 추가했을 때 이 모드 하나에서 누락과 밀도를 확인한다. catalog view는 목록 검토가 목적이므로 생성 layout의 xlarge/large 수량 제한을 적용하지 않는다.
+
+## Token Taxonomy
+
+토큰은 하나의 flat category로 분류하지 않고 형태와 기능을 서로 다른 축으로 기록한다. 같은 기능도 typography 또는 graphic 형태로 표현될 수 있기 때문이다.
+
+### Form
+
+- `typography`: 문자 glyph로 만들어진 token이다. `typeface`, `weight`, `size`를 필수 시각 속성으로 가진다.
+- `graphic`: 선, 면, 도형으로 만들어진 token이다. barcode, pseudo-QR, table, wave, ticks, badge container가 여기에 속한다. `typeface`를 갖지 않는다.
+
+### Function
+
+- `content`: title, display keyword, organization name, date/time처럼 읽을 내용을 전달한다.
+- `data`: code, serial, port, revision, table cell, barcode처럼 식별하거나 측정하는 값을 전달한다.
+- `symbol`: 화살표, check, cross, status dot처럼 문맥 안에서 의미를 얻는 원자 기호다. 현재 generator에는 독립 symbol token이 아직 없다.
+- `sign`: status, warning, verification, access result처럼 의미가 완성된 표시다. `QC PASS`, `INPUT VERIFIED`, `ACCESS GRANTED`, greeting이 여기에 속한다.
+
+`symbol`은 다른 token과 조합할 수 있는 원자 재료고, `sign`은 사용자에게 상태나 행동 의미를 전달하는 완성 단위다. sign은 typography 하나로 만들 수도 있고 graphic container와 typography를 조합해 만들 수도 있다.
+
+### Context
+
+- `component`: 일반 생성 layout에 직접 배치되는 token이다.
+- `primitive-detail`: graphic primitive 내부 grid를 따르는 caption, table cell, barcode digit 같은 token이다.
+- `catalog-ui`: All Tokens mode의 section title과 count처럼 catalog를 설명하기 위한 UI token이다. 생성 layout의 수량 검사에서는 제외한다.
+
+SVG에는 `data-token-form`, `data-token-function`, `data-token-role`, `data-token-context`를 기록한다. typography에는 `data-token-typeface`도 기록한다. `validateRenderedTokenRules()`는 typeface가 없는 typography, 분류되지 않은 size token, major token 수량 초과를 렌더 후 검사한다.
 
 ## Token Placement System
 
@@ -138,6 +166,8 @@ spin은 토큰 자체에 주는 작은 회전이다. spin은 alignment를 대체
 ## Typography System
 
 현재 폰트 시스템은 Noto Sans 계열로 고정한다. 코드에서는 `TYPEFACES`와 `resolveTypeface()`로 관리한다.
+
+`form: "typography"`인 token은 아래 typeface role 중 하나를 반드시 명시한다. 브라우저 fallback만으로 typeface를 결정하지 않는다.
 
 - `english`: `"Noto Sans"`를 기본으로 쓴다. 브랜드명, 영문 title, warning phrase, status phrase, display keyword에 쓴다.
 - `mono`: `"Noto Sans Mono"`를 기본으로 쓴다. code, serial, port, table, numeric data, data view에 쓴다.
@@ -214,7 +244,7 @@ spin은 토큰 자체에 주는 작은 회전이다. spin은 alignment를 대체
 
 현재 쓰는 element는 아래 층위로 정리한다. 위쪽 층위는 아래쪽 층위를 직접 건너뛰지 않는다.
 
-- `Visual tokens`: 단어, 조직명, date/time label, table label, 가짜 data label이다. 코드에서는 `visualTokens`에 모은다. 새 단어나 label은 여기만 수정한다.
+- `Visual tokens`: 단어, 조직명, date/time label, table label, 가짜 data label이다. 코드에서는 `visualTokens`와 `typographyToken()`에 모은다. typography token은 form, function, role, typeface, size를 함께 기록한다.
 - `SVG helpers`: `make`, `textNode`, `line`, `rect`, `polyline`, `defs`처럼 SVG node를 만드는 낮은 수준의 도구다. 의미 있는 디자인 결정을 하지 않는다.
 - `Graphic primitives`: `label`, `microBadge`, `ticks`, `barcode`, `pseudoQr`, `miniTable`, `wave`처럼 하나의 작은 그래픽 형태를 그린다.
 - `Content details`: `renderBarcodeDetail`, `renderPseudoQrDetail`, `renderTableDetail`, `renderWaveDetail`, `renderTicksDetail`처럼 content block 하단에 들어갈 정보 묶음이다. 코드에서는 `contentDetailModes` registry로 관리한다.
@@ -249,8 +279,10 @@ spin은 토큰 자체에 주는 작은 회전이다. spin은 alignment를 대체
 - Component와 content 안쪽 여백은 `PADDING_TOKENS`와 `paddedBox()`에서 조정한다.
 - 디자인 토큰 사이 간격은 `MARGIN_TOKENS`와 `marginSize()`에서 조정한다.
 - 디자인 토큰의 크기 단계는 `DESIGN_TOKEN_SIZES`와 `tokenSize`에서 조정한다.
+- 토큰 형태와 기능은 `TOKEN_FORMS`, `TOKEN_FUNCTIONS`, `tokenTaxonomyAttrs()`에서 조정한다.
+- typography token 정의는 `typographyToken()`을 사용하고 typeface role을 반드시 넘긴다.
 - 디자인 토큰의 좌/중/우 배치와 spin은 `TOKEN_ALIGNMENTS`, `alignedBoxX()`, `alignedTextX()`, `smallTokenPairZones()`, `stackTextToken()`, `spinAngle()`에서 조정한다.
-- Tokens catalog에 보이는 token 묶음은 `tokenGalleryItems()`에서 조정한다.
+- All Tokens mode의 typography 묶음은 `tokenGalleryItems()`, graphic 묶음은 `graphicTokenGalleryItems()`에서 조정한다.
 - 새 generator mode는 `appMode`, controls binding, `render()`의 mode 분기에서 추가한다.
 
 ## Rule Gap Inventory
@@ -370,3 +402,6 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-07: `xlarge` 특대 token size를 추가하고 greeting, 대표 한글/영문 단어, 독립 한자, hero code를 별도 섹션과 main display 후보로 분리.
 - 2026-07-07: `xlarge`를 large의 약 두 배 체감 크기로 키우고, 후보 수를 줄여 hero token처럼 보이게 조정.
 - 2026-07-07: 상위 토큰 수량 규칙을 `large` 이상 총 1개로 정리해 생성 layout 안에서 `large`와 `xlarge`가 pair로 나오지 않게 함.
+- 2026-07-11: token taxonomy를 form(`typography`, `graphic`)과 function(`content`, `data`, `symbol`, `sign`) 두 축으로 분리하고 typography의 typeface role을 필수화.
+- 2026-07-11: `QC PASS`, verification/status phrase, code/port caption을 semantic role에 맞게 재분류하고 catalog UI와 primitive detail context를 분리.
+- 2026-07-11: 기존 Tokens catalog를 `All Tokens` 단일 모드로 확장하고 typography 전체, graphic data token, label, badge와 taxonomy count를 한 화면에 표시.
