@@ -161,6 +161,9 @@
     const TOKEN_CONTEXTS = ["component", "primitive-detail", "catalog-ui"];
     const COMPOSABLE_TOKEN_FUNCTIONS = ["content", "data", "symbol"];
     const FONT_WEIGHTS = { normal: 400, bold: 700 };
+    const BOLD_TOKEN_SIZES = ["large", "xlarge"];
+    const STROKE_WEIGHTS = { thin: 1.2, thick: 2.4 };
+    const ACTIVE_STROKE_WEIGHTS = ["thin"];
     const TOKEN_CATALOG_SECTION_TITLE = { size: 12, height: 32 };
     const COMPOSITION_RULE_GROUPS = [
       {
@@ -170,7 +173,7 @@
           "FUNCTION  CONTENT / DATA / SYMBOL / SIGN",
           "CONTEXT  COMPONENT / PRIMITIVE / CATALOG",
           "TYPE  REQUIRES TYPEFACE",
-          "WEIGHT  NORMAL / BOLD",
+          "BOLD  LARGE / XLARGE CONTENT ONLY",
           "SIZE  SMALL / MEDIUM / LARGE / XLARGE"
         ]
       },
@@ -182,6 +185,7 @@
           "LARGE+  MAX 1 PER COMPONENT",
           "ALIGN  LEFT / CENTER / RIGHT",
           "SPACE  PADDING / MARGIN TOKENS",
+          "STROKE  THIN ACTIVE / THICK RESERVED",
           "SPIN  NONE / SUBTLE / MEDIUM"
         ]
       },
@@ -363,9 +367,26 @@
       return DESIGN_TOKEN_SIZES[size] ? size : "medium";
     }
 
-    function normalizeFontWeight(weight = "bold") {
+    function normalizeFontWeight(weight = "normal") {
       if (weight === "normal" || weight === FONT_WEIGHTS.normal) return "normal";
       return "bold";
+    }
+
+    function fontWeightForToken(size, tokenFunction) {
+      const normalizedSize = normalizeDesignTokenSize(size);
+      return tokenFunction === "content" && BOLD_TOKEN_SIZES.includes(normalizedSize) ? "bold" : "normal";
+    }
+
+    function normalizeStrokeWeight(weight = ACTIVE_STROKE_WEIGHTS[0]) {
+      return ACTIVE_STROKE_WEIGHTS.includes(weight) ? weight : ACTIVE_STROKE_WEIGHTS[0];
+    }
+
+    function strokeTokenAttrs(weight) {
+      const normalized = normalizeStrokeWeight(weight);
+      return {
+        "stroke-width": STROKE_WEIGHTS[normalized],
+        "data-stroke-weight": normalized
+      };
     }
 
     function tokenSizeAttrs(size = "medium") {
@@ -600,7 +621,9 @@
     function textNode(x, y, text, attrs = {}) {
       const fontSize = fitTextSize(text, attrs);
       const tokenSize = attrs.tokenSize ? normalizeDesignTokenSize(attrs.tokenSize) : null;
-      const tokenWeight = normalizeFontWeight(attrs.weight);
+      const tokenWeight = tokenSize
+        ? fontWeightForToken(tokenSize, attrs.tokenFunction)
+        : normalizeFontWeight(attrs.weight);
       const taxonomyAttrs = tokenSize ? tokenTaxonomyAttrs({
         form: "typography",
         tokenFunction: attrs.tokenFunction,
@@ -638,7 +661,7 @@
       return make("line", {
         x1, y1, x2, y2,
         stroke: "currentColor",
-        "stroke-width": attrs.width || 2,
+        ...strokeTokenAttrs(attrs.strokeWeight),
         "stroke-dasharray": attrs.dash || "",
         "stroke-linecap": "square",
         opacity: attrs.opacity ?? 1,
@@ -647,11 +670,12 @@
     }
 
     function rect(x, y, w, h, attrs = {}) {
+      const hasStroke = attrs.stroke !== false;
       return make("rect", {
         x, y, width: w, height: h,
         fill: attrs.fill || "none",
-        stroke: attrs.stroke === false ? "none" : "currentColor",
-        "stroke-width": attrs.width || 2,
+        stroke: hasStroke ? "currentColor" : "none",
+        ...(hasStroke ? strokeTokenAttrs(attrs.strokeWeight) : {}),
         "stroke-dasharray": attrs.dash || "",
         opacity: attrs.opacity ?? 1,
         filter: attrs.rough ? "url(#roughen)" : "",
@@ -664,7 +688,7 @@
         points: points.map(point => point.join(",")).join(" "),
         fill: "none",
         stroke: "currentColor",
-        "stroke-width": attrs.width || 2,
+        ...strokeTokenAttrs(attrs.strokeWeight),
         "stroke-dasharray": attrs.dash || "",
         opacity: attrs.opacity ?? 1,
         filter: attrs.rough ? "url(#roughen)" : ""
@@ -692,14 +716,15 @@
     }
 
     function typographyToken(value, options) {
+      const size = normalizeDesignTokenSize(options.size || "medium");
       const definition = {
         value,
         form: "typography",
         function: options.function,
         role: options.role,
         typeface: options.typeface,
-        size: normalizeDesignTokenSize(options.size || "medium"),
-        weight: normalizeFontWeight(options.weight),
+        size,
+        weight: fontWeightForToken(size, options.function),
         context: options.context || "component"
       };
       tokenTaxonomyAttrs({
@@ -751,8 +776,7 @@
         typeface,
         size: "large",
         function: "content",
-        role: "date-time",
-        weight: "bold"
+        role: "date-time"
       });
 
       return [
@@ -780,10 +804,10 @@
       return [
         ...visualTokens.koreanKeywords
           .filter(value => !reservedForXlarge.has(value))
-          .map(value => typographyToken(value, { typeface: "korean", size: "large", function: "content", role: "display-keyword", weight: "bold" })),
+          .map(value => typographyToken(value, { typeface: "korean", size: "large", function: "content", role: "display-keyword" })),
         ...visualTokens.englishKeywords
           .filter(value => !reservedForMedium.has(value) && !reservedForXlarge.has(value))
-          .map(value => typographyToken(value, { typeface: "english", size: "large", function: "content", role: "display-keyword", weight: "bold" })),
+          .map(value => typographyToken(value, { typeface: "english", size: "large", function: "content", role: "display-keyword" })),
         ...todayDateTypographyTokens()
       ];
     }
@@ -791,14 +815,14 @@
     function xlargeTypographyTokens() {
       const heroKorean = visualTokens.koreanKeywords
         .filter(value => ["접속", "검증", "출력"].includes(value))
-        .map(value => typographyToken(value, { typeface: "korean", size: "xlarge", function: "content", role: "hero-keyword", weight: "bold" }));
+        .map(value => typographyToken(value, { typeface: "korean", size: "xlarge", function: "content", role: "hero-keyword" }));
       const heroEnglish = visualTokens.englishKeywords
         .filter(value => ["ACCESS", "OUTPUT", "STATUS"].includes(value))
-        .map(value => typographyToken(value, { typeface: "english", size: "xlarge", function: "content", role: "hero-keyword", weight: "bold" }));
+        .map(value => typographyToken(value, { typeface: "english", size: "xlarge", function: "content", role: "hero-keyword" }));
       return [
         ...heroKorean,
-        ...visualTokens.hanjaKeywords.map(value => typographyToken(value, { typeface: "hanja", size: "xlarge", function: "content", role: "hero-glyph", weight: "bold" })),
-        ...visualTokens.greetingTokens.map(item => typographyToken(item.value, { typeface: item.typeface, size: "xlarge", function: "sign", role: "greeting", weight: "bold" })),
+        ...visualTokens.hanjaKeywords.map(value => typographyToken(value, { typeface: "hanja", size: "xlarge", function: "content", role: "hero-glyph" })),
+        ...visualTokens.greetingTokens.map(item => typographyToken(item.value, { typeface: item.typeface, size: "xlarge", function: "sign", role: "greeting" })),
         ...heroEnglish
       ];
     }
@@ -806,7 +830,7 @@
     function pickXlargeTypography() {
       const tokens = [
         ...xlargeTypographyTokens(),
-        typographyToken(codeToken(), { typeface: "mono", size: "xlarge", function: "data", role: "hero-code", weight: "bold" })
+        typographyToken(codeToken(), { typeface: "mono", size: "xlarge", function: "data", role: "hero-code" })
       ];
       return pick(tokens);
     }
@@ -835,12 +859,12 @@
       const textX = alignedTextX(textBox, align);
       if (fill) {
         target.appendChild(rect(x, y, w, 28, { fill: "currentColor", stroke: false, opacity: 0.96 }));
-        const text = textNode(textX, y + 20, value, { size: 15, align, tokenSize, tokenFunction, tokenRole, tokenContext, weight: "bold", transform: "", opacity: 1, typeface: "english", maxWidth: textBox.width });
+        const text = textNode(textX, y + 20, value, { size: 15, align, tokenSize, tokenFunction, tokenRole, tokenContext, transform: "", opacity: 1, typeface: "english", maxWidth: textBox.width });
         text.setAttribute("fill", "var(--bg)");
         target.appendChild(text);
       } else {
-        target.appendChild(rect(x, y, w, 28, { width: 2, rough: true }));
-        target.appendChild(textNode(textX, y + 20, value, { size: 15, align, tokenSize, tokenFunction, tokenRole, tokenContext, weight: "bold", typeface: "english", maxWidth: textBox.width }));
+        target.appendChild(rect(x, y, w, 28, { rough: true }));
+        target.appendChild(textNode(textX, y + 20, value, { size: 15, align, tokenSize, tokenFunction, tokenRole, tokenContext, typeface: "english", maxWidth: textBox.width }));
       }
     }
 
@@ -859,9 +883,9 @@
         tokenRole: "metadata-badge",
         tokenContext: options.tokenContext || "component"
       });
-      const badgeRect = rect(x, y, w, 21, { fill: chance(0.45) ? "currentColor" : "none", width: 1.5, rough: true });
+      const badgeRect = rect(x, y, w, 21, { fill: chance(0.45) ? "currentColor" : "none", rough: true });
       target.appendChild(badgeRect);
-      const t = textNode(x + w / 2, y + 15, value, { size: 11, align: "center", tokenSize: "small", tokenFunction: "data", tokenRole: "revision", tokenContext: options.tokenContext || "component", weight: "bold", typeface: "mono", maxWidth: w - margin * 2 });
+      const t = textNode(x + w / 2, y + 15, value, { size: 11, align: "center", tokenSize: "small", tokenFunction: "data", tokenRole: "revision", tokenContext: options.tokenContext || "component", typeface: "mono", maxWidth: w - margin * 2 });
       if (badgeRect.getAttribute("fill") === "currentColor") t.setAttribute("fill", "var(--bg)");
       target.appendChild(t);
     }
@@ -869,11 +893,11 @@
     function ticks(g, x, y, w, count = 54, options = {}) {
       if (w <= 0) return;
       const target = graphicTokenGroup(g, "data", "measurement-ticks", options.tokenContext || "primitive-detail");
-      target.appendChild(line(x, y, x + w, y, { width: 2, rough: true }));
+      target.appendChild(line(x, y, x + w, y, { rough: true }));
       for (let i = 0; i <= count; i++) {
         const tx = x + w * (i / count);
         const tall = i % 10 === 0 ? 22 : i % 5 === 0 ? 16 : 9;
-        target.appendChild(line(tx, y, tx, y - tall, { width: i % 10 === 0 ? 2 : 1.2, rough: true, opacity: 0.88 }));
+        target.appendChild(line(tx, y, tx, y - tall, { rough: true, opacity: 0.88 }));
       }
     }
 
@@ -942,10 +966,10 @@
         const leftDigits = value.slice(1, 6);
         const rightDigits = value.slice(6, 11);
         const last = value[11];
-        target.appendChild(textNode(x, captionY, first, { size: captionH, minSize: 7, maxWidth: quiet * 0.8, tokenSize: "small", tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", weight: "bold", typeface: "mono" }));
-        target.appendChild(textNode(x + quiet + availableW * 0.29, captionY, leftDigits, { size: captionH, minSize: 7, maxWidth: availableW * 0.32, tokenSize: "small", tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", weight: "bold", align: "center", typeface: "mono" }));
-        target.appendChild(textNode(x + quiet + availableW * 0.72, captionY, rightDigits, { size: captionH, minSize: 7, maxWidth: availableW * 0.32, tokenSize: "small", tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", weight: "bold", align: "center", typeface: "mono" }));
-        target.appendChild(textNode(x + w, captionY, last, { size: captionH, minSize: 7, maxWidth: quiet * 0.8, tokenSize: "small", tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", weight: "bold", align: "right", typeface: "mono" }));
+        target.appendChild(textNode(x, captionY, first, { size: captionH, minSize: 7, maxWidth: quiet * 0.8, tokenSize: "small", tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", typeface: "mono" }));
+        target.appendChild(textNode(x + quiet + availableW * 0.29, captionY, leftDigits, { size: captionH, minSize: 7, maxWidth: availableW * 0.32, tokenSize: "small", tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", align: "center", typeface: "mono" }));
+        target.appendChild(textNode(x + quiet + availableW * 0.72, captionY, rightDigits, { size: captionH, minSize: 7, maxWidth: availableW * 0.32, tokenSize: "small", tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", align: "center", typeface: "mono" }));
+        target.appendChild(textNode(x + w, captionY, last, { size: captionH, minSize: 7, maxWidth: quiet * 0.8, tokenSize: "small", tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", align: "right", typeface: "mono" }));
       }
     }
 
@@ -953,7 +977,7 @@
       if (size <= 0) return;
       const target = graphicTokenGroup(g, "data", "pseudo-qr", options.tokenContext || "primitive-detail");
       const step = size / cells;
-      target.appendChild(rect(x, y, size, size, { width: 0, fill: "transparent", stroke: false }));
+      target.appendChild(rect(x, y, size, size, { fill: "transparent", stroke: false }));
       for (let row = 0; row < cells; row++) {
         for (let col = 0; col < cells; col++) {
           const finder =
@@ -978,12 +1002,12 @@
       const cellMargin = marginSize(w, h, "small");
       const leftCellWidth = Math.max(10, w * 0.48 - cellMargin * 2);
       const rightCellWidth = Math.max(10, w * 0.52 - cellMargin * 2);
-      target.appendChild(rect(x, y, w, h, { width: 1.5, rough: true }));
-      target.appendChild(line(x + w * 0.48, y, x + w * 0.48, y + h, { width: 1.3, rough: true }));
-      for (let i = 1; i < rows; i++) target.appendChild(line(x, y + i * rowH, x + w, y + i * rowH, { width: 1.2, rough: true }));
+      target.appendChild(rect(x, y, w, h, { rough: true }));
+      target.appendChild(line(x + w * 0.48, y, x + w * 0.48, y + h, { rough: true }));
+      for (let i = 1; i < rows; i++) target.appendChild(line(x, y + i * rowH, x + w, y + i * rowH, { rough: true }));
       for (let i = 0; i < rows; i++) {
-        target.appendChild(textNode(x + cellMargin, y + 17 + i * rowH, `${pick(visualTokens.tableFieldLabels)} ${ri(10, 99)}`, { size: 11, tokenSize: "small", tokenFunction: "data", tokenRole: "table-cell", tokenContext: options.tokenContext || "primitive-detail", weight: "bold", typeface: "mono", maxWidth: leftCellWidth }));
-        target.appendChild(textNode(x + w * 0.48 + cellMargin, y + 17 + i * rowH, `${pick(visualTokens.tableFieldLabels)} ${ri(1, 99)}${chance(0.5) ? "%" : ""}`, { size: 11, tokenSize: "small", tokenFunction: "data", tokenRole: "table-cell", tokenContext: options.tokenContext || "primitive-detail", weight: "bold", typeface: "mono", maxWidth: rightCellWidth }));
+        target.appendChild(textNode(x + cellMargin, y + 17 + i * rowH, `${pick(visualTokens.tableFieldLabels)} ${ri(10, 99)}`, { size: 11, tokenSize: "small", tokenFunction: "data", tokenRole: "table-cell", tokenContext: options.tokenContext || "primitive-detail", typeface: "mono", maxWidth: leftCellWidth }));
+        target.appendChild(textNode(x + w * 0.48 + cellMargin, y + 17 + i * rowH, `${pick(visualTokens.tableFieldLabels)} ${ri(1, 99)}${chance(0.5) ? "%" : ""}`, { size: 11, tokenSize: "small", tokenFunction: "data", tokenRole: "table-cell", tokenContext: options.tokenContext || "primitive-detail", typeface: "mono", maxWidth: rightCellWidth }));
       }
     }
 
@@ -996,9 +1020,9 @@
         const pointY = y + h / 2 + Math.sin(i * r(0.9, 1.4)) * h * r(0.18, 0.42) + r(-8, 8);
         pts.push([x + w * (i / steps), clamp(pointY, y, y + h)]);
       }
-      target.appendChild(rect(x, y, w, h, { width: 1.5, rough: true, opacity: 0.75 }));
-      for (let i = 1; i < 4; i++) target.appendChild(line(x, y + h * (i / 4), x + w, y + h * (i / 4), { width: 1, dash: "2 9", opacity: 0.45 }));
-      target.appendChild(polyline(pts, { width: 2.2, rough: true }));
+      target.appendChild(rect(x, y, w, h, { rough: true, opacity: 0.75 }));
+      for (let i = 1; i < 4; i++) target.appendChild(line(x, y + h * (i / 4), x + w, y + h * (i / 4), { dash: "2 9", opacity: 0.45 }));
+      target.appendChild(polyline(pts, { rough: true }));
     }
 
     // Content detail renderers.
@@ -1007,7 +1031,7 @@
       const barH = Math.min(58, Math.max(26, h * 0.58));
       const barY = y + inset;
       barcode(g, x + inset, barY, w - inset * 2, barH);
-      g.appendChild(textNode(x + inset, y + h - 26, `SN ${ri(1000, 9999)}-${ri(1000, 9999)}-${String.fromCharCode(65 + ri(0, 25))}${String.fromCharCode(65 + ri(0, 25))}`, { size: 11, tokenSize: "small", tokenFunction: "data", tokenRole: "serial", tokenContext: "primitive-detail", weight: "bold", typeface: "mono", maxWidth: w - inset * 2 }));
+      g.appendChild(textNode(x + inset, y + h - 26, `SN ${ri(1000, 9999)}-${ri(1000, 9999)}-${String.fromCharCode(65 + ri(0, 25))}${String.fromCharCode(65 + ri(0, 25))}`, { size: 11, tokenSize: "small", tokenFunction: "data", tokenRole: "serial", tokenContext: "primitive-detail", typeface: "mono", maxWidth: w - inset * 2 }));
     }
 
     function renderPseudoQrDetail(g, x, y, w, h) {
@@ -1018,9 +1042,9 @@
       const textX = x + inset + q + textGap;
       const textMax = Math.max(28, x + w - inset - textX);
       pseudoQr(g, x + inset, qrY, q);
-      g.appendChild(textNode(textX, qrY + q * 0.27, "ID", { size: 15, tokenSize: "medium", tokenFunction: "data", tokenRole: "identifier-label", tokenContext: "primitive-detail", weight: "bold", typeface: "mono", maxWidth: textMax }));
-      g.appendChild(textNode(textX, qrY + q * 0.5, `CODE ${codeToken()}`, { size: 13, tokenSize: "small", tokenFunction: "data", tokenRole: "code-caption", tokenContext: "primitive-detail", weight: "bold", typeface: "mono", maxWidth: textMax }));
-      g.appendChild(textNode(textX, qrY + q * 0.74, "INPUT VERIFIED / OUTPUT OK", { size: 13, tokenSize: "small", tokenFunction: "sign", tokenRole: "verification", tokenContext: "primitive-detail", weight: "bold", typeface: "english", maxWidth: textMax }));
+      g.appendChild(textNode(textX, qrY + q * 0.27, "ID", { size: 15, tokenSize: "medium", tokenFunction: "data", tokenRole: "identifier-label", tokenContext: "primitive-detail", typeface: "mono", maxWidth: textMax }));
+      g.appendChild(textNode(textX, qrY + q * 0.5, `CODE ${codeToken()}`, { size: 13, tokenSize: "small", tokenFunction: "data", tokenRole: "code-caption", tokenContext: "primitive-detail", typeface: "mono", maxWidth: textMax }));
+      g.appendChild(textNode(textX, qrY + q * 0.74, "INPUT VERIFIED / OUTPUT OK", { size: 13, tokenSize: "small", tokenFunction: "sign", tokenRole: "verification", tokenContext: "primitive-detail", typeface: "english", maxWidth: textMax }));
     }
 
     function renderWaveDetail(g, x, y, w, h) {
@@ -1040,7 +1064,7 @@
       const inset = detailPadding(w, h);
       const tickY = y + Math.max(inset + 22, h - 48);
       ticks(g, x + inset, tickY, w - inset * 2, ri(24, 64));
-      g.appendChild(textNode(x + inset, y + h - 18, `MOD ${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 12, tokenSize: "small", tokenFunction: "data", tokenRole: "port-caption", tokenContext: "primitive-detail", weight: "bold", typeface: "mono", maxWidth: w - inset * 2 }));
+      g.appendChild(textNode(x + inset, y + h - 18, `MOD ${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 12, tokenSize: "small", tokenFunction: "data", tokenRole: "port-caption", tokenContext: "primitive-detail", typeface: "mono", maxWidth: w - inset * 2 }));
     }
 
     // Extension point: add a detail renderer here, then use its id from a layout.
@@ -1097,7 +1121,7 @@
       };
       const orgZone = headerPair ? headerPair.left : zones.header;
 
-      if (drawShell && chance(0.42)) g.appendChild(rect(x, y, w, h, { width: r(1.4, 2.8), rough: true, opacity: 0.9 }));
+      if (drawShell && chance(0.42)) g.appendChild(rect(x, y, w, h, { rough: true, opacity: 0.9 }));
 
       stackTextToken(g, orgZone, `@${org}`, {
         align: stackAlign.header,
@@ -1105,7 +1129,6 @@
         tokenFunction: "content",
         tokenRole: "organization",
         size: Math.max(10, Math.min(15, w / 24, zones.header.height * 0.72)),
-        weight: "bold",
         opacity: 0.9,
         typeface: "english",
         spin: spinAngle("subtle", 0.16)
@@ -1120,7 +1143,6 @@
         tokenFunction: labelValue === "STATUS" ? "sign" : "content",
         tokenRole: labelValue === "STATUS" ? "status" : "display-keyword",
         size: Math.max(10, Math.min(14, w / 22, zones.label.height * 0.72)),
-        weight: "bold",
         opacity: 0.85,
         typeface: "english",
         spin: spinAngle("subtle", 0.14)
@@ -1135,7 +1157,6 @@
         minSize: Math.min(isXlarge ? 42 : 22, zones.main.height * (isXlarge ? 0.76 : 0.58)),
         maxWidth: textMaxWidth,
         maxHeight: zones.main.height * 0.92,
-        weight: primary.weight,
         opacity: 0.98,
         typeface: primary.typeface,
         spin: spinAngle("subtle", 0.18)
@@ -1149,7 +1170,6 @@
           tokenRole: "display-keyword",
           baseline: 0.76,
           size: Math.min(21, w / 10, zones.sub.height * 0.78),
-          weight: "bold",
           opacity: 0.92,
           typeface: isCjk ? "english" : "korean",
           maxWidth: textMaxWidth,
@@ -1161,7 +1181,7 @@
 
       if (chance(0.32)) {
         const dividerY = zones.detail.y - zones.gap * 0.5;
-        g.appendChild(line(zones.box.x, dividerY, zones.box.x + zones.box.width, dividerY, { width: 1.4, rough: true, dash: "7 7", opacity: 0.82 }));
+        g.appendChild(line(zones.box.x, dividerY, zones.box.x + zones.box.width, dividerY, { rough: true, dash: "7 7", opacity: 0.82 }));
       }
       return g;
     }
@@ -1180,13 +1200,13 @@
       const codeY = py + ph * 0.68;
       const modY = py + ph * 0.84;
       const barcodeY = Math.min(py + ph * 0.88, safe.y + safe.height - 48);
-      const hero = typographyToken(`< ${ri(1000, 9999)} ${ri(1000, 9999)} ${ri(10, 99)} >`, { typeface: "mono", size: "xlarge", function: "data", role: "hero-code", weight: "bold" });
+      const hero = typographyToken(`< ${ri(1000, 9999)} ${ri(1000, 9999)} ${ri(10, 99)} >`, { typeface: "mono", size: "xlarge", function: "data", role: "hero-code" });
       if (chance(0.45)) label(g, px, py, pw, pick(visualTokens.englishKeywords), true, { tokenSize: "medium", tokenFunction: "content", tokenRole: "display-keyword", spin: spinAngle("subtle", 0.16) });
-      g.appendChild(line(px, y1, px + pw, y1, { width: 2, rough: true, dash: chance(0.5) ? "9 7" : "" }));
-      g.appendChild(textNode(px + pw / 2, mainY, hero.value, { size: Math.min(116, pw / 8, ph * 0.28), minSize: Math.min(34, ph * 0.2), maxWidth: pw, maxHeight: ph * 0.28, tokenSize: hero.size, tokenFunction: hero.function, tokenRole: hero.role, weight: hero.weight, align: "center", typeface: hero.typeface }));
-      g.appendChild(line(px, y2, px + pw, y2, { width: 2, rough: true }));
-      g.appendChild(textNode(px, codeY, `CODE ${codeToken()}${ri(10, 99)}`, { size: 14, maxWidth: pw, tokenSize: "small", tokenFunction: "data", tokenRole: "code-caption", weight: "bold", typeface: "mono" }));
-      g.appendChild(textNode(px, modY, `MOD P${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 14, maxWidth: pw, tokenSize: "small", tokenFunction: "data", tokenRole: "port-caption", weight: "bold", typeface: "mono" }));
+      g.appendChild(line(px, y1, px + pw, y1, { rough: true, dash: chance(0.5) ? "9 7" : "" }));
+      g.appendChild(textNode(px + pw / 2, mainY, hero.value, { size: Math.min(116, pw / 8, ph * 0.28), minSize: Math.min(34, ph * 0.2), maxWidth: pw, maxHeight: ph * 0.28, tokenSize: hero.size, tokenFunction: hero.function, tokenRole: hero.role, align: "center", typeface: hero.typeface }));
+      g.appendChild(line(px, y2, px + pw, y2, { rough: true }));
+      g.appendChild(textNode(px, codeY, `CODE ${codeToken()}${ri(10, 99)}`, { size: 14, maxWidth: pw, tokenSize: "small", tokenFunction: "data", tokenRole: "code-caption", typeface: "mono" }));
+      g.appendChild(textNode(px, modY, `MOD P${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 14, maxWidth: pw, tokenSize: "small", tokenFunction: "data", tokenRole: "port-caption", typeface: "mono" }));
       if (chance(0.35)) barcode(g, px, barcodeY, pw, Math.min(56, safe.y + safe.height - barcodeY));
       return g;
     }
@@ -1207,11 +1227,11 @@
       const codeY = Math.min(safe.y + safe.height - footerMargin, safe.y + safe.height * 0.88);
       const word = pickPrimaryDisplayTypography();
       const isXlarge = word.size === "xlarge";
-      g.appendChild(textNode(cx, titleY, "MICRO GRAPHIC", { size: 16, tokenSize: "medium", tokenFunction: "content", tokenRole: "title", weight: "bold", align: "center", opacity: 0.78, typeface: "english", maxWidth: safe.width }));
-      g.appendChild(textNode(cx, mainY, word.value, { typeface: word.typeface, tokenSize: word.size || "large", tokenFunction: word.function, tokenRole: word.role, size: Math.min(safe.width * (isXlarge ? 0.56 : 0.22), mainZone.height * (isXlarge ? 0.92 : 0.72), isXlarge ? 500 : 178), minSize: Math.min(isXlarge ? 56 : 30, mainZone.height * (isXlarge ? 0.76 : 0.6)), maxWidth: safe.width * 0.92, maxHeight: mainZone.height * 0.92, weight: word.weight, align: "center" }));
-      g.appendChild(line(cx - safe.width * 0.26, lineY, cx + safe.width * 0.26, lineY, { width: 2.2, rough: true }));
+      g.appendChild(textNode(cx, titleY, "MICRO GRAPHIC", { size: 16, tokenSize: "medium", tokenFunction: "content", tokenRole: "title", align: "center", opacity: 0.78, typeface: "english", maxWidth: safe.width }));
+      g.appendChild(textNode(cx, mainY, word.value, { typeface: word.typeface, tokenSize: word.size || "large", tokenFunction: word.function, tokenRole: word.role, size: Math.min(safe.width * (isXlarge ? 0.56 : 0.22), mainZone.height * (isXlarge ? 0.92 : 0.72), isXlarge ? 500 : 178), minSize: Math.min(isXlarge ? 56 : 30, mainZone.height * (isXlarge ? 0.76 : 0.6)), maxWidth: safe.width * 0.92, maxHeight: mainZone.height * 0.92, align: "center" }));
+      g.appendChild(line(cx - safe.width * 0.26, lineY, cx + safe.width * 0.26, lineY, { rough: true }));
       barcode(g, cx - safe.width * 0.22, barcodeY, safe.width * 0.44, Math.min(64, safe.y + safe.height - barcodeY - footerMargin * 2));
-      g.appendChild(textNode(cx, codeY, `CODE ${codeToken()} / PORT ${ri(10, 999)} / REV ${String.fromCharCode(65 + ri(0, 25))}`, { size: 14, minSize: 9, maxWidth: safe.width * 0.92, tokenSize: "small", tokenFunction: "data", tokenRole: "code-caption", weight: "bold", align: "center", typeface: "mono" }));
+      g.appendChild(textNode(cx, codeY, `CODE ${codeToken()} / PORT ${ri(10, 999)} / REV ${String.fromCharCode(65 + ri(0, 25))}`, { size: 14, minSize: 9, maxWidth: safe.width * 0.92, tokenSize: "small", tokenFunction: "data", tokenRole: "code-caption", align: "center", typeface: "mono" }));
       return g;
     }
 
@@ -1261,7 +1281,7 @@
       ];
       const xlarge = [
         ...xlargeTypographyTokens(),
-        typographyToken(codeToken(), { typeface: "mono", size: "xlarge", function: "data", role: "hero-code", weight: "bold" })
+        typographyToken(codeToken(), { typeface: "mono", size: "xlarge", function: "data", role: "hero-code" })
       ];
 
       return { small, medium, large, xlarge };
@@ -1344,7 +1364,7 @@
       const item = pick(category.items);
       const labelH = cell.height < 48 ? 0 : 18;
       if (labelH) {
-        g.appendChild(textNode(cell.x, cell.y + 10, category.shortLabel, { size: 8, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-sample-label", tokenContext: "catalog-ui", weight: "bold", typeface: "english", opacity: 0.55, maxWidth: cell.width }));
+        g.appendChild(textNode(cell.x, cell.y + 10, category.shortLabel, { size: 8, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-sample-label", tokenContext: "catalog-ui", typeface: "english", opacity: 0.55, maxWidth: cell.width }));
       }
 
       const sample = {
@@ -1370,7 +1390,6 @@
         size: sizes[item.size] || 16,
         minSize: 8,
         maxHeight: sample.height * 0.82,
-        weight: "bold",
         typeface: item.typeface,
         maxWidth: sample.width
       });
@@ -1384,28 +1403,28 @@
       const cellW = (box.width - rowLabelW) / TOKEN_FUNCTIONS.length;
       const cellH = gridH / TOKEN_FORMS.length;
 
-      g.appendChild(textNode(box.x, box.y + titleH * 0.72, "TOKEN MAP", { size: TOKEN_CATALOG_SECTION_TITLE.size, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-section-label", tokenContext: "catalog-ui", weight: "bold", typeface: "english", maxWidth: box.width * 0.5 }));
-      g.appendChild(textNode(box.x + box.width, box.y + titleH * 0.72, "COMPOSE  /  EMPTY  /  SIGN", { size: 8, tokenSize: "small", tokenFunction: "data", tokenRole: "catalog-map-legend", tokenContext: "catalog-ui", weight: "bold", align: "right", typeface: "mono", opacity: 0.62, maxWidth: box.width * 0.42 }));
-      g.appendChild(line(box.x, gridY, box.x + box.width, gridY, { width: 1.4, rough: true, opacity: 0.75 }));
+      g.appendChild(textNode(box.x, box.y + titleH * 0.72, "TOKEN MAP", { size: TOKEN_CATALOG_SECTION_TITLE.size, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-section-label", tokenContext: "catalog-ui", typeface: "english", maxWidth: box.width * 0.5 }));
+      g.appendChild(textNode(box.x + box.width, box.y + titleH * 0.72, "COMPOSE  /  EMPTY  /  SIGN", { size: 8, tokenSize: "small", tokenFunction: "data", tokenRole: "catalog-map-legend", tokenContext: "catalog-ui", align: "right", typeface: "mono", opacity: 0.62, maxWidth: box.width * 0.42 }));
+      g.appendChild(line(box.x, gridY, box.x + box.width, gridY, { rough: true, opacity: 0.75 }));
 
       TOKEN_FUNCTIONS.forEach((tokenFunction, column) => {
         const x = box.x + rowLabelW + column * cellW;
-        g.appendChild(textNode(x + cellW * 0.5, gridY + 13, tokenFunction.toUpperCase(), { size: 8, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-map-column", tokenContext: "catalog-ui", weight: "bold", align: "center", typeface: "english", maxWidth: cellW * 0.86 }));
+        g.appendChild(textNode(x + cellW * 0.5, gridY + 13, tokenFunction.toUpperCase(), { size: 8, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-map-column", tokenContext: "catalog-ui", align: "center", typeface: "english", maxWidth: cellW * 0.86 }));
       });
 
       TOKEN_FORMS.forEach((form, row) => {
         const y = gridY + row * cellH;
-        g.appendChild(textNode(box.x, y + cellH * 0.6, form.toUpperCase(), { size: 9, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-map-row", tokenContext: "catalog-ui", weight: "bold", typeface: "english", maxWidth: rowLabelW * 0.86 }));
-        g.appendChild(line(box.x, y + cellH, box.x + box.width, y + cellH, { width: 0.8, rough: true, opacity: 0.3 }));
+        g.appendChild(textNode(box.x, y + cellH * 0.6, form.toUpperCase(), { size: 9, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-map-row", tokenContext: "catalog-ui", typeface: "english", maxWidth: rowLabelW * 0.86 }));
+        g.appendChild(line(box.x, y + cellH, box.x + box.width, y + cellH, { rough: true, opacity: 0.3 }));
 
         TOKEN_FUNCTIONS.forEach((tokenFunction, column) => {
           const category = definitions.find(item => item.form === form && item.function === tokenFunction);
           const x = box.x + rowLabelW + column * cellW;
           const status = tokenFunction === "sign" ? "SIGN" : category.items.length ? "COMPOSE" : "EMPTY";
           const active = status === "COMPOSE";
-          g.appendChild(make("rect", { x: x + 2, y: y + cellH * 0.43, width: 5, height: 5, fill: active ? "currentColor" : "none", stroke: "currentColor", "stroke-width": 1, opacity: active ? 0.9 : 0.45 }));
-          g.appendChild(textNode(x + 12, y + cellH * 0.6, `${category.items.length}  ${status}`, { size: 8, tokenSize: "small", tokenFunction: "data", tokenRole: "catalog-map-cell", tokenContext: "catalog-ui", weight: active ? "bold" : "normal", typeface: "mono", opacity: active ? 0.9 : 0.48, maxWidth: cellW - 16 }));
-          if (column) g.appendChild(line(x, y + 18, x, y + cellH, { width: 0.7, rough: true, opacity: 0.22 }));
+          g.appendChild(rect(x + 2, y + cellH * 0.43, 5, 5, { fill: active ? "currentColor" : "none", opacity: active ? 0.9 : 0.45 }));
+          g.appendChild(textNode(x + 12, y + cellH * 0.6, `${category.items.length}  ${status}`, { size: 8, tokenSize: "small", tokenFunction: "data", tokenRole: "catalog-map-cell", tokenContext: "catalog-ui", typeface: "mono", opacity: active ? 0.9 : 0.48, maxWidth: cellW - 16 }));
+          if (column) g.appendChild(line(x, y + 18, x, y + cellH, { rough: true, opacity: 0.22 }));
         });
       });
     }
@@ -1414,16 +1433,16 @@
       const titleH = TOKEN_CATALOG_SECTION_TITLE.height;
       const gap = marginSize(box.width, box.height, "medium");
       const groupW = (box.width - gap * (COMPOSITION_RULE_GROUPS.length - 1)) / COMPOSITION_RULE_GROUPS.length;
-      g.appendChild(textNode(box.x, box.y + titleH * 0.72, "RULE GROUPS", { size: TOKEN_CATALOG_SECTION_TITLE.size, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-section-label", tokenContext: "catalog-ui", weight: "bold", typeface: "english", maxWidth: box.width }));
-      g.appendChild(line(box.x, box.y + titleH, box.x + box.width, box.y + titleH, { width: 1.4, rough: true, opacity: 0.75 }));
+      g.appendChild(textNode(box.x, box.y + titleH * 0.72, "RULE GROUPS", { size: TOKEN_CATALOG_SECTION_TITLE.size, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-section-label", tokenContext: "catalog-ui", typeface: "english", maxWidth: box.width }));
+      g.appendChild(line(box.x, box.y + titleH, box.x + box.width, box.y + titleH, { rough: true, opacity: 0.75 }));
 
       COMPOSITION_RULE_GROUPS.forEach((group, index) => {
         const x = box.x + index * (groupW + gap);
         const bodyY = box.y + titleH;
         const lineH = Math.max(8, (box.height - titleH - 12) / group.rules.length);
-        g.appendChild(textNode(x, bodyY + 11, group.label, { size: 8, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-rule-group", tokenContext: "catalog-ui", weight: "bold", typeface: "english", maxWidth: groupW }));
+        g.appendChild(textNode(x, bodyY + 11, group.label, { size: 8, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-rule-group", tokenContext: "catalog-ui", typeface: "english", maxWidth: groupW }));
         group.rules.forEach((rule, ruleIndex) => {
-          g.appendChild(textNode(x, bodyY + 11 + lineH * (ruleIndex + 1), rule, { size: 7.2, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-rule", tokenContext: "catalog-ui", weight: "normal", typeface: "english", opacity: 0.72, maxWidth: groupW }));
+          g.appendChild(textNode(x, bodyY + 11 + lineH * (ruleIndex + 1), rule, { size: 7.2, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-rule", tokenContext: "catalog-ui", typeface: "english", opacity: 0.72, maxWidth: groupW }));
         });
       });
     }
@@ -1437,16 +1456,16 @@
       const categories = composableTokenCategories(definitions);
       const combinations = composableCategoryCombinations(categories);
 
-      g.appendChild(textNode(safe.x, safe.y + 26, "COMPOSABLE CATEGORIES", { size: 18, tokenSize: "medium", tokenFunction: "content", tokenRole: "catalog-title", tokenContext: "catalog-ui", weight: "bold", typeface: "english", maxWidth: safe.width * 0.58 }));
-      g.appendChild(textNode(safe.x + safe.width, safe.y + 26, `CATEGORIES ${categories.length} / COMBINATIONS ${combinations.length}`, { size: 12, tokenSize: "small", tokenFunction: "data", tokenRole: "catalog-count", tokenContext: "catalog-ui", weight: "bold", align: "right", typeface: "mono", maxWidth: safe.width * 0.38 }));
-      g.appendChild(line(safe.x, safe.y + headerH, safe.x + safe.width, safe.y + headerH, { width: 1.6, rough: true, opacity: 0.85 }));
+      g.appendChild(textNode(safe.x, safe.y + 26, "COMPOSABLE CATEGORIES", { size: 18, tokenSize: "medium", tokenFunction: "content", tokenRole: "catalog-title", tokenContext: "catalog-ui", typeface: "english", maxWidth: safe.width * 0.58 }));
+      g.appendChild(textNode(safe.x + safe.width, safe.y + 26, `CATEGORIES ${categories.length} / COMBINATIONS ${combinations.length}`, { size: 12, tokenSize: "small", tokenFunction: "data", tokenRole: "catalog-count", tokenContext: "catalog-ui", align: "right", typeface: "mono", maxWidth: safe.width * 0.38 }));
+      g.appendChild(line(safe.x, safe.y + headerH, safe.x + safe.width, safe.y + headerH, { rough: true, opacity: 0.85 }));
 
       const mapY = safe.y + headerH + sectionGap;
       const mapH = Math.max(112, Math.min(150, safe.height * 0.22));
       renderTokenMap(g, { x: safe.x, y: mapY, width: safe.width, height: mapH }, definitions);
 
       const rulesY = mapY + mapH + sectionGap;
-      const rulesH = Math.max(70, Math.min(92, safe.height * 0.14));
+      const rulesH = Math.max(82, Math.min(104, safe.height * 0.15));
       renderCompositionRuleGroups(g, { x: safe.x, y: rulesY, width: safe.width, height: rulesH });
 
       const listY = rulesY + rulesH + sectionGap;
@@ -1454,8 +1473,8 @@
       const listBottom = safe.y + safe.height;
       const rowsY = listY + listTitleH;
       const rowH = Math.max(44, (listBottom - rowsY) / Math.max(1, combinations.length));
-      g.appendChild(textNode(safe.x, listY + listTitleH * 0.72, "POSSIBLE COMBINATIONS", { size: TOKEN_CATALOG_SECTION_TITLE.size, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-section-label", tokenContext: "catalog-ui", weight: "bold", typeface: "english", maxWidth: safe.width }));
-      g.appendChild(line(safe.x, rowsY, safe.x + safe.width, rowsY, { width: 1.4, rough: true, opacity: 0.75 }));
+      g.appendChild(textNode(safe.x, listY + listTitleH * 0.72, "POSSIBLE COMBINATIONS", { size: TOKEN_CATALOG_SECTION_TITLE.size, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-section-label", tokenContext: "catalog-ui", typeface: "english", maxWidth: safe.width }));
+      g.appendChild(line(safe.x, rowsY, safe.x + safe.width, rowsY, { rough: true, opacity: 0.75 }));
 
       combinations.forEach((combination, rowIndex) => {
         const rowY = rowsY + rowIndex * rowH;
@@ -1466,7 +1485,7 @@
         const cellGap = marginSize(sampleWidth, rowH, "small");
         const cellW = (sampleWidth - cellGap * Math.max(0, combination.length - 1)) / combination.length;
 
-        g.appendChild(textNode(safe.x, rowY + rowH * 0.54, combination.map(category => category.shortLabel).join(" + "), { size: 11, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-combination", tokenContext: "catalog-ui", weight: "bold", typeface: "english", maxWidth: labelWidth - sampleGap }));
+        g.appendChild(textNode(safe.x, rowY + rowH * 0.54, combination.map(category => category.shortLabel).join(" + "), { size: 11, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-combination", tokenContext: "catalog-ui", typeface: "english", maxWidth: labelWidth - sampleGap }));
         combination.forEach((category, index) => {
           renderComposableCategorySample(g, category, {
             x: sampleX + index * (cellW + cellGap),
@@ -1475,7 +1494,7 @@
             height: Math.max(1, rowH - 16)
           });
         });
-        g.appendChild(line(safe.x, rowY + rowH, safe.x + safe.width, rowY + rowH, { width: 0.9, rough: true, opacity: 0.35 }));
+        g.appendChild(line(safe.x, rowY + rowH, safe.x + safe.width, rowY + rowH, { rough: true, opacity: 0.35 }));
       });
 
       return g;
@@ -1487,14 +1506,14 @@
       const count = Math.floor((w * h) / 32000);
       for (let i = 0; i < count; i++) {
         if (chance(0.5)) {
-          g.appendChild(line(r(0, w), r(0, h), r(0, w), r(0, h), { width: r(0.4, 1.2), opacity: r(0.2, 0.75) }));
+          g.appendChild(line(r(0, w), r(0, h), r(0, w), r(0, h), { opacity: r(0.2, 0.75) }));
         } else {
           g.appendChild(make("circle", { cx: r(0, w), cy: r(0, h), r: r(0.4, 1.4), fill: "currentColor" }));
         }
       }
       if (chance(0.34)) {
         const dg = make("g", { opacity: 0.35 });
-        for (let y = 0; y < h; y += 18) dg.appendChild(line(0, y, w, y, { width: 0.7, opacity: 0.12 }));
+        for (let y = 0; y < h; y += 18) dg.appendChild(line(0, y, w, y, { opacity: 0.12 }));
         g.appendChild(dg);
       }
       return g;
@@ -1551,7 +1570,7 @@
       if (mode === "no-stroke") return g;
 
       if (mode === "stroke") {
-        g.appendChild(rect(1, 1, w - 2, h - 2, { width: 2, rough: true, opacity: 0.9 }));
+        g.appendChild(rect(1, 1, w - 2, h - 2, { rough: true, opacity: 0.9 }));
         return g;
       }
 
@@ -1561,7 +1580,7 @@
       const x1 = w - inset;
       const y1 = h - inset;
       const length = Math.min(72, Math.max(38, Math.min(w, h) * 0.18));
-      const attrs = { width: 2.4, opacity: 0.94 };
+      const attrs = { opacity: 0.94 };
       g.append(
         line(x0, y0, x0 + length, y0, attrs),
         line(x0, y0, x0, y0 + length, attrs),
@@ -1610,12 +1629,27 @@
         violations.push(`typography-without-typeface:${typographyWithoutTypeface.length}`);
       }
 
-      const typographyWithInvalidWeight = classified.filter(node =>
-        node.getAttribute("data-token-form") === "typography" &&
-        !Object.hasOwn(FONT_WEIGHTS, node.getAttribute("data-token-weight"))
-      );
+      const typographyWithInvalidWeight = classified.filter(node => {
+        if (node.getAttribute("data-token-form") !== "typography") return false;
+        const expectedWeight = fontWeightForToken(
+          node.getAttribute("data-token-size"),
+          node.getAttribute("data-token-function")
+        );
+        return node.getAttribute("data-token-weight") !== expectedWeight ||
+          node.getAttribute("font-weight") !== String(FONT_WEIGHTS[expectedWeight]);
+      });
       if (typographyWithInvalidWeight.length) {
         violations.push(`typography-invalid-weight:${typographyWithInvalidWeight.length}`);
+      }
+
+      const activeStrokes = [...art.querySelectorAll('[stroke]:not([stroke="none"])')];
+      const invalidStrokes = activeStrokes.filter(node => {
+        const weight = node.getAttribute("data-stroke-weight");
+        return !ACTIVE_STROKE_WEIGHTS.includes(weight) ||
+          node.getAttribute("stroke-width") !== String(STROKE_WEIGHTS[weight]);
+      });
+      if (invalidStrokes.length) {
+        violations.push(`invalid-stroke-weight:${invalidStrokes.length}`);
       }
 
       const component = art.querySelector("svg[data-component]");

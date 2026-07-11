@@ -52,6 +52,7 @@
 - 조직명은 `@CARGO SYSTEMS`처럼 표기하고, 앞에 의미 없는 랜덤 symbol prefix를 붙이지 않는다.
 - 선은 살짝 거칠게 만들어 너무 깨끗한 UI처럼 보이지 않게 한다.
 - Component border line은 `stroke`, `no-stroke`, `corner-stroke` 중 하나로 정하고, 내부에는 별도의 큰 layout box를 반복해서 만들지 않는다.
+- stroke weight는 `thin`, `thick` 두 단계로 정의하지만 현재는 `thin`만 사용한다. `thick`은 예약 token이며 렌더링하지 않는다.
 - Component border와 내부 content 사이에는 `PADDING_TOKENS.large` 기반 safe area를 둔다.
 - Content block 안쪽 텍스트와 badge는 `PADDING_TOKENS.medium`, detail primitive는 `PADDING_TOKENS.small` 기준으로 배치한다.
 - 디자인 토큰 사이의 간격은 `MARGIN_TOKENS.small`, `MARGIN_TOKENS.medium`, `MARGIN_TOKENS.large`만 쓴다.
@@ -60,7 +61,7 @@
 - 디자인 토큰은 `small`, `medium`, `large`, `xlarge` 네 크기 단계로 나누고, 크기 단계가 한 행을 어떻게 점유하는지 정한다.
 - 토큰의 형태는 `typography`, `graphic`으로 나누고 기능은 `content`, `data`, `symbol`, `sign`으로 별도 기록한다.
 - 모든 `typography` token은 `typeface` role을 필수로 기록한다. `graphic` token에는 `typeface`를 넣지 않는다.
-- typography weight는 `normal`, `bold` 두 단계만 쓴다. 숫자 weight를 직접 디자인 토큰으로 사용하지 않는다.
+- typography weight는 `normal`, `bold` 두 단계만 쓰며, `content`이면서 `large` 또는 `xlarge`인 token만 `bold`다. 나머지는 모두 `normal`이다.
 - 모든 디자인 토큰의 배치 축도 `left`, `center`, `right` 세 가지만 쓴다. 토큰은 세 축 위에서 테트리스 블록처럼 행 단위로 쌓일 수 있고, 작은 spin 회전은 허용한다.
 - `Composable Categories` mode는 조합 재료로 사용할 수 있는 `content`, `data`, `symbol`의 form/function category와 가능한 category 조합만 보여주는 catalog view다.
 - barcode, pseudo-QR, tick mark, mini table, wave graph, label, badge, symbol을 재사용 가능한 graphic primitive로 둔다.
@@ -168,7 +169,7 @@ spin은 토큰 자체에 주는 작은 회전이다. spin은 alignment를 대체
 
 현재 폰트 시스템은 Noto Sans 계열로 고정한다. 코드에서는 `TYPEFACES`와 `resolveTypeface()`로 관리한다.
 
-weight token은 `normal`, `bold` 두 개만 허용한다. 코드에서는 `FONT_WEIGHTS.normal = 400`, `FONT_WEIGHTS.bold = 700`으로 렌더링하고, SVG에는 숫자 대신 `data-token-weight="normal|bold"`를 기록한다. `textNode()`와 `typographyToken()`은 전달값을 두 token 중 하나로 정규화하며 `validateRenderedTokenRules()`가 다른 weight를 검사한다.
+weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 `content`이고 size가 `large` 또는 `xlarge`인 typography에만 적용한다. `small`, `medium`과 `data`, `symbol`, `sign`, catalog UI는 모두 `normal`이다. 코드에서는 `fontWeightForToken()`이 weight를 결정하고 `FONT_WEIGHTS.normal = 400`, `FONT_WEIGHTS.bold = 700`으로 렌더링한다. SVG에는 `data-token-weight="normal|bold"`를 기록하며 `validateRenderedTokenRules()`가 size/function 조합과 실제 weight를 함께 검사한다.
 
 `form: "typography"`인 token은 아래 typeface role 중 하나를 반드시 명시한다. 브라우저 fallback만으로 typeface를 결정하지 않는다.
 
@@ -226,6 +227,7 @@ weight token은 `normal`, `bold` 두 개만 허용한다. 코드에서는 `FONT_
 - `Aspect ratio behavior`: `1:1`, `2:3`, `2:5`, `3:2`, `5:2`, `4:3`, `3:4` 각각에 어울리는 정보 구조와 금지할 구조.
 - `Layout archetype mapping`: 각 archetype이 주로 사용할 aspect ratio, typography, primitive, density, stroke mode.
 - `Stroke`: `stroke`, `no-stroke`, `corner-stroke`의 선 두께, corner length, inset, roughness, dash 사용 여부.
+- `Stroke weight`: `STROKE_WEIGHTS`는 `thin`, `thick`을 정의하고 `ACTIVE_STROKE_WEIGHTS`는 현재 `thin`만 허용한다. line, rect, polyline과 Component border는 공통 stroke helper를 사용한다.
 - `Internal dividers`: Component border 외의 내부 구분선, dashed line, underline, measurement line을 언제 쓸지.
 - `Graphic primitive library`: barcode, pseudo-QR, tick mark, mini table, wave graph, badge, stamp, icon, divider, coordinate mark의 사용 조건.
 - `Primitive scale`: primitive가 Component 안에서 차지할 상대 크기, 최소/최대 크기, caption과의 거리.
@@ -413,3 +415,5 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-11: Compose 화면에 taxonomy, typeface, size, placement, spacing, 조합 규칙을 한 번에 확인하는 `COMPOSITION_RULES` 목록 추가.
 - 2026-07-11: 전체 token category를 form × function matrix로 바꾸고 `COMPOSE`, `EMPTY`, `SIGN` 상태와 세 rule group으로 시각적 위계를 정리.
 - 2026-07-11: typography weight를 `normal`, `bold` 두 token으로 제한하고 SVG metadata 및 렌더 검증에 반영.
+- 2026-07-11: `bold` 적용 대상을 `large`/`xlarge` 크기의 `content` typography로 제한하고 나머지 token은 `normal`로 고정.
+- 2026-07-11: stroke weight를 `thin`, `thick`으로 정의하고 현재 렌더 및 검증은 `thin`만 허용하도록 통합.
