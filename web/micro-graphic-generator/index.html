@@ -10,7 +10,7 @@
     :root {
       --bg: #f4f4ef;
       --ink: #10110f;
-      --panel: rgba(244, 244, 239, 0.86);
+      --panel: #f4f4ef;
       --hair: rgba(16, 17, 15, 0.2);
       --font-ui: "Noto Sans", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
     }
@@ -33,7 +33,7 @@
     body.is-dark {
       --bg: #111210;
       --ink: #f1f1e7;
-      --panel: rgba(17, 18, 16, 0.86);
+      --panel: #111210;
       --hair: rgba(241, 241, 231, 0.24);
     }
 
@@ -63,7 +63,6 @@
       padding: 7px;
       border: 1px solid var(--ink);
       background: var(--panel);
-      backdrop-filter: blur(10px);
     }
 
     button {
@@ -150,8 +149,18 @@
       small: { rowMode: "pairable", maxPerRow: 2 },
       medium: { rowMode: "single", maxPerRow: 1 },
       large: { rowMode: "exclusive", maxPerRow: 1 },
-      xlarge: { rowMode: "exclusive", maxPerRow: 1 }
+      xlarge: { rowMode: "exclusive", maxPerRow: 1 },
+      xxlarge: { rowMode: "exclusive", maxPerRow: 1 }
     };
+    const TYPOGRAPHY_INTRINSIC_FONT_SIZES = {
+      small: 8,
+      medium: 16,
+      large: 32,
+      xlarge: 64,
+      xxlarge: 128
+    };
+    const GRAPHIC_TOKEN_SIZES = ["medium", "large"];
+    const GRAPHIC_SIZE_SCALE = { medium: 1, large: 1.5 };
     const MAJOR_TOKEN_RULES = {
       minSize: "large",
       maxPerLayout: 1
@@ -161,7 +170,7 @@
     const TOKEN_CONTEXTS = ["component", "primitive-detail", "catalog-ui"];
     const COMPOSABLE_TOKEN_FUNCTIONS = ["content", "data", "symbol"];
     const FONT_WEIGHTS = { normal: 400, bold: 700 };
-    const BOLD_TOKEN_SIZES = ["large", "xlarge"];
+    const BOLD_TOKEN_SIZES = ["large", "xlarge", "xxlarge"];
     const STROKE_WEIGHTS = { thin: 1.2, thick: 2.4 };
     const ACTIVE_STROKE_WEIGHTS = ["thin"];
     const TOKEN_CATALOG_SECTION_TITLE = { size: 12, height: 32 };
@@ -173,8 +182,9 @@
           "FUNCTION  CONTENT / DATA / SYMBOL / SIGN",
           "CONTEXT  COMPONENT / PRIMITIVE / CATALOG",
           "TYPE  REQUIRES TYPEFACE",
-          "BOLD  LARGE / XLARGE CONTENT ONLY",
-          "SIZE  SMALL / MEDIUM / LARGE / XLARGE"
+          "BOLD  LARGE / XLARGE / XXLARGE CONTENT ONLY",
+          "SIZE  SMALL 8 / MEDIUM 16 / LARGE 32 / XLARGE 64 / XXLARGE 128",
+          "GRAPHIC  MEDIUM / LARGE ONLY"
         ]
       },
       {
@@ -184,7 +194,8 @@
           "MEDIUM+  1 PER ROW",
           "LARGE+  MAX 1 PER COMPONENT",
           "ALIGN  LEFT / CENTER / RIGHT",
-          "SPACE  PADDING / MARGIN TOKENS",
+          "GRID  3X3 / 0-1 TOKEN PER CELL",
+          "CELL  POSITION ONLY / INTRINSIC SIZE",
           "STROKE  THIN ACTIVE / THICK RESERVED",
           "SPIN  NONE / SUBTLE / MEDIUM"
         ]
@@ -267,6 +278,10 @@
     };
 
     const componentBorderModes = ["stroke", "no-stroke", "corner-stroke"];
+    const LAYOUT_GRID = { columns: 3, rows: 3 };
+    const GRID_CELL_OCCUPANCY = 0.58;
+    const GRID_PRIMARY_CHANCE = 0.72;
+    const UNIQUE_GRID_TOKEN_ROLES = ["barcode", "pseudo-qr"];
     let seed = randomSeed();
     let activeComponentRatio = "";
     let activeBorderMode = "";
@@ -464,13 +479,16 @@
       return group;
     }
 
-    function graphicTokenGroup(parent, tokenFunction, tokenRole, tokenContext = "primitive-detail") {
-      const group = make("g", tokenTaxonomyAttrs({
-        form: "graphic",
-        tokenFunction,
-        role: tokenRole,
-        context: tokenContext
-      }));
+    function graphicTokenGroup(parent, tokenFunction, tokenRole, tokenContext = "primitive-detail", tokenSize = "medium") {
+      const group = make("g", {
+        ...tokenTaxonomyAttrs({
+          form: "graphic",
+          tokenFunction,
+          role: tokenRole,
+          context: tokenContext
+        }),
+        ...tokenSizeAttrs(tokenSize)
+      });
       parent.appendChild(group);
       return group;
     }
@@ -664,8 +682,7 @@
         ...strokeTokenAttrs(attrs.strokeWeight),
         "stroke-dasharray": attrs.dash || "",
         "stroke-linecap": "square",
-        opacity: attrs.opacity ?? 1,
-        filter: attrs.rough ? "url(#roughen)" : ""
+        opacity: attrs.opacity ?? 1
       });
     }
 
@@ -678,7 +695,6 @@
         ...(hasStroke ? strokeTokenAttrs(attrs.strokeWeight) : {}),
         "stroke-dasharray": attrs.dash || "",
         opacity: attrs.opacity ?? 1,
-        filter: attrs.rough ? "url(#roughen)" : "",
         transform: attrs.transform || ""
       });
     }
@@ -690,24 +706,8 @@
         stroke: "currentColor",
         ...strokeTokenAttrs(attrs.strokeWeight),
         "stroke-dasharray": attrs.dash || "",
-        opacity: attrs.opacity ?? 1,
-        filter: attrs.rough ? "url(#roughen)" : ""
+        opacity: attrs.opacity ?? 1
       });
-    }
-
-    function defs() {
-      const d = make("defs");
-      const filter = make("filter", { id: "roughen", x: "-8%", y: "-8%", width: "116%", height: "116%" });
-      filter.append(
-        make("feTurbulence", { type: "fractalNoise", baseFrequency: "0.022", numOctaves: "2", seed: String(seed % 997), result: "noise" }),
-        make("feDisplacementMap", { in: "SourceGraphic", in2: "noise", scale: "1.6", xChannelSelector: "R", yChannelSelector: "G" })
-      );
-      d.appendChild(filter);
-
-      const dot = make("pattern", { id: "dotgrid", width: "12", height: "12", patternUnits: "userSpaceOnUse" });
-      dot.appendChild(make("circle", { cx: "1.5", cy: "1.5", r: "1.5", fill: "currentColor", opacity: "0.55" }));
-      d.appendChild(dot);
-      return d;
     }
 
     // Visual token helpers.
@@ -725,6 +725,9 @@
         typeface: options.typeface,
         size,
         weight: fontWeightForToken(size, options.function),
+        intrinsic: {
+          fontSize: TYPOGRAPHY_INTRINSIC_FONT_SIZES[size]
+        },
         context: options.context || "component"
       };
       tokenTaxonomyAttrs({
@@ -813,16 +816,25 @@
     }
 
     function xlargeTypographyTokens() {
-      const heroKorean = visualTokens.koreanKeywords
-        .filter(value => ["접속", "검증", "출력"].includes(value))
-        .map(value => typographyToken(value, { typeface: "korean", size: "xlarge", function: "content", role: "hero-keyword" }));
-      const heroEnglish = visualTokens.englishKeywords
-        .filter(value => ["ACCESS", "OUTPUT", "STATUS"].includes(value))
+      const statusEnglish = visualTokens.englishKeywords
+        .filter(value => value === "STATUS")
         .map(value => typographyToken(value, { typeface: "english", size: "xlarge", function: "content", role: "hero-keyword" }));
       return [
-        ...heroKorean,
-        ...visualTokens.hanjaKeywords.map(value => typographyToken(value, { typeface: "hanja", size: "xlarge", function: "content", role: "hero-glyph" })),
         ...visualTokens.greetingTokens.map(item => typographyToken(item.value, { typeface: item.typeface, size: "xlarge", function: "sign", role: "greeting" })),
+        ...statusEnglish
+      ];
+    }
+
+    function xxlargeTypographyTokens() {
+      const heroKorean = visualTokens.koreanKeywords
+        .filter(value => ["접속", "검증", "출력"].includes(value))
+        .map(value => typographyToken(value, { typeface: "korean", size: "xxlarge", function: "content", role: "hero-keyword" }));
+      const heroEnglish = visualTokens.englishKeywords
+        .filter(value => ["ACCESS", "OUTPUT"].includes(value))
+        .map(value => typographyToken(value, { typeface: "english", size: "xxlarge", function: "content", role: "hero-keyword" }));
+      return [
+        ...heroKorean,
+        ...visualTokens.hanjaKeywords.map(value => typographyToken(value, { typeface: "hanja", size: "xxlarge", function: "content", role: "hero-glyph" })),
         ...heroEnglish
       ];
     }
@@ -830,6 +842,7 @@
     function pickXlargeTypography() {
       const tokens = [
         ...xlargeTypographyTokens(),
+        ...xxlargeTypographyTokens(),
         typographyToken(codeToken(), { typeface: "mono", size: "xlarge", function: "data", role: "hero-code" })
       ];
       return pick(tokens);
@@ -863,7 +876,7 @@
         text.setAttribute("fill", "var(--bg)");
         target.appendChild(text);
       } else {
-        target.appendChild(rect(x, y, w, 28, { rough: true }));
+        target.appendChild(rect(x, y, w, 28));
         target.appendChild(textNode(textX, y + 20, value, { size: 15, align, tokenSize, tokenFunction, tokenRole, tokenContext, typeface: "english", maxWidth: textBox.width }));
       }
     }
@@ -875,30 +888,20 @@
     function microBadge(g, x, y, value, options = {}) {
       const w = microBadgeWidth(value);
       const margin = marginSize(w, 21, "small");
+      const tokenSize = normalizeDesignTokenSize(options.tokenSize || "medium");
       const target = designTokenGroup(g, x, y, w, 21, {
-        tokenSize: "small",
+        tokenSize,
         spin: options.spin || 0,
         form: "graphic",
         tokenFunction: "sign",
         tokenRole: "metadata-badge",
         tokenContext: options.tokenContext || "component"
       });
-      const badgeRect = rect(x, y, w, 21, { fill: chance(0.45) ? "currentColor" : "none", rough: true });
+      const badgeRect = rect(x, y, w, 21, { fill: chance(0.45) ? "currentColor" : "none" });
       target.appendChild(badgeRect);
       const t = textNode(x + w / 2, y + 15, value, { size: 11, align: "center", tokenSize: "small", tokenFunction: "data", tokenRole: "revision", tokenContext: options.tokenContext || "component", typeface: "mono", maxWidth: w - margin * 2 });
       if (badgeRect.getAttribute("fill") === "currentColor") t.setAttribute("fill", "var(--bg)");
       target.appendChild(t);
-    }
-
-    function ticks(g, x, y, w, count = 54, options = {}) {
-      if (w <= 0) return;
-      const target = graphicTokenGroup(g, "data", "measurement-ticks", options.tokenContext || "primitive-detail");
-      target.appendChild(line(x, y, x + w, y, { rough: true }));
-      for (let i = 0; i <= count; i++) {
-        const tx = x + w * (i / count);
-        const tall = i % 10 === 0 ? 22 : i % 5 === 0 ? 16 : 9;
-        target.appendChild(line(tx, y, tx, y - tall, { rough: true, opacity: 0.88 }));
-      }
     }
 
     function barcodeDigits(length = 12) {
@@ -932,10 +935,13 @@
 
     function barcode(g, x, y, w, h, options = {}) {
       if (w <= 0 || h <= 0) return;
-      const target = graphicTokenGroup(g, "data", "barcode", options.tokenContext || "primitive-detail");
+      const barcodeTokenSize = normalizeDesignTokenSize(options.tokenSize || "medium");
+      const captionTokenSize = barcodeTokenSize === "large" ? "medium" : "small";
+      const captionFontSize = TYPOGRAPHY_INTRINSIC_FONT_SIZES[captionTokenSize];
+      const target = graphicTokenGroup(g, "data", "barcode", options.tokenContext || "primitive-detail", barcodeTokenSize);
       const digits = options.digits || barcodeDigits(11);
       const { value, pattern } = upcPattern(digits);
-      const captionH = options.caption === false || h < 34 ? 0 : Math.min(12, h * 0.22);
+      const captionH = options.caption === false || h < 34 ? 0 : captionFontSize;
       const quiet = marginSize(w, h, "large");
       const availableW = Math.max(1, w - quiet * 2);
       const moduleW = availableW / pattern.length;
@@ -966,16 +972,16 @@
         const leftDigits = value.slice(1, 6);
         const rightDigits = value.slice(6, 11);
         const last = value[11];
-        target.appendChild(textNode(x, captionY, first, { size: captionH, minSize: 7, maxWidth: quiet * 0.8, tokenSize: "small", tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", typeface: "mono" }));
-        target.appendChild(textNode(x + quiet + availableW * 0.29, captionY, leftDigits, { size: captionH, minSize: 7, maxWidth: availableW * 0.32, tokenSize: "small", tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", align: "center", typeface: "mono" }));
-        target.appendChild(textNode(x + quiet + availableW * 0.72, captionY, rightDigits, { size: captionH, minSize: 7, maxWidth: availableW * 0.32, tokenSize: "small", tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", align: "center", typeface: "mono" }));
-        target.appendChild(textNode(x + w, captionY, last, { size: captionH, minSize: 7, maxWidth: quiet * 0.8, tokenSize: "small", tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", align: "right", typeface: "mono" }));
+        target.appendChild(textNode(x, captionY, first, { size: captionFontSize, tokenSize: captionTokenSize, tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", typeface: "mono" }));
+        target.appendChild(textNode(x + quiet + availableW * 0.29, captionY, leftDigits, { size: captionFontSize, tokenSize: captionTokenSize, tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", align: "center", typeface: "mono" }));
+        target.appendChild(textNode(x + quiet + availableW * 0.72, captionY, rightDigits, { size: captionFontSize, tokenSize: captionTokenSize, tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", align: "center", typeface: "mono" }));
+        target.appendChild(textNode(x + w, captionY, last, { size: captionFontSize, tokenSize: captionTokenSize, tokenFunction: "data", tokenRole: "barcode-caption", tokenContext: options.tokenContext || "primitive-detail", align: "right", typeface: "mono" }));
       }
     }
 
     function pseudoQr(g, x, y, size, cells = 15, options = {}) {
       if (size <= 0) return;
-      const target = graphicTokenGroup(g, "data", "pseudo-qr", options.tokenContext || "primitive-detail");
+      const target = graphicTokenGroup(g, "data", "pseudo-qr", options.tokenContext || "primitive-detail", options.tokenSize || "medium");
       const step = size / cells;
       target.appendChild(rect(x, y, size, size, { fill: "transparent", stroke: false }));
       for (let row = 0; row < cells; row++) {
@@ -994,7 +1000,7 @@
 
     function miniTable(g, x, y, w, options = {}) {
       if (w <= 0) return;
-      const target = graphicTokenGroup(g, "data", "table", options.tokenContext || "primitive-detail");
+      const target = graphicTokenGroup(g, "data", "table", options.tokenContext || "primitive-detail", options.tokenSize || "medium");
       const rowH = 24;
       const maxRows = clamp(Math.floor((options.maxHeight || rowH * 5) / rowH), 2, 5);
       const rows = ri(Math.min(3, maxRows), maxRows);
@@ -1002,9 +1008,9 @@
       const cellMargin = marginSize(w, h, "small");
       const leftCellWidth = Math.max(10, w * 0.48 - cellMargin * 2);
       const rightCellWidth = Math.max(10, w * 0.52 - cellMargin * 2);
-      target.appendChild(rect(x, y, w, h, { rough: true }));
-      target.appendChild(line(x + w * 0.48, y, x + w * 0.48, y + h, { rough: true }));
-      for (let i = 1; i < rows; i++) target.appendChild(line(x, y + i * rowH, x + w, y + i * rowH, { rough: true }));
+      target.appendChild(rect(x, y, w, h));
+      target.appendChild(line(x + w * 0.48, y, x + w * 0.48, y + h));
+      for (let i = 1; i < rows; i++) target.appendChild(line(x, y + i * rowH, x + w, y + i * rowH));
       for (let i = 0; i < rows; i++) {
         target.appendChild(textNode(x + cellMargin, y + 17 + i * rowH, `${pick(visualTokens.tableFieldLabels)} ${ri(10, 99)}`, { size: 11, tokenSize: "small", tokenFunction: "data", tokenRole: "table-cell", tokenContext: options.tokenContext || "primitive-detail", typeface: "mono", maxWidth: leftCellWidth }));
         target.appendChild(textNode(x + w * 0.48 + cellMargin, y + 17 + i * rowH, `${pick(visualTokens.tableFieldLabels)} ${ri(1, 99)}${chance(0.5) ? "%" : ""}`, { size: 11, tokenSize: "small", tokenFunction: "data", tokenRole: "table-cell", tokenContext: options.tokenContext || "primitive-detail", typeface: "mono", maxWidth: rightCellWidth }));
@@ -1013,16 +1019,16 @@
 
     function wave(g, x, y, w, h, options = {}) {
       if (w <= 0 || h <= 0) return;
-      const target = graphicTokenGroup(g, "data", "wave", options.tokenContext || "primitive-detail");
+      const target = graphicTokenGroup(g, "data", "wave", options.tokenContext || "primitive-detail", options.tokenSize || "medium");
       const pts = [];
       const steps = 14;
       for (let i = 0; i <= steps; i++) {
         const pointY = y + h / 2 + Math.sin(i * r(0.9, 1.4)) * h * r(0.18, 0.42) + r(-8, 8);
         pts.push([x + w * (i / steps), clamp(pointY, y, y + h)]);
       }
-      target.appendChild(rect(x, y, w, h, { rough: true, opacity: 0.75 }));
+      target.appendChild(rect(x, y, w, h, { opacity: 0.75 }));
       for (let i = 1; i < 4; i++) target.appendChild(line(x, y + h * (i / 4), x + w, y + h * (i / 4), { dash: "2 9", opacity: 0.45 }));
-      target.appendChild(polyline(pts, { rough: true }));
+      target.appendChild(polyline(pts));
     }
 
     // Content detail renderers.
@@ -1060,20 +1066,12 @@
       miniTable(g, x + inset, y + h - inset - tableHeight, w - inset * 2, { maxHeight: tableHeight });
     }
 
-    function renderTicksDetail(g, x, y, w, h) {
-      const inset = detailPadding(w, h);
-      const tickY = y + Math.max(inset + 22, h - 48);
-      ticks(g, x + inset, tickY, w - inset * 2, ri(24, 64));
-      g.appendChild(textNode(x + inset, y + h - 18, `MOD ${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 12, tokenSize: "small", tokenFunction: "data", tokenRole: "port-caption", tokenContext: "primitive-detail", typeface: "mono", maxWidth: w - inset * 2 }));
-    }
-
     // Extension point: add a detail renderer here, then use its id from a layout.
     const contentDetailModes = [
       { id: "barcode", weight: 34, render: renderBarcodeDetail },
       { id: "pseudo-qr", weight: 16, render: renderPseudoQrDetail },
       { id: "table", weight: 18, render: renderTableDetail },
-      { id: "wave", weight: 14, render: renderWaveDetail },
-      { id: "ticks", weight: 18, render: renderTicksDetail }
+      { id: "wave", weight: 14, render: renderWaveDetail }
     ];
 
     function pickContentDetailMode(mode = "mixed") {
@@ -1121,7 +1119,7 @@
       };
       const orgZone = headerPair ? headerPair.left : zones.header;
 
-      if (drawShell && chance(0.42)) g.appendChild(rect(x, y, w, h, { rough: true, opacity: 0.9 }));
+      if (drawShell && chance(0.42)) g.appendChild(rect(x, y, w, h, { opacity: 0.9 }));
 
       stackTextToken(g, orgZone, `@${org}`, {
         align: stackAlign.header,
@@ -1181,64 +1179,183 @@
 
       if (chance(0.32)) {
         const dividerY = zones.detail.y - zones.gap * 0.5;
-        g.appendChild(line(zones.box.x, dividerY, zones.box.x + zones.box.width, dividerY, { rough: true, dash: "7 7", opacity: 0.82 }));
+        g.appendChild(line(zones.box.x, dividerY, zones.box.x + zones.box.width, dividerY, { dash: "7 7", opacity: 0.82 }));
       }
       return g;
     }
 
-    // Layout renderers.
-    function renderStripLayout(w, h) {
-      const g = make("g");
-      const safe = paddedBox(0, 0, w, h, "large");
-      const pw = safe.width * r(0.56, 0.68);
-      const px = alignedBoxX(safe, pw, pickTokenAlign("center", 0.62));
-      const py = safe.y + safe.height * r(0.22, 0.28);
-      const ph = safe.height * r(0.5, 0.62);
-      const y1 = py + ph * 0.24;
-      const mainY = py + ph * 0.45;
-      const y2 = py + ph * 0.52;
-      const codeY = py + ph * 0.68;
-      const modY = py + ph * 0.84;
-      const barcodeY = Math.min(py + ph * 0.88, safe.y + safe.height - 48);
-      const hero = typographyToken(`< ${ri(1000, 9999)} ${ri(1000, 9999)} ${ri(10, 99)} >`, { typeface: "mono", size: "xlarge", function: "data", role: "hero-code" });
-      if (chance(0.45)) label(g, px, py, pw, pick(visualTokens.englishKeywords), true, { tokenSize: "medium", tokenFunction: "content", tokenRole: "display-keyword", spin: spinAngle("subtle", 0.16) });
-      g.appendChild(line(px, y1, px + pw, y1, { rough: true, dash: chance(0.5) ? "9 7" : "" }));
-      g.appendChild(textNode(px + pw / 2, mainY, hero.value, { size: Math.min(116, pw / 8, ph * 0.28), minSize: Math.min(34, ph * 0.2), maxWidth: pw, maxHeight: ph * 0.28, tokenSize: hero.size, tokenFunction: hero.function, tokenRole: hero.role, align: "center", typeface: hero.typeface }));
-      g.appendChild(line(px, y2, px + pw, y2, { rough: true }));
-      g.appendChild(textNode(px, codeY, `CODE ${codeToken()}${ri(10, 99)}`, { size: 14, maxWidth: pw, tokenSize: "small", tokenFunction: "data", tokenRole: "code-caption", typeface: "mono" }));
-      g.appendChild(textNode(px, modY, `MOD P${ri(1, 99)} / PORT ${ri(10, 999)}`, { size: 14, maxWidth: pw, tokenSize: "small", tokenFunction: "data", tokenRole: "port-caption", typeface: "mono" }));
-      if (chance(0.35)) barcode(g, px, barcodeY, pw, Math.min(56, safe.y + safe.height - barcodeY));
-      return g;
+    // 3x3 random cell system.
+    function randomGridSlots() {
+      const secondaryKinds = ["content", "data", "graphic"];
+      const alignments = ["left", "center", "right"];
+      const slots = [];
+      for (let row = 0; row < LAYOUT_GRID.rows; row++) {
+        for (let column = 0; column < LAYOUT_GRID.columns; column++) {
+          slots.push({
+            id: `cell-${column}-${row}`,
+            kind: chance(GRID_CELL_OCCUPANCY) ? pick(secondaryKinds) : "",
+            column,
+            row,
+            align: alignments[column]
+          });
+        }
+      }
+      const occupiedSlots = slots.filter(slot => slot.kind);
+      if (occupiedSlots.length && chance(GRID_PRIMARY_CHANCE)) {
+        pick(occupiedSlots).kind = "primary";
+      }
+      return slots;
     }
 
-    function renderSpecimenLayout(w, h) {
-      const g = make("g");
-      const safe = paddedBox(0, 0, w, h, "large");
-      const footerMargin = marginSize(safe.width, safe.height, "medium");
-      const cx = safe.x + safe.width * 0.5;
-      const titleY = safe.y + safe.height * 0.22;
-      const mainZone = {
-        y: safe.y + safe.height * 0.28,
-        height: safe.height * 0.28
+    function layoutGridCellPosition(box, slot) {
+      const gap = marginSize(box.width, box.height, "medium");
+      const columnWidth = (box.width - gap * (LAYOUT_GRID.columns - 1)) / LAYOUT_GRID.columns;
+      const rowHeight = (box.height - gap * (LAYOUT_GRID.rows - 1)) / LAYOUT_GRID.rows;
+      const cellX = box.x + slot.column * (columnWidth + gap);
+      const cellY = box.y + slot.row * (rowHeight + gap);
+      const anchorRatio = { left: 0, center: 0.5, right: 1 }[slot.align];
+      return {
+        x: cellX + columnWidth * anchorRatio,
+        y: cellY + rowHeight * 0.5,
+        align: slot.align
       };
-      const mainY = mainZone.y + mainZone.height * 0.76;
-      const lineY = safe.y + safe.height * 0.64;
-      const barcodeY = safe.y + safe.height * 0.72;
-      const codeY = Math.min(safe.y + safe.height - footerMargin, safe.y + safe.height * 0.88);
-      const word = pickPrimaryDisplayTypography();
-      const isXlarge = word.size === "xlarge";
-      g.appendChild(textNode(cx, titleY, "MICRO GRAPHIC", { size: 16, tokenSize: "medium", tokenFunction: "content", tokenRole: "title", align: "center", opacity: 0.78, typeface: "english", maxWidth: safe.width }));
-      g.appendChild(textNode(cx, mainY, word.value, { typeface: word.typeface, tokenSize: word.size || "large", tokenFunction: word.function, tokenRole: word.role, size: Math.min(safe.width * (isXlarge ? 0.56 : 0.22), mainZone.height * (isXlarge ? 0.92 : 0.72), isXlarge ? 500 : 178), minSize: Math.min(isXlarge ? 56 : 30, mainZone.height * (isXlarge ? 0.76 : 0.6)), maxWidth: safe.width * 0.92, maxHeight: mainZone.height * 0.92, align: "center" }));
-      g.appendChild(line(cx - safe.width * 0.26, lineY, cx + safe.width * 0.26, lineY, { rough: true }));
-      barcode(g, cx - safe.width * 0.22, barcodeY, safe.width * 0.44, Math.min(64, safe.y + safe.height - barcodeY - footerMargin * 2));
-      g.appendChild(textNode(cx, codeY, `CODE ${codeToken()} / PORT ${ri(10, 999)} / REV ${String.fromCharCode(65 + ri(0, 25))}`, { size: 14, minSize: 9, maxWidth: safe.width * 0.92, tokenSize: "small", tokenFunction: "data", tokenRole: "code-caption", align: "center", typeface: "mono" }));
-      return g;
     }
 
-    function renderPanelLayout(w, h) {
-      const g = make("g");
-      const box = paddedBox(0, 0, w, h, "large");
-      g.appendChild(contentPanel(box.x, box.y, box.width, box.height, "mixed", { shell: false }));
+    function gridTokenPools() {
+      const typography = Object.values(tokenGalleryItems()).flat();
+      return {
+        primary: typography.filter(item => item.function === "content" && BOLD_TOKEN_SIZES.includes(item.size)),
+        content: typography.filter(item => item.function === "content" && ["small", "medium"].includes(item.size)),
+        data: typography.filter(item => item.function === "data" && ["small", "medium"].includes(item.size)),
+        graphic: graphicTokenGalleryItems().filter(item => item.function === "data")
+      };
+    }
+
+    function gridTokenIntrinsicBox(position, item) {
+      if (item.intrinsic.width && item.intrinsic.height) {
+        return intrinsicTokenBox(position, item.intrinsic);
+      }
+      const fontSize = item.intrinsic.fontSize;
+      const width = estimateTextWidth(item.value, fontSize);
+      const height = estimateTextHeight(item.value, fontSize);
+      const alignOffset = { left: 0, center: 0.5, right: 1 }[position.align];
+      return {
+        x: position.x - width * alignOffset,
+        y: position.y - height * 0.5,
+        width,
+        height
+      };
+    }
+
+    function gridTokenFits(bounds, safe, acceptedBounds) {
+      const gap = marginSize(safe.width, safe.height, "small");
+      const insideSafeArea = bounds.x >= safe.x &&
+        bounds.y >= safe.y &&
+        bounds.x + bounds.width <= safe.x + safe.width &&
+        bounds.y + bounds.height <= safe.y + safe.height;
+      if (!insideSafeArea) return false;
+      return acceptedBounds.every(accepted =>
+        bounds.x >= accepted.x + accepted.width + gap ||
+        bounds.x + bounds.width + gap <= accepted.x ||
+        bounds.y >= accepted.y + accepted.height + gap ||
+        bounds.y + bounds.height + gap <= accepted.y
+      );
+    }
+
+    function pickGridTokenItem(slot, position, pools, safe, acceptedBounds, usedUniqueRoles) {
+      const candidates = pools[slot.kind].filter(item =>
+        !UNIQUE_GRID_TOKEN_ROLES.includes(item.role) || !usedUniqueRoles.has(item.role)
+      );
+      const candidateGroups = [candidates];
+      if (slot.kind === "primary") {
+        const availableSizes = BOLD_TOKEN_SIZES.filter(size => candidates.some(item => item.size === size));
+        const preferredSize = pick(availableSizes);
+        candidateGroups.splice(
+          0,
+          1,
+          candidates.filter(item => item.size === preferredSize),
+          candidates.filter(item => item.size !== preferredSize)
+        );
+      }
+      for (const group of candidateGroups) {
+        while (group.length) {
+          const index = ri(0, group.length - 1);
+          const item = group.splice(index, 1)[0];
+          const bounds = gridTokenIntrinsicBox(position, item);
+          if (gridTokenFits(bounds, safe, acceptedBounds)) return { item, bounds };
+        }
+      }
+      return null;
+    }
+
+    function renderGridCellToken(g, position, slot, item) {
+      const token = make("g", {
+        "data-grid-token": item.role,
+        "data-grid-token-kind": slot.kind,
+        "data-token-placement": "position-only",
+        "data-token-scale": "1",
+        ...(slot.kind === "graphic" ? tokenSizeAttrs(item.size) : {}),
+        ...(slot.kind === "graphic" ? tokenTaxonomyAttrs({
+          form: "graphic",
+          tokenFunction: item.function,
+          role: item.role,
+          context: "component"
+        }) : {})
+      });
+      if (slot.kind === "graphic") {
+        token.setAttribute("data-token-intrinsic-width", item.intrinsic.width);
+        token.setAttribute("data-token-intrinsic-height", item.intrinsic.height);
+        item.renderAt(token, position, "component");
+      } else {
+        const fontSize = item.intrinsic.fontSize;
+        token.setAttribute("data-token-intrinsic-font-size", fontSize);
+        token.appendChild(textNode(position.x, position.y + fontSize * 0.34, item.value, {
+          align: position.align,
+          tokenSize: item.size,
+          tokenFunction: item.function,
+          tokenRole: item.role,
+          tokenContext: "component",
+          size: fontSize,
+          typeface: item.typeface
+        }));
+      }
+      g.appendChild(token);
+    }
+
+    function renderRandomGridLayout(w, h) {
+      const g = make("g", {
+        "data-layout-mode": "random-cells",
+        "data-grid-columns": LAYOUT_GRID.columns,
+        "data-grid-rows": LAYOUT_GRID.rows
+      });
+      const safe = paddedBox(0, 0, w, h, "large");
+      const pools = gridTokenPools();
+      const acceptedBounds = [];
+      const usedUniqueRoles = new Set();
+      randomGridSlots().forEach(slot => {
+        const position = layoutGridCellPosition(safe, slot);
+        const selection = slot.kind
+          ? pickGridTokenItem(slot, position, pools, safe, acceptedBounds, usedUniqueRoles)
+          : null;
+        const cell = make("g", {
+          "data-grid-cell": `${slot.column}:${slot.row}`,
+          "data-grid-slot": slot.id,
+          "data-grid-column": slot.column,
+          "data-grid-row": slot.row,
+          "data-grid-position-x": position.x,
+          "data-grid-position-y": position.y,
+          "data-grid-alignment": position.align,
+          "data-grid-empty": selection ? "false" : "true"
+        });
+        if (selection) {
+          renderGridCellToken(cell, position, slot, selection.item);
+          acceptedBounds.push(selection.bounds);
+          if (UNIQUE_GRID_TOKEN_ROLES.includes(selection.item.role)) {
+            usedUniqueRoles.add(selection.item.role);
+          }
+        }
+        g.appendChild(cell);
+      });
       return g;
     }
 
@@ -1283,46 +1400,107 @@
         ...xlargeTypographyTokens(),
         typographyToken(codeToken(), { typeface: "mono", size: "xlarge", function: "data", role: "hero-code" })
       ];
+      const xxlarge = [
+        ...xxlargeTypographyTokens()
+      ];
 
-      return { small, medium, large, xlarge };
+      return { small, medium, large, xlarge, xxlarge };
+    }
+
+    function intrinsicTokenBox(position, intrinsic) {
+      const alignOffset = { left: 0, center: 0.5, right: 1 }[position.align];
+      return {
+        x: position.x - intrinsic.width * alignOffset,
+        y: position.y - intrinsic.height * 0.5,
+        width: intrinsic.width,
+        height: intrinsic.height
+      };
     }
 
     function graphicTokenGalleryItems() {
+      const sizedGraphic = base => {
+        const size = pick(GRAPHIC_TOKEN_SIZES);
+        const scale = GRAPHIC_SIZE_SCALE[size];
+        return {
+          size,
+          intrinsic: {
+            width: base.width * scale,
+            height: base.height * scale
+          }
+        };
+      };
+      const barcodeToken = sizedGraphic({ width: 96, height: 38 });
+      const tableToken = sizedGraphic({ width: 96, height: 48 });
+      const waveToken = sizedGraphic({ width: 84, height: 42 });
+      const pseudoQrToken = sizedGraphic({ width: 48, height: 48 });
+      const statusLabelToken = { size: "medium", intrinsic: { width: 84, height: 28 } };
+      const metadataBadgeToken = { size: "medium", intrinsic: { width: microBadgeWidth("REV A"), height: 21 } };
       return [
         {
           function: "data",
           role: "barcode",
-          render: (g, cell) => barcode(g, cell.x, cell.y + cell.height * 0.18, cell.width, cell.height * 0.62, { caption: true, tokenContext: "catalog-ui" })
+          size: barcodeToken.size,
+          intrinsic: barcodeToken.intrinsic,
+          render: (g, cell, tokenContext = "catalog-ui") => barcode(g, cell.x, cell.y + cell.height * 0.18, cell.width, cell.height * 0.62, { caption: true, tokenSize: barcodeToken.size, tokenContext }),
+          renderAt: (g, position, tokenContext = "component") => {
+            const box = intrinsicTokenBox(position, barcodeToken.intrinsic);
+            barcode(g, box.x, box.y, box.width, box.height, { caption: true, tokenSize: barcodeToken.size, tokenContext });
+          }
         },
         {
           function: "data",
           role: "table",
-          render: (g, cell) => miniTable(g, cell.x, cell.y + cell.height * 0.06, cell.width, { maxHeight: cell.height * 0.9, tokenContext: "catalog-ui" })
+          size: tableToken.size,
+          intrinsic: tableToken.intrinsic,
+          render: (g, cell, tokenContext = "catalog-ui") => miniTable(g, cell.x, cell.y + cell.height * 0.06, cell.width, { maxHeight: cell.height * 0.9, tokenSize: tableToken.size, tokenContext }),
+          renderAt: (g, position, tokenContext = "component") => {
+            const box = intrinsicTokenBox(position, tableToken.intrinsic);
+            miniTable(g, box.x, box.y, box.width, { maxHeight: box.height, tokenSize: tableToken.size, tokenContext });
+          }
         },
         {
           function: "data",
           role: "wave",
-          render: (g, cell) => wave(g, cell.x, cell.y + cell.height * 0.14, cell.width, cell.height * 0.66, { tokenContext: "catalog-ui" })
-        },
-        {
-          function: "data",
-          role: "measurement-ticks",
-          render: (g, cell) => ticks(g, cell.x, cell.y + cell.height * 0.76, cell.width, 36, { tokenContext: "catalog-ui" })
+          size: waveToken.size,
+          intrinsic: waveToken.intrinsic,
+          render: (g, cell, tokenContext = "catalog-ui") => wave(g, cell.x, cell.y + cell.height * 0.14, cell.width, cell.height * 0.66, { tokenSize: waveToken.size, tokenContext }),
+          renderAt: (g, position, tokenContext = "component") => {
+            const box = intrinsicTokenBox(position, waveToken.intrinsic);
+            wave(g, box.x, box.y, box.width, box.height, { tokenSize: waveToken.size, tokenContext });
+          }
         },
         {
           function: "data",
           role: "pseudo-qr",
-          render: (g, cell) => pseudoQr(g, cell.x, cell.y + cell.height * 0.04, Math.min(cell.width, cell.height * 0.86), 15, { tokenContext: "catalog-ui" })
+          size: pseudoQrToken.size,
+          intrinsic: pseudoQrToken.intrinsic,
+          render: (g, cell, tokenContext = "catalog-ui") => pseudoQr(g, cell.x, cell.y + cell.height * 0.04, Math.min(cell.width, cell.height * 0.86), 15, { tokenSize: pseudoQrToken.size, tokenContext }),
+          renderAt: (g, position, tokenContext = "component") => {
+            const box = intrinsicTokenBox(position, pseudoQrToken.intrinsic);
+            pseudoQr(g, box.x, box.y, box.width, 15, { tokenSize: pseudoQrToken.size, tokenContext });
+          }
         },
         {
           function: "sign",
           role: "status-label",
-          render: (g, cell) => label(g, cell.x, cell.y + cell.height * 0.28, cell.width, "STATUS", true, { tokenSize: "medium", tokenFunction: "sign", tokenRole: "status-label", tokenContext: "catalog-ui", align: "left" })
+          size: statusLabelToken.size,
+          intrinsic: statusLabelToken.intrinsic,
+          render: (g, cell, tokenContext = "catalog-ui") => label(g, cell.x, cell.y + cell.height * 0.28, cell.width, "STATUS", true, { tokenSize: statusLabelToken.size, tokenFunction: "sign", tokenRole: "status-label", tokenContext, align: "left" }),
+          renderAt: (g, position, tokenContext = "component") => {
+            const box = intrinsicTokenBox(position, statusLabelToken.intrinsic);
+            label(g, box.x, box.y, box.width, "STATUS", true, { tokenSize: statusLabelToken.size, tokenFunction: "sign", tokenRole: "status-label", tokenContext, align: "left" });
+          }
         },
         {
           function: "sign",
           role: "metadata-badge",
-          render: (g, cell) => microBadge(g, cell.x, cell.y + cell.height * 0.34, "REV A", { tokenContext: "catalog-ui" })
+          size: metadataBadgeToken.size,
+          intrinsic: metadataBadgeToken.intrinsic,
+          render: (g, cell, tokenContext = "catalog-ui") => microBadge(g, cell.x, cell.y + cell.height * 0.34, "REV A", { tokenSize: metadataBadgeToken.size, tokenContext }),
+          renderAt: (g, position, tokenContext = "component") => {
+            const box = intrinsicTokenBox(position, metadataBadgeToken.intrinsic);
+            microBadge(g, box.x, box.y, "REV A", { tokenSize: metadataBadgeToken.size, tokenContext });
+          }
         }
       ];
     }
@@ -1379,7 +1557,7 @@
       }
 
       const sizeLimit = Math.max(9, sample.height * 0.58);
-      const sizes = { small: Math.min(11, sizeLimit), medium: Math.min(16, sizeLimit), large: Math.min(22, sizeLimit), xlarge: Math.min(30, sizeLimit) };
+      const sizes = { small: Math.min(11, sizeLimit), medium: Math.min(16, sizeLimit), large: Math.min(22, sizeLimit), xlarge: Math.min(30, sizeLimit), xxlarge: Math.min(38, sizeLimit) };
       stackTextToken(g, sample, item.value, {
         align: "left",
         tokenSize: item.size,
@@ -1405,7 +1583,7 @@
 
       g.appendChild(textNode(box.x, box.y + titleH * 0.72, "TOKEN MAP", { size: TOKEN_CATALOG_SECTION_TITLE.size, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-section-label", tokenContext: "catalog-ui", typeface: "english", maxWidth: box.width * 0.5 }));
       g.appendChild(textNode(box.x + box.width, box.y + titleH * 0.72, "COMPOSE  /  EMPTY  /  SIGN", { size: 8, tokenSize: "small", tokenFunction: "data", tokenRole: "catalog-map-legend", tokenContext: "catalog-ui", align: "right", typeface: "mono", opacity: 0.62, maxWidth: box.width * 0.42 }));
-      g.appendChild(line(box.x, gridY, box.x + box.width, gridY, { rough: true, opacity: 0.75 }));
+      g.appendChild(line(box.x, gridY, box.x + box.width, gridY, { opacity: 0.75 }));
 
       TOKEN_FUNCTIONS.forEach((tokenFunction, column) => {
         const x = box.x + rowLabelW + column * cellW;
@@ -1415,7 +1593,7 @@
       TOKEN_FORMS.forEach((form, row) => {
         const y = gridY + row * cellH;
         g.appendChild(textNode(box.x, y + cellH * 0.6, form.toUpperCase(), { size: 9, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-map-row", tokenContext: "catalog-ui", typeface: "english", maxWidth: rowLabelW * 0.86 }));
-        g.appendChild(line(box.x, y + cellH, box.x + box.width, y + cellH, { rough: true, opacity: 0.3 }));
+        g.appendChild(line(box.x, y + cellH, box.x + box.width, y + cellH, { opacity: 0.3 }));
 
         TOKEN_FUNCTIONS.forEach((tokenFunction, column) => {
           const category = definitions.find(item => item.form === form && item.function === tokenFunction);
@@ -1424,7 +1602,7 @@
           const active = status === "COMPOSE";
           g.appendChild(rect(x + 2, y + cellH * 0.43, 5, 5, { fill: active ? "currentColor" : "none", opacity: active ? 0.9 : 0.45 }));
           g.appendChild(textNode(x + 12, y + cellH * 0.6, `${category.items.length}  ${status}`, { size: 8, tokenSize: "small", tokenFunction: "data", tokenRole: "catalog-map-cell", tokenContext: "catalog-ui", typeface: "mono", opacity: active ? 0.9 : 0.48, maxWidth: cellW - 16 }));
-          if (column) g.appendChild(line(x, y + 18, x, y + cellH, { rough: true, opacity: 0.22 }));
+          if (column) g.appendChild(line(x, y + 18, x, y + cellH, { opacity: 0.22 }));
         });
       });
     }
@@ -1434,7 +1612,7 @@
       const gap = marginSize(box.width, box.height, "medium");
       const groupW = (box.width - gap * (COMPOSITION_RULE_GROUPS.length - 1)) / COMPOSITION_RULE_GROUPS.length;
       g.appendChild(textNode(box.x, box.y + titleH * 0.72, "RULE GROUPS", { size: TOKEN_CATALOG_SECTION_TITLE.size, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-section-label", tokenContext: "catalog-ui", typeface: "english", maxWidth: box.width }));
-      g.appendChild(line(box.x, box.y + titleH, box.x + box.width, box.y + titleH, { rough: true, opacity: 0.75 }));
+      g.appendChild(line(box.x, box.y + titleH, box.x + box.width, box.y + titleH, { opacity: 0.75 }));
 
       COMPOSITION_RULE_GROUPS.forEach((group, index) => {
         const x = box.x + index * (groupW + gap);
@@ -1458,7 +1636,7 @@
 
       g.appendChild(textNode(safe.x, safe.y + 26, "COMPOSABLE CATEGORIES", { size: 18, tokenSize: "medium", tokenFunction: "content", tokenRole: "catalog-title", tokenContext: "catalog-ui", typeface: "english", maxWidth: safe.width * 0.58 }));
       g.appendChild(textNode(safe.x + safe.width, safe.y + 26, `CATEGORIES ${categories.length} / COMBINATIONS ${combinations.length}`, { size: 12, tokenSize: "small", tokenFunction: "data", tokenRole: "catalog-count", tokenContext: "catalog-ui", align: "right", typeface: "mono", maxWidth: safe.width * 0.38 }));
-      g.appendChild(line(safe.x, safe.y + headerH, safe.x + safe.width, safe.y + headerH, { rough: true, opacity: 0.85 }));
+      g.appendChild(line(safe.x, safe.y + headerH, safe.x + safe.width, safe.y + headerH, { opacity: 0.85 }));
 
       const mapY = safe.y + headerH + sectionGap;
       const mapH = Math.max(112, Math.min(150, safe.height * 0.22));
@@ -1474,7 +1652,7 @@
       const rowsY = listY + listTitleH;
       const rowH = Math.max(44, (listBottom - rowsY) / Math.max(1, combinations.length));
       g.appendChild(textNode(safe.x, listY + listTitleH * 0.72, "POSSIBLE COMBINATIONS", { size: TOKEN_CATALOG_SECTION_TITLE.size, tokenSize: "small", tokenFunction: "content", tokenRole: "catalog-section-label", tokenContext: "catalog-ui", typeface: "english", maxWidth: safe.width }));
-      g.appendChild(line(safe.x, rowsY, safe.x + safe.width, rowsY, { rough: true, opacity: 0.75 }));
+      g.appendChild(line(safe.x, rowsY, safe.x + safe.width, rowsY, { opacity: 0.75 }));
 
       combinations.forEach((combination, rowIndex) => {
         const rowY = rowsY + rowIndex * rowH;
@@ -1494,28 +1672,9 @@
             height: Math.max(1, rowH - 16)
           });
         });
-        g.appendChild(line(safe.x, rowY + rowH, safe.x + safe.width, rowY + rowH, { rough: true, opacity: 0.35 }));
+        g.appendChild(line(safe.x, rowY + rowH, safe.x + safe.width, rowY + rowH, { opacity: 0.35 }));
       });
 
-      return g;
-    }
-
-    // Canvas-level texture.
-    function renderCanvasTexture(w, h) {
-      const g = make("g", { opacity: 0.12 });
-      const count = Math.floor((w * h) / 32000);
-      for (let i = 0; i < count; i++) {
-        if (chance(0.5)) {
-          g.appendChild(line(r(0, w), r(0, h), r(0, w), r(0, h), { opacity: r(0.2, 0.75) }));
-        } else {
-          g.appendChild(make("circle", { cx: r(0, w), cy: r(0, h), r: r(0.4, 1.4), fill: "currentColor" }));
-        }
-      }
-      if (chance(0.34)) {
-        const dg = make("g", { opacity: 0.35 });
-        for (let y = 0; y < h; y += 18) dg.appendChild(line(0, y, w, y, { opacity: 0.12 }));
-        g.appendChild(dg);
-      }
       return g;
     }
 
@@ -1524,44 +1683,37 @@
       {
         label: "component 1:1",
         ratio: { width: 1, height: 1 },
-        scale: 0.72,
-        render: renderSpecimenLayout
+        scale: 0.72
       },
       {
         label: "component 2:3",
         ratio: { width: 2, height: 3 },
-        scale: 0.78,
-        render: renderPanelLayout
+        scale: 0.78
       },
       {
         label: "component 2:5",
         ratio: { width: 2, height: 5 },
-        scale: 0.82,
-        render: renderPanelLayout
+        scale: 0.82
       },
       {
         label: "component 3:2",
         ratio: { width: 3, height: 2 },
-        scale: 0.78,
-        render: renderStripLayout
+        scale: 0.78
       },
       {
         label: "component 5:2",
         ratio: { width: 5, height: 2 },
-        scale: 0.82,
-        render: renderStripLayout
+        scale: 0.82
       },
       {
         label: "component 4:3",
         ratio: { width: 4, height: 3 },
-        scale: 0.8,
-        render: renderStripLayout
+        scale: 0.8
       },
       {
         label: "component 3:4",
         ratio: { width: 3, height: 4 },
-        scale: 0.8,
-        render: renderPanelLayout
+        scale: 0.8
       }
     ];
 
@@ -1570,7 +1722,7 @@
       if (mode === "no-stroke") return g;
 
       if (mode === "stroke") {
-        g.appendChild(rect(1, 1, w - 2, h - 2, { rough: true, opacity: 0.9 }));
+        g.appendChild(rect(1, 1, w - 2, h - 2, { opacity: 0.9 }));
         return g;
       }
 
@@ -1607,9 +1759,10 @@
         height: box.height,
         viewBox: `0 0 ${box.width} ${box.height}`,
         overflow: "hidden",
-        "data-component": component.label
+        "data-component": component.label,
+        "data-layout-grid": `${LAYOUT_GRID.columns}x${LAYOUT_GRID.rows}`
       });
-      layer.appendChild(component.render(box.width, box.height));
+      layer.appendChild(renderRandomGridLayout(box.width, box.height));
       layer.appendChild(renderComponentBorder(box.width, box.height, borderMode));
       return layer;
     }
@@ -1654,6 +1807,74 @@
 
       const component = art.querySelector("svg[data-component]");
       if (component) {
+        const gridCells = [...component.querySelectorAll("[data-grid-cell]")];
+        const gridCoordinates = gridCells.map(cell => cell.getAttribute("data-grid-cell"));
+        const cellsWithInvalidTokenCount = gridCells.filter(cell =>
+          [...cell.children].filter(child => child.hasAttribute("data-grid-token")).length > 1
+        );
+        const cellsWithInvalidEmptyState = gridCells.filter(cell => {
+          const tokenCount = [...cell.children].filter(child => child.hasAttribute("data-grid-token")).length;
+          return cell.getAttribute("data-grid-empty") !== String(tokenCount === 0);
+        });
+        const cellsWithInvalidPosition = gridCells.filter(cell =>
+          !Number.isFinite(Number(cell.getAttribute("data-grid-position-x"))) ||
+          !Number.isFinite(Number(cell.getAttribute("data-grid-position-y"))) ||
+          !TOKEN_ALIGNMENTS.includes(cell.getAttribute("data-grid-alignment"))
+        );
+        const tokensWithInvalidPlacement = [...component.querySelectorAll("[data-grid-token]")].filter(token =>
+          token.getAttribute("data-token-placement") !== "position-only" ||
+          token.getAttribute("data-token-scale") !== "1" ||
+          (token.getAttribute("transform") || "").includes("scale(")
+        );
+        const typographyWithInvalidIntrinsicSize = [...component.querySelectorAll('[data-grid-token]:not([data-grid-token-kind="graphic"])')].filter(token => {
+          const text = token.querySelector(":scope > text");
+          const tokenSize = text?.getAttribute("data-token-size");
+          const expectedSize = TYPOGRAPHY_INTRINSIC_FONT_SIZES[tokenSize];
+          return !text ||
+            token.getAttribute("data-token-intrinsic-font-size") !== String(expectedSize) ||
+            text.getAttribute("font-size") !== String(expectedSize);
+        });
+        const duplicateUniqueRoles = UNIQUE_GRID_TOKEN_ROLES.filter(role =>
+          component.querySelectorAll(`[data-grid-token="${role}"]`).length > 1
+        );
+        const graphicTokensWithInvalidSize = [...component.querySelectorAll('[data-grid-token-kind="graphic"]')].filter(token => {
+          const size = token.getAttribute("data-token-size");
+          const primitive = token.querySelector(':scope > [data-token-form="graphic"]');
+          return !GRAPHIC_TOKEN_SIZES.includes(size) ||
+            !primitive ||
+            primitive.getAttribute("data-token-size") !== size;
+        });
+        const barcodeTokensWithInvalidCaptionSize = [...component.querySelectorAll('[data-grid-token="barcode"]')].filter(token => {
+          const expectedCaptionSize = token.getAttribute("data-token-size") === "large" ? "medium" : "small";
+          const expectedFontSize = String(TYPOGRAPHY_INTRINSIC_FONT_SIZES[expectedCaptionSize]);
+          const captions = [...token.querySelectorAll('[data-token-role="barcode-caption"]')];
+          return captions.length !== 4 || captions.some(caption =>
+            caption.getAttribute("data-token-size") !== expectedCaptionSize ||
+            caption.getAttribute("font-size") !== expectedFontSize
+          );
+        });
+        const primaryTokens = component.querySelectorAll('[data-grid-token-kind="primary"]');
+        const expectedCells = new Set();
+        for (let row = 0; row < LAYOUT_GRID.rows; row++) {
+          for (let column = 0; column < LAYOUT_GRID.columns; column++) {
+            expectedCells.add(`${column}:${row}`);
+          }
+        }
+        const layoutIsInvalid = component.getAttribute("data-layout-grid") !== "3x3" ||
+          gridCells.length !== LAYOUT_GRID.columns * LAYOUT_GRID.rows ||
+          primaryTokens.length > 1 ||
+          cellsWithInvalidTokenCount.length > 0 ||
+          cellsWithInvalidEmptyState.length > 0 ||
+          cellsWithInvalidPosition.length > 0 ||
+          tokensWithInvalidPlacement.length > 0 ||
+          typographyWithInvalidIntrinsicSize.length > 0 ||
+          duplicateUniqueRoles.length > 0 ||
+          graphicTokensWithInvalidSize.length > 0 ||
+          barcodeTokensWithInvalidCaptionSize.length > 0 ||
+          new Set(gridCoordinates).size !== gridCoordinates.length ||
+          gridCoordinates.some(cell => !expectedCells.has(cell));
+        if (layoutIsInvalid) violations.push("invalid-layout-grid");
+
         const sizeOrder = Object.keys(DESIGN_TOKEN_SIZES);
         const majorStart = sizeOrder.indexOf(MAJOR_TOKEN_RULES.minSize);
         const majorSizes = sizeOrder.slice(majorStart);
@@ -1676,12 +1897,11 @@
       const h = Math.max(MIN_VIEWPORT.height, window.innerHeight);
       art.setAttribute("viewBox", `0 0 ${w} ${h}`);
       art.setAttribute("style", "color: var(--ink)");
-      art.replaceChildren(defs());
+      art.replaceChildren();
       document.body.classList.toggle("is-dark", dark);
 
       const bg = make("rect", { x: 0, y: 0, width: w, height: h, fill: "var(--bg)" });
       art.appendChild(bg);
-      art.appendChild(renderCanvasTexture(w, h));
       if (appMode === "composable-tokens") {
         activeComponentRatio = "composable categories";
         activeBorderMode = "catalog";
@@ -1689,7 +1909,7 @@
         seedLabel.textContent = `MODE COMPOSABLE CATEGORIES / SEED ${seedHex()}`;
       } else {
         art.appendChild(renderComponent(w, h));
-        seedLabel.textContent = `SEED ${seedHex()} / COMP ${activeComponentRatio} / BORDER ${activeBorderMode}`;
+        seedLabel.textContent = `SEED ${seedHex()} / COMP ${activeComponentRatio} / GRID 3X3 RANDOM / BORDER ${activeBorderMode}`;
       }
       validateRenderedTokenRules();
     }
