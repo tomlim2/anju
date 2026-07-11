@@ -119,6 +119,7 @@
   <div class="controls" aria-label="Generator controls">
     <button id="random" type="button">Random</button>
     <button id="mode" type="button" aria-pressed="false">Compose</button>
+    <button id="grid" type="button" aria-pressed="true" title="Toggle block grid outlines">Grid</button>
     <button id="png" type="button">PNG</button>
     <button id="svg" type="button">SVG</button>
     <button id="tone" type="button">Tone</button>
@@ -145,19 +146,32 @@
       right: "end"
     };
     const TOKEN_ALIGNMENTS = ["left", "center", "right"];
+    const TOKEN_VERTICAL_ALIGNMENTS = ["top", "middle", "bottom"];
+    const GRID_BLOCK_FOOTPRINTS = [
+      { width: 1, height: 1 },
+      { width: 2, height: 2 },
+      { width: 1, height: 2 },
+      { width: 1, height: 3 },
+      { width: 2, height: 3 },
+      { width: 2, height: 1 },
+      { width: 3, height: 1 },
+      { width: 3, height: 2 }
+    ];
     const DESIGN_TOKEN_SIZES = {
       small: { rowMode: "pairable", maxPerRow: 2 },
       medium: { rowMode: "single", maxPerRow: 1 },
       large: { rowMode: "exclusive", maxPerRow: 1 },
       xlarge: { rowMode: "exclusive", maxPerRow: 1 },
-      xxlarge: { rowMode: "exclusive", maxPerRow: 1 }
+      xxlarge: { rowMode: "exclusive", maxPerRow: 1 },
+      xxxlarge: { rowMode: "exclusive", maxPerRow: 1 }
     };
     const TYPOGRAPHY_INTRINSIC_FONT_SIZES = {
       small: 8,
       medium: 16,
       large: 32,
       xlarge: 64,
-      xxlarge: 128
+      xxlarge: 128,
+      xxxlarge: 256
     };
     const GRAPHIC_TOKEN_SIZES = ["medium", "large"];
     const GRAPHIC_SIZE_SCALE = { medium: 1, large: 1.5 };
@@ -170,7 +184,7 @@
     const TOKEN_CONTEXTS = ["component", "primitive-detail", "catalog-ui"];
     const COMPOSABLE_TOKEN_FUNCTIONS = ["content", "data", "symbol"];
     const FONT_WEIGHTS = { normal: 400, bold: 700 };
-    const BOLD_TOKEN_SIZES = ["large", "xlarge", "xxlarge"];
+    const BOLD_TOKEN_SIZES = ["large", "xlarge", "xxlarge", "xxxlarge"];
     const STROKE_WEIGHTS = { thin: 1.2, thick: 2.4 };
     const ACTIVE_STROKE_WEIGHTS = ["thin"];
     const TOKEN_CATALOG_SECTION_TITLE = { size: 12, height: 32 };
@@ -182,8 +196,8 @@
           "FUNCTION  CONTENT / DATA / SYMBOL / SIGN",
           "CONTEXT  COMPONENT / PRIMITIVE / CATALOG",
           "TYPE  REQUIRES TYPEFACE",
-          "BOLD  LARGE / XLARGE / XXLARGE CONTENT ONLY",
-          "SIZE  SMALL 8 / MEDIUM 16 / LARGE 32 / XLARGE 64 / XXLARGE 128",
+          "BOLD  LARGE / XL / XXL / XXXL CONTENT ONLY",
+          "SIZE  S 8 / M 16 / L 32 / XL 64 / XXL 128 / XXXL 256",
           "GRAPHIC  MEDIUM / LARGE ONLY"
         ]
       },
@@ -194,8 +208,10 @@
           "MEDIUM+  1 PER ROW",
           "LARGE+  MAX 1 PER COMPONENT",
           "ALIGN  LEFT / CENTER / RIGHT",
-          "GRID  3X3 / 0-1 TOKEN PER CELL",
-          "CELL  POSITION ONLY / INTRINSIC SIZE",
+          "GRID  3X3 / RECT BLOCK PACKING",
+          "BLOCK  1X1 TO 3X2 / 1 TOKEN EACH",
+          "2X3 / 3X2  XXXL 256 TYPE ONLY",
+          "TOKEN  POSITION ONLY / INTRINSIC SIZE",
           "STROKE  THIN ACTIVE / THICK RESERVED",
           "SPIN  NONE / SUBTLE / MEDIUM"
         ]
@@ -232,6 +248,7 @@
     const controls = {
       random: document.querySelector("#random"),
       mode: document.querySelector("#mode"),
+      grid: document.querySelector("#grid"),
       png: document.querySelector("#png"),
       svg: document.querySelector("#svg"),
       tone: document.querySelector("#tone")
@@ -279,12 +296,13 @@
 
     const componentBorderModes = ["stroke", "no-stroke", "corner-stroke"];
     const LAYOUT_GRID = { columns: 3, rows: 3 };
-    const GRID_CELL_OCCUPANCY = 0.58;
-    const GRID_PRIMARY_CHANCE = 0.72;
+    const GRID_PRIMARY_CHANCE = 1;
     const UNIQUE_GRID_TOKEN_ROLES = ["barcode", "pseudo-qr"];
     let seed = randomSeed();
     let activeComponentRatio = "";
     let activeBorderMode = "";
+    let activeBlockLayout = "";
+    let blockOutlinesVisible = true;
     let appMode = "random";
     let dark = false;
 
@@ -821,6 +839,7 @@
         .map(value => typographyToken(value, { typeface: "english", size: "xlarge", function: "content", role: "hero-keyword" }));
       return [
         ...visualTokens.greetingTokens.map(item => typographyToken(item.value, { typeface: item.typeface, size: "xlarge", function: "sign", role: "greeting" })),
+        ...visualTokens.hanjaKeywords.map(value => typographyToken(value, { typeface: "hanja", size: "xlarge", function: "content", role: "hero-glyph" })),
         ...statusEnglish
       ];
     }
@@ -837,6 +856,15 @@
         ...visualTokens.hanjaKeywords.map(value => typographyToken(value, { typeface: "hanja", size: "xxlarge", function: "content", role: "hero-glyph" })),
         ...heroEnglish
       ];
+    }
+
+    function xxxlargeTypographyTokens() {
+      return xxlargeTypographyTokens().map(item => typographyToken(item.value, {
+        typeface: item.typeface,
+        size: "xxxlarge",
+        function: item.function,
+        role: item.role
+      }));
     }
 
     function pickXlargeTypography() {
@@ -936,7 +964,7 @@
     function barcode(g, x, y, w, h, options = {}) {
       if (w <= 0 || h <= 0) return;
       const barcodeTokenSize = normalizeDesignTokenSize(options.tokenSize || "medium");
-      const captionTokenSize = barcodeTokenSize === "large" ? "medium" : "small";
+      const captionTokenSize = "small";
       const captionFontSize = TYPOGRAPHY_INTRINSIC_FONT_SIZES[captionTokenSize];
       const target = graphicTokenGroup(g, "data", "barcode", options.tokenContext || "primitive-detail", barcodeTokenSize);
       const digits = options.digits || barcodeDigits(11);
@@ -1184,47 +1212,204 @@
       return g;
     }
 
-    // 3x3 random cell system.
-    function randomGridSlots() {
-      const secondaryKinds = ["content", "data", "graphic"];
-      const alignments = ["left", "center", "right"];
-      const slots = [];
-      for (let row = 0; row < LAYOUT_GRID.rows; row++) {
-        for (let column = 0; column < LAYOUT_GRID.columns; column++) {
-          slots.push({
-            id: `cell-${column}-${row}`,
-            kind: chance(GRID_CELL_OCCUPANCY) ? pick(secondaryKinds) : "",
-            column,
-            row,
-            align: alignments[column]
-          });
-        }
+    // 3x3 random rectangular block system.
+    function shuffled(items) {
+      const result = [...items];
+      for (let index = result.length - 1; index > 0; index--) {
+        const swapIndex = ri(0, index);
+        [result[index], result[swapIndex]] = [result[swapIndex], result[index]];
       }
-      const occupiedSlots = slots.filter(slot => slot.kind);
-      if (occupiedSlots.length && chance(GRID_PRIMARY_CHANCE)) {
-        pick(occupiedSlots).kind = "primary";
-      }
-      return slots;
+      return result;
     }
 
-    function layoutGridCellPosition(box, slot) {
-      const gap = marginSize(box.width, box.height, "medium");
-      const columnWidth = (box.width - gap * (LAYOUT_GRID.columns - 1)) / LAYOUT_GRID.columns;
-      const rowHeight = (box.height - gap * (LAYOUT_GRID.rows - 1)) / LAYOUT_GRID.rows;
-      const cellX = box.x + slot.column * (columnWidth + gap);
-      const cellY = box.y + slot.row * (rowHeight + gap);
-      const anchorRatio = { left: 0, center: 0.5, right: 1 }[slot.align];
+    function gridBlockCells(block) {
+      const cells = [];
+      for (let row = block.row; row < block.row + block.height; row++) {
+        for (let column = block.column; column < block.column + block.width; column++) {
+          cells.push(row * LAYOUT_GRID.columns + column + 1);
+        }
+      }
+      return cells;
+    }
+
+    function footprintFits(occupied, column, row, footprint) {
+      if (column + footprint.width > LAYOUT_GRID.columns || row + footprint.height > LAYOUT_GRID.rows) {
+        return false;
+      }
+      for (let y = row; y < row + footprint.height; y++) {
+        for (let x = column; x < column + footprint.width; x++) {
+          if (occupied[y * LAYOUT_GRID.columns + x]) return false;
+        }
+      }
+      return true;
+    }
+
+    function markFootprint(occupied, block, value) {
+      gridBlockCells(block).forEach(cellNumber => {
+        occupied[cellNumber - 1] = value;
+      });
+    }
+
+    function isXxxlargeFootprint(block) {
+      return (block.width === 3 && block.height === 2) ||
+        (block.width === 2 && block.height === 3);
+    }
+
+    function footprintSupportsXxxlarge(box, footprint) {
+      if (!isXxxlargeFootprint(footprint)) return true;
+      const availableWidth = box.width * footprint.width / LAYOUT_GRID.columns;
+      const availableHeight = box.height * footprint.height / LAYOUT_GRID.rows;
+      return xxxlargeTypographyTokens().some(item =>
+        estimateTextWidth(item.value, item.intrinsic.fontSize) <= availableWidth &&
+        estimateTextHeight(item.value, item.intrinsic.fontSize) <= availableHeight
+      );
+    }
+
+    function buildGridBlockLayout(targetCount, footprints = GRID_BLOCK_FOOTPRINTS) {
+      const occupied = Array(LAYOUT_GRID.columns * LAYOUT_GRID.rows).fill(false);
+      const blocks = [];
+
+      function search(blocksLeft) {
+        const firstOpenIndex = occupied.indexOf(false);
+        if (firstOpenIndex === -1) return blocksLeft === 0;
+        if (blocksLeft === 0) return false;
+
+        const remainingCells = occupied.filter(value => !value).length;
+        if (remainingCells < blocksLeft || remainingCells > blocksLeft * 6) return false;
+
+        const column = firstOpenIndex % LAYOUT_GRID.columns;
+        const row = Math.floor(firstOpenIndex / LAYOUT_GRID.columns);
+        const idealArea = remainingCells / blocksLeft;
+        const candidates = shuffled(footprints)
+          .filter(footprint => footprintFits(occupied, column, row, footprint))
+          .map(footprint => ({
+            ...footprint,
+            score: Math.abs(footprint.width * footprint.height - idealArea) + random() * 2.25
+          }))
+          .sort((a, b) => a.score - b.score);
+
+        for (const footprint of candidates) {
+          const block = {
+            column,
+            row,
+            width: footprint.width,
+            height: footprint.height,
+            area: footprint.width * footprint.height
+          };
+          const remainingAfter = remainingCells - block.area;
+          if (remainingAfter < blocksLeft - 1 || remainingAfter > (blocksLeft - 1) * 6) continue;
+
+          markFootprint(occupied, block, true);
+          blocks.push(block);
+          if (search(blocksLeft - 1)) return blocks;
+          blocks.pop();
+          markFootprint(occupied, block, false);
+        }
+        return null;
+      }
+
+      return search(targetCount);
+    }
+
+    function randomGridBlocks(box) {
+      const availableFootprints = GRID_BLOCK_FOOTPRINTS.filter(footprint =>
+        footprintSupportsXxxlarge(box, footprint)
+      );
+      const preferredCount = pick([2, 3, 3, 4, 4, 5]);
+      const countOptions = [preferredCount, ...shuffled([2, 3, 4, 5].filter(count => count !== preferredCount))];
+      let blocks = null;
+      for (const count of countOptions) {
+        blocks = buildGridBlockLayout(count, availableFootprints);
+        if (blocks) break;
+      }
+      blocks ||= buildGridBlockLayout(3, availableFootprints);
+      const secondaryKinds = ["content", "data", "graphic"];
+      const primaryCandidates = blocks.filter(block => block.area >= 2);
+      let primaryBlock = null;
+
+      if (primaryCandidates.length && chance(GRID_PRIMARY_CHANCE)) {
+        const largestArea = Math.max(...primaryCandidates.map(block => block.area));
+        primaryBlock = pick(primaryCandidates.filter(block => block.area === largestArea));
+      }
+
+      return blocks.map((block, index) => ({
+        ...block,
+        id: `block-${index + 1}`,
+        kind: block === primaryBlock ? "primary" : pick(secondaryKinds),
+        cells: gridBlockCells(block)
+      }));
+    }
+
+    function gridMetrics(box) {
+      const gap = 0;
       return {
-        x: cellX + columnWidth * anchorRatio,
-        y: cellY + rowHeight * 0.5,
-        align: slot.align
+        gap,
+        columnWidth: (box.width - gap * (LAYOUT_GRID.columns - 1)) / LAYOUT_GRID.columns,
+        rowHeight: (box.height - gap * (LAYOUT_GRID.rows - 1)) / LAYOUT_GRID.rows
       };
+    }
+
+    function gridBlockBox(box, block) {
+      const metrics = gridMetrics(box);
+      return {
+        x: box.x + block.column * (metrics.columnWidth + metrics.gap),
+        y: box.y + block.row * (metrics.rowHeight + metrics.gap),
+        width: metrics.columnWidth * block.width + metrics.gap * (block.width - 1),
+        height: metrics.rowHeight * block.height + metrics.gap * (block.height - 1)
+      };
+    }
+
+    function blockContentBox(box, block) {
+      const inset = isXxxlargeFootprint(block) ? 0 : Math.min(
+        marginSize(box.width, box.height, "small"),
+        box.width * 0.12,
+        box.height * 0.12
+      );
+      return {
+        x: box.x + inset,
+        y: box.y + inset,
+        width: Math.max(1, box.width - inset * 2),
+        height: Math.max(1, box.height - inset * 2)
+      };
+    }
+
+    function blockHorizontalAlignment(block) {
+      if (block.width === LAYOUT_GRID.columns) return "center";
+      if (block.column === 0) return "left";
+      if (block.column + block.width === LAYOUT_GRID.columns) return "right";
+      return "center";
+    }
+
+    function blockVerticalAlignment(block) {
+      if (block.height === LAYOUT_GRID.rows) return "middle";
+      if (block.row === 0) return "top";
+      if (block.row + block.height === LAYOUT_GRID.rows) return "bottom";
+      return "middle";
+    }
+
+    function layoutGridBlockPosition(box, block) {
+      const align = blockHorizontalAlignment(block);
+      const verticalAlign = blockVerticalAlignment(block);
+      const horizontalAnchorRatio = { left: 0, center: 0.5, right: 1 }[align];
+      const verticalAnchorRatio = { top: 0, middle: 0.5, bottom: 1 }[verticalAlign];
+      return {
+        x: box.x + box.width * horizontalAnchorRatio,
+        y: box.y + box.height * verticalAnchorRatio,
+        align,
+        verticalAlign
+      };
+    }
+
+    function alignedBoxY(position, tokenHeight) {
+      const alignOffset = { top: 0, middle: 0.5, bottom: 1 }[position.verticalAlign];
+      return position.y - tokenHeight * alignOffset;
     }
 
     function gridTokenPools() {
       const typography = Object.values(tokenGalleryItems()).flat();
       return {
-        primary: typography.filter(item => item.function === "content" && BOLD_TOKEN_SIZES.includes(item.size)),
+        primary: typography.filter(item => item.function === "content" && ["large", "xlarge", "xxlarge"].includes(item.size)),
+        xxxlargeBlock: typography.filter(item => item.size === "xxxlarge"),
         content: typography.filter(item => item.function === "content" && ["small", "medium"].includes(item.size)),
         data: typography.filter(item => item.function === "data" && ["small", "medium"].includes(item.size)),
         graphic: graphicTokenGalleryItems().filter(item => item.function === "data")
@@ -1241,75 +1426,97 @@
       const alignOffset = { left: 0, center: 0.5, right: 1 }[position.align];
       return {
         x: position.x - width * alignOffset,
-        y: position.y - height * 0.5,
+        y: alignedBoxY(position, height),
         width,
         height
       };
     }
 
-    function gridTokenFits(bounds, safe, acceptedBounds) {
-      const gap = marginSize(safe.width, safe.height, "small");
-      const insideSafeArea = bounds.x >= safe.x &&
-        bounds.y >= safe.y &&
-        bounds.x + bounds.width <= safe.x + safe.width &&
-        bounds.y + bounds.height <= safe.y + safe.height;
-      if (!insideSafeArea) return false;
-      return acceptedBounds.every(accepted =>
-        bounds.x >= accepted.x + accepted.width + gap ||
-        bounds.x + bounds.width + gap <= accepted.x ||
-        bounds.y >= accepted.y + accepted.height + gap ||
-        bounds.y + bounds.height + gap <= accepted.y
-      );
+    function gridTokenFits(bounds, availableBox) {
+      return bounds.x >= availableBox.x &&
+        bounds.y >= availableBox.y &&
+        bounds.x + bounds.width <= availableBox.x + availableBox.width &&
+        bounds.y + bounds.height <= availableBox.y + availableBox.height;
     }
 
-    function pickGridTokenItem(slot, position, pools, safe, acceptedBounds, usedUniqueRoles) {
-      const candidates = pools[slot.kind].filter(item =>
-        !UNIQUE_GRID_TOKEN_ROLES.includes(item.role) || !usedUniqueRoles.has(item.role)
-      );
-      const candidateGroups = [candidates];
-      if (slot.kind === "primary") {
-        const availableSizes = BOLD_TOKEN_SIZES.filter(size => candidates.some(item => item.size === size));
-        const preferredSize = pick(availableSizes);
-        candidateGroups.splice(
-          0,
-          1,
-          candidates.filter(item => item.size === preferredSize),
-          candidates.filter(item => item.size !== preferredSize)
-        );
+    function blockCandidateGroups(kind, block, candidates) {
+      if (kind === "primary") {
+        const preferredSizes = block.area >= 6
+          ? ["xxlarge", "xlarge", "large"]
+          : block.area >= 3
+            ? ["xlarge", "large"]
+            : ["large"];
+        return [
+          ...preferredSizes.map(size => candidates.filter(item => item.size === size)),
+          candidates.filter(item => !preferredSizes.includes(item.size))
+        ].filter(group => group.length);
       }
-      for (const group of candidateGroups) {
-        while (group.length) {
-          const index = ri(0, group.length - 1);
-          const item = group.splice(index, 1)[0];
+
+      const preferredSize = kind === "graphic"
+        ? (block.area >= 2 ? "large" : "medium")
+        : (block.area >= 2 ? "medium" : "small");
+      return [
+        candidates.filter(item => item.size === preferredSize),
+        candidates.filter(item => item.size !== preferredSize)
+      ].filter(group => group.length);
+    }
+
+    function pickGridTokenItem(block, position, pools, availableBox, usedUniqueRoles) {
+      if (isXxxlargeFootprint(block)) {
+        const candidates = shuffled(pools.xxxlargeBlock);
+        while (candidates.length) {
+          const item = candidates.pop();
           const bounds = gridTokenIntrinsicBox(position, item);
-          if (gridTokenFits(bounds, safe, acceptedBounds)) return { item, bounds };
+          if (gridTokenFits(bounds, availableBox)) return { item, bounds, kind: "primary" };
+        }
+        return null;
+      }
+
+      const secondaryKinds = ["content", "data", "graphic"];
+      const kindOrder = block.kind === "primary"
+        ? ["primary", ...shuffled(secondaryKinds)]
+        : [block.kind, ...shuffled(secondaryKinds.filter(kind => kind !== block.kind))];
+
+      for (const kind of kindOrder) {
+        const candidates = pools[kind].filter(item =>
+          !UNIQUE_GRID_TOKEN_ROLES.includes(item.role) || !usedUniqueRoles.has(item.role)
+        );
+        for (const sourceGroup of blockCandidateGroups(kind, block, candidates)) {
+          const group = shuffled(sourceGroup);
+          while (group.length) {
+            const item = group.pop();
+            const bounds = gridTokenIntrinsicBox(position, item);
+            if (gridTokenFits(bounds, availableBox)) return { item, bounds, kind };
+          }
         }
       }
       return null;
     }
 
-    function renderGridCellToken(g, position, slot, item) {
+    function renderGridBlockToken(g, position, kind, item) {
       const token = make("g", {
         "data-grid-token": item.role,
-        "data-grid-token-kind": slot.kind,
+        "data-grid-token-kind": kind,
         "data-token-placement": "position-only",
         "data-token-scale": "1",
-        ...(slot.kind === "graphic" ? tokenSizeAttrs(item.size) : {}),
-        ...(slot.kind === "graphic" ? tokenTaxonomyAttrs({
+        ...(kind === "graphic" ? tokenSizeAttrs(item.size) : {}),
+        ...(kind === "graphic" ? tokenTaxonomyAttrs({
           form: "graphic",
           tokenFunction: item.function,
           role: item.role,
           context: "component"
         }) : {})
       });
-      if (slot.kind === "graphic") {
+      if (kind === "graphic") {
         token.setAttribute("data-token-intrinsic-width", item.intrinsic.width);
         token.setAttribute("data-token-intrinsic-height", item.intrinsic.height);
         item.renderAt(token, position, "component");
       } else {
         const fontSize = item.intrinsic.fontSize;
+        const textHeight = estimateTextHeight(item.value, fontSize);
+        const baselineY = alignedBoxY(position, textHeight) + textHeight * 0.5 + fontSize * 0.34;
         token.setAttribute("data-token-intrinsic-font-size", fontSize);
-        token.appendChild(textNode(position.x, position.y + fontSize * 0.34, item.value, {
+        token.appendChild(textNode(position.x, baselineY, item.value, {
           align: position.align,
           tokenSize: item.size,
           tokenFunction: item.function,
@@ -1324,37 +1531,53 @@
 
     function renderRandomGridLayout(w, h) {
       const g = make("g", {
-        "data-layout-mode": "random-cells",
+        "data-layout-mode": "random-blocks",
         "data-grid-columns": LAYOUT_GRID.columns,
         "data-grid-rows": LAYOUT_GRID.rows
       });
       const safe = paddedBox(0, 0, w, h, "large");
       const pools = gridTokenPools();
-      const acceptedBounds = [];
       const usedUniqueRoles = new Set();
-      randomGridSlots().forEach(slot => {
-        const position = layoutGridCellPosition(safe, slot);
-        const selection = slot.kind
-          ? pickGridTokenItem(slot, position, pools, safe, acceptedBounds, usedUniqueRoles)
-          : null;
-        const cell = make("g", {
-          "data-grid-cell": `${slot.column}:${slot.row}`,
-          "data-grid-slot": slot.id,
-          "data-grid-column": slot.column,
-          "data-grid-row": slot.row,
+      const blocks = randomGridBlocks(safe);
+      activeBlockLayout = blocks.map(block => `${block.width}x${block.height}`).join("+");
+
+      blocks.forEach(block => {
+        const box = gridBlockBox(safe, block);
+        const contentBox = blockContentBox(box, block);
+        const position = layoutGridBlockPosition(contentBox, block);
+        const selection = pickGridTokenItem(block, position, pools, contentBox, usedUniqueRoles);
+        const group = make("g", {
+          "data-grid-block": block.id,
+          "data-grid-footprint": `${block.width}x${block.height}`,
+          "data-grid-block-area": block.area,
+          "data-grid-origin": `${block.column}:${block.row}`,
+          "data-grid-column": block.column,
+          "data-grid-row": block.row,
+          "data-grid-column-span": block.width,
+          "data-grid-row-span": block.height,
+          "data-grid-cells": block.cells.join(","),
+          "data-grid-block-x": box.x,
+          "data-grid-block-y": box.y,
+          "data-grid-block-width": box.width,
+          "data-grid-block-height": box.height,
           "data-grid-position-x": position.x,
           "data-grid-position-y": position.y,
           "data-grid-alignment": position.align,
-          "data-grid-empty": selection ? "false" : "true"
+          "data-grid-vertical-alignment": position.verticalAlign,
+          "data-grid-block-empty": selection ? "false" : "true"
         });
+
+        const outline = rect(box.x, box.y, box.width, box.height, { opacity: blockOutlinesVisible ? 0.18 : 0 });
+        outline.setAttribute("data-grid-block-outline", block.id);
+        group.appendChild(outline);
+
         if (selection) {
-          renderGridCellToken(cell, position, slot, selection.item);
-          acceptedBounds.push(selection.bounds);
+          renderGridBlockToken(group, position, selection.kind, selection.item);
           if (UNIQUE_GRID_TOKEN_ROLES.includes(selection.item.role)) {
             usedUniqueRoles.add(selection.item.role);
           }
         }
-        g.appendChild(cell);
+        g.appendChild(group);
       });
       return g;
     }
@@ -1403,15 +1626,18 @@
       const xxlarge = [
         ...xxlargeTypographyTokens()
       ];
+      const xxxlarge = [
+        ...xxxlargeTypographyTokens()
+      ];
 
-      return { small, medium, large, xlarge, xxlarge };
+      return { small, medium, large, xlarge, xxlarge, xxxlarge };
     }
 
     function intrinsicTokenBox(position, intrinsic) {
       const alignOffset = { left: 0, center: 0.5, right: 1 }[position.align];
       return {
         x: position.x - intrinsic.width * alignOffset,
-        y: position.y - intrinsic.height * 0.5,
+        y: alignedBoxY(position, intrinsic.height),
         width: intrinsic.width,
         height: intrinsic.height
       };
@@ -1557,7 +1783,7 @@
       }
 
       const sizeLimit = Math.max(9, sample.height * 0.58);
-      const sizes = { small: Math.min(11, sizeLimit), medium: Math.min(16, sizeLimit), large: Math.min(22, sizeLimit), xlarge: Math.min(30, sizeLimit), xxlarge: Math.min(38, sizeLimit) };
+      const sizes = { small: Math.min(11, sizeLimit), medium: Math.min(16, sizeLimit), large: Math.min(22, sizeLimit), xlarge: Math.min(30, sizeLimit), xxlarge: Math.min(38, sizeLimit), xxxlarge: Math.min(46, sizeLimit) };
       stackTextToken(g, sample, item.value, {
         align: "left",
         tokenSize: item.size,
@@ -1807,20 +2033,55 @@
 
       const component = art.querySelector("svg[data-component]");
       if (component) {
-        const gridCells = [...component.querySelectorAll("[data-grid-cell]")];
-        const gridCoordinates = gridCells.map(cell => cell.getAttribute("data-grid-cell"));
-        const cellsWithInvalidTokenCount = gridCells.filter(cell =>
-          [...cell.children].filter(child => child.hasAttribute("data-grid-token")).length > 1
+        const layout = component.querySelector('[data-layout-mode="random-blocks"]');
+        const gridBlocks = [...component.querySelectorAll("[data-grid-block]")];
+        const allowedFootprints = new Set(GRID_BLOCK_FOOTPRINTS.map(footprint => `${footprint.width}x${footprint.height}`));
+        const allBlockCells = gridBlocks.flatMap(block =>
+          (block.getAttribute("data-grid-cells") || "").split(",").filter(Boolean).map(Number)
         );
-        const cellsWithInvalidEmptyState = gridCells.filter(cell => {
-          const tokenCount = [...cell.children].filter(child => child.hasAttribute("data-grid-token")).length;
-          return cell.getAttribute("data-grid-empty") !== String(tokenCount === 0);
+        const blocksWithInvalidTokenCount = gridBlocks.filter(block =>
+          [...block.children].filter(child => child.hasAttribute("data-grid-token")).length !== 1
+        );
+        const blocksWithInvalidEmptyState = gridBlocks.filter(block => {
+          const tokenCount = [...block.children].filter(child => child.hasAttribute("data-grid-token")).length;
+          return block.getAttribute("data-grid-block-empty") !== String(tokenCount === 0);
         });
-        const cellsWithInvalidPosition = gridCells.filter(cell =>
-          !Number.isFinite(Number(cell.getAttribute("data-grid-position-x"))) ||
-          !Number.isFinite(Number(cell.getAttribute("data-grid-position-y"))) ||
-          !TOKEN_ALIGNMENTS.includes(cell.getAttribute("data-grid-alignment"))
+        const blocksWithInvalidPosition = gridBlocks.filter(block =>
+          !Number.isFinite(Number(block.getAttribute("data-grid-position-x"))) ||
+          !Number.isFinite(Number(block.getAttribute("data-grid-position-y"))) ||
+          !TOKEN_ALIGNMENTS.includes(block.getAttribute("data-grid-alignment")) ||
+          !TOKEN_VERTICAL_ALIGNMENTS.includes(block.getAttribute("data-grid-vertical-alignment"))
         );
+        const blocksWithInvalidFootprint = gridBlocks.filter(block => {
+          const column = Number(block.getAttribute("data-grid-column"));
+          const row = Number(block.getAttribute("data-grid-row"));
+          const width = Number(block.getAttribute("data-grid-column-span"));
+          const height = Number(block.getAttribute("data-grid-row-span"));
+          const footprint = `${width}x${height}`;
+          const expectedBlock = { column, row, width, height };
+          const expectedCells = gridBlockCells(expectedBlock).join(",");
+          return !allowedFootprints.has(footprint) ||
+            block.getAttribute("data-grid-footprint") !== footprint ||
+            block.getAttribute("data-grid-block-area") !== String(width * height) ||
+            block.getAttribute("data-grid-origin") !== `${column}:${row}` ||
+            column < 0 || row < 0 ||
+            column + width > LAYOUT_GRID.columns ||
+            row + height > LAYOUT_GRID.rows ||
+            block.getAttribute("data-grid-cells") !== expectedCells ||
+            block.getAttribute("data-grid-alignment") !== blockHorizontalAlignment(expectedBlock) ||
+            block.getAttribute("data-grid-vertical-alignment") !== blockVerticalAlignment(expectedBlock) ||
+            block.querySelectorAll(":scope > [data-grid-block-outline]").length !== 1;
+        });
+        const xxxlargeFootprintBlocksWithInvalidToken = gridBlocks.filter(block => {
+          if (!["2x3", "3x2"].includes(block.getAttribute("data-grid-footprint"))) return false;
+          const token = block.querySelector(":scope > [data-grid-token]");
+          const typography = token?.querySelector(':scope > text[data-token-form="typography"]');
+          return !token ||
+            token.getAttribute("data-grid-token-kind") === "graphic" ||
+            !typography ||
+            typography.getAttribute("data-token-size") !== "xxxlarge" ||
+            typography.getAttribute("font-size") !== "256";
+        });
         const tokensWithInvalidPlacement = [...component.querySelectorAll("[data-grid-token]")].filter(token =>
           token.getAttribute("data-token-placement") !== "position-only" ||
           token.getAttribute("data-token-scale") !== "1" ||
@@ -1845,7 +2106,7 @@
             primitive.getAttribute("data-token-size") !== size;
         });
         const barcodeTokensWithInvalidCaptionSize = [...component.querySelectorAll('[data-grid-token="barcode"]')].filter(token => {
-          const expectedCaptionSize = token.getAttribute("data-token-size") === "large" ? "medium" : "small";
+          const expectedCaptionSize = "small";
           const expectedFontSize = String(TYPOGRAPHY_INTRINSIC_FONT_SIZES[expectedCaptionSize]);
           const captions = [...token.querySelectorAll('[data-token-role="barcode-caption"]')];
           return captions.length !== 4 || captions.some(caption =>
@@ -1854,25 +2115,24 @@
           );
         });
         const primaryTokens = component.querySelectorAll('[data-grid-token-kind="primary"]');
-        const expectedCells = new Set();
-        for (let row = 0; row < LAYOUT_GRID.rows; row++) {
-          for (let column = 0; column < LAYOUT_GRID.columns; column++) {
-            expectedCells.add(`${column}:${row}`);
-          }
-        }
         const layoutIsInvalid = component.getAttribute("data-layout-grid") !== "3x3" ||
-          gridCells.length !== LAYOUT_GRID.columns * LAYOUT_GRID.rows ||
+          !layout ||
+          gridBlocks.length < 2 ||
+          gridBlocks.length > 5 ||
           primaryTokens.length > 1 ||
-          cellsWithInvalidTokenCount.length > 0 ||
-          cellsWithInvalidEmptyState.length > 0 ||
-          cellsWithInvalidPosition.length > 0 ||
+          blocksWithInvalidTokenCount.length > 0 ||
+          blocksWithInvalidEmptyState.length > 0 ||
+          blocksWithInvalidPosition.length > 0 ||
+          blocksWithInvalidFootprint.length > 0 ||
+          xxxlargeFootprintBlocksWithInvalidToken.length > 0 ||
           tokensWithInvalidPlacement.length > 0 ||
           typographyWithInvalidIntrinsicSize.length > 0 ||
           duplicateUniqueRoles.length > 0 ||
           graphicTokensWithInvalidSize.length > 0 ||
           barcodeTokensWithInvalidCaptionSize.length > 0 ||
-          new Set(gridCoordinates).size !== gridCoordinates.length ||
-          gridCoordinates.some(cell => !expectedCells.has(cell));
+          allBlockCells.length !== LAYOUT_GRID.columns * LAYOUT_GRID.rows ||
+          new Set(allBlockCells).size !== allBlockCells.length ||
+          allBlockCells.some(cell => cell < 1 || cell > LAYOUT_GRID.columns * LAYOUT_GRID.rows);
         if (layoutIsInvalid) violations.push("invalid-layout-grid");
 
         const sizeOrder = Object.keys(DESIGN_TOKEN_SIZES);
@@ -1897,6 +2157,7 @@
       const h = Math.max(MIN_VIEWPORT.height, window.innerHeight);
       art.setAttribute("viewBox", `0 0 ${w} ${h}`);
       art.setAttribute("style", "color: var(--ink)");
+      art.setAttribute("data-grid-outlines", blockOutlinesVisible ? "visible" : "hidden");
       art.replaceChildren();
       document.body.classList.toggle("is-dark", dark);
 
@@ -1909,9 +2170,17 @@
         seedLabel.textContent = `MODE COMPOSABLE CATEGORIES / SEED ${seedHex()}`;
       } else {
         art.appendChild(renderComponent(w, h));
-        seedLabel.textContent = `SEED ${seedHex()} / COMP ${activeComponentRatio} / GRID 3X3 RANDOM / BORDER ${activeBorderMode}`;
+        seedLabel.textContent = `SEED ${seedHex()} / COMP ${activeComponentRatio} / BLOCKS ${activeBlockLayout} / BORDER ${activeBorderMode}`;
       }
       validateRenderedTokenRules();
+    }
+
+    function syncBlockOutlineVisibility() {
+      art.setAttribute("data-grid-outlines", blockOutlinesVisible ? "visible" : "hidden");
+      art.querySelectorAll("[data-grid-block-outline]").forEach(outline => {
+        outline.setAttribute("opacity", blockOutlinesVisible ? "0.18" : "0");
+      });
+      controls.grid.setAttribute("aria-pressed", String(blockOutlinesVisible));
     }
 
     function downloadBlob(blob, filename) {
@@ -1971,6 +2240,10 @@
         controls.mode.textContent = appMode === "composable-tokens" ? "Generator" : "Compose";
         controls.mode.setAttribute("aria-pressed", String(appMode === "composable-tokens"));
         render(seed);
+      });
+      controls.grid.addEventListener("click", () => {
+        blockOutlinesVisible = !blockOutlinesVisible;
+        syncBlockOutlineVisibility();
       });
       controls.png.addEventListener("click", exportPng);
       controls.svg.addEventListener("click", exportSvg);

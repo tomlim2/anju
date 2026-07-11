@@ -25,6 +25,7 @@
 - Random 버튼으로 현재 mode의 새 랜덤 seed 생성.
 - 캔버스 클릭으로 새 결과 생성.
 - Compose 버튼으로 조합 가능한 디자인 토큰 모드 전환.
+- Grid 버튼으로 block outline 표시 여부 전환. seed와 token 배치는 유지하며 export에도 현재 상태 반영.
 - Tone 버튼으로 light/dark 반전.
 - 화면 크기 기준 2x PNG 내보내기.
 - SVG 내보내기로 벡터 후작업 가능.
@@ -41,7 +42,7 @@
 - `Content detail`: Content block 안쪽 하단에 들어가는 정보 묶음. barcode detail, pseudo-QR detail, table detail, wave detail이 여기에 속한다.
 - `Display keyword`: `REPORT`, `STATUS`, `MODULE`, `ACCESS`처럼 제목이나 상태 문구처럼 읽히는 영어 keyword다. data value가 아니며 Noto Sans English role을 쓴다.
 - `Layout grid`: Component safe area를 가로 3열, 세로 3행으로 나눈 보이지 않는 좌표계다.
-- `Layout renderer`: `renderRandomGridLayout()`이며 각 cell을 비워두거나 token 하나를 랜덤 생성한다.
+- `Layout renderer`: `renderRandomGridLayout()`이며 3×3 cell을 직사각형 block으로 패킹하고 block마다 token 하나를 랜덤 생성한다.
 - `Seed`: 랜덤 결과를 다시 추적하기 위한 값. 화면 왼쪽 아래에 표시한다.
 
 ## 현재 시각 규칙
@@ -60,10 +61,10 @@
 - 디자인 토큰 사이의 간격은 `MARGIN_TOKENS.small`, `MARGIN_TOKENS.medium`, `MARGIN_TOKENS.large`만 쓴다.
 - 모든 display token, greeting token, date/time token, data token은 자신이 받은 padded box 안에서만 spawn한다. 긴 문자는 `maxWidth` 기준으로 축소한다.
 - 텍스트 정렬은 `left`, `center`, `right` 세 가지만 허용한다. SVG의 `start`, `middle`, `end`는 내부 변환값으로만 쓴다.
-- 디자인 토큰은 `small`, `medium`, `large`, `xlarge`, `xxlarge` 다섯 크기 단계로 나누고, 크기 단계가 한 행을 어떻게 점유하는지 정한다.
+- 디자인 토큰은 `small`, `medium`, `large`, `xlarge`, `xxlarge`, `xxxlarge` 여섯 크기 단계로 나누고, 크기 단계가 한 행을 어떻게 점유하는지 정한다.
 - 토큰의 형태는 `typography`, `graphic`으로 나누고 기능은 `content`, `data`, `symbol`, `sign`으로 별도 기록한다.
 - 모든 `typography` token은 `typeface` role을 필수로 기록한다. `graphic` token에는 `typeface`를 넣지 않는다.
-- typography weight는 `normal`, `bold` 두 단계만 쓰며, `content`이면서 `large`, `xlarge`, `xxlarge`인 token만 `bold`다. 나머지는 모두 `normal`이다.
+- typography weight는 `normal`, `bold` 두 단계만 쓰며, `content`이면서 `large`, `xlarge`, `xxlarge`, `xxxlarge`인 token만 `bold`다. 나머지는 모두 `normal`이다.
 - 모든 디자인 토큰의 배치 축도 `left`, `center`, `right` 세 가지만 쓴다. 토큰은 세 축 위에서 테트리스 블록처럼 행 단위로 쌓일 수 있고, 작은 spin 회전은 허용한다.
 - `Composable Categories` mode는 조합 재료로 사용할 수 있는 `content`, `data`, `symbol`의 form/function category와 가능한 category 조합만 보여주는 catalog view다.
 - barcode, pseudo-QR, mini table, wave graph, label, badge, symbol을 재사용 가능한 graphic primitive로 둔다.
@@ -114,17 +115,18 @@ margin은 디자인 토큰 사이의 거리다. padding이 Component나 content 
 
 ## Token Size System
 
-디자인 토큰은 시각적 중요도와 행 점유 방식에 따라 `small`, `medium`, `large`, `xlarge`, `xxlarge`로 나눈다. 코드에서는 `DESIGN_TOKEN_SIZES`와 `tokenSize` 속성으로 기록한다.
+디자인 토큰은 시각적 중요도와 행 점유 방식에 따라 `small`, `medium`, `large`, `xlarge`, `xxlarge`, `xxxlarge`로 나눈다. 코드에서는 `DESIGN_TOKEN_SIZES`와 `tokenSize` 속성으로 기록한다.
 
 - `small`: 조직명, revision badge, serial, barcode caption, table cell, port/code caption처럼 보조 정보다. 한 행에 최대 두 개까지 올 수 있고, 기본 조합은 `left` + `right`다. 작은 토큰이 하나만 있을 때는 `left`, `center`, `right` 중 하나에 단독 배치할 수 있다.
 - `medium`: `STATUS`, `REPORT`, section label, subtitle, short command처럼 중간 위계의 정보다. 한 행에 하나만 둔다. 좌/중/우 정렬은 가능하지만 같은 행에서 다른 토큰과 나란히 놓지 않는다.
 - `large`: main display word, 큰 숫자, date/time display처럼 한 component에서 시선을 먼저 받는 정보다. 무조건 한 행에 하나만 두고, medium과 명확히 구분되도록 크게 운용한다. 큰 토큰 행에는 small badge나 caption을 얹지 않는다.
 - `xlarge`: 64px 특대 토큰이다. greeting과 `STATUS`처럼 강한 display typography에 쓴다.
 - `xxlarge`: 128px 초대형 토큰이다. 짧은 한글 hero, `ACCESS`, `OUTPUT`, 독립 한자처럼 화면을 장악해야 하는 typography에만 쓴다.
+- `xxxlarge`: 256px 최대 typography 토큰이다. `2x3`, `3x2` block 전용이며 기존 xxlarge hero token의 크기 변형만 사용하고 새 문자를 만들지 않는다.
 
 작은 요소만 같은 행에서 왼쪽 정렬과 오른쪽 정렬을 동시에 가질 수 있다. 중간/큰/특대/초대형 요소는 행을 독점한다.
 
-상위 토큰 수량은 코드의 `MAJOR_TOKEN_RULES`를 따른다. `large`부터는 major token으로 취급하고, 한 생성 layout 안에서 major token은 총 하나만 허용한다. 즉 `large`, `xlarge`, `xxlarge`는 서로 pair로 배치하지 않는다.
+상위 토큰 수량은 코드의 `MAJOR_TOKEN_RULES`를 따른다. `large`부터는 major token으로 취급하고, 한 생성 layout 안에서 major token은 총 하나만 허용한다. 즉 `large`, `xlarge`, `xxlarge`, `xxxlarge`는 서로 pair로 배치하지 않는다.
 
 이 규칙은 Component-level stacking 기준이다. barcode caption, mini table cell처럼 graphic primitive 내부에서 생기는 작은 data token은 해당 primitive의 내부 grid를 따른다.
 
@@ -172,7 +174,7 @@ spin은 토큰 자체에 주는 작은 회전이다. spin은 alignment를 대체
 
 현재 폰트 시스템은 Noto Sans 계열로 고정한다. 코드에서는 `TYPEFACES`와 `resolveTypeface()`로 관리한다.
 
-weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 `content`이고 size가 `large`, `xlarge`, `xxlarge`인 typography에만 적용한다. `small`, `medium`과 `data`, `symbol`, `sign`, catalog UI는 모두 `normal`이다. 코드에서는 `fontWeightForToken()`이 weight를 결정하고 `FONT_WEIGHTS.normal = 400`, `FONT_WEIGHTS.bold = 700`으로 렌더링한다. SVG에는 `data-token-weight="normal|bold"`를 기록하며 `validateRenderedTokenRules()`가 size/function 조합과 실제 weight를 함께 검사한다.
+weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 `content`이고 size가 `large`, `xlarge`, `xxlarge`, `xxxlarge`인 typography에만 적용한다. `small`, `medium`과 `data`, `symbol`, `sign`, catalog UI는 모두 `normal`이다. 코드에서는 `fontWeightForToken()`이 weight를 결정하고 `FONT_WEIGHTS.normal = 400`, `FONT_WEIGHTS.bold = 700`으로 렌더링한다. SVG에는 `data-token-weight="normal|bold"`를 기록하며 `validateRenderedTokenRules()`가 size/function 조합과 실제 weight를 함께 검사한다.
 
 `form: "typography"`인 token은 아래 typeface role 중 하나를 반드시 명시한다. 브라우저 fallback만으로 typeface를 결정하지 않는다.
 
@@ -203,33 +205,39 @@ weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 
 
 날짜/시간 표기는 `primary` 또는 `content` cell의 단일 typography token으로만 들어간다. barcode, serial, code, table, QR, port 같은 data/graphic token 내부에는 넣지 않는다. 중국어/한자는 날짜 표기 안에서만 허용하는 것을 기본으로 하되, 독립 display glyph는 `林`만 예외로 허용한다. 날짜/시간은 오늘과 리프레시 시점에 따라 변하므로, 같은 seed라도 날짜나 시간이 다르면 완전히 동일한 typography가 재현되지 않을 수 있다.
 
-## Random Grid System
+## Random Block Grid System
 
-모든 Component는 `PADDING_TOKENS.large` 안쪽 safe area를 가로 3열 × 세로 3행으로 나눈다. column과 row는 `0`, `1`, `2`를 쓴다. grid line은 실제로 그리지 않고 좌표 계산에만 사용하며 cell 사이 gap은 `MARGIN_TOKENS.medium`이다.
+모든 Component는 `PADDING_TOKENS.large` 안쪽 safe area를 가로 3열 × 세로 3행으로 나눈다. column과 row는 `0`, `1`, `2`를 쓰고, cell 번호는 왼쪽 위에서 오른쪽 아래로 행 우선 순서인 `1`부터 `9`까지 사용한다. grid line은 실제로 그리지 않고 좌표 계산에만 사용하며 cell과 block 사이 gap은 `0`이다.
 
-각 렌더는 아래 규칙을 지킨다.
+```text
+1 2 3
+4 5 6
+7 8 9
+```
 
-- 9개 cell은 각각 독립적으로 비어 있거나 token 하나를 가진다.
-- cell을 합치거나 하나의 cell 안에 여러 token을 조합하지 않는다.
-- 각 cell은 `GRID_CELL_OCCUPANCY` 확률로 채우며 현재 값은 `0.58`이다.
-- 채워진 cell은 기본적으로 `content`, `data`, `graphic` 중 하나를 랜덤 선택한다.
-- `barcode`와 `pseudo-qr`는 Component 안에서 각각 최대 하나만 사용할 수 있다. 한 cell에서 선택되면 이후 cell 후보에서 제외한다.
-- 채워진 cell이 있으면 `GRID_PRIMARY_CHANCE` 확률로 그중 하나를 `primary`로 바꾼다. 현재 값은 `0.72`이며 `primary`는 없거나 최대 하나다.
-- `primary`는 `large`, `xlarge`, `xxlarge` content만 사용한다.
-- primary size는 후보 항목 수에 좌우되지 않도록 `large`, `xlarge`, `xxlarge` 단계 중 하나를 먼저 고른 뒤 해당 단계의 token을 선택한다.
-- 같은 cell 안에서 typography나 graphic token의 실제 항목도 다시 랜덤 선택한다.
-- 좌측·중앙·우측 column의 token alignment는 각각 left, center, right를 사용한다.
-- cell은 token renderer에 `x`, `y`, `align` position만 넘긴다. cell의 width와 height는 넘기지 않는다.
+각 렌더는 9개 cell을 아래 footprint 중 2-5개의 직사각형 block으로 빈틈없이 나눈다.
+
+- `1x1`, `2x2`, `1x2`, `1x3`, `2x3`, `2x1`, `3x1`, `3x2`만 허용한다. `3x3` 단일 block은 사용하지 않는다.
+- `buildGridBlockLayout()`은 block이 겹치거나 3x3 경계를 벗어나지 않으면서 1-9 cell을 정확히 한 번씩 덮도록 패킹한다.
+- 각 block에는 token 하나가 반드시 들어간다. block마다 `content`, `data`, `graphic` 중 하나를 먼저 고르고, 해당 token이 block 안에 들어가지 않으면 다른 분류에서 맞는 token을 찾는다.
+- `Random`을 누를 때 component ratio, block 조합, block 위치, token이 모두 다시 생성된다.
+- `barcode`와 `pseudo-qr`는 Component 안에서 각각 최대 하나만 사용할 수 있다. 한 block에서 선택되면 이후 block 후보에서 제외한다.
+- 가장 면적이 큰 block 중 하나를 `primary` 후보로 정한다. `GRID_PRIMARY_CHANCE`는 현재 `1`이며 `primary`는 최대 하나다.
+- `primary`는 block 면적에 따라 `large`, `xlarge`, `xxlarge` content를 우선 사용한다. 일반 block에서 들어가지 않으면 작은 content, data, graphic으로 대체하며 token을 강제로 축소하지 않는다.
+- `2x3`, `3x2` block은 graphic을 허용하지 않고 반드시 `xxxlarge 256px` typography만 사용한다. 256px token이 고유 크기로 들어갈 수 없는 Component ratio에서는 해당 footprint를 생성하지 않는다.
+- block이 3열 전체를 차지하면 가로 center, 왼쪽 경계에 닿으면 left, 오른쪽 경계에 닿으면 right anchor를 사용한다.
+- block이 3행 전체를 차지하면 세로 middle, 위 경계에 닿으면 top, 아래 경계에 닿으면 bottom anchor를 사용한다.
+- block은 token renderer에 `x`, `y`, `align`, `verticalAlign` position만 넘긴다. block 크기로 token geometry를 다시 계산하지 않는다.
+- 각 block 외곽은 현재 조합을 알아볼 수 있도록 `thin` stroke와 낮은 opacity로 표시한다. `Grid` 토글로 outline만 숨길 수 있으며 block과 token 배치는 유지한다.
 - typography token은 `typographyToken()`의 `intrinsic.fontSize`, graphic token은 `graphicTokenGalleryItems()`의 `intrinsic.width/height`를 그대로 사용한다.
-- typography intrinsic size는 `small 8px`, `medium 16px`, `large 32px`, `xlarge 64px`, `xxlarge 128px`를 사용한다.
+- typography intrinsic size는 `small 8px`, `medium 16px`, `large 32px`, `xlarge 64px`, `xxlarge 128px`, `xxxlarge 256px`를 사용한다.
 - size별 예외나 개별 font size override는 허용하지 않는다.
 - barcode, pseudo-QR, table, wave를 포함한 graphic token은 `medium` 또는 `large`만 사용한다. `large`는 `medium`의 가로세로를 같은 비율로 1.5배 확장한다.
-- barcode 숫자 typography는 barcode가 `medium`이면 `small 8px`, barcode가 `large`이면 `medium 16px`를 사용한다. 별도 fitting이나 중간 크기는 허용하지 않는다.
-- random grid에서는 cell 크기에 맞춘 font fit, `textLength`, SVG `scale()`을 적용하지 않는다.
-- 고유 경계가 Component safe area를 벗어나거나 이미 배치된 token과 겹치면 크기를 줄이지 않고 해당 cell을 비운다.
-- SVG에는 `data-layout-mode="random-cells"`, 각 cell의 좌표와 anchor position, `data-grid-empty`, token kind를 기록한다.
+- barcode 숫자 typography는 barcode 크기와 관계없이 항상 `small 8px`를 사용한다. 별도 fitting이나 다른 크기는 허용하지 않는다.
+- random block grid에서는 block 크기에 맞춘 font fit, `textLength`, SVG `scale()`을 적용하지 않는다.
+- SVG에는 `data-layout-mode="random-blocks"`, 각 block의 footprint, origin, 점유 cell, 좌표, 가로·세로 anchor, token kind를 기록한다.
 
-`validateRenderedTokenRules()`는 9개 cell이 모두 있는지, 좌표가 중복되지 않는지, 각 cell의 `data-grid-token`이 0개 또는 1개인지, empty metadata가 실제 상태와 같은지, position metadata가 유효한지, token placement가 `position-only`와 `scale=1`인지, `primary`가 최대 하나인지, barcode와 pseudo-QR이 각각 최대 하나인지, barcode 숫자가 small 또는 medium 규칙을 따르는지 검사한다.
+`validateRenderedTokenRules()`는 2-5개의 block이 1-9 cell을 중복 없이 모두 덮는지, footprint와 anchor가 위치 규칙에 맞는지, block마다 token이 하나인지, `2x3`과 `3x2`가 `xxxlarge 256px` typography만 쓰는지, token placement가 `position-only`와 `scale=1`인지, `primary`가 최대 하나인지, barcode와 pseudo-QR이 각각 최대 하나인지, barcode 숫자가 항상 small 규칙을 따르는지 검사한다.
 
 ## Layout Archetype
 
@@ -282,8 +290,8 @@ weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 
 - `SVG helpers`: `make`, `textNode`, `line`, `rect`, `polyline`처럼 SVG node를 만드는 낮은 수준의 도구다. 의미 있는 디자인 결정을 하지 않는다.
 - `Graphic primitives`: `label`, `microBadge`, `barcode`, `pseudoQr`, `miniTable`, `wave`처럼 하나의 작은 그래픽 형태를 그린다.
 - `Content details`: `renderBarcodeDetail`, `renderPseudoQrDetail`, `renderTableDetail`, `renderWaveDetail`처럼 기존 content block에서 쓰는 정보 묶음이다.
-- `Content block`: `contentPanel`이다. random grid 이전 renderer의 내부 위계를 유지하지만 현재 Component layout에서는 사용하지 않는다.
-- `Random grid layer`: `LAYOUT_GRID`, `randomGridSlots`, `layoutGridCellPosition`, `renderGridCellToken`, `renderRandomGridLayout`이다. 각 cell을 비워두거나 position anchor에 token 하나를 배치한다.
+- `Content block`: `contentPanel`이다. random block grid 이전 renderer의 내부 위계를 유지하지만 현재 Component layout에서는 사용하지 않는다.
+- `Random block grid layer`: `LAYOUT_GRID`, `GRID_BLOCK_FOOTPRINTS`, `buildGridBlockLayout`, `randomGridBlocks`, `layoutGridBlockPosition`, `renderGridBlockToken`, `renderRandomGridLayout`이다. 9개 cell을 직사각형 block으로 패킹하고 block마다 token 하나를 배치한다.
 - `Component layer`: `componentTemplates`, `renderComponentBorder`, `renderComponent`다. Component의 ratio, scale, border를 담당한다.
 - `Canvas layer`: `render`다. 단색 화면 배경과 export 대상 화면을 담당한다.
 
@@ -293,10 +301,10 @@ weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 
 - `SVG helpers`는 shape만 만든다. 특정 archetype이나 Component ratio를 알면 안 된다.
 - `Graphic primitive`는 전달받은 `g`, `x`, `y`, `w`, `h` 안에서만 그린다. Canvas 배경, Component border, seed label을 만지지 않는다.
 - `Content detail renderer`는 content block의 detail 영역만 책임진다. header, main value, Component border를 만들지 않는다.
-- `contentPanel`은 기존 renderer reference이며 현재 random grid 안에 넣지 않는다.
-- `Layout renderer`는 Component 내부의 3×3 cell과 token anchor의 관계만 책임진다. token의 크기나 비율, Component border, Canvas background를 결정하지 않는다.
-- random grid의 `Graphic primitive`는 `renderAt()`에서 자신의 intrinsic width와 height를 사용한다. cell 크기로 primitive geometry를 다시 계산하지 않는다.
-- `componentTemplates`는 ratio와 scale만 가진다. 실제 token placement는 random grid renderer에 맡긴다.
+- `contentPanel`은 기존 renderer reference이며 현재 random block grid 안에 넣지 않는다.
+- `Layout renderer`는 Component 내부의 3×3 cell, 직사각형 block footprint, token anchor의 관계만 책임진다. token의 크기나 비율, Component border, Canvas background를 결정하지 않는다.
+- random block grid의 `Graphic primitive`는 `renderAt()`에서 자신의 intrinsic width와 height를 사용한다. block 크기로 primitive geometry를 다시 계산하지 않는다.
+- `componentTemplates`는 ratio와 scale만 가진다. 실제 token placement는 random block grid renderer에 맡긴다.
 - `renderComponent`는 Canvas 안에 Component 하나를 배치하고 Component border를 붙인다. Content detail의 종류를 직접 알지 않는다.
 - `render`는 Canvas orchestration만 담당한다. 단색 background와 Component를 순서대로 붙이고 export에 쓰이는 viewBox를 정한다.
 
@@ -308,7 +316,7 @@ weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 
 - 새 date/time typography: `todayDateTypographyTokens()`에 추가하고, data detail renderer에서는 호출하지 않는다.
 - 새 graphic primitive: primitive 함수를 만든 뒤 content detail이나 layout renderer에서 호출한다.
 - 새 content detail: `renderSomethingDetail` 함수를 만들고 `contentDetailModes`에 `{ id, weight, render }`로 등록한다.
-- cell의 채움 확률은 `GRID_CELL_OCCUPANCY`, token kind 구성은 `randomGridSlots()`의 `secondaryKinds`, `primary` 출현 확률은 `GRID_PRIMARY_CHANCE`에서 조정한다.
+- 허용 block 크기는 `GRID_BLOCK_FOOTPRINTS`, block 수 후보는 `randomGridBlocks()`, `primary` 출현 확률은 `GRID_PRIMARY_CHANCE`에서 조정한다.
 - Component 안에서 중복을 금지할 graphic token은 `UNIQUE_GRID_TOKEN_ROLES`에서 관리한다.
 - typography의 고유 크기는 `TYPOGRAPHY_INTRINSIC_FONT_SIZES`에서만 조정한다. 개별 `typographyToken()`은 font size를 덮어쓸 수 없다. graphic의 고유 크기는 `graphicTokenGalleryItems()`의 `intrinsic`에서 조정한다.
 - graphic의 허용 크기는 `GRAPHIC_TOKEN_SIZES`, 크기별 배율은 `GRAPHIC_SIZE_SCALE`에서 관리한다.
@@ -339,7 +347,7 @@ weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 
 - `pseudoQr`: 실제 스캔용이 아닌 pseudo-QR graphic이다.
 - `miniTable`: lot/spec/freq/load 같은 가짜 data table이다.
 - `wave`: 작은 signal graph 또는 stock graph처럼 보이는 line chart다.
-- `renderRandomGridLayout`: Component safe area의 각 cell을 비워두거나 typography 또는 graphic token 하나를 배치한다.
+- `renderRandomGridLayout`: Component safe area를 직사각형 block으로 패킹하고 각 block에 typography 또는 graphic token 하나를 배치한다.
 
 ### Unruled Decisions Per Part
 
@@ -351,7 +359,7 @@ weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 
 - `pseudoQr`: 실제 QR처럼 보이는 것을 허용할지, pseudo-QR로 명확히 유지할지.
 - `miniTable`: Data archetype 전용으로 묶을지, 다른 archetype의 보조 정보로도 쓸지.
 - `wave`: signal/status/data 중 어느 의미로 쓸지.
-- `renderRandomGridLayout`: token kind별 출현 비율과 aspect ratio별 cell 밀도를 어떻게 제한할지.
+- `renderRandomGridLayout`: token kind별 출현 비율과 aspect ratio별 block 조합을 어떻게 제한할지.
 
 ## 추적 방법
 
@@ -376,7 +384,7 @@ Change: add more wide Korean/English mixed title options.
 ## 다음 실험
 
 - 저장한 seed를 다시 입력해서 복원할 수 있게 한다.
-- random cell의 token kind별 sparse/dense 밀도 규칙을 추가한다.
+- random block의 token kind별 밀도와 footprint 가중치 규칙을 추가한다.
 - 기본은 흑백으로 유지하되 accent color 모드를 하나 추가한다.
 - 한글 기술 단어와 짧은 문장 조각을 더 늘린다.
 - square, story, wallpaper, free viewport export size option을 추가한다.
@@ -450,5 +458,12 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-11: 장식용 눈금 graphic token과 관련 renderer, 문서 규칙을 제거.
 - 2026-07-11: random grid cell은 position만 전달하고 typography와 graphic token은 자체 intrinsic size로 렌더하도록 변경.
 - 2026-07-11: 모든 graphic token 크기를 medium 또는 large로 제한하고 large는 원래 비율을 유지한 1.5배로 정의.
-- 2026-07-11: barcode 숫자를 medium barcode에서는 small 8px, large barcode에서는 medium 16px로 고정.
+- 2026-07-11: barcode 숫자를 barcode 크기와 관계없이 항상 small 8px로 고정.
+- 2026-07-11: 3×3 cell을 1-9 행 우선 번호로 정의하고 각 행을 top, middle, bottom 세로 anchor에 맞춰 배치.
+- 2026-07-11: 3×3 cell을 2-5개의 직사각형 block으로 패킹하고 block마다 token 하나를 배치하는 random block grid로 확장.
+- 2026-07-11: Grid 토글로 random block outline만 표시하거나 숨기고 현재 상태를 export에 반영.
+- 2026-07-11: random block grid의 cell과 block 사이 gap을 0으로 변경해 모든 경계가 맞닿도록 수정.
+- 2026-07-11: `2x3`, `3x2` block에서 graphic과 기존 size를 제외하고 새 `xxxlarge 256px` typography만 허용.
 - 2026-07-11: typography scale에 `xxlarge 128px`를 추가하고 짧은 hero content를 초대형 후보로 분리.
+- 2026-07-11: typography scale에 `xxxlarge 256px`를 추가하고 2x3, 3x2 block 전용으로 분리.
+- 2026-07-11: xxxlarge용 임의 `?`, `0` fallback을 제거하고 기존 xxlarge hero token의 256px 변형만 사용하도록 수정.
