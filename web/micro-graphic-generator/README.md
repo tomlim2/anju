@@ -126,7 +126,7 @@ margin은 디자인 토큰 사이의 거리다. padding이 Component나 content 
 
 작은 요소만 같은 행에서 왼쪽 정렬과 오른쪽 정렬을 동시에 가질 수 있다. 중간/큰/특대/초대형 요소는 행을 독점한다.
 
-상위 토큰 수량은 코드의 `MAJOR_TOKEN_RULES`를 따른다. `large`부터는 major token으로 취급하고, 한 생성 layout 안에서 major token은 총 하나만 허용한다. 즉 `large`, `xlarge`, `xxlarge`, `xxxlarge`는 서로 pair로 배치하지 않는다.
+상위 토큰 수량은 코드의 `MAJOR_TOKEN_RULES`를 따른다. 일반 primary에서는 `large` 이상 major token을 최대 하나만 허용한다. 다만 block footprint가 직접 size를 정하는 `3x1`·`1x3`의 xxlarge와 `2x3`·`3x2`의 xxxlarge는 이 수량에서 제외하고 각 block에 하나씩 허용한다.
 
 이 규칙은 Component-level stacking 기준이다. barcode caption, mini table cell처럼 graphic primitive 내부에서 생기는 작은 data token은 해당 primitive의 내부 grid를 따른다.
 
@@ -224,7 +224,8 @@ weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 
 - `barcode`와 `pseudo-qr`는 Component 안에서 각각 최대 하나만 사용할 수 있다. 한 block에서 선택되면 이후 block 후보에서 제외한다.
 - 가장 면적이 큰 block 중 하나를 `primary` 후보로 정한다. `GRID_PRIMARY_CHANCE`는 현재 `1`이며 `primary`는 최대 하나다.
 - `primary`는 block 면적에 따라 `large`, `xlarge`, `xxlarge` content를 우선 사용한다. 일반 block에서 들어가지 않으면 작은 content, data, graphic으로 대체하며 token을 강제로 축소하지 않는다.
-- `2x3`, `3x2` block은 graphic을 허용하지 않고 반드시 `xxxlarge 256px` typography만 사용한다. 256px token이 고유 크기로 들어갈 수 없는 Component ratio에서는 해당 footprint를 생성하지 않는다.
+- `3x1`, `1x3` block은 graphic을 허용하지 않고 반드시 `xxlarge 128px` typography만 사용한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor에 배치한다. `1x3`은 기존 hero 단어를 90도 회전해 세로 block 안에서 사용할 수 있게 하며, 두 footprint 모두 실제로 들어가는 hero 후보가 최소 두 개일 때만 생성한다.
+- `2x3`, `3x2` block은 graphic을 허용하지 않고 반드시 `xxxlarge 256px` typography만 사용한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor를 유지한다. 256px token이 고유 크기로 들어갈 수 없는 Component ratio에서는 해당 footprint를 생성하지 않는다.
 - block이 3열 전체를 차지하면 가로 center, 왼쪽 경계에 닿으면 left, 오른쪽 경계에 닿으면 right anchor를 사용한다.
 - block이 3행 전체를 차지하면 세로 middle, 위 경계에 닿으면 top, 아래 경계에 닿으면 bottom anchor를 사용한다.
 - block은 token renderer에 `x`, `y`, `align`, `verticalAlign` position만 넘긴다. block 크기로 token geometry를 다시 계산하지 않는다.
@@ -237,7 +238,7 @@ weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 
 - random block grid에서는 block 크기에 맞춘 font fit, `textLength`, SVG `scale()`을 적용하지 않는다.
 - SVG에는 `data-layout-mode="random-blocks"`, 각 block의 footprint, origin, 점유 cell, 좌표, 가로·세로 anchor, token kind를 기록한다.
 
-`validateRenderedTokenRules()`는 2-5개의 block이 1-9 cell을 중복 없이 모두 덮는지, footprint와 anchor가 위치 규칙에 맞는지, block마다 token이 하나인지, `2x3`과 `3x2`가 `xxxlarge 256px` typography만 쓰는지, token placement가 `position-only`와 `scale=1`인지, `primary`가 최대 하나인지, barcode와 pseudo-QR이 각각 최대 하나인지, barcode 숫자가 항상 small 규칙을 따르는지 검사한다.
+`validateRenderedTokenRules()`는 2-5개의 block이 1-9 cell을 중복 없이 모두 덮는지, footprint와 anchor가 위치 규칙에 맞는지, block마다 token이 하나인지, `3x1`과 `1x3`이 center/middle의 `xxlarge 128px` typography만 쓰는지, `2x3`과 `3x2`가 `xxxlarge 256px` typography만 쓰는지, token placement가 `position-only`와 `scale=1`인지, 일반 `primary`가 최대 하나인지, barcode와 pseudo-QR이 각각 최대 하나인지, barcode 숫자가 항상 small 규칙을 따르는지 검사한다.
 
 ## Layout Archetype
 
@@ -467,3 +468,6 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-11: typography scale에 `xxlarge 128px`를 추가하고 짧은 hero content를 초대형 후보로 분리.
 - 2026-07-11: typography scale에 `xxxlarge 256px`를 추가하고 2x3, 3x2 block 전용으로 분리.
 - 2026-07-11: xxxlarge용 임의 `?`, `0` fallback을 제거하고 기존 xxlarge hero token의 256px 변형만 사용하도록 수정.
+- 2026-07-11: `3x1`, `1x3` block을 center/middle anchor의 xxlarge 128px typography 전용으로 변경.
+- 2026-07-11: 1x3 token을 90도 회전하고 3x1/1x3 생성에 최소 두 개의 적합 hero 후보를 요구해 독립 한자 `林` 편중을 완화.
+- 2026-07-11: `3x2`, `2x3` block의 xxxlarge token anchor를 center/middle로 고정.

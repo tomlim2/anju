@@ -210,6 +210,7 @@
           "ALIGN  LEFT / CENTER / RIGHT",
           "GRID  3X3 / RECT BLOCK PACKING",
           "BLOCK  1X1 TO 3X2 / 1 TOKEN EACH",
+          "3X1 / 1X3  CENTER MIDDLE / XXL 128",
           "2X3 / 3X2  XXXL 256 TYPE ONLY",
           "TOKEN  POSITION ONLY / INTRINSIC SIZE",
           "STROKE  THIN ACTIVE / THICK RESERVED",
@@ -1255,14 +1256,36 @@
         (block.width === 2 && block.height === 3);
     }
 
-    function footprintSupportsXxxlarge(box, footprint) {
-      if (!isXxxlargeFootprint(footprint)) return true;
+    function isCenteredXxlargeFootprint(block) {
+      return (block.width === 3 && block.height === 1) ||
+        (block.width === 1 && block.height === 3);
+    }
+
+    function blockTypographyRotation(block) {
+      return isCenteredXxlargeFootprint(block) && block.height > block.width ? 90 : 0;
+    }
+
+    function orientedTypographyDimensions(item, rotation = 0) {
+      const width = estimateTextWidth(item.value, item.intrinsic.fontSize);
+      const height = estimateTextHeight(item.value, item.intrinsic.fontSize);
+      return rotation === 90 ? { width: height, height: width } : { width, height };
+    }
+
+    function footprintSupportsRequiredTypography(box, footprint) {
+      const items = isXxxlargeFootprint(footprint)
+        ? xxxlargeTypographyTokens()
+        : isCenteredXxlargeFootprint(footprint)
+          ? xxlargeTypographyTokens()
+          : null;
+      if (!items) return true;
       const availableWidth = box.width * footprint.width / LAYOUT_GRID.columns;
       const availableHeight = box.height * footprint.height / LAYOUT_GRID.rows;
-      return xxxlargeTypographyTokens().some(item =>
-        estimateTextWidth(item.value, item.intrinsic.fontSize) <= availableWidth &&
-        estimateTextHeight(item.value, item.intrinsic.fontSize) <= availableHeight
-      );
+      const rotation = blockTypographyRotation(footprint);
+      const fittingItems = items.filter(item => {
+        const dimensions = orientedTypographyDimensions(item, rotation);
+        return dimensions.width <= availableWidth && dimensions.height <= availableHeight;
+      });
+      return fittingItems.length >= (isCenteredXxlargeFootprint(footprint) ? 2 : 1);
     }
 
     function buildGridBlockLayout(targetCount, footprints = GRID_BLOCK_FOOTPRINTS) {
@@ -1313,7 +1336,7 @@
 
     function randomGridBlocks(box) {
       const availableFootprints = GRID_BLOCK_FOOTPRINTS.filter(footprint =>
-        footprintSupportsXxxlarge(box, footprint)
+        footprintSupportsRequiredTypography(box, footprint)
       );
       const preferredCount = pick([2, 3, 3, 4, 4, 5]);
       const countOptions = [preferredCount, ...shuffled([2, 3, 4, 5].filter(count => count !== preferredCount))];
@@ -1360,7 +1383,7 @@
     }
 
     function blockContentBox(box, block) {
-      const inset = isXxxlargeFootprint(block) ? 0 : Math.min(
+      const inset = isXxxlargeFootprint(block) || isCenteredXxlargeFootprint(block) ? 0 : Math.min(
         marginSize(box.width, box.height, "small"),
         box.width * 0.12,
         box.height * 0.12
@@ -1374,6 +1397,8 @@
     }
 
     function blockHorizontalAlignment(block) {
+      if (isXxxlargeFootprint(block)) return "center";
+      if (isCenteredXxlargeFootprint(block)) return "center";
       if (block.width === LAYOUT_GRID.columns) return "center";
       if (block.column === 0) return "left";
       if (block.column + block.width === LAYOUT_GRID.columns) return "right";
@@ -1381,6 +1406,8 @@
     }
 
     function blockVerticalAlignment(block) {
+      if (isXxxlargeFootprint(block)) return "middle";
+      if (isCenteredXxlargeFootprint(block)) return "middle";
       if (block.height === LAYOUT_GRID.rows) return "middle";
       if (block.row === 0) return "top";
       if (block.row + block.height === LAYOUT_GRID.rows) return "bottom";
@@ -1396,7 +1423,8 @@
         x: box.x + box.width * horizontalAnchorRatio,
         y: box.y + box.height * verticalAnchorRatio,
         align,
-        verticalAlign
+        verticalAlign,
+        rotation: blockTypographyRotation(block)
       };
     }
 
@@ -1409,6 +1437,7 @@
       const typography = Object.values(tokenGalleryItems()).flat();
       return {
         primary: typography.filter(item => item.function === "content" && ["large", "xlarge", "xxlarge"].includes(item.size)),
+        xxlargeBlock: typography.filter(item => item.size === "xxlarge"),
         xxxlargeBlock: typography.filter(item => item.size === "xxxlarge"),
         content: typography.filter(item => item.function === "content" && ["small", "medium"].includes(item.size)),
         data: typography.filter(item => item.function === "data" && ["small", "medium"].includes(item.size)),
@@ -1421,8 +1450,9 @@
         return intrinsicTokenBox(position, item.intrinsic);
       }
       const fontSize = item.intrinsic.fontSize;
-      const width = estimateTextWidth(item.value, fontSize);
-      const height = estimateTextHeight(item.value, fontSize);
+      const dimensions = orientedTypographyDimensions(item, position.rotation);
+      const width = dimensions.width;
+      const height = dimensions.height;
       const alignOffset = { left: 0, center: 0.5, right: 1 }[position.align];
       return {
         x: position.x - width * alignOffset,
@@ -1467,7 +1497,17 @@
         while (candidates.length) {
           const item = candidates.pop();
           const bounds = gridTokenIntrinsicBox(position, item);
-          if (gridTokenFits(bounds, availableBox)) return { item, bounds, kind: "primary" };
+          if (gridTokenFits(bounds, availableBox)) return { item, bounds, kind: "block-xxxlarge" };
+        }
+        return null;
+      }
+
+      if (isCenteredXxlargeFootprint(block)) {
+        const candidates = shuffled(pools.xxlargeBlock);
+        while (candidates.length) {
+          const item = candidates.pop();
+          const bounds = gridTokenIntrinsicBox(position, item);
+          if (gridTokenFits(bounds, availableBox)) return { item, bounds, kind: "block-xxlarge" };
         }
         return null;
       }
@@ -1499,6 +1539,7 @@
         "data-grid-token-kind": kind,
         "data-token-placement": "position-only",
         "data-token-scale": "1",
+        "data-token-rotation": position.rotation || 0,
         ...(kind === "graphic" ? tokenSizeAttrs(item.size) : {}),
         ...(kind === "graphic" ? tokenTaxonomyAttrs({
           form: "graphic",
@@ -1523,7 +1564,8 @@
           tokenRole: item.role,
           tokenContext: "component",
           size: fontSize,
-          typeface: item.typeface
+          typeface: item.typeface,
+          transform: position.rotation ? `rotate(${position.rotation} ${position.x} ${position.y})` : ""
         }));
       }
       g.appendChild(token);
@@ -1564,6 +1606,7 @@
           "data-grid-position-y": position.y,
           "data-grid-alignment": position.align,
           "data-grid-vertical-alignment": position.verticalAlign,
+          "data-grid-token-rotation": position.rotation,
           "data-grid-block-empty": selection ? "false" : "true"
         });
 
@@ -2070,17 +2113,36 @@
             block.getAttribute("data-grid-cells") !== expectedCells ||
             block.getAttribute("data-grid-alignment") !== blockHorizontalAlignment(expectedBlock) ||
             block.getAttribute("data-grid-vertical-alignment") !== blockVerticalAlignment(expectedBlock) ||
+            block.getAttribute("data-grid-token-rotation") !== String(blockTypographyRotation(expectedBlock)) ||
             block.querySelectorAll(":scope > [data-grid-block-outline]").length !== 1;
         });
         const xxxlargeFootprintBlocksWithInvalidToken = gridBlocks.filter(block => {
           if (!["2x3", "3x2"].includes(block.getAttribute("data-grid-footprint"))) return false;
           const token = block.querySelector(":scope > [data-grid-token]");
           const typography = token?.querySelector(':scope > text[data-token-form="typography"]');
-          return !token ||
-            token.getAttribute("data-grid-token-kind") === "graphic" ||
+          return block.getAttribute("data-grid-alignment") !== "center" ||
+            block.getAttribute("data-grid-vertical-alignment") !== "middle" ||
+            !token ||
+            token.getAttribute("data-grid-token-kind") !== "block-xxxlarge" ||
             !typography ||
             typography.getAttribute("data-token-size") !== "xxxlarge" ||
             typography.getAttribute("font-size") !== "256";
+        });
+        const centeredXxlargeFootprintBlocksWithInvalidToken = gridBlocks.filter(block => {
+          if (!["1x3", "3x1"].includes(block.getAttribute("data-grid-footprint"))) return false;
+          const token = block.querySelector(":scope > [data-grid-token]");
+          const typography = token?.querySelector(':scope > text[data-token-form="typography"]');
+          const expectedRotation = block.getAttribute("data-grid-footprint") === "1x3" ? "90" : "0";
+          return block.getAttribute("data-grid-alignment") !== "center" ||
+            block.getAttribute("data-grid-vertical-alignment") !== "middle" ||
+            block.getAttribute("data-grid-token-rotation") !== expectedRotation ||
+            !token ||
+            token.getAttribute("data-grid-token-kind") !== "block-xxlarge" ||
+            token.getAttribute("data-token-rotation") !== expectedRotation ||
+            !typography ||
+            typography.getAttribute("data-token-size") !== "xxlarge" ||
+            typography.getAttribute("font-size") !== "128" ||
+            (expectedRotation === "90" && !(typography.getAttribute("transform") || "").startsWith("rotate(90 "));
         });
         const tokensWithInvalidPlacement = [...component.querySelectorAll("[data-grid-token]")].filter(token =>
           token.getAttribute("data-token-placement") !== "position-only" ||
@@ -2125,6 +2187,7 @@
           blocksWithInvalidPosition.length > 0 ||
           blocksWithInvalidFootprint.length > 0 ||
           xxxlargeFootprintBlocksWithInvalidToken.length > 0 ||
+          centeredXxlargeFootprintBlocksWithInvalidToken.length > 0 ||
           tokensWithInvalidPlacement.length > 0 ||
           typographyWithInvalidIntrinsicSize.length > 0 ||
           duplicateUniqueRoles.length > 0 ||
@@ -2140,8 +2203,11 @@
         const majorSizes = sizeOrder.slice(majorStart);
         const majorTokens = [...component.querySelectorAll('text[data-token-form="typography"][data-token-context="component"]')]
           .filter(node => majorSizes.includes(node.getAttribute("data-token-size")));
-        if (majorTokens.length > MAJOR_TOKEN_RULES.maxPerLayout) {
-          violations.push(`major-token-count:${majorTokens.length}`);
+        const ordinaryMajorTokens = majorTokens.filter(node =>
+          !node.closest('[data-grid-token-kind="block-xxlarge"], [data-grid-token-kind="block-xxxlarge"]')
+        );
+        if (ordinaryMajorTokens.length > MAJOR_TOKEN_RULES.maxPerLayout) {
+          violations.push(`major-token-count:${ordinaryMajorTokens.length}`);
         }
       }
 
