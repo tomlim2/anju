@@ -2,13 +2,13 @@
 
 ## 목표
 
-브라우저에서 새로고침하거나 Lucky 버튼을 누를 때마다 다른 타이포그래픽 기반 마이크로 그래픽을 생성한다. 도구는 최대한 단순하게 유지한다. 일단은 HTML 한 파일, 흑백 중심, 한글과 영어 혼합, PNG/SVG 내보내기가 핵심이다.
+브라우저에서 새로고침하거나 Random 버튼을 누를 때마다 다른 타이포그래픽 기반 마이크로 그래픽을 생성한다. 도구는 최대한 단순하게 유지한다. 일단은 HTML 한 파일, 흑백 중심, 한글과 영어 혼합, PNG/SVG 내보내기가 핵심이다.
 
 완성 포스터보다는 기술 라벨, SF 인터페이스 조각, 제조 스티커, 상태 카드, 바코드, 작은 시스템 다이어그램 같은 시각 조각을 만든다. 나중에 더 큰 그래픽, UI 텍스처, 진 페이지, 모션 소스, Cargo 스타일 쇼케이스에 재료로 붙일 수 있는 결과물을 목표로 한다.
 
 ## 동기
 
-매번 손으로 하나씩 디자인하지 않고, 작은 타이포그래픽 그래픽을 많이 뽑아보는 것이 출발점이다. 중요한 것은 한 장의 완벽한 이미지가 아니라 Lucky를 여러 번 눌렀을 때 예기치 않게 좋은 구도가 나오는 흐름이다.
+매번 손으로 하나씩 디자인하지 않고, 작은 타이포그래픽 그래픽을 많이 뽑아보는 것이 출발점이다. 중요한 것은 한 장의 완벽한 이미지가 아니라 Random을 여러 번 눌렀을 때 예기치 않게 좋은 구도가 나오는 흐름이다.
 
 이 제너레이터는 다음 용도로 쓴다.
 
@@ -22,9 +22,9 @@
 
 - `index.html` 단일 파일 앱.
 - SVG 기반 렌더링.
-- Lucky 버튼으로 새 랜덤 seed 생성.
+- Random 버튼으로 현재 mode의 새 랜덤 seed 생성.
 - 캔버스 클릭으로 새 결과 생성.
-- All Tokens 버튼으로 전체 디자인 토큰 모드 전환.
+- Compose 버튼으로 조합 가능한 디자인 토큰 모드 전환.
 - Tone 버튼으로 light/dark 반전.
 - 화면 크기 기준 2x PNG 내보내기.
 - SVG 내보내기로 벡터 후작업 가능.
@@ -60,8 +60,9 @@
 - 디자인 토큰은 `small`, `medium`, `large`, `xlarge` 네 크기 단계로 나누고, 크기 단계가 한 행을 어떻게 점유하는지 정한다.
 - 토큰의 형태는 `typography`, `graphic`으로 나누고 기능은 `content`, `data`, `symbol`, `sign`으로 별도 기록한다.
 - 모든 `typography` token은 `typeface` role을 필수로 기록한다. `graphic` token에는 `typeface`를 넣지 않는다.
+- typography weight는 `normal`, `bold` 두 단계만 쓴다. 숫자 weight를 직접 디자인 토큰으로 사용하지 않는다.
 - 모든 디자인 토큰의 배치 축도 `left`, `center`, `right` 세 가지만 쓴다. 토큰은 세 축 위에서 테트리스 블록처럼 행 단위로 쌓일 수 있고, 작은 spin 회전은 허용한다.
-- `All Tokens` mode는 현재 vocabulary, date/time token, metadata token, graphic data token, graphic sign을 한 화면에 모아보는 catalog view다.
+- `Composable Categories` mode는 조합 재료로 사용할 수 있는 `content`, `data`, `symbol`의 form/function category와 가능한 category 조합만 보여주는 catalog view다.
 - barcode, pseudo-QR, tick mark, mini table, wave graph, label, badge, symbol을 재사용 가능한 graphic primitive로 둔다.
 - 복잡한 컨트롤보다 Component 변주를 우선한다.
 
@@ -123,7 +124,7 @@ margin은 디자인 토큰 사이의 거리다. padding이 Component나 content 
 
 이 규칙은 Component-level stacking 기준이다. barcode caption, mini table cell처럼 graphic primitive 내부에서 생기는 작은 data token은 해당 primitive의 내부 grid를 따른다.
 
-`All Tokens` mode는 이 분류를 검토하기 위한 단일 catalog view다. small, medium, large, xlarge typography section을 따로 렌더링하고, 하단에 barcode, table, wave, tick, pseudo-QR, status label, metadata badge를 함께 둔다. header에는 typography, graphic, sign, symbol 총수를 표시한다. 새 token을 추가했을 때 이 모드 하나에서 누락과 밀도를 확인한다. catalog view는 목록 검토가 목적이므로 생성 layout의 xlarge/large 수량 제한을 적용하지 않는다.
+`Composable Categories` mode는 조합 가능한 category와 category 조합을 검토하기 위한 단일 catalog view다. `TOKEN MAP`은 form을 행, function을 열로 놓아 전체 8개 category를 한 번에 보여준다. 조합 가능한 값은 `COMPOSE`, 값이 아직 없으면 `EMPTY`, 완성 의미 단위는 `SIGN`으로 구분한다. `RULE GROUPS`는 전체 규칙을 `TAXONOMY`, `PLACEMENT`, `COMPOSE` 세 묶음으로 정리한다. 하단에는 가능한 2-category, 3-category 조합을 모두 한 행씩 나열한다. 각 행의 sample은 category마다 token 하나만 seed 기반으로 선택하며 Random을 누를 때 갱신된다.
 
 ## Token Taxonomy
 
@@ -147,7 +148,7 @@ margin은 디자인 토큰 사이의 거리다. padding이 Component나 content 
 
 - `component`: 일반 생성 layout에 직접 배치되는 token이다.
 - `primitive-detail`: graphic primitive 내부 grid를 따르는 caption, table cell, barcode digit 같은 token이다.
-- `catalog-ui`: All Tokens mode의 section title과 count처럼 catalog를 설명하기 위한 UI token이다. 생성 layout의 수량 검사에서는 제외한다.
+- `catalog-ui`: Composable Categories mode의 section title, category, count처럼 catalog를 설명하기 위한 UI token이다. 생성 layout의 수량 검사에서는 제외한다.
 
 SVG에는 `data-token-form`, `data-token-function`, `data-token-role`, `data-token-context`를 기록한다. typography에는 `data-token-typeface`도 기록한다. `validateRenderedTokenRules()`는 typeface가 없는 typography, 분류되지 않은 size token, major token 수량 초과를 렌더 후 검사한다.
 
@@ -166,6 +167,8 @@ spin은 토큰 자체에 주는 작은 회전이다. spin은 alignment를 대체
 ## Typography System
 
 현재 폰트 시스템은 Noto Sans 계열로 고정한다. 코드에서는 `TYPEFACES`와 `resolveTypeface()`로 관리한다.
+
+weight token은 `normal`, `bold` 두 개만 허용한다. 코드에서는 `FONT_WEIGHTS.normal = 400`, `FONT_WEIGHTS.bold = 700`으로 렌더링하고, SVG에는 숫자 대신 `data-token-weight="normal|bold"`를 기록한다. `textNode()`와 `typographyToken()`은 전달값을 두 token 중 하나로 정규화하며 `validateRenderedTokenRules()`가 다른 weight를 검사한다.
 
 `form: "typography"`인 token은 아래 typeface role 중 하나를 반드시 명시한다. 브라우저 fallback만으로 typeface를 결정하지 않는다.
 
@@ -213,7 +216,7 @@ spin은 토큰 자체에 주는 작은 회전이다. spin은 alignment를 대체
 
 아래 항목은 구현 전에 차례대로 정해야 하는 시각 시스템 룰이다. 새 룰을 추가할 때마다 이 섹션이나 이터레이션 로그에 기록한다.
 
-- `Typography`: 한글/영어 폰트 조합, display/body/code용 weight, 숫자와 코드의 자간, 대문자 tracking, 한글 display type의 크기 기준.
+- `Typography`: 한글/영어 폰트 조합, `normal`/`bold` 적용 범위, 숫자와 코드의 자간, 대문자 tracking, 한글 display type의 크기 기준.
 - `Type scale`: Canvas 크기와 Component 크기에 따라 title, subtitle, metadata, numeric value, caption이 어떤 크기 범위를 갖는지.
 - `Hierarchy`: Component 안에서 1순위 정보, 2순위 정보, 보조 정보, texture 정보가 어떤 순서와 크기로 보이는지.
 - `Alignment`: `left`, `center`, `right` 중 어떤 정렬을 어느 token class에서 쓸지. 그 외 임의 정렬은 만들지 않는다.
@@ -237,7 +240,7 @@ spin은 토큰 자체에 주는 작은 회전이다. spin은 alignment를 대체
 - `Data realism`: barcode, pseudo-QR, serial, price, status, graph가 실제 데이터처럼 보여야 하는지, 단순 visual fake로 둘지.
 - `Legibility`: 작게 출력해도 읽혀야 하는 정보와 texture처럼 읽히지 않아도 되는 정보의 구분.
 - `Export`: PNG scale, SVG 편집 가능성, 파일명 규칙, seed/aspect ratio/stroke/archetype 기록 방식.
-- `Interaction`: Lucky, Tone 외에 archetype lock, aspect ratio lock, stroke lock, seed input을 둘지.
+- `Interaction`: Random, Tone 외에 archetype lock, aspect ratio lock, stroke lock, seed input을 둘지.
 - `Curation`: 좋은 결과를 저장하는 기준, seed log 형식, reject할 결과의 조건.
 
 ## Current Element System
@@ -282,7 +285,7 @@ spin은 토큰 자체에 주는 작은 회전이다. spin은 alignment를 대체
 - 토큰 형태와 기능은 `TOKEN_FORMS`, `TOKEN_FUNCTIONS`, `tokenTaxonomyAttrs()`에서 조정한다.
 - typography token 정의는 `typographyToken()`을 사용하고 typeface role을 반드시 넘긴다.
 - 디자인 토큰의 좌/중/우 배치와 spin은 `TOKEN_ALIGNMENTS`, `alignedBoxX()`, `alignedTextX()`, `smallTokenPairZones()`, `stackTextToken()`, `spinAngle()`에서 조정한다.
-- All Tokens mode의 typography 묶음은 `tokenGalleryItems()`, graphic 묶음은 `graphicTokenGalleryItems()`에서 조정한다.
+- Composable Categories mode의 typography 묶음은 `tokenGalleryItems()`, graphic 묶음은 `graphicTokenGalleryItems()`, 표시할 기능은 `COMPOSABLE_TOKEN_FUNCTIONS`에서 조정한다. 전체 form/function map은 `tokenCategoryDefinitions()`, 조합 가능한 category는 `composableTokenCategories()`, 가능한 조합은 `composableCategoryCombinations()`, 화면의 규칙 묶음은 `COMPOSITION_RULE_GROUPS`에서 관리한다.
 - 새 generator mode는 `appMode`, controls binding, `render()`의 mode 분기에서 추가한다.
 
 ## Rule Gap Inventory
@@ -405,3 +408,8 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-11: token taxonomy를 form(`typography`, `graphic`)과 function(`content`, `data`, `symbol`, `sign`) 두 축으로 분리하고 typography의 typeface role을 필수화.
 - 2026-07-11: `QC PASS`, verification/status phrase, code/port caption을 semantic role에 맞게 재분류하고 catalog UI와 primitive detail context를 분리.
 - 2026-07-11: 기존 Tokens catalog를 `All Tokens` 단일 모드로 확장하고 typography 전체, graphic data token, label, badge와 taxonomy count를 한 화면에 표시.
+- 2026-07-11: catalog를 `Composable Tokens` mode로 좁히고 조합 가능한 `content`, `data`, `symbol`만 표시하며 완성 단위인 `sign`은 제외.
+- 2026-07-11: Compose 화면을 category와 가능한 조합 목록 중심으로 바꾸고, 각 조합의 실제 token sample은 Random seed마다 하나씩 교체하도록 수정.
+- 2026-07-11: Compose 화면에 taxonomy, typeface, size, placement, spacing, 조합 규칙을 한 번에 확인하는 `COMPOSITION_RULES` 목록 추가.
+- 2026-07-11: 전체 token category를 form × function matrix로 바꾸고 `COMPOSE`, `EMPTY`, `SIGN` 상태와 세 rule group으로 시각적 위계를 정리.
+- 2026-07-11: typography weight를 `normal`, `bold` 두 token으로 제한하고 SVG metadata 및 렌더 검증에 반영.
