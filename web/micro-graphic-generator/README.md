@@ -40,7 +40,7 @@
 - `Stroke`: Component 외곽선 방식. 현재 `stroke`, `no-stroke`, `corner-stroke` 세 가지를 쓴다.
 - `Graphic primitive`: Component를 구성하는 작은 그래픽 재료. barcode, pseudo-QR, mini table, wave graph, label, badge, symbol 등이 여기에 속한다.
 - `Content detail`: Content block 안쪽 하단에 들어가는 정보 묶음. barcode detail, pseudo-QR detail, table detail, wave detail이 여기에 속한다.
-- `Display keyword`: `REPORT`, `STATUS`, `MODULE`, `ACCESS`처럼 제목이나 상태 문구처럼 읽히는 영어 keyword다. data value가 아니며 Noto Sans English role을 쓴다.
+- `Display keyword`: `REPORT`, `STATUS`, `MODULE`, `ACCESS`처럼 제목이나 상태 문구처럼 읽히는 영어 keyword다. data value가 아니며 SUIT English role을 쓴다.
 - `Layout grid`: Component safe area를 가로 3열, 세로 3행으로 나눈 보이지 않는 좌표계다.
 - `Layout renderer`: `renderRandomGridLayout()`이며 3×3 cell을 직사각형 block으로 패킹하고 block마다 token 하나를 랜덤 생성한다.
 - `Seed`: 랜덤 결과를 다시 추적하기 위한 값. 화면 왼쪽 아래에 표시한다.
@@ -49,7 +49,7 @@
 
 - 기본은 단색 전경/배경.
 - Canvas 배경에는 랜덤 선, 점, scan line, pattern, blur 같은 texture나 effect를 넣지 않는다.
-- 영문, 한글, 한자는 모두 Noto Sans 계열을 기본으로 쓰되, code/data view는 mono로 분리한다.
+- 영문과 한글은 SUIT, 한자와 중국어는 Noto Sans 계열을 기본으로 쓰며 code/data view는 Noto Sans Mono로 분리한다.
 - 한글/한자 키워드는 굵은 display label처럼 쓴다.
 - 작은 메타데이터, 가짜 조직명, 포트, revision badge, serial, code를 조합한다.
 - 조직명은 `@CARGO SYSTEMS`처럼 표기하고, 앞에 의미 없는 랜덤 symbol prefix를 붙이지 않는다.
@@ -172,22 +172,22 @@ spin은 토큰 자체에 주는 작은 회전이다. spin은 alignment를 대체
 
 ## Typography System
 
-현재 폰트 시스템은 Noto Sans 계열로 고정한다. 코드에서는 `TYPEFACES`와 `resolveTypeface()`로 관리한다.
+현재 폰트 시스템은 SUIT를 메인 타입페이스로 두고 영문·한글·generator UI에 사용한다. 한자·중국어와 mono에는 역할별 Noto Sans 계열을 사용한다. 코드에서는 `TYPEFACES`와 `resolveTypeface()`로 관리한다.
 
 weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 `content`이고 size가 `large`, `xlarge`, `xxlarge`, `xxxlarge`인 typography에만 적용한다. `small`, `medium`과 `data`, `symbol`, `sign`, catalog UI는 모두 `normal`이다. 코드에서는 `fontWeightForToken()`이 weight를 결정하고 `FONT_WEIGHTS.normal = 400`, `FONT_WEIGHTS.bold = 700`으로 렌더링한다. SVG에는 `data-token-weight="normal|bold"`를 기록하며 `validateRenderedTokenRules()`가 size/function 조합과 실제 weight를 함께 검사한다.
 
 `form: "typography"`인 token은 아래 typeface role 중 하나를 반드시 명시한다. 브라우저 fallback만으로 typeface를 결정하지 않는다.
 
-- `english`: `"Noto Sans"`를 기본으로 쓴다. 브랜드명, 영문 title, warning phrase, status phrase, display keyword에 쓴다.
+- `english`: `"SUIT"`를 기본으로 쓰고 `"Noto Sans"`를 fallback으로 둔다. 브랜드명, 영문 title, warning phrase, status phrase, display keyword에 쓴다.
 - `mono`: `"Noto Sans Mono"`를 기본으로 쓴다. code, serial, port, table, numeric data, data view에 쓴다.
-- `korean`: `"Noto Sans KR"`를 기본으로 쓴다. 한글이 포함된 텍스트는 자동으로 이 role을 쓴다.
+- `korean`: `"SUIT"`를 기본으로 쓰고 `"Noto Sans KR"`를 fallback으로 둔다. 한글이 포함된 텍스트는 자동으로 이 role을 쓴다.
 - `hanja`: `"Noto Sans KR"`를 기본으로 쓰고, 없는 glyph는 `"Noto Sans SC"`로 fallback한다. 현재 독립 한자 display typography에는 `林`을 일반 content keyword로 허용한다.
 - `chinese`: `"Noto Sans SC"`를 기본으로 쓴다. `你好?`, `刷新`, 중국어 날짜 표기처럼 Simplified Chinese glyph가 필요한 token에 쓴다.
-- `ui`: generator controls와 seed label에 쓰는 UI font다. Noto Sans, Noto Sans KR, Noto Sans SC 순서로 fallback한다.
+- `ui`: generator controls와 seed label에 쓰는 UI font다. SUIT를 기본으로 쓰고 Noto Sans, Noto Sans KR, Noto Sans SC 순서로 fallback한다.
 
 `textNode()`는 텍스트 안의 한글/한자를 감지해서 font role을 자동 선택한다. code/data view처럼 의미상 mono가 필요한 경우에는 `typeface: "mono"`로 직접 지정한다.
 
-`REPORT`, `STATUS`, `MODULE`, `ACCESS` 같은 요소는 `display keyword`다. 이들은 code나 data view가 아니므로 `typeface: "english"`를 명시하고 Noto Sans English role로 표시한다. display keyword는 글자 사이에 임의 공백을 넣거나 과한 tracking을 주지 않고, 단어 그대로 조판한다.
+`REPORT`, `STATUS`, `MODULE`, `ACCESS` 같은 요소는 `display keyword`다. 이들은 code나 data view가 아니므로 `typeface: "english"`를 명시하고 SUIT English role로 표시한다. display keyword는 글자 사이에 임의 공백을 넣거나 과한 tracking을 주지 않고, 단어 그대로 조판한다.
 
 `안녕?`, `你好?`, `HELLO?`는 greeting typography다. 인사말은 `greetingTokens`에 `{ value, typeface }` 형태로 묶고, display typography 후보에만 넣는다. barcode, serial, table, code 같은 data view에는 넣지 않는다.
 
@@ -197,7 +197,7 @@ weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 
 
 HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를 `sign / status-code` 보조 typography로 사용한다. `small 8px`와 `medium 16px`에 분산하고 일반 block의 sign 후보로만 조합한다. `STATUS` 역시 `medium / sign / status`로만 사용하며 hero 후보에는 넣지 않는다.
 
-웹에서 보기 위해 `Noto Sans`, `Noto Sans KR`, `Noto Sans SC`, `Noto Sans Mono`는 `fonts/` 안에 로컬 파일로 번들한다. HTML은 `./fonts/fonts.css`를 import하고, SVG export도 같은 CSS 파일을 절대 URL로 넣는다. 외부 Google Fonts 요청을 기다리지 않도록 하기 위한 결정이며, 앱은 로컬 폰트가 붙은 뒤 첫 렌더가 되도록 `document.fonts.load()`와 `document.fonts.ready`를 짧게 기다린다.
+웹에서 보기 위해 SUIT 2.0.5의 Regular/Bold와 `Noto Sans`, `Noto Sans KR`, `Noto Sans SC`, `Noto Sans Mono`를 `fonts/` 안에 로컬 파일로 번들한다. SUIT는 SIL Open Font License 1.1이며 라이선스 원문을 `fonts/SUIT-OFL.txt`에 함께 둔다. HTML은 `./fonts/fonts.css`를 import하고, SVG export도 같은 CSS 파일을 절대 URL로 넣는다. 외부 폰트 요청을 기다리지 않도록 하기 위한 결정이며, 앱은 로컬 폰트의 400/700 weight가 붙은 뒤 첫 렌더가 되도록 `document.fonts.load()`와 `document.fonts.ready`를 짧게 기다린다.
 
 중국어/한자 glyph가 현재 font-face에 없으면 브라우저가 시스템 fallback font로 빠지면서 같은 `font-weight`라도 덜 굵게 보일 수 있다. 중국어 token은 `Noto Sans SC` subset을 로컬 번들에 추가해 weight mismatch를 줄인다.
 
@@ -244,7 +244,7 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 - random block grid에서는 block 크기에 맞춘 font fit, `textLength`, SVG `scale()`을 적용하지 않는다.
 - SVG에는 `data-layout-mode="random-blocks"`, 각 block의 footprint, origin, 점유 cell, 좌표, 가로·세로 anchor, token kind를 기록한다.
 
-`validateRenderedTokenRules()`는 2-5개의 block이 1-9 cell을 중복 없이 모두 덮는지, footprint와 anchor가 위치 규칙에 맞는지, block마다 token이 하나인지, `3x1`과 `1x3`이 center/middle의 `xxlarge 128px` typography만 쓰는지, `2x3`과 `3x2`가 `xxxlarge 256px` typography만 쓰는지, token placement가 `position-only`와 `scale=1`인지, 일반 `primary`가 최대 하나인지, barcode와 pseudo-QR이 각각 최대 하나인지, barcode 숫자가 항상 small 규칙을 따르는지 검사한다.
+`validateRenderedTokenRules()`는 2-5개의 block이 1-9 cell을 중복 없이 모두 덮는지, footprint와 anchor가 위치 규칙에 맞는지, block마다 token이 하나인지, 같은 typography 문자열이 구성 안에서 반복되지 않는지, `3x1`과 `1x3`이 center/middle의 `xxlarge 128px` typography만 쓰는지, `2x3`과 `3x2`가 `xxxlarge 256px` typography만 쓰는지, token placement가 `position-only`와 `scale=1`인지, 일반 `primary`가 최대 하나인지, barcode와 pseudo-QR이 각각 최대 하나인지, barcode 숫자가 항상 small 규칙을 따르는지 검사한다.
 
 ## Layout Archetype
 
@@ -478,5 +478,7 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-11: 1x3 token을 90도 회전하고 3x1/1x3 생성에 최소 두 개의 적합 hero 후보를 요구해 독립 한자 `林` 편중을 완화.
 - 2026-07-12: `林`의 `hero-glyph` 예외를 제거하고 action vocabulary와 동일한 `large / xxlarge / xxxlarge` 일반 content 후보 레벨로 조정.
 - 2026-07-12: HTTP 상태 코드 7개를 small/medium 보조 sign token으로 추가하고 `STATUS`의 xlarge hero 분류를 제거.
+- 2026-07-12: 한 구성 안에서 대소문자와 공백을 정규화한 동일 typography 문자열의 중복 선택을 금지.
+- 2026-07-12: SUIT 2.0.5 Regular/Bold를 메인 타입페이스로 지정해 영문·한글·generator UI에 적용하고 Noto Sans 계열은 역할별 fallback으로 유지.
 - 2026-07-11: `3x2`, `2x3` block의 xxxlarge token anchor를 center/middle로 고정.
 - 2026-07-12: 제공된 action text에서 62개 고유 표현을 추출하고 한글·영어·중국어 대응 token을 large, xxlarge, xxxlarge display 후보에 추가.

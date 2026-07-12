@@ -12,7 +12,7 @@
       --ink: #10110f;
       --panel: #f4f4ef;
       --hair: rgba(16, 17, 15, 0.2);
-      --font-ui: "Noto Sans", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+      --font-ui: "SUIT", "Noto Sans", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
     }
 
     * {
@@ -236,12 +236,12 @@
     };
     const FONT_CSS_PATH = "./fonts/fonts.css";
     const TYPEFACES = {
-      english: "\"Noto Sans\", \"Helvetica Neue\", Arial, sans-serif",
+      english: "\"SUIT\", \"Noto Sans\", Arial, sans-serif",
       mono: "\"Noto Sans Mono\", \"SFMono-Regular\", Menlo, Monaco, Consolas, monospace",
-      korean: "\"Noto Sans KR\", \"Apple SD Gothic Neo\", sans-serif",
+      korean: "\"SUIT\", \"Noto Sans KR\", \"Apple SD Gothic Neo\", sans-serif",
       hanja: "\"Noto Sans KR\", \"Noto Sans SC\", \"Apple SD Gothic Neo\", sans-serif",
       chinese: "\"Noto Sans SC\", \"Noto Sans KR\", \"Apple SD Gothic Neo\", sans-serif",
-      ui: "\"Noto Sans\", \"Noto Sans KR\", \"Noto Sans SC\", \"Apple SD Gothic Neo\", sans-serif"
+      ui: "\"SUIT\", \"Noto Sans\", \"Noto Sans KR\", \"Noto Sans SC\", \"Apple SD Gothic Neo\", sans-serif"
     };
 
     const art = document.querySelector("#art");
@@ -1550,6 +1550,16 @@
         bounds.y + bounds.height <= availableBox.y + availableBox.height;
     }
 
+    function typographyWordKey(item) {
+      if (typeof item?.value !== "string") return null;
+      return item.value.normalize("NFKC").trim().replace(/\s+/g, " ").toUpperCase();
+    }
+
+    function isUnusedTypographyWord(item, usedTypographyWords) {
+      const key = typographyWordKey(item);
+      return !key || !usedTypographyWords.has(key);
+    }
+
     function blockCandidateGroups(kind, block, candidates) {
       if (kind === "primary") {
         const preferredSizes = block.area >= 6
@@ -1572,9 +1582,9 @@
       ].filter(group => group.length);
     }
 
-    function pickGridTokenItem(block, position, pools, availableBox, usedUniqueRoles) {
+    function pickGridTokenItem(block, position, pools, availableBox, usedUniqueRoles, usedTypographyWords) {
       if (isXxxlargeFootprint(block)) {
-        const candidates = shuffled(pools.xxxlargeBlock);
+        const candidates = shuffled(pools.xxxlargeBlock.filter(item => isUnusedTypographyWord(item, usedTypographyWords)));
         while (candidates.length) {
           const item = candidates.pop();
           const bounds = gridTokenIntrinsicBox(position, item);
@@ -1584,7 +1594,7 @@
       }
 
       if (isCenteredXxlargeFootprint(block)) {
-        const candidates = shuffled(pools.xxlargeBlock);
+        const candidates = shuffled(pools.xxlargeBlock.filter(item => isUnusedTypographyWord(item, usedTypographyWords)));
         while (candidates.length) {
           const item = candidates.pop();
           const bounds = gridTokenIntrinsicBox(position, item);
@@ -1600,7 +1610,8 @@
 
       for (const kind of kindOrder) {
         const candidates = pools[kind].filter(item =>
-          !UNIQUE_GRID_TOKEN_ROLES.includes(item.role) || !usedUniqueRoles.has(item.role)
+          (!UNIQUE_GRID_TOKEN_ROLES.includes(item.role) || !usedUniqueRoles.has(item.role)) &&
+          isUnusedTypographyWord(item, usedTypographyWords)
         );
         for (const sourceGroup of blockCandidateGroups(kind, block, candidates)) {
           const group = shuffled(sourceGroup);
@@ -1661,6 +1672,7 @@
       const safe = paddedBox(0, 0, w, h, "large");
       const pools = gridTokenPools();
       const usedUniqueRoles = new Set();
+      const usedTypographyWords = new Set();
       const blocks = randomGridBlocks(safe);
       activeBlockLayout = blocks.map(block => `${block.width}x${block.height}`).join("+");
 
@@ -1668,7 +1680,7 @@
         const box = gridBlockBox(safe, block);
         const contentBox = blockContentBox(box, block);
         const position = layoutGridBlockPosition(contentBox, block);
-        const selection = pickGridTokenItem(block, position, pools, contentBox, usedUniqueRoles);
+        const selection = pickGridTokenItem(block, position, pools, contentBox, usedUniqueRoles, usedTypographyWords);
         const group = make("g", {
           "data-grid-block": block.id,
           "data-grid-footprint": `${block.width}x${block.height}`,
@@ -1700,6 +1712,8 @@
           if (UNIQUE_GRID_TOKEN_ROLES.includes(selection.item.role)) {
             usedUniqueRoles.add(selection.item.role);
           }
+          const wordKey = typographyWordKey(selection.item);
+          if (wordKey) usedTypographyWords.add(wordKey);
         }
         g.appendChild(group);
       });
@@ -2250,6 +2264,10 @@
         const duplicateUniqueRoles = UNIQUE_GRID_TOKEN_ROLES.filter(role =>
           component.querySelectorAll(`[data-grid-token="${role}"]`).length > 1
         );
+        const typographyWords = [...component.querySelectorAll('[data-grid-token]:not([data-grid-token-kind="graphic"]) > text[data-token-form="typography"]')]
+          .map(node => typographyWordKey({ value: node.textContent }))
+          .filter(Boolean);
+        const duplicateTypographyWords = typographyWords.filter((word, index) => typographyWords.indexOf(word) !== index);
         const graphicTokensWithInvalidSize = [...component.querySelectorAll('[data-grid-token-kind="graphic"]')].filter(token => {
           const size = token.getAttribute("data-token-size");
           const primitive = token.querySelector(':scope > [data-token-form="graphic"]');
@@ -2281,6 +2299,7 @@
           tokensWithInvalidPlacement.length > 0 ||
           typographyWithInvalidIntrinsicSize.length > 0 ||
           duplicateUniqueRoles.length > 0 ||
+          duplicateTypographyWords.length > 0 ||
           graphicTokensWithInvalidSize.length > 0 ||
           barcodeTokensWithInvalidCaptionSize.length > 0 ||
           allBlockCells.length !== LAYOUT_GRID.columns * LAYOUT_GRID.rows ||
@@ -2418,12 +2437,10 @@
     async function loadTypefaces() {
       if (!document.fonts) return;
 
-      const ready = Promise.allSettled([
-        document.fonts.load(`900 80px ${TYPEFACES.english}`),
-        document.fonts.load(`900 80px ${TYPEFACES.korean}`),
-        document.fonts.load(`900 80px ${TYPEFACES.mono}`),
-        document.fonts.load(`900 80px ${TYPEFACES.chinese}`)
-      ]).then(() => document.fonts.ready);
+      const ready = Promise.allSettled(
+        [TYPEFACES.english, TYPEFACES.korean, TYPEFACES.mono, TYPEFACES.chinese]
+          .flatMap(typeface => [400, 700].map(weight => document.fonts.load(`${weight} 80px ${typeface}`)))
+      ).then(() => document.fonts.ready);
 
       ready.then(() => render(seed)).catch(() => {});
       await Promise.race([ready, wait(900)]);
