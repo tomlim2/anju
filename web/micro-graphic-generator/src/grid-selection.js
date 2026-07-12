@@ -18,7 +18,12 @@ import {
   typographyTokenAtSize,
   typographyWordKey
 } from "./token-model.js";
-import { hasHangul, hasHanja, resolveTypographyStyle } from "./typography.js";
+import {
+  hasHangul,
+  hasHanja,
+  orientationModesForTypography,
+  resolveTypographyStyle
+} from "./typography.js";
 
 export function createSelectionState() {
   return {
@@ -238,11 +243,14 @@ export function createGridSelectionEngine({ randomSource, typographyMeasurer }) 
   function gridTokenOrientationMode(block, item) {
     if (item.form !== "typography") return "none";
     const policy = blockPolicy(block);
-    const orientationModes = /[A-Za-z]/.test(item.value)
-      ? policy.englishOrientationModes || policy.orientationModes
-      : policy.orientationModes;
-    if (orientationModes.length <= 1) return orientationModes[0] || "none";
     const supportsGlyphStack = hasHangul(item.value) || hasHanja(item.value);
+    const orientationModes = orientationModesForTypography(policy, item.value);
+    if (supportsGlyphStack && policy.cjkOrientationModes) {
+      // Preserve the established draw count without retaining a CJK orientation choice.
+      chance(0.5);
+      return orientationModes[0] || "none";
+    }
+    if (orientationModes.length <= 1) return orientationModes[0] || "none";
     if (supportsGlyphStack && orientationModes.includes("glyph-sideways-stack") && chance(0.5)) {
       return "glyph-sideways-stack";
     }

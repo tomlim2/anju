@@ -9,6 +9,16 @@ export function hasHanja(value) {
   return /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/.test(value);
 }
 
+export function orientationModesForTypography(policy, value) {
+  if ((hasHangul(value) || hasHanja(value)) && policy.cjkOrientationModes) {
+    return policy.cjkOrientationModes;
+  }
+  if (/[A-Za-z]/.test(value) && policy.englishOrientationModes) {
+    return policy.englishOrientationModes;
+  }
+  return policy.orientationModes || ["none"];
+}
+
 export function resolveTypeface(text, attrs = {}) {
   if (attrs.typeface && TYPEFACES[attrs.typeface]) return TYPEFACES[attrs.typeface];
   if (attrs.mono) return TYPEFACES.mono;

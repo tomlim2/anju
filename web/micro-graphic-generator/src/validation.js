@@ -21,7 +21,12 @@ import {
   uniformTypographyGroupKey
 } from "./grid-layout.js";
 import { typographyWordKey } from "./token-model.js";
-import { hasHangul, hasHanja, resolveTypographyStyle } from "./typography.js";
+import {
+  hasHangul,
+  hasHanja,
+  orientationModesForTypography,
+  resolveTypographyStyle
+} from "./typography.js";
 
 function nodeReference(node, index = 0) {
   return node?.getAttribute?.("data-grid-block") ||
@@ -300,7 +305,10 @@ function validateCenteredTokenPolicy({ component, gridBlocks }) {
     const typography = token?.querySelector(':scope > text[data-token-form="typography"]');
     const orientationMode = token?.getAttribute("data-token-orientation");
     const isGlyphStack = orientationMode === "glyph-sideways-stack";
-    const validOrientation = policy.orientationModes.includes(orientationMode);
+    const validOrientation = orientationModesForTypography(
+      policy,
+      typography?.textContent || ""
+    ).includes(orientationMode);
     const invalidGlyphStack = isGlyphStack && (
       /[A-Za-z]/.test(typography?.textContent || "") ||
       typography?.getAttribute("writing-mode") !== "vertical-rl" ||
@@ -395,9 +403,7 @@ function validateOrientation({ component }) {
     const policy = GRID_BLOCK_POLICY_BY_FOOTPRINT.get(block?.getAttribute("data-grid-footprint"));
     if (!TOKEN_ORIENTATIONS.includes(orientationMode) || !text || !policy) return true;
     const value = text.textContent || "";
-    const allowedModes = /[A-Za-z]/.test(value)
-      ? policy.englishOrientationModes || policy.orientationModes
-      : policy.orientationModes;
+    const allowedModes = orientationModesForTypography(policy, value);
     if (!allowedModes.includes(orientationMode) || rotation !== String(policy.rotation)) return true;
     return orientationMode === "glyph-sideways-stack" && !hasHangul(value) && !hasHanja(value);
   });

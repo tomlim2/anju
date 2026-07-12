@@ -103,7 +103,7 @@ test("uniform typography groups isolate 1x3 and 3x1", async ({ page }) => {
 });
 
 test("rendered overflow uses the prepared fallback without new random draws", async ({ page }) => {
-  const fixture = baseline.fixtures.find(item => item.name === "vertical-whole-rotate");
+  const fixture = baseline.fixtures.find(item => item.name === "vertical-cjk-glyph-stack");
   const { errors } = await openGenerator(page, fixture);
   const result = await page.evaluate(() => {
     const hook = window.__MICRO_GRAPHIC_TEST__;
@@ -473,7 +473,7 @@ const visualCases = [
   },
   {
     name: "mobile-mixed-grid-light.png",
-    fixtureName: "vertical-whole-rotate",
+    fixtureName: "vertical-cjk-glyph-stack",
     viewport: { width: 390, height: 844 }
   },
   {

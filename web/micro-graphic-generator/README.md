@@ -205,7 +205,7 @@ SVG에는 `data-token-form`, `data-token-function`, `data-token-role`, `data-tok
 
 block origin과 footprint가 alignment를 결정한다. 왼쪽·오른쪽 경계에 닿는 block은 해당 edge를, 3열 전체를 차지하는 block은 center를 쓴다. 세로도 같은 방식으로 top·bottom·middle을 결정한다. `1x3`, `3x1`, `2x3`, `3x2`의 center/middle 규칙은 ordered block policy가 명시적으로 덮어쓴다.
 
-grid token은 `data-token-placement="position-only"`, `data-token-scale="1"`을 유지하며 `scale()` transform을 사용하지 않는다. 회전은 `1x3` typography의 `whole-rotate` 또는 `glyph-sideways-stack` orientation에만 사용한다.
+grid token은 `data-token-placement="position-only"`, `data-token-scale="1"`을 유지하며 `scale()` transform을 사용하지 않는다. `1x3` typography에서 한글·한자는 글자별 `glyph-sideways-stack`만 사용하고, 영문과 숫자형 fallback만 `whole-rotate`를 사용한다.
 
 ## Typography System
 
@@ -270,7 +270,7 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 - 가장 면적이 큰 block 중 하나를 `primary` 후보로 정한다. `GRID_PRIMARY_CHANCE`는 현재 `1`이며 `primary`는 최대 하나다.
 - `primary`는 block 면적에 따라 `large`, `xlarge`, `xxlarge` content를 우선 사용한다. 선택한 typography가 block을 넘으면 같은 단어와 typeface를 유지한 채 다음 작은 design token size로 내린다.
 - `2x2` block은 graphic을 허용하지 않고 `xxlarge 128px` 또는 `xxxlarge 256px`에서 시작한다. block의 현재 origin에 따른 left/center/right와 top/middle/bottom anchor 및 inset은 변경하지 않는다. 요청 크기가 넘치면 다음 작은 token size로 단계적으로 내린다.
-- `3x1`, `1x3` block은 graphic을 허용하지 않고 `xxlarge 128px`에서 시작한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor에 배치한다. `1x3` 영문은 단어 전체를 오른쪽 90도로 회전한다. 한글·중국어는 단어 전체 90도 회전과 각 glyph를 오른쪽으로 돌려 위에서 아래로 쌓는 세로 조판 중 하나를 랜덤으로 사용한다. 같은 component 안에서 동일한 `3x1` 또는 `1x3` token 중 하나가 작은 size로 내려가면 같은 footprint의 나머지도 가장 작은 실제 size로 통일한다.
+- `3x1`, `1x3` block은 graphic을 허용하지 않고 `xxlarge 128px`에서 시작한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor에 배치한다. `1x3` 영문은 단어 전체를 오른쪽 90도로 회전하고, 한글·한자는 각 glyph를 오른쪽으로 돌려 위에서 아래로 쌓는 세로 조판만 사용한다. 같은 component 안에서 동일한 `3x1` 또는 `1x3` token 중 하나가 작은 size로 내려가면 같은 footprint의 나머지도 가장 작은 실제 size로 통일한다.
 - `2x3`, `3x2` block은 graphic을 허용하지 않고 `xxxlarge 256px`에서 시작한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor를 유지하며, 넘치면 다음 작은 token size로 내린다.
 - block이 3열 전체를 차지하면 가로 center, 왼쪽 경계에 닿으면 left, 오른쪽 경계에 닿으면 right anchor를 사용한다.
 - block이 3행 전체를 차지하면 세로 middle, 위 경계에 닿으면 top, 아래 경계에 닿으면 bottom anchor를 사용한다.
@@ -519,6 +519,7 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-12: block typography에 실제 폰트 메트릭과 렌더 후 SVG 경계 평가 phase를 추가해 `CODE`, `NAME`처럼 추정 폭보다 넓은 글자도 다음 크기로 fallback하도록 보강.
 - 2026-07-12: 빈 block 생성을 보류하고 최소 `small 8px`까지 내려도 실패한 typography는 짧은 cell index data token으로 교체하도록 변경.
 - 2026-07-12: `1x3` 세로 block의 한글·중국어 typography에 전체 90도 회전과 glyph별 오른쪽 회전 세로 조판 두 가지 분기를 추가하고 영문은 기존 전체 회전만 유지.
+- 2026-07-12: `1x3` 한글·한자 typography의 전체 90도 회전 분기를 제거하고 glyph별 세로 조판만 유지.
 - 2026-07-12: 같은 component의 `3x1` 또는 `1x3` typography가 서로 다른 크기로 fallback되면 footprint별 가장 작은 실제 size로 일괄 통일하고, `3x1`·`1x3`·`3x2`·`2x3` block 안의 `xlarge` content만 900 weight를 사용하도록 변경.
 - 2026-07-11: `3x2`, `2x3` block의 xxxlarge token anchor를 center/middle로 고정.
 - 2026-07-12: 제공된 action text에서 62개 고유 표현을 추출하고 한글·영어·중국어 대응 token을 large, xxlarge, xxxlarge display 후보에 추가.

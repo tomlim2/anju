@@ -25,7 +25,7 @@
     },
     {
       "schemaVersion": 1,
-      "name": "vertical-whole-rotate",
+      "name": "vertical-cjk-glyph-stack",
       "seed": 3,
       "now": "2026-07-12T00:00:00.000Z",
       "viewport": { "width": 1440, "height": 900 },
@@ -37,7 +37,7 @@
         "borderMode": "stroke",
         "blockLayout": "1x3+1x2+1x2+1x1+1x1",
         "blocks": [
-          { "footprint": "1x3", "cells": [1, 4, 7], "role": "action-keyword", "value": "启动", "kind": "block-xxlarge", "requestedSize": "xxlarge", "actualSize": "xxlarge", "weight": 900, "orientation": "whole-rotate", "fit": true },
+          { "footprint": "1x3", "cells": [1, 4, 7], "role": "action-keyword", "value": "启动", "kind": "block-xxlarge", "requestedSize": "xxlarge", "actualSize": "xxlarge", "weight": 900, "orientation": "glyph-sideways-stack", "fit": true },
           { "footprint": "1x2", "cells": [2, 5], "role": "barcode", "value": "barcode", "kind": "graphic", "requestedSize": "large", "actualSize": "large", "weight": null, "orientation": "none", "fit": true },
           { "footprint": "1x2", "cells": [3, 6], "role": "access-status", "value": "ACCESS GRANTED", "kind": "sign", "requestedSize": "medium", "actualSize": "small", "weight": 400, "orientation": "none", "fit": true },
           { "footprint": "1x1", "cells": [8], "role": "pseudo-qr", "value": "pseudo-qr", "kind": "graphic", "requestedSize": "medium", "actualSize": "medium", "weight": null, "orientation": "none", "fit": true },

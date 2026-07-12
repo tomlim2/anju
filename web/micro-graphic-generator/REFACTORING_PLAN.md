@@ -103,7 +103,7 @@
 
 3. **Contextual typography rule**
 
-   `xlarge`는 기본 700이지만 `3x1`, `1x3`, `3x2`, `2x3` 안에서는 900이다. 동일한 `3x1`과 `1x3`은 footprint별 가장 작은 실제 size로 각각 통일하며, `1x3` 한글·중국어에는 두 가지 세로 orientation이 있다.
+   `xlarge`는 기본 700이지만 `3x1`, `1x3`, `3x2`, `2x3` 안에서는 900이다. 동일한 `3x1`과 `1x3`은 footprint별 가장 작은 실제 size로 각각 통일하며, `1x3` 한글·한자는 glyph별 sideways stack만 사용한다.
 
 4. **Validator의 단일 대형 함수화**
 
@@ -150,7 +150,7 @@
 - size fallback 이후에도 넘치면 position만 최소 보정한다.
 - 같은 component의 동일 `3x1` 또는 `1x3` typography는 footprint별 가장 작은 실제 size로 통일한다.
 - `1x3` 영문은 단어 전체를 오른쪽 90도로 회전한다.
-- `1x3` 한글·중국어는 전체 회전 또는 glyph별 sideways stack을 사용한다.
+- `1x3` 한글·한자는 glyph별 sideways stack만 사용한다.
 - `3x1`, `1x3`, `3x2`, `2x3` 안의 실제 `xlarge` content는 900이다.
 - 그 외 `xlarge` content는 700이고 `xxlarge`, `xxxlarge` content는 900이다.
 - 모든 SVG text의 line-height는 `1`이다.
@@ -321,7 +321,8 @@ export const GRID_BLOCK_POLICIES = [
     align: "center",
     verticalAlign: "middle",
     rotation: 90,
-    orientationModes: ["whole-rotate", "glyph-sideways-stack"],
+    orientationModes: ["whole-rotate"],
+    cjkOrientationModes: ["glyph-sideways-stack"],
     englishOrientationModes: ["whole-rotate"],
     sizeSyncScope: "footprint:1x3",
     xlargeWeight: 900

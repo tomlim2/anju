@@ -22,7 +22,10 @@ import {
   typographyToken,
   typographyWordKey
 } from "../src/token-model.js";
-import { createTypographyMeasurer } from "../src/typography.js";
+import {
+  createTypographyMeasurer,
+  orientationModesForTypography
+} from "../src/typography.js";
 
 const repoRoot = new URL("../../../", import.meta.url);
 
@@ -62,7 +65,12 @@ test("ordered block policies remain the seed-sensitive source of truth", () => {
     GRID_BLOCK_FOOTPRINTS.map(({ width, height }) => `${width}x${height}`),
     expectedOrder
   );
-  assert.equal(GRID_BLOCK_POLICY_BY_FOOTPRINT.get("1x3").rotation, 90);
+  const verticalPolicy = GRID_BLOCK_POLICY_BY_FOOTPRINT.get("1x3");
+  assert.equal(verticalPolicy.rotation, 90);
+  assert.deepEqual(orientationModesForTypography(verticalPolicy, "채우기"), ["glyph-sideways-stack"]);
+  assert.deepEqual(orientationModesForTypography(verticalPolicy, "升级"), ["glyph-sideways-stack"]);
+  assert.deepEqual(orientationModesForTypography(verticalPolicy, "UPDATE"), ["whole-rotate"]);
+  assert.ok(!verticalPolicy.cjkOrientationModes.includes("whole-rotate"));
   assert.equal(GRID_BLOCK_POLICY_BY_FOOTPRINT.get("3x1").sizeSyncScope, "footprint:3x1");
 });
 
