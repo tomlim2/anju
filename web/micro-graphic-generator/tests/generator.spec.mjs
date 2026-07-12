@@ -252,6 +252,7 @@ test("tone, grid, compose, fonts, and viewport changes preserve deterministic st
 test("SVG and PNG exports preserve tone, grid, and 2x dimensions", async ({ page }) => {
   const fixture = baseline.fixtures.find(item => item.name === "maximum-three-by-two");
   const { errors } = await openGenerator(page, fixture);
+  const initial = await currentSnapshot(page);
 
   const svgGridOn = await page.evaluate(() => window.__MICRO_GRAPHIC_TEST__.svgText());
   expect(svgGridOn).toContain("fonts/fonts.css");
@@ -259,6 +260,9 @@ test("SVG and PNG exports preserve tone, grid, and 2x dimensions", async ({ page
   expect(svgGridOn).toContain("opacity=\"0.18\"");
   expect(svgGridOn).toContain("background: rgb(244, 244, 239)");
   expect(svgGridOn).toContain("svg { color: #10110f; }");
+  const afterSvg = await currentSnapshot(page);
+  expect(afterSvg.prng).toEqual(initial.prng);
+  expect(afterSvg.structuralFingerprint).toBe(initial.structuralFingerprint);
 
   const lightGridOn = await pngDownloadSummary(page);
   expect(lightGridOn).toMatchObject({
@@ -266,6 +270,9 @@ test("SVG and PNG exports preserve tone, grid, and 2x dimensions", async ({ page
     height: exportBaseline.states.lightGridOn.height,
     hash: exportBaseline.states.lightGridOn.sha256
   });
+  const afterFirstPng = await currentSnapshot(page);
+  expect(afterFirstPng.prng).toEqual(initial.prng);
+  expect(afterFirstPng.structuralFingerprint).toBe(initial.structuralFingerprint);
 
   await page.locator("#grid").click();
   const svgGridOff = await page.evaluate(() => window.__MICRO_GRAPHIC_TEST__.svgText());
@@ -283,5 +290,93 @@ test("SVG and PNG exports preserve tone, grid, and 2x dimensions", async ({ page
   expect(lightGridOff.hash).toBe(exportBaseline.states.lightGridOff.sha256);
   expect(darkGridOff.hash).toBe(exportBaseline.states.darkGridOff.sha256);
   expect(darkGridOn.hash).toBe(exportBaseline.states.darkGridOn.sha256);
+  const afterAllExports = await currentSnapshot(page);
+  expect(afterAllExports.prng).toEqual(initial.prng);
+  expect(afterAllExports.structuralFingerprint).toBe(initial.structuralFingerprint);
   expect(errors).toEqual([]);
 });
+
+test("mobile Compose toolbar keeps every control inside the viewport", async ({ page }) => {
+  const sourceFixture = baseline.fixtures.find(item => item.name === "maximum-three-by-two");
+  const fixture = { ...sourceFixture, viewport: { width: 390, height: 844 } };
+  const { errors } = await openGenerator(page, fixture);
+  await page.locator("#mode").click();
+  const geometry = await page.evaluate(() => {
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
+    const describe = element => {
+      const box = element.getBoundingClientRect();
+      return {
+        left: box.left,
+        top: box.top,
+        right: box.right,
+        bottom: box.bottom,
+        textFits: element.scrollWidth <= element.clientWidth
+      };
+    };
+    return {
+      viewport,
+      controls: [...document.querySelectorAll(".controls button")].map(describe),
+      seed: describe(document.querySelector("#seedLabel"))
+    };
+  });
+
+  expect(geometry.controls).toHaveLength(6);
+  for (const control of geometry.controls) {
+    expect(control.left).toBeGreaterThanOrEqual(0);
+    expect(control.top).toBeGreaterThanOrEqual(0);
+    expect(control.right).toBeLessThanOrEqual(geometry.viewport.width);
+    expect(control.bottom).toBeLessThanOrEqual(geometry.viewport.height);
+    expect(control.textFits).toBe(true);
+  }
+  expect(geometry.seed.left).toBeGreaterThanOrEqual(0);
+  expect(geometry.seed.right).toBeLessThanOrEqual(geometry.viewport.width);
+  expect(geometry.seed.textFits).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+const visualCases = [
+  {
+    name: "desktop-vertical-grid-light.png",
+    fixtureName: "vertical-uniform-glyph-stack",
+    viewport: { width: 1440, height: 900 }
+  },
+  {
+    name: "portrait-maximum-block-light.png",
+    fixtureName: "maximum-two-by-three",
+    viewport: { width: 900, height: 1200 }
+  },
+  {
+    name: "mobile-mixed-grid-light.png",
+    fixtureName: "vertical-whole-rotate",
+    viewport: { width: 390, height: 844 }
+  },
+  {
+    name: "mobile-compose-light.png",
+    fixtureName: "maximum-three-by-two",
+    viewport: { width: 390, height: 844 },
+    controls: ["#mode"]
+  },
+  {
+    name: "desktop-wide-dark-grid-off.png",
+    fixtureName: "maximum-three-by-two",
+    viewport: { width: 1440, height: 900 },
+    controls: ["#tone", "#grid"]
+  }
+];
+
+for (const visualCase of visualCases) {
+  test(`visual reference: ${visualCase.name}`, async ({ page }) => {
+    const sourceFixture = baseline.fixtures.find(item => item.name === visualCase.fixtureName);
+    const fixture = { ...sourceFixture, viewport: visualCase.viewport };
+    const { errors } = await openGenerator(page, fixture);
+    for (const selector of visualCase.controls || []) {
+      await page.locator(selector).click();
+    }
+    expect(errors).toEqual([]);
+    await expect(page).toHaveScreenshot(visualCase.name, {
+      animations: "disabled",
+      caret: "hide",
+      scale: "css"
+    });
+  });
+}

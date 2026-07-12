@@ -8,6 +8,7 @@ const contract = JSON.parse(readFileSync(new URL("./launch-contract.json", impor
 export default defineConfig({
   testDir,
   testMatch: "generator.spec.mjs",
+  snapshotPathTemplate: "{testDir}/fixtures/visual/{arg}{ext}",
   fullyParallel: false,
   workers: 1,
   timeout: 60_000,

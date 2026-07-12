@@ -95,12 +95,30 @@ button[aria-pressed="true"] {
 @media (max-width: 720px) {
   .controls {
     top: auto;
+    left: 12px;
     right: 12px;
     bottom: 12px;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
+    padding: 5px;
+  }
+
+  button {
+    width: 100%;
+    min-width: 0;
+    height: 30px;
+    padding: 0 2px;
+    font-size: 8px;
   }
 
   .seed {
     left: 12px;
-    bottom: 58px;
+    right: 12px;
+    bottom: 54px;
+    overflow: hidden;
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }

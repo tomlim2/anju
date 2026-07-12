@@ -33,7 +33,7 @@
 
 ## 실행 및 기준선 테스트
 
-공식 실행 계약은 `localhost-only`다. 개발과 검토는 정적 HTTP 서버를 통해 수행하며, native ES module을 사용하는 이후 리팩터링 단계에서는 `file://` 직접 실행을 지원 대상으로 두지 않는다. 모듈 추출 전 단일 파일 버전은 `file://`에서도 동작하는 것을 기록했지만 필수 회귀 gate는 아니다. 계약 원본은 `tests/launch-contract.json`이다.
+공식 실행 계약은 `localhost-only`다. 현재 앱은 native ES module을 사용하므로 개발과 검토는 정적 HTTP 서버를 통해 수행하며 `file://` 직접 실행은 지원하지 않는다. 계약 원본은 `tests/launch-contract.json`이다.
 
 ```bash
 npm install
@@ -42,11 +42,29 @@ npm run test:generator
 npm run test:generator:soak
 ```
 
-`test:generator`는 pure contract, 고정 seed fixture, UI interaction, SVG/PNG export와 Random 100회를 검사한다. `test:generator:soak`는 같은 검사를 Random 1,000회로 확장한다. 브라우저 lifecycle과 port `4191`은 Playwright가 소유하므로 테스트 중 별도 서버를 실행하지 않는다.
+`test:generator`는 pure/architecture contract, 고정 seed fixture, UI interaction, SVG/PNG export, 5개 visual reference와 Random 100회를 검사한다. `test:generator:soak`는 같은 검사를 Random 1,000회로 확장한다. 브라우저 lifecycle과 port `4191`은 Playwright가 소유하므로 테스트 중 별도 서버를 실행하지 않는다.
 
 ## 리팩터링 체크포인트
 
-Phase 0~6의 코드 분리는 구현됐고 Phase 5~6의 최종 gate 보강과 Phase 7 문서·시각 QA가 남아 있다. 현재 통과한 gate와 미완료 항목은 `REFACTORING_PLAN.md`의 `구현 체크포인트`를 source of truth로 사용한다. README 아래쪽의 `Layout renderer`, `contentPanel` 같은 이름은 이전 구조를 설명하는 legacy 문구이며 Phase 7에서 현재 `grid-layout`, `grid-selection`, `grid-renderer`, `grid-finalizer` 경계로 교체할 예정이다.
+Phase 0~7의 리팩터링과 필수 gate가 완료됐다. 현재 완료 범위, 검증 수치, checkpoint commit은 `REFACTORING_PLAN.md`의 `구현 체크포인트`를 source of truth로 사용한다.
+
+## Architecture
+
+`index.html`에는 화면 markup과 `src/app.js` module entry만 둔다. production bundler는 사용하지 않으며 localhost 정적 서버에서 native ES module을 직접 로드한다.
+
+- `config.js`: token size, stroke, typeface, ordered block policy의 단일 source다.
+- `vocabulary.js`: 다국어 단어와 가짜 data label만 소유한다.
+- `token-library.js`: vocabulary를 typography token group과 graphic descriptor로 조립한다.
+- `random.js`, `token-model.js`, `layout.js`, `grid-layout.js`: DOM 없는 계산과 data contract를 담당한다.
+- `typography.js`, `svg.js`, `graphics.js`: typography style/metric, 낮은 수준 SVG helper, graphic primitive를 담당한다.
+- `grid-selection.js`: block plan을 받아 token과 deterministic fallback을 선택한다. SVG를 만들지 않는다.
+- `grid-renderer.js`: grid plan을 detached SVG tree로 만든다. `getBBox()`나 mounted DOM을 사용하지 않는다.
+- `grid-finalizer.js`: mount 이후 typography overflow, position nudge, footprint별 size 동기화만 수행한다.
+- `validation.js`: DOM을 읽어 rule별 structured result를 반환하며 DOM과 console을 변경하지 않는다.
+- `catalog-renderer.js`, `export.js`: Compose catalog와 PNG/SVG export를 각각 소유한다.
+- `app.js`: state, mount, controls, validation reporting을 조정하는 유일한 application shell이다.
+
+핵심 generation 흐름은 `plan blocks → select tokens → render detached SVG → mount → finalize typography → validate/report` 순서다. random draw는 planning/selection에만 허용하며 finalization, validation, export는 PRNG state를 변경하지 않는다.
 
 ## 용어
 
@@ -56,10 +74,11 @@ Phase 0~6의 코드 분리는 구현됐고 Phase 5~6의 최종 gate 보강과 Ph
 - `Aspect ratio`: Component의 가로:세로 비율. 현재 `1:1`, `2:3`, `2:5`, `3:2`, `5:2`, `4:3`, `3:4`를 쓰며, 이 비율에 따라 3×3 cell 크기가 달라진다.
 - `Stroke`: Component 외곽선 방식. 현재 `stroke`, `no-stroke`, `corner-stroke` 세 가지를 쓴다.
 - `Graphic primitive`: Component를 구성하는 작은 그래픽 재료. barcode, pseudo-QR, mini table, wave graph, label, badge, symbol 등이 여기에 속한다.
-- `Content detail`: Content block 안쪽 하단에 들어가는 정보 묶음. barcode detail, pseudo-QR detail, table detail, wave detail이 여기에 속한다.
 - `Display keyword`: `REPORT`, `STATUS`, `MODULE`, `ACCESS`처럼 제목이나 상태 문구처럼 읽히는 영어 keyword다. data value가 아니며 SUIT English role을 쓴다.
 - `Layout grid`: Component safe area를 가로 3열, 세로 3행으로 나눈 보이지 않는 좌표계다.
-- `Layout renderer`: `renderRandomGridLayout()`이며 3×3 cell을 직사각형 block으로 패킹하고 block마다 token 하나를 랜덤 생성한다.
+- `Grid block`: 3×3 cell 중 하나 이상의 직사각형 영역을 점유하고 token 하나를 소유하는 단위다.
+- `Grid plan`: block geometry, position, selected token, fallback token을 담은 renderer 입력 data다.
+- `Finalization`: mounted SVG의 실제 `getBBox()`를 읽고 작은 size fallback과 position nudge를 적용하는 단계다.
 - `Seed`: 랜덤 결과를 다시 추적하기 위한 값. 화면 왼쪽 아래에 표시한다.
 
 ## 현재 시각 규칙
@@ -74,7 +93,7 @@ Phase 0~6의 코드 분리는 구현됐고 Phase 5~6의 최종 gate 보강과 Ph
 - Component border line은 `stroke`, `no-stroke`, `corner-stroke` 중 하나로 정하고, 내부에는 별도의 큰 layout box를 반복해서 만들지 않는다.
 - stroke weight는 `thin`, `thick` 두 단계로 정의하지만 현재는 `thin`만 사용한다. `thick`은 예약 token이며 렌더링하지 않는다.
 - Component border와 내부 content 사이에는 `PADDING_TOKENS.large` 기반 safe area를 둔다.
-- Content block 안쪽 텍스트와 badge는 `PADDING_TOKENS.medium`, detail primitive는 `PADDING_TOKENS.small` 기준으로 배치한다.
+- 각 block의 token content box는 block footprint와 `MARGIN_TOKENS.small`을 기준으로 계산한다. primitive 내부 여백은 `PADDING_TOKENS.small`을 쓴다.
 - 디자인 토큰 사이의 간격은 `MARGIN_TOKENS.small`, `MARGIN_TOKENS.medium`, `MARGIN_TOKENS.large`만 쓴다.
 - 모든 display token, greeting token, date/time token, data token은 자신이 받은 padded box 안에서만 spawn한다. 긴 문자는 `maxWidth` 기준으로 축소한다.
 - Block typography는 실제 폰트 메트릭으로 1차 평가하고, SVG 렌더 뒤 `getBBox()`로 content box를 다시 평가한다. 경계를 넘으면 단어·typeface·position은 유지하고 다음 작은 token size로 단계적으로 다시 렌더한다. 빈 block 생성은 현재 보류하며, `small 8px`에서도 실패하면 짧은 cell index data token으로 교체한다.
@@ -83,7 +102,7 @@ Phase 0~6의 코드 분리는 구현됐고 Phase 5~6의 최종 gate 보강과 Ph
 - 토큰의 형태는 `typography`, `graphic`으로 나누고 기능은 `content`, `data`, `symbol`, `sign`으로 별도 기록한다.
 - 모든 `typography` token은 `typeface` role을 필수로 기록한다. `graphic` token에는 `typeface`를 넣지 않는다.
 - typography weight는 `normal`, `bold` 두 단계만 쓰며, `content`이면서 `large`, `xlarge`, `xxlarge`, `xxxlarge`인 token만 `bold`다. 나머지는 모두 `normal`이다.
-- 모든 디자인 토큰의 배치 축도 `left`, `center`, `right` 세 가지만 쓴다. 토큰은 세 축 위에서 테트리스 블록처럼 행 단위로 쌓일 수 있고, 작은 spin 회전은 허용한다.
+- 모든 block token의 가로 배치 축은 `left`, `center`, `right`, 세로 배치 축은 `top`, `middle`, `bottom`만 쓴다. block마다 token은 정확히 하나다.
 - `Composable Categories` mode는 조합 재료로 사용할 수 있는 `content`, `data`, `symbol`의 form/function category와 가능한 category 조합만 보여주는 catalog view다.
 - barcode, pseudo-QR, mini table, wave graph, label, badge, symbol을 재사용 가능한 graphic primitive로 둔다.
 - 복잡한 컨트롤보다 Component 변주를 우선한다.
@@ -104,19 +123,17 @@ Phase 0~6의 코드 분리는 구현됐고 Phase 5~6의 최종 gate 보강과 Ph
 안쪽 grid를 만들기 전 단계로, 모든 Component 내부 배치는 세 단계 padding token을 먼저 따른다. padding은 보이지 않는 안전 영역이며, graphic primitive나 text token을 직접 장식하기 위한 선이 아니다.
 
 - `large`: Component border와 token 사이의 safe area다. 3×3 layout grid의 모든 cell은 이 영역 안에서만 좌표를 만든다.
-- `medium`: Content block 내부의 header, badge, display keyword, main value, sub value, detail area 기준이다.
+- `medium`: catalog와 graphic primitive 내부에서 관련 요소 묶음을 분리할 때 사용하는 중간 여백이다.
 - `small`: barcode, pseudo-QR, mini table, wave 같은 detail primitive의 내부 여백이다.
 
-텍스트는 `textNode()`에 `maxWidth`를 넘기는 것을 기본으로 한다. `안녕?`, `你好?`, `HELLO?`, `林`, 날짜/시간처럼 폭이 달라지는 typography도 padded box를 넘지 않도록 font size를 줄이고, 필요한 경우 SVG `textLength`로 마지막 fit을 건다.
-
-`contentPanel`과 `contentZones()`는 이전 renderer의 vertical layout reference다. 현재 3×3 Component renderer에는 넣지 않으며, 각 occupied cell은 자체 `small` padding 안에 단일 token만 렌더한다.
+일반 SVG text helper는 `maxWidth`를 받을 수 있지만, grid typography는 연속 scale이나 `textLength`를 사용하지 않는다. grid selection과 finalization은 정의된 여섯 token size 사이에서만 단조 감소하고, 각 block의 content box 안에 token 하나만 렌더한다.
 
 ## Margin System
 
-margin은 디자인 토큰 사이의 거리다. padding이 Component나 content block 안쪽의 안전 영역이라면, margin은 이미 배치된 token과 다음 token 사이의 관계를 정한다.
+margin은 Component, grid block, primitive 내부 요소 사이의 거리다. padding이 외곽에서 안쪽으로 확보하는 안전 영역이라면 margin은 형제 요소 사이의 관계를 정한다.
 
 - `small`: 하나의 token 내부에서 쓰는 최소 숨구멍이다. label text inset, micro badge text inset, mini table cell inset, barcode caption gap처럼 아주 가까운 요소 사이에 쓴다.
-- `medium`: 같은 content block 안에서 관련 token끼리 떨어지는 기본 거리다. `contentZones()`의 header, label, main, sub, detail 사이 gap과 pseudo-QR 옆 설명 텍스트 간격에 쓴다.
+- `medium`: catalog section, pseudo-QR 설명, 관련 primitive 요소 사이의 기본 거리다.
 - `large`: 서로 다른 정보 덩어리나 판독성을 위해 크게 비워야 하는 거리다. barcode quiet zone처럼 가장자리와 data mark 사이를 띄울 때 쓴다.
 
 새 primitive를 만들 때 임의 숫자로 `+ 9`, `- 14` 같은 간격을 넣지 않는다. 간격이 필요하면 `marginSize(w, h, "small" | "medium" | "large")`를 먼저 쓰고, 그 값이 시각적으로 맞지 않을 때 token 값 자체를 조정한다.
@@ -184,9 +201,9 @@ SVG에는 `data-token-form`, `data-token-function`, `data-token-role`, `data-tok
 - `center`: box의 중앙 축을 기준으로 쌓는다.
 - `right`: box의 오른쪽 edge를 기준으로 쌓는다.
 
-토큰이 여러 개일 때는 한 줄마다 다른 slot을 선택할 수 있다. 이 방식이 현재 시스템에서 말하는 Tetris stacking이다. 예를 들어 header row는 small left/right pair, label row는 right, main display row는 center, sub row는 left처럼 각 행이 서로 다른 축에 붙을 수 있다. 단, 임의의 x 좌표를 만들지는 않는다.
+block origin과 footprint가 alignment를 결정한다. 왼쪽·오른쪽 경계에 닿는 block은 해당 edge를, 3열 전체를 차지하는 block은 center를 쓴다. 세로도 같은 방식으로 top·bottom·middle을 결정한다. `1x3`, `3x1`, `2x3`, `3x2`의 center/middle 규칙은 ordered block policy가 명시적으로 덮어쓴다.
 
-spin은 토큰 자체에 주는 작은 회전이다. spin은 alignment를 대체하지 않는다. 먼저 `left`, `center`, `right` 중 하나로 붙인 다음, 그 token의 중심이나 anchor를 기준으로 살짝 회전한다. 현재 코드는 `SPIN_TOKENS.none`, `SPIN_TOKENS.subtle`, `SPIN_TOKENS.medium`만 둔다.
+grid token은 `data-token-placement="position-only"`, `data-token-scale="1"`을 유지하며 `scale()` transform을 사용하지 않는다. 회전은 `1x3` typography의 `whole-rotate` 또는 `glyph-sideways-stack` orientation에만 사용한다.
 
 ## Typography System
 
@@ -223,7 +240,7 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 
 ### Date And Refresh Time Typography
 
-오늘 날짜와 리프레시된 시간도 display typography로 취급한다. 코드에서는 `todayDateTypographyTokens()`가 브라우저 로컬 시간의 `Date()`를 기준으로 한국어, 영어, 중국어 표기를 만든다.
+오늘 날짜와 리프레시된 시간도 display typography로 취급한다. `token-library.js`의 날짜 token factory가 브라우저 로컬 시간의 `Date()`를 기준으로 한국어, 영어, 중국어 표기를 만든다.
 
 - 한국어 예: `2026년 7월 5일`, `2026년 7월 5일 오후 3시 24분`, `갱신 15:24:03`, `타임스탬프 1783232643000`.
 - 영어 예: `JULY 5, 2026`, `JULY 5, 2026 15:24:03`, `REFRESHED 15:24:03`, `TIMESTAMP 1783232643000`.
@@ -231,7 +248,7 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 
 날짜/시간 표기는 `primary` 또는 `content` cell의 단일 typography token으로만 들어간다. barcode, serial, code, table, QR, port 같은 data/graphic token 내부에는 넣지 않는다. 중국어/한자는 날짜 표기와 다국어 action keyword에 사용하며, 독립 display keyword로는 `林`을 허용한다. 날짜/시간은 오늘과 리프레시 시점에 따라 변하므로, 같은 seed라도 날짜나 시간이 다르면 완전히 동일한 typography가 재현되지 않을 수 있다.
 
-## Random Block Grid System
+## Grid Pipeline
 
 모든 Component는 `PADDING_TOKENS.large` 안쪽 safe area를 가로 3열 × 세로 3행으로 나눈다. column과 row는 `0`, `1`, `2`를 쓰고, cell 번호는 왼쪽 위에서 오른쪽 아래로 행 우선 순서인 `1`부터 `9`까지 사용한다. grid line은 실제로 그리지 않고 좌표 계산에만 사용하며 cell과 block 사이 gap은 `0`이다.
 
@@ -244,8 +261,8 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 각 렌더는 9개 cell을 아래 footprint 중 2-5개의 직사각형 block으로 빈틈없이 나눈다.
 
 - `1x1`, `2x2`, `1x2`, `1x3`, `2x3`, `2x1`, `3x1`, `3x2`만 허용한다. `3x3` 단일 block은 사용하지 않는다.
-- `buildGridBlockLayout()`은 block이 겹치거나 3x3 경계를 벗어나지 않으면서 1-9 cell을 정확히 한 번씩 덮도록 패킹한다.
-- 각 block에는 token 하나가 반드시 들어간다. block마다 `content`, `data`, `graphic` 중 하나를 먼저 고르고, 해당 token이 block 안에 들어가지 않으면 다른 분류에서 맞는 token을 찾는다.
+- `grid-layout.js`의 `buildGridBlockLayout()`은 block이 겹치거나 3x3 경계를 벗어나지 않으면서 1-9 cell을 정확히 한 번씩 덮도록 패킹한다.
+- 각 block에는 token 하나가 반드시 들어간다. `grid-selection.js`는 block마다 `primary`, `content`, `data`, `sign`, `graphic` 후보를 탐색하고 content box에 맞는 token과 deterministic fallback을 함께 만든다.
 - `Random`을 누를 때 component ratio, block 조합, block 위치, token이 모두 다시 생성된다.
 - `barcode`와 `pseudo-qr`는 Component 안에서 각각 최대 하나만 사용할 수 있다. 한 block에서 선택되면 이후 block 후보에서 제외한다.
 - 가장 면적이 큰 block 중 하나를 `primary` 후보로 정한다. `GRID_PRIMARY_CHANCE`는 현재 `1`이며 `primary`는 최대 하나다.
@@ -257,7 +274,7 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 - block이 3행 전체를 차지하면 세로 middle, 위 경계에 닿으면 top, 아래 경계에 닿으면 bottom anchor를 사용한다.
 - block은 token renderer에 `x`, `y`, `align`, `verticalAlign` position만 넘긴다. block 크기로 token geometry를 다시 계산하지 않는다.
 - 각 block 외곽은 현재 조합을 알아볼 수 있도록 `thin` stroke와 낮은 opacity로 표시한다. `Grid` 토글로 outline만 숨길 수 있으며 block과 token 배치는 유지한다.
-- typography token은 `typographyToken()`의 `intrinsic.fontSize`, graphic token은 `graphicTokenGalleryItems()`의 `intrinsic.width/height`를 그대로 사용한다.
+- typography token은 `typographyToken()`의 `intrinsic.fontSize`, graphic token은 `token-library.js`의 graphic descriptor가 가진 `intrinsic.width/height`를 그대로 사용한다.
 - typography intrinsic size는 `small 8px`, `medium 16px`, `large 32px`, `xlarge 64px`, `xxlarge 128px`, `xxxlarge 256px`를 사용한다.
 - size별 예외나 개별 font size override는 허용하지 않는다.
 - barcode, pseudo-QR, table, wave를 포함한 graphic token은 `medium` 또는 `large`만 사용한다. `large`는 `medium`의 가로세로를 같은 비율로 1.5배 확장한다.
@@ -265,7 +282,7 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 - random block grid에서는 연속적인 font fit, `textLength`, SVG `scale()`을 적용하지 않는다. typography overflow는 `256 → 128 → 64 → 32 → 16 → 8px`의 정의된 token size만 사용해 해결한다.
 - SVG에는 `data-layout-mode="random-blocks"`, 각 block의 footprint, origin, 점유 cell, 좌표, 가로·세로 anchor, token kind를 기록한다. token에는 `data-token-requested-size`와 `data-token-size-fallback`을 기록해 요청 크기와 실제 fallback 여부를 추적한다.
 
-`validateRenderedTokenRules()`는 2-5개의 block이 1-9 cell을 중복 없이 모두 덮는지, footprint와 anchor가 위치 규칙에 맞는지, block마다 token이 하나인지, 같은 typography 문자열이 구성 안에서 반복되지 않는지, 모든 SVG text의 line-height가 `1`인지, `2x2`·`3x1`·`1x3`·`2x3`·`3x2`의 시작 크기와 anchor가 규칙에 맞는지, 실제 token size가 요청 크기보다 커지지 않는지, fallback metadata와 실제 크기가 일치하는지, token placement가 `position-only`와 `scale=1`인지, 일반 `primary`가 최대 하나인지, barcode와 pseudo-QR이 각각 최대 하나인지, barcode 숫자가 항상 small 규칙을 따르는지 검사한다.
+`validation.js`의 `VALIDATION_RULES`는 taxonomy, typeface, weight, line-height, stroke, grid structure, block policy, size fallback, placement, orientation, fit, duplicate, graphic size, barcode caption을 개별 rule id로 검사한다. validator는 structured result만 반환하며 `app.js`의 `reportValidationResults()`만 SVG metadata와 console warning을 기록한다.
 
 ## Layout Archetype
 
@@ -288,9 +305,9 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 - `Type scale`: Canvas 크기와 Component 크기에 따라 title, subtitle, metadata, numeric value, caption이 어떤 크기 범위를 갖는지.
 - `Hierarchy`: Component 안에서 1순위 정보, 2순위 정보, 보조 정보가 어떤 순서와 크기로 보이는지.
 - `Alignment`: `left`, `center`, `right` 중 어떤 정렬을 어느 token class에서 쓸지. 그 외 임의 정렬은 만들지 않는다.
-- `Token size`: `small`, `medium`, `large` token이 각각 어떤 행 점유 규칙과 정보 위계를 갖는지.
-- `Token placement`: 디자인 토큰이 `left`, `center`, `right` slot에 어떻게 쌓이는지, spin을 어느 token class까지 허용할지.
-- `Grid`: Component 내부 margin, safe area, column, row, gutter, baseline grid, dense layout에서의 최소 간격.
+- `Token size`: `small`, `medium`, `large`, `xlarge`, `xxlarge`, `xxxlarge`가 footprint와 정보 위계에 어떻게 대응하는지.
+- `Token placement`: block별 `left`, `center`, `right`와 `top`, `middle`, `bottom` anchor, `1x3` orientation을 어떤 token class에 허용할지.
+- `Grid`: Component safe area, 3×3 column/row, gap 0, block content inset과 dense layout의 최소 여백.
 - `Aspect ratio behavior`: `1:1`, `2:3`, `2:5`, `3:2`, `5:2`, `4:3`, `3:4` 각각에 어울리는 정보 구조와 금지할 구조.
 - `Layout archetype mapping`: 각 archetype이 주로 사용할 aspect ratio, typography, primitive, density, stroke mode.
 - `Stroke`: `stroke`, `no-stroke`, `corner-stroke`의 선 두께, corner length, inset, dash 사용 여부.
@@ -307,57 +324,50 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 - `Data realism`: barcode, pseudo-QR, serial, price, status, graph가 실제 데이터처럼 보여야 하는지, 단순 visual fake로 둘지.
 - `Legibility`: 작게 출력해도 읽혀야 하는 정보와 장식적 mark의 구분.
 - `Export`: PNG scale, SVG 편집 가능성, 파일명 규칙, seed/aspect ratio/stroke/archetype 기록 방식.
-- `Interaction`: Random, Tone 외에 archetype lock, aspect ratio lock, stroke lock, seed input을 둘지.
+- `Interaction`: 현재 Random, Compose, Grid, PNG, SVG, Tone 외에 archetype lock, aspect ratio lock, stroke lock, seed input을 둘지.
 - `Curation`: 좋은 결과를 저장하는 기준, seed log 형식, reject할 결과의 조건.
 
-## Current Element System
+## Current Module System
 
-현재 쓰는 element는 아래 층위로 정리한다. 위쪽 층위는 아래쪽 층위를 직접 건너뛰지 않는다.
+현재 element와 실행 책임은 아래 module 층위로 정리한다.
 
-- `Visual tokens`: 단어, 조직명, date/time label, table label, 가짜 data label이다. 코드에서는 `visualTokens`와 `typographyToken()`에 모은다. typography token은 form, function, role, typeface, size, intrinsic font size를 함께 기록한다.
-- `SVG helpers`: `make`, `textNode`, `line`, `rect`, `polyline`처럼 SVG node를 만드는 낮은 수준의 도구다. 의미 있는 디자인 결정을 하지 않는다.
-- `Graphic primitives`: `label`, `microBadge`, `barcode`, `pseudoQr`, `miniTable`, `wave`처럼 하나의 작은 그래픽 형태를 그린다.
-- `Content details`: `renderBarcodeDetail`, `renderPseudoQrDetail`, `renderTableDetail`, `renderWaveDetail`처럼 기존 content block에서 쓰는 정보 묶음이다.
-- `Content block`: `contentPanel`이다. random block grid 이전 renderer의 내부 위계를 유지하지만 현재 Component layout에서는 사용하지 않는다.
-- `Random block grid layer`: `LAYOUT_GRID`, `GRID_BLOCK_FOOTPRINTS`, `buildGridBlockLayout`, `randomGridBlocks`, `layoutGridBlockPosition`, `renderGridBlockToken`, `renderRandomGridLayout`이다. 9개 cell을 직사각형 block으로 패킹하고 block마다 token 하나를 배치한다.
-- `Component layer`: `componentTemplates`, `renderComponentBorder`, `renderComponent`다. Component의 ratio, scale, border를 담당한다.
-- `Canvas layer`: `render`다. 단색 화면 배경과 export 대상 화면을 담당한다.
+- `Policy/Data`: `config.js`, `vocabulary.js`가 rule과 raw data를 소유한다.
+- `Token contracts`: `token-model.js`, `token-library.js`, `typography.js`가 token 생성, size fallback, typeface/weight/metric 해석을 소유한다.
+- `Pure geometry`: `layout.js`, `grid-layout.js`가 padding, alignment, footprint packing과 coverage를 계산한다.
+- `SVG primitives`: `svg.js`, `graphics.js`가 낮은 수준 node와 barcode, pseudo-QR, table, wave, badge를 만든다.
+- `Grid pipeline`: `grid-selection.js`, `grid-renderer.js`, `grid-finalizer.js`가 선택, detached SVG 생성, mounted typography 보정을 순서대로 수행한다.
+- `Rule inspection`: `validation.js`가 renderer metadata와 실제 bounds를 읽어 rule별 결과를 만든다.
+- `Application surfaces`: `catalog-renderer.js`, `export.js`, `app.js`가 Compose 화면, export, UI orchestration을 담당한다.
 
 ## Boundary Contracts
 
-- `visualTokens`는 data source다. 위치, 크기, 획, 레이아웃 결정을 하지 않는다.
-- `SVG helpers`는 shape만 만든다. 특정 archetype이나 Component ratio를 알면 안 된다.
-- `Graphic primitive`는 전달받은 `g`, `x`, `y`, `w`, `h` 안에서만 그린다. Canvas 배경, Component border, seed label을 만지지 않는다.
-- `Content detail renderer`는 content block의 detail 영역만 책임진다. header, main value, Component border를 만들지 않는다.
-- `contentPanel`은 기존 renderer reference이며 현재 random block grid 안에 넣지 않는다.
-- `Layout renderer`는 Component 내부의 3×3 cell, 직사각형 block footprint, token anchor의 관계만 책임진다. token의 크기나 비율, Component border, Canvas background를 결정하지 않는다.
-- random block grid의 `Graphic primitive`는 `renderAt()`에서 자신의 intrinsic width와 height를 사용한다. block 크기로 primitive geometry를 다시 계산하지 않는다.
-- `componentTemplates`는 ratio와 scale만 가진다. 실제 token placement는 random block grid renderer에 맡긴다.
-- `renderComponent`는 Canvas 안에 Component 하나를 배치하고 Component border를 붙인다. Content detail의 종류를 직접 알지 않는다.
-- `render`는 Canvas orchestration만 담당한다. 단색 background와 Component를 순서대로 붙이고 export에 쓰이는 viewBox를 정한다.
+- `config.js`와 `vocabulary.js`는 DOM과 application state를 참조하지 않는다.
+- `random.js`, `token-model.js`, `layout.js`, `grid-layout.js`는 pure module이며 browser global을 참조하지 않는다.
+- `grid-layout.js`는 vocabulary, Canvas metric, SVG를 알지 않고 cell/footprint geometry만 반환한다.
+- `grid-selection.js`는 plain object plan만 만들며 SVG node를 만들지 않는다. token 중복 Set을 변경할 수 있는 유일한 grid 단계다.
+- `grid-renderer.js`는 detached SVG tree만 만들며 `getBBox()`와 mounted DOM을 사용하지 않는다.
+- `grid-finalizer.js`는 전달받은 mounted Component 내부 typography만 변경한다. random과 vocabulary를 사용하지 않고 selection이 준비한 fallback만 소비한다.
+- `validation.js`는 DOM을 읽을 수 있지만 수정하거나 random을 소비하지 않는다.
+- `app.js`만 Canvas mount, controls, seed label, validation metadata와 console reporting을 변경한다.
+- `export.js`는 현재 SVG를 복제할 뿐 render나 random state를 다시 실행하지 않는다.
+- leaf module은 `app.js`를 import하지 않으며 source module graph에는 cycle이 없어야 한다.
 
 ## Extension Points
 
-새 요소를 추가할 때는 아래 위치에만 손대는 것을 기본 규칙으로 한다.
+새 요소를 추가할 때는 아래 owner를 기준으로 변경한다.
 
-- 새 한글/영어 단어, 조직명, table label: `visualTokens`에 추가한다.
-- 새 date/time typography: `todayDateTypographyTokens()`에 추가하고, data detail renderer에서는 호출하지 않는다.
-- 새 graphic primitive: primitive 함수를 만든 뒤 content detail이나 layout renderer에서 호출한다.
-- 새 content detail: `renderSomethingDetail` 함수를 만들고 `contentDetailModes`에 `{ id, weight, render }`로 등록한다.
-- 허용 block 크기는 `GRID_BLOCK_FOOTPRINTS`, block 수 후보는 `randomGridBlocks()`, `primary` 출현 확률은 `GRID_PRIMARY_CHANCE`에서 조정한다.
-- Component 안에서 중복을 금지할 graphic token은 `UNIQUE_GRID_TOKEN_ROLES`에서 관리한다.
-- typography의 고유 크기는 `TYPOGRAPHY_INTRINSIC_FONT_SIZES`에서만 조정한다. 개별 `typographyToken()`은 font size를 덮어쓸 수 없다. graphic의 고유 크기는 `graphicTokenGalleryItems()`의 `intrinsic`에서 조정한다.
-- graphic의 허용 크기는 `GRAPHIC_TOKEN_SIZES`, 크기별 배율은 `GRAPHIC_SIZE_SCALE`에서 관리한다.
-- 새 Component ratio: `componentTemplates`에 `{ label, ratio, scale }`을 추가한다.
-- 새 border mode: `componentBorderModes`에 id를 추가하고 `renderComponentBorder`에 그리는 방식을 추가한다.
-- Component와 content 안쪽 여백은 `PADDING_TOKENS`와 `paddedBox()`에서 조정한다.
-- 디자인 토큰 사이 간격은 `MARGIN_TOKENS`와 `marginSize()`에서 조정한다.
-- 디자인 토큰의 크기 단계는 `DESIGN_TOKEN_SIZES`와 `tokenSize`에서 조정한다.
-- 토큰 형태와 기능은 `TOKEN_FORMS`, `TOKEN_FUNCTIONS`, `tokenTaxonomyAttrs()`에서 조정한다.
-- typography token 정의는 `typographyToken()`을 사용하고 typeface role을 반드시 넘긴다.
-- 디자인 토큰의 좌/중/우 배치와 spin은 `TOKEN_ALIGNMENTS`, `alignedBoxX()`, `alignedTextX()`, `smallTokenPairZones()`, `stackTextToken()`, `spinAngle()`에서 조정한다.
-- Composable Categories mode의 typography 묶음은 `tokenGalleryItems()`, graphic 묶음은 `graphicTokenGalleryItems()`, 표시할 기능은 `COMPOSABLE_TOKEN_FUNCTIONS`에서 조정한다. 전체 form/function map은 `tokenCategoryDefinitions()`, 조합 가능한 category는 `composableTokenCategories()`, 가능한 조합은 `composableCategoryCombinations()`, 화면의 규칙 묶음은 `COMPOSITION_RULE_GROUPS`에서 관리한다.
-- 새 generator mode는 `appMode`, controls binding, `render()`의 mode 분기에서 추가한다.
+- 새 단어, 조직명, action 번역, 날짜 label: `vocabulary.js`의 `visualTokens`에 추가한다.
+- 새 typography/graphic 후보 조합: `token-library.js`의 group 또는 descriptor factory에 추가한다.
+- 새 token size, typeface, stroke, spacing: `config.js`를 변경하고 `token-model.js` 또는 `typography.js` resolver test를 함께 갱신한다.
+- 새 footprint 또는 footprint rule: ordered `GRID_BLOCK_POLICIES` 한 곳에 추가한다. 별도 footprint 배열을 만들지 않는다.
+- 새 token 선택 전략: `grid-selection.js`에서 plain selection contract를 확장한다. renderer 안에서 후보를 다시 고르지 않는다.
+- 새 graphic primitive: `graphics.js`에 추가하고 `grid-renderer.js`와 `catalog-renderer.js`의 descriptor dispatch를 연결한다.
+- 새 validation rule: `validation.js`에 `{ rule, valid, nodes, detail }` 결과를 반환하는 validator를 만들고 `VALIDATION_RULES`에 등록한다.
+- 새 Compose section: `catalog-renderer.js`에 추가하며 생성 Component state를 변경하지 않는다.
+- 새 export 형식: `export.js`에 추가하고 export 전후 PRNG/fingerprint 불변 test를 작성한다.
+- 새 Component ratio: `app.js`의 `componentTemplates`에 `{ label, ratio, scale }`을 추가한다.
+- 새 border mode: `config.js`의 `componentBorderModes`와 `app.js`의 `renderComponentBorder()`를 함께 갱신한다.
+- 새 application mode나 control: `app.js`의 state transition과 event binding을 변경하고 왕복 fingerprint test를 추가한다.
 
 ## Rule Gap Inventory
 
@@ -368,26 +378,24 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 현재 화면 생성에 직접 영향을 주는 파트다.
 
 - `renderComponentBorder`: Component 외곽선이다. `stroke`, `no-stroke`, `corner-stroke` 세 가지가 있다.
-- `contentPanel`: 이전 renderer에서 여러 요소를 조합하던 content block이며, 현재 3×3 Component 생성에는 사용하지 않는다.
 - `label`: 테두리 또는 반전 fill을 가진 짧은 title strip이다.
 - `microBadge`: `V1.2`, `REV A`, `BUILD 859` 같은 작은 badge다.
 - `barcode`: 실제 스캔 보장 데이터가 아닌 UPC/EAN-like visual fake barcode다. quiet zone, guard bar, 95-module pattern, human-readable caption을 갖는다.
 - `pseudoQr`: 실제 스캔용이 아닌 pseudo-QR graphic이다.
 - `miniTable`: lot/spec/freq/load 같은 가짜 data table이다.
 - `wave`: 작은 signal graph 또는 stock graph처럼 보이는 line chart다.
-- `renderRandomGridLayout`: Component safe area를 직사각형 block으로 패킹하고 각 block에 typography 또는 graphic token 하나를 배치한다.
+- `grid pipeline`: Component safe area를 직사각형 block으로 패킹하고 각 block에 typography 또는 graphic token 하나를 선택·렌더·보정한다.
 
 ### Unruled Decisions Per Part
 
 - `renderComponentBorder`: border mode별 권장 aspect ratio, 선 두께, corner length 기준.
-- `contentPanel`: 하나의 content block인지, archetype별 template으로 쪼갤지.
 - `label`: title 용도인지, status badge 용도인지, 단순 divider인지.
 - `microBadge`: revision/build/version만 허용할지, status나 warning에도 쓸지.
 - `barcode`: Critical info 전용인지, Identity/Verification에서도 쓸지. 현재는 UPC/EAN-like visual fake로 쓰며 실제 스캔 가능성은 보장하지 않는다.
 - `pseudoQr`: 실제 QR처럼 보이는 것을 허용할지, pseudo-QR로 명확히 유지할지.
 - `miniTable`: Data archetype 전용으로 묶을지, 다른 archetype의 보조 정보로도 쓸지.
 - `wave`: signal/status/data 중 어느 의미로 쓸지.
-- `renderRandomGridLayout`: token kind별 출현 비율과 aspect ratio별 block 조합을 어떻게 제한할지.
+- `grid pipeline`: token kind별 출현 비율과 aspect ratio별 block 조합을 어떻게 제한할지.
 
 ## 추적 방법
 
