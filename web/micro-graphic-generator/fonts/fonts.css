@@ -15,6 +15,14 @@
 }
 
 @font-face {
+  font-family: "SUIT";
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+  src: url("./SUIT-Heavy.woff2") format("woff2");
+}
+
+@font-face {
   font-family: "Glow Sans SC";
   font-style: normal;
   font-weight: 400;
@@ -28,6 +36,14 @@
   font-weight: 700;
   font-display: block;
   src: url("./GlowSansSC-Bold.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Glow Sans SC";
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+  src: url("./GlowSansSC-Heavy.woff2") format("woff2");
 }
 
 @font-face {

@@ -174,7 +174,9 @@ spin은 토큰 자체에 주는 작은 회전이다. spin은 alignment를 대체
 
 현재 폰트 시스템은 SUIT를 메인 타입페이스로 두고 영문·한글·generator UI에 사용한다. 한자·중국어에는 Glow Sans SC, mono에는 Noto Sans Mono를 사용한다. 코드에서는 `TYPEFACES`와 `resolveTypeface()`로 관리한다.
 
-weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 `content`이고 size가 `large`, `xlarge`, `xxlarge`, `xxxlarge`인 typography에만 적용한다. `small`, `medium`과 `data`, `symbol`, `sign`, catalog UI는 모두 `normal`이다. 코드에서는 `fontWeightForToken()`이 weight를 결정하고 `FONT_WEIGHTS.normal = 400`, `FONT_WEIGHTS.bold = 700`으로 렌더링한다. SVG에는 `data-token-weight="normal|bold"`를 기록하며 `validateRenderedTokenRules()`가 size/function 조합과 실제 weight를 함께 검사한다.
+weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 `content`이고 size가 `large`, `xlarge`, `xxlarge`, `xxxlarge`인 typography에만 적용한다. `small`, `medium`과 `data`, `symbol`, `sign`, catalog UI는 모두 `normal`이다. 실제 렌더 값은 `normal 400`, `large/xlarge bold 700`, `xxlarge/xxxlarge bold 900`을 사용한다. 코드에서는 `fontWeightForToken()`이 token label을, `fontWeightValueForToken()`이 size별 실제 숫자 weight를 결정한다. SVG에는 `data-token-weight="normal|bold"`를 기록하며 `validateRenderedTokenRules()`가 size/function 조합과 실제 weight를 함께 검사한다.
+
+모든 UI와 SVG typography의 line-height는 `1`로 고정한다. CSS 전역 규칙과 `textNode()`의 SVG `line-height` 속성에 동일하게 적용하며 size나 role별 예외를 두지 않는다.
 
 `form: "typography"`인 token은 아래 typeface role 중 하나를 반드시 명시한다. 브라우저 fallback만으로 typeface를 결정하지 않는다.
 
@@ -197,7 +199,7 @@ weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 
 
 HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를 `sign / status-code` 보조 typography로 사용한다. `small 8px`와 `medium 16px`에 분산하고 일반 block의 sign 후보로만 조합한다. `STATUS` 역시 `medium / sign / status`로만 사용하며 hero 후보에는 넣지 않는다.
 
-웹에서 보기 위해 SUIT 2.0.5의 Regular/Bold, Glow Sans SC 0.93 Normal 폭의 Regular/Bold 서브셋, 그리고 `Noto Sans`, `Noto Sans KR`, `Noto Sans SC`, `Noto Sans Mono`를 `fonts/` 안에 로컬 파일로 번들한다. SUIT와 Glow Sans SC는 SIL Open Font License 1.1이며 라이선스 원문을 각각 `fonts/SUIT-OFL.txt`, `fonts/GlowSansSC-OFL.txt`에 함께 둔다. Glow Sans SC 서브셋은 현재 중국어 action token, 인사말, 날짜·숫자 문자와 `林`을 포함한다. HTML은 `./fonts/fonts.css`를 import하고, SVG export도 같은 CSS 파일을 절대 URL로 넣는다. 외부 폰트 요청을 기다리지 않도록 하기 위한 결정이며, 앱은 로컬 폰트의 400/700 weight가 붙은 뒤 첫 렌더가 되도록 `document.fonts.load()`와 `document.fonts.ready`를 짧게 기다린다.
+웹에서 보기 위해 SUIT 2.0.5의 Regular/Bold/Heavy, Glow Sans SC 0.93 Normal 폭의 Regular/Bold/Heavy 서브셋, 그리고 `Noto Sans`, `Noto Sans KR`, `Noto Sans SC`, `Noto Sans Mono`를 `fonts/` 안에 로컬 파일로 번들한다. SUIT와 Glow Sans SC는 SIL Open Font License 1.1이며 라이선스 원문을 각각 `fonts/SUIT-OFL.txt`, `fonts/GlowSansSC-OFL.txt`에 함께 둔다. Glow Sans SC 서브셋은 현재 중국어 action token, 인사말, 날짜·숫자 문자와 `林`을 포함한다. HTML은 `./fonts/fonts.css`를 import하고, SVG export도 같은 CSS 파일을 절대 URL로 넣는다. 외부 폰트 요청을 기다리지 않도록 하기 위한 결정이며, 앱은 로컬 폰트의 400/700/900 weight가 붙은 뒤 첫 렌더가 되도록 `document.fonts.load()`와 `document.fonts.ready`를 짧게 기다린다.
 
 중국어/한자 glyph가 Glow Sans SC 서브셋에 없으면 `Noto Sans SC`, `Noto Sans KR` 순서로 fallback한다. 현재 vocabulary를 늘릴 때는 Glow Sans SC 서브셋의 문자 범위도 함께 갱신한다.
 
@@ -230,6 +232,7 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 - `barcode`와 `pseudo-qr`는 Component 안에서 각각 최대 하나만 사용할 수 있다. 한 block에서 선택되면 이후 block 후보에서 제외한다.
 - 가장 면적이 큰 block 중 하나를 `primary` 후보로 정한다. `GRID_PRIMARY_CHANCE`는 현재 `1`이며 `primary`는 최대 하나다.
 - `primary`는 block 면적에 따라 `large`, `xlarge`, `xxlarge` content를 우선 사용한다. 일반 block에서 들어가지 않으면 작은 content, data, graphic으로 대체하며 token을 강제로 축소하지 않는다.
+- `2x2` block은 graphic을 허용하지 않고 반드시 `xxlarge 128px` 또는 `xxxlarge 256px` typography를 사용한다. block의 현재 origin에 따른 left/center/right와 top/middle/bottom anchor 및 inset은 변경하지 않는다. 두 크기 중 고유 크기로 들어가는 후보가 없는 Component ratio에서는 해당 footprint를 생성하지 않는다.
 - `3x1`, `1x3` block은 graphic을 허용하지 않고 반드시 `xxlarge 128px` typography만 사용한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor에 배치한다. `1x3`은 기존 hero 단어를 90도 회전해 세로 block 안에서 사용할 수 있게 하며, 두 footprint 모두 실제로 들어가는 hero 후보가 최소 두 개일 때만 생성한다.
 - `2x3`, `3x2` block은 graphic을 허용하지 않고 반드시 `xxxlarge 256px` typography만 사용한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor를 유지한다. 256px token이 고유 크기로 들어갈 수 없는 Component ratio에서는 해당 footprint를 생성하지 않는다.
 - block이 3열 전체를 차지하면 가로 center, 왼쪽 경계에 닿으면 left, 오른쪽 경계에 닿으면 right anchor를 사용한다.
@@ -244,7 +247,7 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 - random block grid에서는 block 크기에 맞춘 font fit, `textLength`, SVG `scale()`을 적용하지 않는다.
 - SVG에는 `data-layout-mode="random-blocks"`, 각 block의 footprint, origin, 점유 cell, 좌표, 가로·세로 anchor, token kind를 기록한다.
 
-`validateRenderedTokenRules()`는 2-5개의 block이 1-9 cell을 중복 없이 모두 덮는지, footprint와 anchor가 위치 규칙에 맞는지, block마다 token이 하나인지, 같은 typography 문자열이 구성 안에서 반복되지 않는지, `3x1`과 `1x3`이 center/middle의 `xxlarge 128px` typography만 쓰는지, `2x3`과 `3x2`가 `xxxlarge 256px` typography만 쓰는지, token placement가 `position-only`와 `scale=1`인지, 일반 `primary`가 최대 하나인지, barcode와 pseudo-QR이 각각 최대 하나인지, barcode 숫자가 항상 small 규칙을 따르는지 검사한다.
+`validateRenderedTokenRules()`는 2-5개의 block이 1-9 cell을 중복 없이 모두 덮는지, footprint와 anchor가 위치 규칙에 맞는지, block마다 token이 하나인지, 같은 typography 문자열이 구성 안에서 반복되지 않는지, 모든 SVG text의 line-height가 `1`인지, `2x2`가 기존 위치 anchor의 `xxlarge 128px` 또는 `xxxlarge 256px` typography만 쓰는지, `3x1`과 `1x3`이 center/middle의 `xxlarge 128px` typography만 쓰는지, `2x3`과 `3x2`가 `xxxlarge 256px` typography만 쓰는지, token placement가 `position-only`와 `scale=1`인지, 일반 `primary`가 최대 하나인지, barcode와 pseudo-QR이 각각 최대 하나인지, barcode 숫자가 항상 small 규칙을 따르는지 검사한다.
 
 ## Layout Archetype
 
@@ -481,5 +484,8 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-12: 한 구성 안에서 대소문자와 공백을 정규화한 동일 typography 문자열의 중복 선택을 금지.
 - 2026-07-12: SUIT 2.0.5 Regular/Bold를 메인 타입페이스로 지정해 영문·한글·generator UI에 적용하고 Noto Sans 계열은 역할별 fallback으로 유지.
 - 2026-07-12: 한자와 중국어 typography를 Glow Sans SC 0.93 Normal 폭의 400/700 서브셋으로 변경하고 Noto Sans SC를 fallback으로 유지.
+- 2026-07-12: `2x2` block의 위치 anchor를 유지하면서 token을 `xxlarge 128px` 또는 `xxxlarge 256px` typography로 제한.
+- 2026-07-12: `xxlarge`, `xxxlarge` content typography의 실제 font weight를 900으로 변경하고 SUIT/Glow Sans SC Heavy 파일을 추가.
+- 2026-07-12: 모든 UI와 SVG typography의 line-height를 `1`로 고정.
 - 2026-07-11: `3x2`, `2x3` block의 xxxlarge token anchor를 center/middle로 고정.
 - 2026-07-12: 제공된 action text에서 62개 고유 표현을 추출하고 한글·영어·중국어 대응 token을 large, xxlarge, xxxlarge display 후보에 추가.
