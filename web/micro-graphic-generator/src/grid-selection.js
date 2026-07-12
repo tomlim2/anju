@@ -1,18 +1,15 @@
 import {
-  CONTEXTUAL_HEAVY_XLARGE_FOOTPRINTS,
+  DESIGN_TOKEN_SIZE_ORDER,
   GRID_BLOCK_FOOTPRINTS,
+  GRID_BLOCK_POLICY_BY_FOOTPRINT,
   GRID_PRIMARY_CHANCE,
   UNIQUE_GRID_TOKEN_ROLES
 } from "./config.js";
 import {
   alignedBoxY,
-  blockTypographyRotation,
   buildGridBlockLayout,
   gridBlockCells,
-  gridTokenFits,
-  isCenteredXxlargeFootprint,
-  isOversizedSquareFootprint,
-  isXxxlargeFootprint
+  gridTokenFits
 } from "./grid-layout.js";
 import { marginSize } from "./layout.js";
 import {
@@ -33,8 +30,9 @@ export function createSelectionState() {
 export function createGridTokenPools(typographyItems, graphicItems) {
   return {
     primary: typographyItems.filter(item => item.function === "content" && ["large", "xlarge", "xxlarge"].includes(item.size)),
-    xxlargeBlock: typographyItems.filter(item => item.size === "xxlarge"),
-    xxxlargeBlock: typographyItems.filter(item => item.size === "xxxlarge"),
+    typographyBySize: Object.fromEntries(
+      DESIGN_TOKEN_SIZE_ORDER.map(size => [size, typographyItems.filter(item => item.size === size)])
+    ),
     content: typographyItems.filter(item => item.function === "content" && ["small", "medium"].includes(item.size)),
     data: typographyItems.filter(item => item.function === "data" && ["small", "medium"].includes(item.size)),
     sign: typographyItems.filter(item => item.function === "sign" && ["small", "medium"].includes(item.size)),
@@ -43,8 +41,30 @@ export function createGridTokenPools(typographyItems, graphicItems) {
 }
 
 export function createGridSelectionEngine({ randomSource, typographyMeasurer }) {
-  const { random, pick, chance, shuffled } = randomSource;
+  const { pick, chance, shuffled } = randomSource;
   const { measuredTypographyBox, orientedTypographyDimensions } = typographyMeasurer;
+  const specializedTokenKinds = {
+    "maximum-typography": "block-xxxlarge",
+    "centered-hero": "block-xxlarge",
+    "oversized-typography": "block-2x2-oversized"
+  };
+
+  function blockPolicy(block) {
+    const footprint = `${block.width}x${block.height}`;
+    const policy = GRID_BLOCK_POLICY_BY_FOOTPRINT.get(footprint);
+    if (!policy) throw new Error(`Missing grid block policy: ${footprint}`);
+    return policy;
+  }
+
+  function policyTypographyItems(policy, pools) {
+    return (policy.requestedSizes || []).flatMap(size => pools.typographyBySize[size] || []);
+  }
+
+  function secondaryKindsForPolicy(policy) {
+    return policy.allowGraphic
+      ? ["content", "data", "sign", "graphic"]
+      : ["content", "data", "sign"];
+  }
 
   function intrinsicTokenBox(position, intrinsic) {
     const alignOffset = { left: 0, center: 0.5, right: 1 }[position.align];
@@ -77,29 +97,24 @@ export function createGridSelectionEngine({ randomSource, typographyMeasurer }) 
   }
 
   function footprintSupportsRequiredTypography(box, footprint, pools) {
-    const items = isXxxlargeFootprint(footprint)
-      ? pools.xxxlargeBlock
-      : isCenteredXxlargeFootprint(footprint)
-        ? pools.xxlargeBlock
-        : isOversizedSquareFootprint(footprint)
-          ? [...pools.xxlargeBlock, ...pools.xxxlargeBlock]
-          : null;
-    if (!items) return true;
+    const policy = blockPolicy(footprint);
+    if (!policy.requestedSizes) return true;
+    const items = policyTypographyItems(policy, pools);
     const blockWidth = box.width * footprint.width / 3;
     const blockHeight = box.height * footprint.height / 3;
-    const inset = isOversizedSquareFootprint(footprint) ? Math.min(
+    const inset = policy.candidatePolicy === "oversized-typography" ? Math.min(
       marginSize(blockWidth, blockHeight, "small"),
       blockWidth * 0.12,
       blockHeight * 0.12
     ) : 0;
     const availableWidth = blockWidth - inset * 2;
     const availableHeight = blockHeight - inset * 2;
-    const rotation = blockTypographyRotation(footprint);
+    const rotation = policy.rotation;
     const fittingItems = items.filter(item => {
       const dimensions = orientedTypographyDimensions(item, rotation);
       return dimensions.width <= availableWidth && dimensions.height <= availableHeight;
     });
-    return fittingItems.length >= (isCenteredXxlargeFootprint(footprint) ? 2 : 1);
+    return fittingItems.length >= (policy.candidatePolicy === "centered-hero" ? 2 : 1);
   }
 
   function planGridBlocks(box, pools) {
@@ -114,7 +129,6 @@ export function createGridSelectionEngine({ randomSource, typographyMeasurer }) 
       if (blocks) break;
     }
     blocks ||= buildGridBlockLayout(3, availableFootprints, randomSource);
-    const secondaryKinds = ["content", "data", "sign", "graphic"];
     const primaryCandidates = blocks.filter(block => block.area >= 2);
     let primaryBlock = null;
 
@@ -123,12 +137,15 @@ export function createGridSelectionEngine({ randomSource, typographyMeasurer }) 
       primaryBlock = pick(primaryCandidates.filter(block => block.area === largestArea));
     }
 
-    return blocks.map((block, index) => ({
-      ...block,
-      id: `block-${index + 1}`,
-      kind: block === primaryBlock ? "primary" : pick(secondaryKinds),
-      cells: gridBlockCells(block)
-    }));
+    return blocks.map((block, index) => {
+      const policy = blockPolicy(block);
+      return {
+        ...block,
+        id: `block-${index + 1}`,
+        kind: block === primaryBlock ? "primary" : pick(secondaryKindsForPolicy(policy)),
+        cells: gridBlockCells(block)
+      };
+    });
   }
 
   function isUnusedTypographyWord(item, selectionState) {
@@ -159,40 +176,20 @@ export function createGridSelectionEngine({ randomSource, typographyMeasurer }) 
   }
 
   function pickGridTokenItem(block, position, pools, availableBox, selectionState) {
-    if (isXxxlargeFootprint(block)) {
-      const candidates = shuffled(pools.xxxlargeBlock.filter(item => isUnusedTypographyWord(item, selectionState)));
-      while (candidates.length) {
-        const item = candidates.pop();
-        const fit = fittingGridTokenItem(item, position, availableBox);
-        if (fit) return { ...fit, kind: "block-xxxlarge" };
-      }
-      return null;
-    }
-
-    if (isCenteredXxlargeFootprint(block)) {
-      const candidates = shuffled(pools.xxlargeBlock.filter(item => isUnusedTypographyWord(item, selectionState)));
-      while (candidates.length) {
-        const item = candidates.pop();
-        const fit = fittingGridTokenItem(item, position, availableBox);
-        if (fit) return { ...fit, kind: "block-xxlarge" };
-      }
-      return null;
-    }
-
-    if (isOversizedSquareFootprint(block)) {
+    const policy = blockPolicy(block);
+    if (policy.requestedSizes) {
       const candidates = shuffled(
-        [...pools.xxlargeBlock, ...pools.xxxlargeBlock]
-          .filter(item => isUnusedTypographyWord(item, selectionState))
+        policyTypographyItems(policy, pools).filter(item => isUnusedTypographyWord(item, selectionState))
       );
       while (candidates.length) {
         const item = candidates.pop();
         const fit = fittingGridTokenItem(item, position, availableBox);
-        if (fit) return { ...fit, kind: "block-2x2-oversized" };
+        if (fit) return { ...fit, kind: specializedTokenKinds[policy.candidatePolicy] };
       }
       return null;
     }
 
-    const secondaryKinds = ["content", "data", "sign", "graphic"];
+    const secondaryKinds = secondaryKindsForPolicy(policy);
     const kindOrder = block.kind === "primary"
       ? ["primary", ...shuffled(secondaryKinds)]
       : [block.kind, ...shuffled(secondaryKinds.filter(kind => kind !== block.kind))];
@@ -215,20 +212,10 @@ export function createGridSelectionEngine({ randomSource, typographyMeasurer }) 
   }
 
   function guaranteedGridTokenSelection(block, position, availableBox) {
-    const footprint = `${block.width}x${block.height}`;
+    const policy = blockPolicy(block);
     const value = String(block.cells?.[0] || 1);
-    const sourceSize = isXxxlargeFootprint(block)
-      ? "xxxlarge"
-      : isCenteredXxlargeFootprint(block) || isOversizedSquareFootprint(block)
-        ? "xxlarge"
-        : "small";
-    const kind = isXxxlargeFootprint(block)
-      ? "block-xxxlarge"
-      : isCenteredXxlargeFootprint(block)
-        ? "block-xxlarge"
-        : isOversizedSquareFootprint(block)
-          ? "block-2x2-oversized"
-          : "data";
+    const sourceSize = policy.requestedSizes?.[0] || "small";
+    const kind = specializedTokenKinds[policy.candidatePolicy] || "data";
     const sourceItem = typographyToken(value, {
       typeface: "mono",
       size: sourceSize,
@@ -243,21 +230,29 @@ export function createGridSelectionEngine({ randomSource, typographyMeasurer }) 
         requestedSize: sourceSize
       }),
       kind,
-      orientationMode: position.rotation ? "whole-rotate" : "none",
-      forceHeavyXlarge: CONTEXTUAL_HEAVY_XLARGE_FOOTPRINTS.has(footprint)
+      orientationMode: policy.rotation ? "whole-rotate" : "none",
+      forceHeavyXlarge: policy.xlargeWeight === 900
     };
   }
 
   function gridTokenOrientationMode(block, item) {
-    if (item.form !== "typography" || block.width !== 1 || block.height !== 3) return "none";
+    if (item.form !== "typography") return "none";
+    const policy = blockPolicy(block);
+    const orientationModes = /[A-Za-z]/.test(item.value)
+      ? policy.englishOrientationModes || policy.orientationModes
+      : policy.orientationModes;
+    if (orientationModes.length <= 1) return orientationModes[0] || "none";
     const supportsGlyphStack = hasHangul(item.value) || hasHanja(item.value);
-    return supportsGlyphStack && chance(0.5) ? "glyph-sideways-stack" : "whole-rotate";
+    if (supportsGlyphStack && orientationModes.includes("glyph-sideways-stack") && chance(0.5)) {
+      return "glyph-sideways-stack";
+    }
+    return orientationModes.includes("whole-rotate") ? "whole-rotate" : orientationModes[0];
   }
 
   function toTokenPlan(selection, block, position) {
-    const footprint = `${block.width}x${block.height}`;
+    const policy = blockPolicy(block);
     const orientationMode = selection.orientationMode || gridTokenOrientationMode(block, selection.item);
-    const forceHeavyXlarge = CONTEXTUAL_HEAVY_XLARGE_FOOTPRINTS.has(footprint);
+    const forceHeavyXlarge = policy.xlargeWeight === 900;
     return {
       tokenPlan: selection.item,
       bounds: selection.bounds,

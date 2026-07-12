@@ -354,7 +354,7 @@
         seedLabel.textContent = `SEED ${seedHex()} / COMP ${activeComponentRatio} / BLOCKS ${activeBlockLayout} / BORDER ${activeBorderMode}`;
       }
       finalizeRenderedGridTypography(art.querySelector("svg[data-component]"), activeGridPlan);
-      reportValidationResults(art, runValidationRules(art));
+      reportValidationResults(art, runValidationRules(art, { expectedMode: appMode }));
       renderVersion += 1;
     }
 
@@ -433,7 +433,7 @@
             return currentTestSnapshot();
           },
           validate() {
-            return reportValidationResults(art, runValidationRules(art));
+            return reportValidationResults(art, runValidationRules(art, { expectedMode: appMode }));
           },
           uniformTypographyGroupKey,
           svgText: artworkExporter.svgText

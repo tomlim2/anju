@@ -51,6 +51,36 @@ async function pngDownloadSummary(page) {
   };
 }
 
+async function svgDownloadSummary(page) {
+  await page.evaluate(() => {
+    const originalCreateObjectURL = URL.createObjectURL;
+    window.__SVG_EXPORT_MIME_TYPES__ = [];
+    window.__RESTORE_CREATE_OBJECT_URL__ = () => {
+      URL.createObjectURL = originalCreateObjectURL;
+      delete window.__RESTORE_CREATE_OBJECT_URL__;
+    };
+    URL.createObjectURL = function captureSvgBlobType(blob) {
+      window.__SVG_EXPORT_MIME_TYPES__.push(blob.type);
+      return originalCreateObjectURL.call(this, blob);
+    };
+  });
+
+  try {
+    const downloadPromise = page.waitForEvent("download");
+    await page.locator("#svg").click();
+    const download = await downloadPromise;
+    const path = await download.path();
+    const content = await readFileAsync(path, "utf8");
+    const mimeTypes = await page.evaluate(() => [...window.__SVG_EXPORT_MIME_TYPES__]);
+    return { filename: download.suggestedFilename(), mimeTypes, content };
+  } finally {
+    await page.evaluate(() => {
+      window.__RESTORE_CREATE_OBJECT_URL__?.();
+      delete window.__SVG_EXPORT_MIME_TYPES__;
+    });
+  }
+}
+
 for (const fixture of baseline.fixtures) {
   test(`baseline fixture: ${fixture.name}`, async ({ page }) => {
     const { errors, snapshot } = await openGenerator(page, fixture);
@@ -64,11 +94,11 @@ for (const fixture of baseline.fixtures) {
 test("uniform typography groups isolate 1x3 and 3x1", async ({ page }) => {
   await openGenerator(page);
   const keys = await page.evaluate(() => ({
-    vertical: window.__MICRO_GRAPHIC_TEST__.uniformTypographyGroupKey("1x3", "xxlarge"),
-    horizontal: window.__MICRO_GRAPHIC_TEST__.uniformTypographyGroupKey("3x1", "xxlarge")
+    vertical: window.__MICRO_GRAPHIC_TEST__.uniformTypographyGroupKey("footprint:1x3", "xxlarge"),
+    horizontal: window.__MICRO_GRAPHIC_TEST__.uniformTypographyGroupKey("footprint:3x1", "xxlarge")
   }));
-  expect(keys.vertical).toBe("1x3:xxlarge");
-  expect(keys.horizontal).toBe("3x1:xxlarge");
+  expect(keys.vertical).toBe("footprint:1x3:xxlarge");
+  expect(keys.horizontal).toBe("footprint:3x1:xxlarge");
   expect(keys.vertical).not.toBe(keys.horizontal);
 });
 
@@ -124,13 +154,23 @@ test("validation reports one precise rule without mutating random state", async 
     const prngBefore = hook.snapshot().prng;
     token.setAttribute("data-token-scale", "0.75");
     const validation = hook.validate();
+    const metadataCount = document.querySelector("#art").getAttribute("data-rule-violations");
+    const metadataList = document.querySelector("#art").getAttribute("data-rule-violation-list");
+    token.setAttribute("data-token-scale", "1");
+    const fixedOrientationToken = document.querySelector('[data-grid-footprint="1x1"] > [data-grid-token]');
+    fixedOrientationToken.setAttribute("data-token-orientation", "whole-rotate");
+    fixedOrientationToken.setAttribute("data-token-rotation", "90");
+    const orientationValidation = hook.validate();
+    const orientationMetadataList = document.querySelector("#art").getAttribute("data-rule-violation-list");
     return {
       prngBefore,
       prngAfter: hook.snapshot().prng,
       violations: validation.violations,
       invalidResults: validation.results.filter(item => !item.valid),
-      metadataCount: document.querySelector("#art").getAttribute("data-rule-violations"),
-      metadataList: document.querySelector("#art").getAttribute("data-rule-violation-list")
+      orientationViolations: orientationValidation.violations,
+      metadataCount,
+      metadataList,
+      orientationMetadataList
     };
   });
 
@@ -144,6 +184,42 @@ test("validation reports one precise rule without mutating random state", async 
   expect(result.invalidResults[0].nodes).toHaveLength(1);
   expect(result.metadataCount).toBe("1");
   expect(result.metadataList).toBe("grid.position-only");
+  expect(result.orientationViolations).toEqual(["grid.orientation"]);
+  expect(result.orientationMetadataList).toBe("grid.orientation");
+  expect(errors).toEqual([]);
+});
+
+test("validation requires a Component only in Random mode", async ({ page }) => {
+  const { errors } = await openGenerator(page);
+  const randomResult = await page.evaluate(() => {
+    const hook = window.__MICRO_GRAPHIC_TEST__;
+    const before = hook.snapshot().prng;
+    const duplicate = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    duplicate.setAttribute("data-component", "duplicate");
+    document.querySelector("#art").appendChild(duplicate);
+    const duplicateValidation = hook.validate();
+    duplicate.remove();
+    document.querySelector("svg[data-component]").remove();
+    const missingValidation = hook.validate();
+    return { before, after: hook.snapshot().prng, duplicateValidation, missingValidation };
+  });
+
+  expect(randomResult.after).toEqual(randomResult.before);
+  expect(randomResult.duplicateValidation.violations).toEqual(["grid.structure"]);
+  expect(randomResult.duplicateValidation.results.find(result => result.rule === "grid.structure")).toMatchObject({
+    valid: false,
+    detail: "Random mode requires exactly one rendered Component; found 2"
+  });
+  expect(randomResult.missingValidation.violations).toEqual(["grid.structure"]);
+  expect(randomResult.missingValidation.results.find(result => result.rule === "grid.structure")).toMatchObject({
+    valid: false,
+    detail: "Random mode requires exactly one rendered Component; found 0"
+  });
+
+  await page.locator("#mode").click();
+  const composeValidation = await page.evaluate(() => window.__MICRO_GRAPHIC_TEST__.validate());
+  expect(composeValidation.valid).toBe(true);
+  expect(composeValidation.violations).toEqual([]);
   expect(errors).toEqual([]);
 });
 
@@ -182,6 +258,18 @@ test("graphic primitive SVG structures match the baseline", async ({ page }) => 
 });
 
 test(`Random control keeps ${randomIterations} generations valid`, async ({ page }) => {
+  await page.addInitScript(() => {
+    const nativeGetRandomValues = crypto.getRandomValues.bind(crypto);
+    let deterministicSeed = 0x13579bdf;
+    crypto.getRandomValues = array => {
+      if (array instanceof Uint32Array && array.length === 1) {
+        deterministicSeed = (deterministicSeed + 0x9e3779b9) >>> 0;
+        array[0] = deterministicSeed;
+        return array;
+      }
+      return nativeGetRandomValues(array);
+    };
+  });
   const { errors } = await openGenerator(page);
   const result = await page.evaluate(iterations => {
     const seeds = new Set();
@@ -197,12 +285,13 @@ test(`Random control keeps ${randomIterations} generations valid`, async ({ page
         blocks.length > 5 ||
         blocks.some(block => !block.role || !block.value || !block.fit) ||
         duplicateUniqueRole;
-      if (failure) return { index, snapshot, duplicateUniqueRole };
+      if (failure) return { failure: { index, seed: snapshot.seed, snapshot, duplicateUniqueRole } };
     }
-    return { iterations, uniqueSeeds: seeds.size };
+    return { failure: null, iterations, uniqueSeeds: seeds.size };
   }, randomIterations);
 
   expect(errors).toEqual([]);
+  expect(result.failure, JSON.stringify(result.failure, null, 2)).toBeNull();
   expect(result.iterations).toBe(randomIterations);
   expect(result.uniqueSeeds).toBeGreaterThan(Math.floor(randomIterations * 0.99));
 });
@@ -260,9 +349,16 @@ test("SVG and PNG exports preserve tone, grid, and 2x dimensions", async ({ page
   expect(svgGridOn).toContain("opacity=\"0.18\"");
   expect(svgGridOn).toContain("background: rgb(244, 244, 239)");
   expect(svgGridOn).toContain("svg { color: #10110f; }");
-  const afterSvg = await currentSnapshot(page);
-  expect(afterSvg.prng).toEqual(initial.prng);
-  expect(afterSvg.structuralFingerprint).toBe(initial.structuralFingerprint);
+  expect(svgGridOn).not.toContain("data-app-mode");
+  const svgDownload = await svgDownloadSummary(page);
+  expect(svgDownload.filename).toBe(`micro-graphic-${fixture.seed.toString(16)}.svg`);
+  expect(svgDownload.mimeTypes).toEqual(["image/svg+xml;charset=utf-8"]);
+  expect(svgDownload.content).toBe(svgGridOn);
+  expect(createHash("sha256").update(svgDownload.content).digest("hex"))
+    .toBe(exportBaseline.states.lightGridOn.svgSha256);
+  const afterSvgDownload = await currentSnapshot(page);
+  expect(afterSvgDownload.prng).toEqual(initial.prng);
+  expect(afterSvgDownload.structuralFingerprint).toBe(initial.structuralFingerprint);
 
   const lightGridOn = await pngDownloadSummary(page);
   expect(lightGridOn).toMatchObject({
@@ -278,11 +374,41 @@ test("SVG and PNG exports preserve tone, grid, and 2x dimensions", async ({ page
   const svgGridOff = await page.evaluate(() => window.__MICRO_GRAPHIC_TEST__.svgText());
   expect(svgGridOff).toContain("data-grid-outlines=\"hidden\"");
   expect(svgGridOff).toContain("opacity=\"0\"");
+  const lightGridOffSvgDownload = await svgDownloadSummary(page);
+  expect(lightGridOffSvgDownload).toMatchObject({
+    filename: `micro-graphic-${fixture.seed.toString(16)}.svg`,
+    mimeTypes: ["image/svg+xml;charset=utf-8"],
+    content: svgGridOff
+  });
+  expect(createHash("sha256").update(lightGridOffSvgDownload.content).digest("hex"))
+    .toBe(exportBaseline.states.lightGridOff.svgSha256);
   const lightGridOff = await pngDownloadSummary(page);
 
   await page.locator("#tone").click();
+  const svgDarkGridOff = await page.evaluate(() => window.__MICRO_GRAPHIC_TEST__.svgText());
+  expect(svgDarkGridOff).toContain("background: rgb(17, 18, 16)");
+  expect(svgDarkGridOff).toContain("svg { color: #f1f1e7; }");
+  const darkGridOffSvgDownload = await svgDownloadSummary(page);
+  expect(darkGridOffSvgDownload).toMatchObject({
+    filename: `micro-graphic-${fixture.seed.toString(16)}.svg`,
+    mimeTypes: ["image/svg+xml;charset=utf-8"],
+    content: svgDarkGridOff
+  });
+  expect(createHash("sha256").update(darkGridOffSvgDownload.content).digest("hex"))
+    .toBe(exportBaseline.states.darkGridOff.svgSha256);
   const darkGridOff = await pngDownloadSummary(page);
   await page.locator("#grid").click();
+  const svgDarkGridOn = await page.evaluate(() => window.__MICRO_GRAPHIC_TEST__.svgText());
+  expect(svgDarkGridOn).toContain("data-grid-outlines=\"visible\"");
+  expect(svgDarkGridOn).toContain("opacity=\"0.18\"");
+  const darkGridOnSvgDownload = await svgDownloadSummary(page);
+  expect(darkGridOnSvgDownload).toMatchObject({
+    filename: `micro-graphic-${fixture.seed.toString(16)}.svg`,
+    mimeTypes: ["image/svg+xml;charset=utf-8"],
+    content: svgDarkGridOn
+  });
+  expect(createHash("sha256").update(darkGridOnSvgDownload.content).digest("hex"))
+    .toBe(exportBaseline.states.darkGridOn.svgSha256);
   const darkGridOn = await pngDownloadSummary(page);
 
   const hashes = [lightGridOn.hash, lightGridOff.hash, darkGridOff.hash, darkGridOn.hash];

@@ -3,9 +3,9 @@
   "seed": 71,
   "viewport": { "width": 1440, "height": 900 },
   "states": {
-    "lightGridOn": { "width": 2880, "height": 1800, "sha256": "6db52237d435d697dc2289cb276ae57e363b81879f0ede85eaf2042bee67706b" },
-    "lightGridOff": { "width": 2880, "height": 1800, "sha256": "a3f7414842737e5680158c2d75c1d1e8609da4dcdc1f7813e0a31623100a731d" },
-    "darkGridOff": { "width": 2880, "height": 1800, "sha256": "34f94494af420d3f48e8f91b9768d62d1fdf03d3e903d278e557455958d3c493" },
-    "darkGridOn": { "width": 2880, "height": 1800, "sha256": "136b418b58297a4d1df325f5c85d564537e03bc15d271d1e76b44a0aa010f657" }
+    "lightGridOn": { "width": 2880, "height": 1800, "sha256": "6db52237d435d697dc2289cb276ae57e363b81879f0ede85eaf2042bee67706b", "svgSha256": "6f7ceee560c323e4b2d21f26145300ae30ee745ea5f2e0bae2672071b632678f" },
+    "lightGridOff": { "width": 2880, "height": 1800, "sha256": "a3f7414842737e5680158c2d75c1d1e8609da4dcdc1f7813e0a31623100a731d", "svgSha256": "a045a1ef9c821149c9f2677ce33a86602846c426d359490e623a3c40c438a40f" },
+    "darkGridOff": { "width": 2880, "height": 1800, "sha256": "34f94494af420d3f48e8f91b9768d62d1fdf03d3e903d278e557455958d3c493", "svgSha256": "d28803f3b07c5741159eb0850ca40ff659f272ae7e2d3c66f2de84c92dba2b16" },
+    "darkGridOn": { "width": 2880, "height": 1800, "sha256": "136b418b58297a4d1df325f5c85d564537e03bc15d271d1e76b44a0aa010f657", "svgSha256": "aed7bc8732c9817b12acd4441f866a463dc062e239caad044f8cb0c27900b01c" }
   }
 }

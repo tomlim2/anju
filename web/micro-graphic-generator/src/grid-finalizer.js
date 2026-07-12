@@ -1,6 +1,6 @@
 import {
   DESIGN_TOKEN_SIZE_ORDER,
-  UNIFORM_TYPOGRAPHY_SIZE_FOOTPRINTS
+  GRID_BLOCK_POLICY_BY_FOOTPRINT
 } from "./config.js";
 import { gridTokenFits, uniformTypographyGroupKey } from "./grid-layout.js";
 
@@ -94,11 +94,15 @@ export function createGridFinalizer({ applyTypographyGridSelection, renderTypogr
     const groups = new Map();
     component.querySelectorAll("[data-grid-block]").forEach(block => {
       const footprint = block.getAttribute("data-grid-footprint");
-      if (!UNIFORM_TYPOGRAPHY_SIZE_FOOTPRINTS.has(footprint)) return;
+      const policy = GRID_BLOCK_POLICY_BY_FOOTPRINT.get(footprint);
+      if (!policy?.sizeSyncScope) return;
       const token = block.querySelector(':scope > [data-grid-token]:not([data-grid-token-kind="graphic"])');
       const text = token?.querySelector(':scope > text[data-token-form="typography"]');
       if (!token || !text) return;
-      const key = uniformTypographyGroupKey(footprint, token.getAttribute("data-token-requested-size"));
+      const key = uniformTypographyGroupKey(
+        policy.sizeSyncScope,
+        token.getAttribute("data-token-requested-size")
+      );
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push({ block, token, text });
     });

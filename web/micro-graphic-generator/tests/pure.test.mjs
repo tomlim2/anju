@@ -8,7 +8,11 @@ import {
   GRID_BLOCK_POLICY_BY_FOOTPRINT
 } from "../src/config.js";
 import { upcPattern } from "../src/graphics.js";
-import { buildGridBlockLayout, gridBlockCells } from "../src/grid-layout.js";
+import {
+  buildGridBlockLayout,
+  gridBlockCells,
+  uniformTypographyGroupKey
+} from "../src/grid-layout.js";
 import { createGridSelectionEngine } from "../src/grid-selection.js";
 import { createRandomSource } from "../src/random.js";
 import {
@@ -36,6 +40,7 @@ test("launch contract selects localhost as the required source of truth", async 
 
 test("root manifest pins the generator browser harness", async () => {
   const manifest = await readJson("package.json");
+  assert.equal(manifest.engines.node, ">=18");
   assert.match(manifest.devDependencies["@playwright/test"], /^\d+\.\d+\.\d+$/);
   assert.equal(manifest.scripts["test:generator:install"], "playwright install chromium");
   assert.ok(manifest.scripts["test:generator"]);
@@ -43,10 +48,11 @@ test("root manifest pins the generator browser harness", async () => {
 });
 
 test("uniform typography grouping remains footprint-specific", () => {
-  const groupKey = (footprint, requestedSize) => `${footprint}:${requestedSize}`;
-  assert.notEqual(groupKey("1x3", "xxlarge"), groupKey("3x1", "xxlarge"));
-  assert.equal(groupKey("1x3", "xxlarge"), "1x3:xxlarge");
-  assert.equal(groupKey("3x1", "xxlarge"), "3x1:xxlarge");
+  const verticalScope = GRID_BLOCK_POLICY_BY_FOOTPRINT.get("1x3").sizeSyncScope;
+  const horizontalScope = GRID_BLOCK_POLICY_BY_FOOTPRINT.get("3x1").sizeSyncScope;
+  assert.notEqual(verticalScope, horizontalScope);
+  assert.equal(uniformTypographyGroupKey(verticalScope, "xxlarge"), "footprint:1x3:xxlarge");
+  assert.equal(uniformTypographyGroupKey(horizontalScope, "xxlarge"), "footprint:3x1:xxlarge");
 });
 
 test("ordered block policies remain the seed-sensitive source of truth", () => {
@@ -81,33 +87,37 @@ test("grid packing covers every cell without overlap across 1,000 seeds", () => 
   }
 });
 
-test("deterministic cell-index fallback consumes no random draws", () => {
+test("each block policy owns its deterministic cell-index fallback", () => {
   const randomSource = createRandomSource(123);
   const engine = createGridSelectionEngine({
     randomSource,
     typographyMeasurer: createTypographyMeasurer(null)
   });
-  const block = { width: 1, height: 3, cells: [1, 4, 7] };
-  const position = {
-    x: 150,
-    y: 250,
-    align: "center",
-    verticalAlign: "middle",
-    rotation: 90
-  };
   const availableBox = { x: 0, y: 0, width: 300, height: 500 };
   const before = randomSource.snapshot();
 
-  const plan = engine.createFallbackTokenPlan(block, position, availableBox);
+  for (const policy of GRID_BLOCK_POLICIES) {
+    const block = { width: policy.width, height: policy.height, cells: [1] };
+    const position = {
+      x: 150,
+      y: 250,
+      align: policy.align === "center" ? "center" : "left",
+      verticalAlign: policy.verticalAlign === "middle" ? "middle" : "top",
+      rotation: policy.rotation
+    };
+    const plan = engine.createFallbackTokenPlan(block, position, availableBox);
+
+    assert.equal(plan.tokenPlan.value, "1", policy.footprint);
+    assert.equal(plan.tokenPlan.role, "cell-index", policy.footprint);
+    assert.equal(plan.requestedSize, policy.requestedSizes?.[0] || "small", policy.footprint);
+    assert.ok(DESIGN_TOKEN_SIZE_ORDER.includes(plan.actualSize), policy.footprint);
+    assert.equal(plan.orientationMode, policy.rotation ? "whole-rotate" : "none", policy.footprint);
+    assert.equal(plan.forceHeavyXlarge, policy.xlargeWeight === 900, policy.footprint);
+    assert.equal(plan.resolvedTypographyStyle.orientationMode, plan.orientationMode, policy.footprint);
+    assert.equal(plan.resolvedTypographyStyle.rotation, policy.rotation, policy.footprint);
+  }
 
   assert.deepEqual(randomSource.snapshot(), before);
-  assert.equal(plan.tokenPlan.value, "1");
-  assert.equal(plan.tokenPlan.role, "cell-index");
-  assert.equal(plan.requestedSize, "xxlarge");
-  assert.ok(DESIGN_TOKEN_SIZE_ORDER.includes(plan.actualSize));
-  assert.equal(plan.orientationMode, "whole-rotate");
-  assert.equal(plan.resolvedTypographyStyle.orientationMode, "whole-rotate");
-  assert.equal(plan.resolvedTypographyStyle.rotation, 90);
 });
 
 test("token model owns taxonomy, weight, fallback, and duplicate keys", () => {
@@ -179,6 +189,9 @@ test("module boundaries remain acyclic and single-owner", async () => {
   assert.doesNotMatch(indexSource, /<script type="module">/);
   assert.doesNotMatch(sources.get("app.js"), /\bcontentPanel\b|\bcontentZones\b/);
   assert.doesNotMatch(sources.get("grid-finalizer.js"), /token-model|vocabulary|randomSource|visualTokens/);
+  assert.match(sources.get("grid-selection.js"), /GRID_BLOCK_POLICY_BY_FOOTPRINT/);
+  assert.match(sources.get("grid-finalizer.js"), /GRID_BLOCK_POLICY_BY_FOOTPRINT/);
+  assert.doesNotMatch(sources.get("grid-finalizer.js"), /UNIFORM_TYPOGRAPHY_SIZE_FOOTPRINTS/);
   assert.doesNotMatch(sources.get("grid-renderer.js"), /getBBox|document\.|window\./);
   assert.doesNotMatch(sources.get("export.js"), /randomSource|\.random\s*\(/);
 

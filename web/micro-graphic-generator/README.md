@@ -35,6 +35,8 @@
 
 공식 실행 계약은 `localhost-only`다. 현재 앱은 native ES module을 사용하므로 개발과 검토는 정적 HTTP 서버를 통해 수행하며 `file://` 직접 실행은 지원하지 않는다. 계약 원본은 `tests/launch-contract.json`이다.
 
+테스트 harness는 Node.js 18 이상을 요구한다.
+
 ```bash
 npm install
 npm run test:generator:install

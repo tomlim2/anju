@@ -31,12 +31,6 @@ export const GRID_BLOCK_POLICY_BY_FOOTPRINT = new Map(
   GRID_BLOCK_POLICIES.map(policy => [policy.footprint, policy])
 );
 export const GRID_BLOCK_FOOTPRINTS = GRID_BLOCK_POLICIES.map(({ width, height }) => ({ width, height }));
-export const CONTEXTUAL_HEAVY_XLARGE_FOOTPRINTS = new Set(
-  GRID_BLOCK_POLICIES.filter(policy => policy.xlargeWeight === 900).map(policy => policy.footprint)
-);
-export const UNIFORM_TYPOGRAPHY_SIZE_FOOTPRINTS = new Set(
-  GRID_BLOCK_POLICIES.filter(policy => policy.sizeSyncScope).map(policy => policy.footprint)
-);
 
 export const DESIGN_TOKEN_SIZES = {
   small: { rowMode: "pairable", maxPerRow: 2 },

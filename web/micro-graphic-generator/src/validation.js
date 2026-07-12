@@ -21,7 +21,7 @@ import {
   uniformTypographyGroupKey
 } from "./grid-layout.js";
 import { typographyWordKey } from "./token-model.js";
-import { resolveTypographyStyle } from "./typography.js";
+import { hasHangul, hasHanja, resolveTypographyStyle } from "./typography.js";
 
 function nodeReference(node, index = 0) {
   return node?.getAttribute?.("data-grid-block") ||
@@ -86,11 +86,15 @@ function typographyStyleForNode(node) {
   });
 }
 
-function createValidationContext(art) {
-  const component = art.querySelector("svg[data-component]");
+function createValidationContext(art, options = {}) {
+  const expectedMode = options.expectedMode || "random";
+  const renderedComponents = [...art.querySelectorAll("svg[data-component]")];
+  const component = expectedMode === "random" ? renderedComponents[0] || null : null;
   const gridBlocks = component ? [...component.querySelectorAll("[data-grid-block]")] : [];
   return {
     art,
+    expectedMode,
+    componentCount: renderedComponents.length,
     classified: [...art.querySelectorAll("[data-token-form]")],
     component,
     layout: component?.querySelector('[data-layout-mode="random-blocks"]') || null,
@@ -164,8 +168,16 @@ function validateStroke({ art }) {
   );
 }
 
-function validateGridStructure({ component, layout, gridBlocks }) {
-  if (!component) return conditionResult("grid.structure", true, [], "");
+function validateGridStructure({ component, componentCount, expectedMode, layout, gridBlocks }) {
+  if (expectedMode !== "random") return conditionResult("grid.structure", true, [], "");
+  if (componentCount !== 1) {
+    return conditionResult(
+      "grid.structure",
+      false,
+      ["art"],
+      `Random mode requires exactly one rendered Component; found ${componentCount}`
+    );
+  }
   const primaryCount = component.querySelectorAll('[data-grid-token-kind="primary"]').length;
   const valid = component.getAttribute("data-layout-grid") === `${LAYOUT_GRID.columns}x${LAYOUT_GRID.rows}` &&
     Boolean(layout) &&
@@ -379,10 +391,15 @@ function validateOrientation({ component }) {
     const orientationMode = token.getAttribute("data-token-orientation");
     const rotation = token.getAttribute("data-token-rotation");
     const text = token.querySelector(':scope > text[data-token-form="typography"]');
-    if (!TOKEN_ORIENTATIONS.includes(orientationMode) || !text) return true;
-    if (orientationMode === "none") return rotation !== "0";
-    if (orientationMode === "whole-rotate") return rotation !== "90";
-    return rotation !== "90" || /[A-Za-z]/.test(text.textContent || "");
+    const block = token.closest("[data-grid-block]");
+    const policy = GRID_BLOCK_POLICY_BY_FOOTPRINT.get(block?.getAttribute("data-grid-footprint"));
+    if (!TOKEN_ORIENTATIONS.includes(orientationMode) || !text || !policy) return true;
+    const value = text.textContent || "";
+    const allowedModes = /[A-Za-z]/.test(value)
+      ? policy.englishOrientationModes || policy.orientationModes
+      : policy.orientationModes;
+    if (!allowedModes.includes(orientationMode) || rotation !== String(policy.rotation)) return true;
+    return orientationMode === "glyph-sideways-stack" && !hasHangul(value) && !hasHanja(value);
   });
   return invalidNodesResult(
     "grid.orientation",
@@ -418,7 +435,7 @@ function validateUniformSize({ component, gridBlocks }) {
     const token = block.querySelector(':scope > [data-grid-token]:not([data-grid-token-kind="graphic"])');
     const text = token?.querySelector(':scope > text[data-token-form="typography"]');
     const key = uniformTypographyGroupKey(
-      block.getAttribute("data-grid-footprint"),
+      policy.sizeSyncScope,
       token?.getAttribute("data-token-requested-size")
     );
     if (!groups.has(key)) groups.set(key, []);
@@ -435,7 +452,7 @@ function validateUniformSize({ component, gridBlocks }) {
   return invalidNodesResult(
     "grid.uniform-size",
     [...new Set(nodes)],
-    failures => `${failures.length} blocks disagree with their footprint-specific size group`
+    failures => `${failures.length} blocks disagree with their policy-defined size group`
   );
 }
 
@@ -597,8 +614,8 @@ export const VALIDATION_RULES = Object.freeze([
   validateMajorCount
 ]);
 
-export function validateRenderedTokenRules(art) {
-  const context = createValidationContext(art);
+export function validateRenderedTokenRules(art, options = {}) {
+  const context = createValidationContext(art, options);
   const results = VALIDATION_RULES.map(validate => validate(context));
   const violations = results.filter(result => !result.valid).map(result => result.rule);
   return {
