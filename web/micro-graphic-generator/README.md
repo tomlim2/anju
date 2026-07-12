@@ -60,6 +60,7 @@
 - Content block 안쪽 텍스트와 badge는 `PADDING_TOKENS.medium`, detail primitive는 `PADDING_TOKENS.small` 기준으로 배치한다.
 - 디자인 토큰 사이의 간격은 `MARGIN_TOKENS.small`, `MARGIN_TOKENS.medium`, `MARGIN_TOKENS.large`만 쓴다.
 - 모든 display token, greeting token, date/time token, data token은 자신이 받은 padded box 안에서만 spawn한다. 긴 문자는 `maxWidth` 기준으로 축소한다.
+- Block typography는 실제 폰트 메트릭으로 1차 평가하고, SVG 렌더 뒤 `getBBox()`로 content box를 다시 평가한다. 경계를 넘으면 단어·typeface·position은 유지하고 다음 작은 token size로 단계적으로 다시 렌더한다. 빈 block 생성은 현재 보류하며, `small 8px`에서도 실패하면 짧은 cell index data token으로 교체한다.
 - 텍스트 정렬은 `left`, `center`, `right` 세 가지만 허용한다. SVG의 `start`, `middle`, `end`는 내부 변환값으로만 쓴다.
 - 디자인 토큰은 `small`, `medium`, `large`, `xlarge`, `xxlarge`, `xxxlarge` 여섯 크기 단계로 나누고, 크기 단계가 한 행을 어떻게 점유하는지 정한다.
 - 토큰의 형태는 `typography`, `graphic`으로 나누고 기능은 `content`, `data`, `symbol`, `sign`으로 별도 기록한다.
@@ -174,7 +175,7 @@ spin은 토큰 자체에 주는 작은 회전이다. spin은 alignment를 대체
 
 현재 폰트 시스템은 SUIT를 메인 타입페이스로 두고 영문·한글·generator UI에 사용한다. 한자·중국어에는 Glow Sans SC, mono에는 Noto Sans Mono를 사용한다. 코드에서는 `TYPEFACES`와 `resolveTypeface()`로 관리한다.
 
-weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 `content`이고 size가 `large`, `xlarge`, `xxlarge`, `xxxlarge`인 typography에만 적용한다. `small`, `medium`과 `data`, `symbol`, `sign`, catalog UI는 모두 `normal`이다. 실제 렌더 값은 `normal 400`, `large/xlarge bold 700`, `xxlarge/xxxlarge bold 900`을 사용한다. 코드에서는 `fontWeightForToken()`이 token label을, `fontWeightValueForToken()`이 size별 실제 숫자 weight를 결정한다. SVG에는 `data-token-weight="normal|bold"`를 기록하며 `validateRenderedTokenRules()`가 size/function 조합과 실제 weight를 함께 검사한다.
+weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 `content`이고 size가 `large`, `xlarge`, `xxlarge`, `xxxlarge`인 typography에만 적용한다. `small`, `medium`과 `data`, `symbol`, `sign`, catalog UI는 모두 `normal`이다. 실제 렌더 값은 `normal 400`, `large/xlarge bold 700`, `xxlarge/xxxlarge bold 900`을 기본으로 사용한다. 단, `3x1`, `1x3`, `3x2`, `2x3` block 안에서 실제 크기가 `xlarge`가 된 content typography는 900을 사용한다. 코드에서는 `fontWeightForToken()`이 token label을, `fontWeightValueForToken()`과 block context override가 실제 숫자 weight를 결정한다. SVG에는 `data-token-weight="normal|bold"`를 기록하며 `validateRenderedTokenRules()`가 size/function/block 조합과 실제 weight를 함께 검사한다.
 
 모든 UI와 SVG typography의 line-height는 `1`로 고정한다. CSS 전역 규칙과 `textNode()`의 SVG `line-height` 속성에 동일하게 적용하며 size나 role별 예외를 두지 않는다.
 
@@ -231,10 +232,10 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 - `Random`을 누를 때 component ratio, block 조합, block 위치, token이 모두 다시 생성된다.
 - `barcode`와 `pseudo-qr`는 Component 안에서 각각 최대 하나만 사용할 수 있다. 한 block에서 선택되면 이후 block 후보에서 제외한다.
 - 가장 면적이 큰 block 중 하나를 `primary` 후보로 정한다. `GRID_PRIMARY_CHANCE`는 현재 `1`이며 `primary`는 최대 하나다.
-- `primary`는 block 면적에 따라 `large`, `xlarge`, `xxlarge` content를 우선 사용한다. 일반 block에서 들어가지 않으면 작은 content, data, graphic으로 대체하며 token을 강제로 축소하지 않는다.
-- `2x2` block은 graphic을 허용하지 않고 반드시 `xxlarge 128px` 또는 `xxxlarge 256px` typography를 사용한다. block의 현재 origin에 따른 left/center/right와 top/middle/bottom anchor 및 inset은 변경하지 않는다. 두 크기 중 고유 크기로 들어가는 후보가 없는 Component ratio에서는 해당 footprint를 생성하지 않는다.
-- `3x1`, `1x3` block은 graphic을 허용하지 않고 반드시 `xxlarge 128px` typography만 사용한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor에 배치한다. `1x3`은 기존 hero 단어를 90도 회전해 세로 block 안에서 사용할 수 있게 하며, 두 footprint 모두 실제로 들어가는 hero 후보가 최소 두 개일 때만 생성한다.
-- `2x3`, `3x2` block은 graphic을 허용하지 않고 반드시 `xxxlarge 256px` typography만 사용한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor를 유지한다. 256px token이 고유 크기로 들어갈 수 없는 Component ratio에서는 해당 footprint를 생성하지 않는다.
+- `primary`는 block 면적에 따라 `large`, `xlarge`, `xxlarge` content를 우선 사용한다. 선택한 typography가 block을 넘으면 같은 단어와 typeface를 유지한 채 다음 작은 design token size로 내린다.
+- `2x2` block은 graphic을 허용하지 않고 `xxlarge 128px` 또는 `xxxlarge 256px`에서 시작한다. block의 현재 origin에 따른 left/center/right와 top/middle/bottom anchor 및 inset은 변경하지 않는다. 요청 크기가 넘치면 다음 작은 token size로 단계적으로 내린다.
+- `3x1`, `1x3` block은 graphic을 허용하지 않고 `xxlarge 128px`에서 시작한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor에 배치한다. `1x3` 영문은 단어 전체를 오른쪽 90도로 회전한다. 한글·중국어는 단어 전체 90도 회전과 각 glyph를 오른쪽으로 돌려 위에서 아래로 쌓는 세로 조판 중 하나를 랜덤으로 사용한다. 같은 component 안의 `1x3` token 중 하나가 작은 size로 내려가면 나머지도 가장 작은 실제 size로 통일한다.
+- `2x3`, `3x2` block은 graphic을 허용하지 않고 `xxxlarge 256px`에서 시작한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor를 유지하며, 넘치면 다음 작은 token size로 내린다.
 - block이 3열 전체를 차지하면 가로 center, 왼쪽 경계에 닿으면 left, 오른쪽 경계에 닿으면 right anchor를 사용한다.
 - block이 3행 전체를 차지하면 세로 middle, 위 경계에 닿으면 top, 아래 경계에 닿으면 bottom anchor를 사용한다.
 - block은 token renderer에 `x`, `y`, `align`, `verticalAlign` position만 넘긴다. block 크기로 token geometry를 다시 계산하지 않는다.
@@ -244,10 +245,10 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 - size별 예외나 개별 font size override는 허용하지 않는다.
 - barcode, pseudo-QR, table, wave를 포함한 graphic token은 `medium` 또는 `large`만 사용한다. `large`는 `medium`의 가로세로를 같은 비율로 1.5배 확장한다.
 - barcode 숫자 typography는 barcode 크기와 관계없이 항상 `small 8px`를 사용한다. 별도 fitting이나 다른 크기는 허용하지 않는다.
-- random block grid에서는 block 크기에 맞춘 font fit, `textLength`, SVG `scale()`을 적용하지 않는다.
-- SVG에는 `data-layout-mode="random-blocks"`, 각 block의 footprint, origin, 점유 cell, 좌표, 가로·세로 anchor, token kind를 기록한다.
+- random block grid에서는 연속적인 font fit, `textLength`, SVG `scale()`을 적용하지 않는다. typography overflow는 `256 → 128 → 64 → 32 → 16 → 8px`의 정의된 token size만 사용해 해결한다.
+- SVG에는 `data-layout-mode="random-blocks"`, 각 block의 footprint, origin, 점유 cell, 좌표, 가로·세로 anchor, token kind를 기록한다. token에는 `data-token-requested-size`와 `data-token-size-fallback`을 기록해 요청 크기와 실제 fallback 여부를 추적한다.
 
-`validateRenderedTokenRules()`는 2-5개의 block이 1-9 cell을 중복 없이 모두 덮는지, footprint와 anchor가 위치 규칙에 맞는지, block마다 token이 하나인지, 같은 typography 문자열이 구성 안에서 반복되지 않는지, 모든 SVG text의 line-height가 `1`인지, `2x2`가 기존 위치 anchor의 `xxlarge 128px` 또는 `xxxlarge 256px` typography만 쓰는지, `3x1`과 `1x3`이 center/middle의 `xxlarge 128px` typography만 쓰는지, `2x3`과 `3x2`가 `xxxlarge 256px` typography만 쓰는지, token placement가 `position-only`와 `scale=1`인지, 일반 `primary`가 최대 하나인지, barcode와 pseudo-QR이 각각 최대 하나인지, barcode 숫자가 항상 small 규칙을 따르는지 검사한다.
+`validateRenderedTokenRules()`는 2-5개의 block이 1-9 cell을 중복 없이 모두 덮는지, footprint와 anchor가 위치 규칙에 맞는지, block마다 token이 하나인지, 같은 typography 문자열이 구성 안에서 반복되지 않는지, 모든 SVG text의 line-height가 `1`인지, `2x2`·`3x1`·`1x3`·`2x3`·`3x2`의 시작 크기와 anchor가 규칙에 맞는지, 실제 token size가 요청 크기보다 커지지 않는지, fallback metadata와 실제 크기가 일치하는지, token placement가 `position-only`와 `scale=1`인지, 일반 `primary`가 최대 하나인지, barcode와 pseudo-QR이 각각 최대 하나인지, barcode 숫자가 항상 small 규칙을 따르는지 검사한다.
 
 ## Layout Archetype
 
@@ -487,5 +488,10 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-12: `2x2` block의 위치 anchor를 유지하면서 token을 `xxlarge 128px` 또는 `xxxlarge 256px` typography로 제한.
 - 2026-07-12: `xxlarge`, `xxxlarge` content typography의 실제 font weight를 900으로 변경하고 SUIT/Glow Sans SC Heavy 파일을 추가.
 - 2026-07-12: 모든 UI와 SVG typography의 line-height를 `1`로 고정.
+- 2026-07-12: block을 넘는 typography를 같은 단어·typeface로 유지하면서 다음 작은 design token size로 단계적으로 fallback하도록 변경.
+- 2026-07-12: block typography에 실제 폰트 메트릭과 렌더 후 SVG 경계 평가 phase를 추가해 `CODE`, `NAME`처럼 추정 폭보다 넓은 글자도 다음 크기로 fallback하도록 보강.
+- 2026-07-12: 빈 block 생성을 보류하고 최소 `small 8px`까지 내려도 실패한 typography는 짧은 cell index data token으로 교체하도록 변경.
+- 2026-07-12: `1x3` 세로 block의 한글·중국어 typography에 전체 90도 회전과 glyph별 오른쪽 회전 세로 조판 두 가지 분기를 추가하고 영문은 기존 전체 회전만 유지.
+- 2026-07-12: 같은 component의 `1x3` typography가 서로 다른 크기로 fallback되면 가장 작은 실제 size로 일괄 통일하고, `3x1`·`1x3`·`3x2`·`2x3` block 안의 `xlarge` content만 900 weight를 사용하도록 변경.
 - 2026-07-11: `3x2`, `2x3` block의 xxxlarge token anchor를 center/middle로 고정.
 - 2026-07-12: 제공된 action text에서 62개 고유 표현을 추출하고 한글·영어·중국어 대응 token을 large, xxlarge, xxxlarge display 후보에 추가.

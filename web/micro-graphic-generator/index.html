@@ -148,6 +148,10 @@
     };
     const TOKEN_ALIGNMENTS = ["left", "center", "right"];
     const TOKEN_VERTICAL_ALIGNMENTS = ["top", "middle", "bottom"];
+    const ALLOW_EMPTY_GRID_BLOCKS = false;
+    const TOKEN_ORIENTATIONS = ["none", "whole-rotate", "glyph-sideways-stack"];
+    const CONTEXTUAL_HEAVY_XLARGE_FOOTPRINTS = new Set(["3x1", "1x3", "3x2", "2x3"]);
+    const UNIFORM_TYPOGRAPHY_SIZE_FOOTPRINTS = new Set(["1x3"]);
     const GRID_BLOCK_FOOTPRINTS = [
       { width: 1, height: 1 },
       { width: 2, height: 2 },
@@ -166,6 +170,7 @@
       xxlarge: { rowMode: "exclusive", maxPerRow: 1 },
       xxxlarge: { rowMode: "exclusive", maxPerRow: 1 }
     };
+    const DESIGN_TOKEN_SIZE_ORDER = Object.keys(DESIGN_TOKEN_SIZES);
     const TYPOGRAPHY_INTRINSIC_FONT_SIZES = {
       small: 8,
       medium: 16,
@@ -199,6 +204,7 @@
           "CONTEXT  COMPONENT / PRIMITIVE / CATALOG",
           "TYPE  REQUIRES TYPEFACE",
           "BOLD  LARGE / XL / XXL / XXXL CONTENT ONLY",
+          "XL@3X1/1X3/3X2/2X3 + XXL/XXXL  WEIGHT 900",
           "SIZE  S 8 / M 16 / L 32 / XL 64 / XXL 128 / XXXL 256",
           "GRAPHIC  MEDIUM / LARGE ONLY"
         ]
@@ -212,8 +218,11 @@
           "ALIGN  LEFT / CENTER / RIGHT",
           "GRID  3X3 / RECT BLOCK PACKING",
           "BLOCK  1X1 TO 3X2 / 1 TOKEN EACH",
-          "3X1 / 1X3  CENTER MIDDLE / XXL 128",
-          "2X3 / 3X2  XXXL 256 TYPE ONLY",
+          "2X2  XXL / XXXL START",
+          "3X1 / 1X3  CENTER MIDDLE / XXL START / 2 VERTICAL MODES",
+          "2X3 / 3X2  CENTER MIDDLE / XXXL START",
+          "OVERFLOW  NEXT SMALLER SIZE / SCALE 1",
+          "SMALLEST FAIL  CELL INDEX FALLBACK",
           "TOKEN  POSITION ONLY / INTRINSIC SIZE",
           "STROKE  THIN ACTIVE / THICK RESERVED",
           "SPIN  NONE / SUBTLE / MEDIUM"
@@ -256,6 +265,8 @@
       svg: document.querySelector("#svg"),
       tone: document.querySelector("#tone")
     };
+    const typographyMeasureCanvas = document.createElement("canvas");
+    const typographyMeasureContext = typographyMeasureCanvas.getContext("2d");
 
     // Extension point: add vocabulary, date labels, and fake data labels here.
     const visualTokens = {
@@ -736,9 +747,9 @@
       const tokenWeight = tokenSize
         ? fontWeightForToken(tokenSize, attrs.tokenFunction)
         : normalizeFontWeight(attrs.weight);
-      const fontWeight = tokenSize
+      const fontWeight = attrs.fontWeightOverride ?? (tokenSize
         ? fontWeightValueForToken(tokenSize, attrs.tokenFunction)
-        : FONT_WEIGHTS[tokenWeight];
+        : FONT_WEIGHTS[tokenWeight]);
       const taxonomyAttrs = tokenSize ? tokenTaxonomyAttrs({
         form: "typography",
         tokenFunction: attrs.tokenFunction,
@@ -756,6 +767,9 @@
         "line-height": 1,
         "letter-spacing": attrs.tracking || 0,
         "text-anchor": resolveTextAlignment(attrs),
+        "writing-mode": attrs.writingMode,
+        "text-orientation": attrs.textOrientation,
+        "dominant-baseline": attrs.dominantBaseline,
         opacity: attrs.opacity ?? 1,
         transform: attrs.transform || "",
         ...(tokenSize ? tokenSizeAttrs(tokenSize) : {}),
@@ -1363,9 +1377,38 @@
       return isCenteredXxlargeFootprint(block) && block.height > block.width ? 90 : 0;
     }
 
+    function typographyMetrics(item, align = "left") {
+      const fontSize = item.intrinsic.fontSize;
+      const estimatedWidth = estimateTextWidth(item.value, fontSize);
+      const estimatedHeight = estimateTextHeight(item.value, fontSize);
+      const alignOffset = { left: 0, center: 0.5, right: 1 }[align] ?? 0;
+      const fallbackLeft = estimatedWidth * alignOffset;
+
+      if (!typographyMeasureContext) {
+        return {
+          left: fallbackLeft,
+          right: estimatedWidth - fallbackLeft,
+          ascent: estimatedHeight * 0.8,
+          descent: estimatedHeight * 0.2
+        };
+      }
+
+      typographyMeasureContext.font = `${fontWeightValueForToken(item.size, item.function)} ${fontSize}px ${resolveTypeface(item.value, { typeface: item.typeface })}`;
+      typographyMeasureContext.textAlign = align;
+      typographyMeasureContext.textBaseline = "alphabetic";
+      const metrics = typographyMeasureContext.measureText(item.value);
+      return {
+        left: Number.isFinite(metrics.actualBoundingBoxLeft) ? metrics.actualBoundingBoxLeft : fallbackLeft,
+        right: Number.isFinite(metrics.actualBoundingBoxRight) ? metrics.actualBoundingBoxRight : estimatedWidth - fallbackLeft,
+        ascent: Number.isFinite(metrics.actualBoundingBoxAscent) ? metrics.actualBoundingBoxAscent : estimatedHeight * 0.8,
+        descent: Number.isFinite(metrics.actualBoundingBoxDescent) ? metrics.actualBoundingBoxDescent : estimatedHeight * 0.2
+      };
+    }
+
     function orientedTypographyDimensions(item, rotation = 0) {
-      const width = estimateTextWidth(item.value, item.intrinsic.fontSize);
-      const height = estimateTextHeight(item.value, item.intrinsic.fontSize);
+      const metrics = typographyMetrics(item);
+      const width = metrics.left + metrics.right;
+      const height = metrics.ascent + metrics.descent;
       return rotation === 90 ? { width: height, height: width } : { width, height };
     }
 
@@ -1540,6 +1583,44 @@
       return position.y - tokenHeight * alignOffset;
     }
 
+    function typographyBaselineY(position, item, metrics = typographyMetrics(item, position.align)) {
+      if (position.verticalAlign === "top") return position.y + metrics.ascent;
+      if (position.verticalAlign === "bottom") return position.y - metrics.descent;
+      return position.y + (metrics.ascent - metrics.descent) * 0.5;
+    }
+
+    function measuredTypographyBox(position, item) {
+      const metrics = typographyMetrics(item, position.align);
+      const baselineY = typographyBaselineY(position, item, metrics);
+      const corners = [
+        { x: position.x - metrics.left, y: baselineY - metrics.ascent },
+        { x: position.x + metrics.right, y: baselineY - metrics.ascent },
+        { x: position.x + metrics.right, y: baselineY + metrics.descent },
+        { x: position.x - metrics.left, y: baselineY + metrics.descent }
+      ];
+      const radians = (position.rotation || 0) * Math.PI / 180;
+      const cos = Math.cos(radians);
+      const sin = Math.sin(radians);
+      const rotated = corners.map(point => {
+        const dx = point.x - position.x;
+        const dy = point.y - position.y;
+        return {
+          x: position.x + dx * cos - dy * sin,
+          y: position.y + dx * sin + dy * cos
+        };
+      });
+      const xs = rotated.map(point => point.x);
+      const ys = rotated.map(point => point.y);
+      const x = Math.min(...xs);
+      const y = Math.min(...ys);
+      return {
+        x,
+        y,
+        width: Math.max(...xs) - x,
+        height: Math.max(...ys) - y
+      };
+    }
+
     function gridTokenPools() {
       const typography = Object.values(tokenGalleryItems()).flat();
       return {
@@ -1557,24 +1638,45 @@
       if (item.intrinsic.width && item.intrinsic.height) {
         return intrinsicTokenBox(position, item.intrinsic);
       }
-      const fontSize = item.intrinsic.fontSize;
-      const dimensions = orientedTypographyDimensions(item, position.rotation);
-      const width = dimensions.width;
-      const height = dimensions.height;
-      const alignOffset = { left: 0, center: 0.5, right: 1 }[position.align];
-      return {
-        x: position.x - width * alignOffset,
-        y: alignedBoxY(position, height),
-        width,
-        height
-      };
+      return measuredTypographyBox(position, item);
     }
 
     function gridTokenFits(bounds, availableBox) {
-      return bounds.x >= availableBox.x &&
-        bounds.y >= availableBox.y &&
-        bounds.x + bounds.width <= availableBox.x + availableBox.width &&
-        bounds.y + bounds.height <= availableBox.y + availableBox.height;
+      const boundaryTolerance = 0.25;
+      return bounds.x >= availableBox.x - boundaryTolerance &&
+        bounds.y >= availableBox.y - boundaryTolerance &&
+        bounds.x + bounds.width <= availableBox.x + availableBox.width + boundaryTolerance &&
+        bounds.y + bounds.height <= availableBox.y + availableBox.height + boundaryTolerance;
+    }
+
+    function typographySizeFallbacks(size) {
+      const normalizedSize = normalizeDesignTokenSize(size);
+      const sizeIndex = DESIGN_TOKEN_SIZE_ORDER.indexOf(normalizedSize);
+      return DESIGN_TOKEN_SIZE_ORDER.slice(0, sizeIndex + 1).reverse();
+    }
+
+    function typographyTokenAtSize(item, size) {
+      if (item.size === size) return item;
+      return typographyToken(item.value, {
+        typeface: item.typeface,
+        size,
+        function: item.function,
+        role: item.role,
+        context: item.context
+      });
+    }
+
+    function fittingGridTokenItem(item, position, availableBox) {
+      const variants = item.form === "typography"
+        ? typographySizeFallbacks(item.size).map(size => typographyTokenAtSize(item, size))
+        : [item];
+      for (const variant of variants) {
+        const bounds = gridTokenIntrinsicBox(position, variant);
+        if (gridTokenFits(bounds, availableBox)) {
+          return { item: variant, bounds, requestedSize: item.size };
+        }
+      }
+      return null;
     }
 
     function typographyWordKey(item) {
@@ -1614,8 +1716,8 @@
         const candidates = shuffled(pools.xxxlargeBlock.filter(item => isUnusedTypographyWord(item, usedTypographyWords)));
         while (candidates.length) {
           const item = candidates.pop();
-          const bounds = gridTokenIntrinsicBox(position, item);
-          if (gridTokenFits(bounds, availableBox)) return { item, bounds, kind: "block-xxxlarge" };
+          const fit = fittingGridTokenItem(item, position, availableBox);
+          if (fit) return { ...fit, kind: "block-xxxlarge" };
         }
         return null;
       }
@@ -1624,8 +1726,8 @@
         const candidates = shuffled(pools.xxlargeBlock.filter(item => isUnusedTypographyWord(item, usedTypographyWords)));
         while (candidates.length) {
           const item = candidates.pop();
-          const bounds = gridTokenIntrinsicBox(position, item);
-          if (gridTokenFits(bounds, availableBox)) return { item, bounds, kind: "block-xxlarge" };
+          const fit = fittingGridTokenItem(item, position, availableBox);
+          if (fit) return { ...fit, kind: "block-xxlarge" };
         }
         return null;
       }
@@ -1637,8 +1739,8 @@
         );
         while (candidates.length) {
           const item = candidates.pop();
-          const bounds = gridTokenIntrinsicBox(position, item);
-          if (gridTokenFits(bounds, availableBox)) return { item, bounds, kind: "block-2x2-oversized" };
+          const fit = fittingGridTokenItem(item, position, availableBox);
+          if (fit) return { ...fit, kind: "block-2x2-oversized" };
         }
         return null;
       }
@@ -1657,21 +1759,103 @@
           const group = shuffled(sourceGroup);
           while (group.length) {
             const item = group.pop();
-            const bounds = gridTokenIntrinsicBox(position, item);
-            if (gridTokenFits(bounds, availableBox)) return { item, bounds, kind };
+            const fit = fittingGridTokenItem(item, position, availableBox);
+            if (fit) return { ...fit, kind };
           }
         }
       }
       return null;
     }
 
-    function renderGridBlockToken(g, position, kind, item) {
+    function guaranteedGridTokenSelection(block, position, availableBox) {
+      const footprint = `${block.width}x${block.height}`;
+      const value = String(block.cells?.[0] || 1);
+      const sourceSize = isXxxlargeFootprint(block)
+        ? "xxxlarge"
+        : isCenteredXxlargeFootprint(block) || isOversizedSquareFootprint(block)
+          ? "xxlarge"
+          : "small";
+      const kind = isXxxlargeFootprint(block)
+        ? "block-xxxlarge"
+        : isCenteredXxlargeFootprint(block)
+          ? "block-xxlarge"
+          : isOversizedSquareFootprint(block)
+            ? "block-2x2-oversized"
+            : "data";
+      const sourceItem = typographyToken(value, {
+        typeface: "mono",
+        size: sourceSize,
+        function: sourceSize === "small" ? "data" : "content",
+        role: "cell-index"
+      });
+      const fit = fittingGridTokenItem(sourceItem, position, availableBox);
+      return {
+        ...(fit || {
+          item: typographyTokenAtSize(sourceItem, "small"),
+          bounds: gridTokenIntrinsicBox(position, typographyTokenAtSize(sourceItem, "small")),
+          requestedSize: sourceSize
+        }),
+        kind,
+        orientationMode: position.rotation ? "whole-rotate" : "none",
+        forceHeavyXlarge: CONTEXTUAL_HEAVY_XLARGE_FOOTPRINTS.has(footprint)
+      };
+    }
+
+    function gridTokenOrientationMode(block, item) {
+      if (item.form !== "typography" || block.width !== 1 || block.height !== 3) return "none";
+      const supportsGlyphStack = hasHangul(item.value) || hasHanja(item.value);
+      return supportsGlyphStack && chance(0.5) ? "glyph-sideways-stack" : "whole-rotate";
+    }
+
+    function renderTypographyGridToken(token, position, item) {
+      const fontSize = item.intrinsic.fontSize;
+      const orientationMode = token.getAttribute("data-token-orientation") ||
+        (position.rotation ? "whole-rotate" : "none");
+      const isGlyphStack = orientationMode === "glyph-sideways-stack";
+      const forceHeavyXlarge = token.getAttribute("data-token-force-heavy-xlarge") === "true" &&
+        item.size === "xlarge";
+      token.removeAttribute("data-token-fit-offset");
+      token.setAttribute("data-token-intrinsic-font-size", fontSize);
+      token.replaceChildren(textNode(position.x, isGlyphStack ? position.y : typographyBaselineY(position, item), item.value, {
+        align: position.align,
+        tokenSize: item.size,
+        tokenFunction: item.function,
+        tokenRole: item.role,
+        tokenContext: "component",
+        size: fontSize,
+        typeface: item.typeface,
+        fontWeightOverride: forceHeavyXlarge ? 900 : null,
+        transform: !isGlyphStack && position.rotation ? `rotate(${position.rotation} ${position.x} ${position.y})` : "",
+        writingMode: isGlyphStack ? "vertical-rl" : null,
+        textOrientation: isGlyphStack ? "sideways" : null,
+        dominantBaseline: isGlyphStack ? "central" : null
+      }));
+    }
+
+    function applyTypographyGridSelection(token, position, selection) {
+      token.setAttribute("data-grid-token", selection.item.role);
+      token.setAttribute("data-grid-token-kind", selection.kind);
+      token.setAttribute("data-token-placement", "position-only");
+      token.setAttribute("data-token-scale", "1");
+      token.setAttribute("data-token-rotation", position.rotation || 0);
+      token.setAttribute("data-token-orientation", selection.orientationMode || (position.rotation ? "whole-rotate" : "none"));
+      token.setAttribute("data-token-force-heavy-xlarge", String(Boolean(selection.forceHeavyXlarge)));
+      token.setAttribute("data-token-requested-size", selection.requestedSize);
+      token.setAttribute("data-token-size-fallback", String(selection.requestedSize !== selection.item.size));
+      renderTypographyGridToken(token, position, selection.item);
+    }
+
+    function renderGridBlockToken(g, position, kind, item, requestedSize = item.size, orientationMode = "none", forceHeavyXlarge = false) {
       const token = make("g", {
         "data-grid-token": item.role,
         "data-grid-token-kind": kind,
         "data-token-placement": "position-only",
         "data-token-scale": "1",
         "data-token-rotation": position.rotation || 0,
+        "data-token-orientation": orientationMode,
+        "data-token-force-heavy-xlarge": String(forceHeavyXlarge),
+        "data-token-requested-size": requestedSize,
+        "data-token-size-fallback": String(requestedSize !== item.size),
         ...(kind === "graphic" ? tokenSizeAttrs(item.size) : {}),
         ...(kind === "graphic" ? tokenTaxonomyAttrs({
           form: "graphic",
@@ -1685,20 +1869,7 @@
         token.setAttribute("data-token-intrinsic-height", item.intrinsic.height);
         item.renderAt(token, position, "component");
       } else {
-        const fontSize = item.intrinsic.fontSize;
-        const textHeight = estimateTextHeight(item.value, fontSize);
-        const baselineY = alignedBoxY(position, textHeight) + textHeight * 0.5 + fontSize * 0.34;
-        token.setAttribute("data-token-intrinsic-font-size", fontSize);
-        token.appendChild(textNode(position.x, baselineY, item.value, {
-          align: position.align,
-          tokenSize: item.size,
-          tokenFunction: item.function,
-          tokenRole: item.role,
-          tokenContext: "component",
-          size: fontSize,
-          typeface: item.typeface,
-          transform: position.rotation ? `rotate(${position.rotation} ${position.x} ${position.y})` : ""
-        }));
+        renderTypographyGridToken(token, position, item);
       }
       g.appendChild(token);
     }
@@ -1720,7 +1891,10 @@
         const box = gridBlockBox(safe, block);
         const contentBox = blockContentBox(box, block);
         const position = layoutGridBlockPosition(contentBox, block);
-        const selection = pickGridTokenItem(block, position, pools, contentBox, usedUniqueRoles, usedTypographyWords);
+        const selection = pickGridTokenItem(block, position, pools, contentBox, usedUniqueRoles, usedTypographyWords) ||
+          guaranteedGridTokenSelection(block, position, contentBox);
+        selection.orientationMode ||= gridTokenOrientationMode(block, selection.item);
+        selection.forceHeavyXlarge = CONTEXTUAL_HEAVY_XLARGE_FOOTPRINTS.has(`${block.width}x${block.height}`);
         const group = make("g", {
           "data-grid-block": block.id,
           "data-grid-footprint": `${block.width}x${block.height}`,
@@ -1735,12 +1909,16 @@
           "data-grid-block-y": box.y,
           "data-grid-block-width": box.width,
           "data-grid-block-height": box.height,
+          "data-grid-content-x": contentBox.x,
+          "data-grid-content-y": contentBox.y,
+          "data-grid-content-width": contentBox.width,
+          "data-grid-content-height": contentBox.height,
           "data-grid-position-x": position.x,
           "data-grid-position-y": position.y,
           "data-grid-alignment": position.align,
           "data-grid-vertical-alignment": position.verticalAlign,
           "data-grid-token-rotation": position.rotation,
-          "data-grid-block-empty": selection ? "false" : "true"
+          "data-grid-block-empty": "false"
         });
 
         const outline = rect(box.x, box.y, box.width, box.height, { opacity: blockOutlinesVisible ? 0.18 : 0 });
@@ -1748,7 +1926,15 @@
         group.appendChild(outline);
 
         if (selection) {
-          renderGridBlockToken(group, position, selection.kind, selection.item);
+          renderGridBlockToken(
+            group,
+            position,
+            selection.kind,
+            selection.item,
+            selection.requestedSize,
+            selection.orientationMode,
+            selection.forceHeavyXlarge
+          );
           if (UNIQUE_GRID_TOKEN_ROLES.includes(selection.item.role)) {
             usedUniqueRoles.add(selection.item.role);
           }
@@ -2180,6 +2366,157 @@
       return layer;
     }
 
+    function gridBlockContentBoxFromNode(block) {
+      return {
+        x: Number(block.getAttribute("data-grid-content-x")),
+        y: Number(block.getAttribute("data-grid-content-y")),
+        width: Number(block.getAttribute("data-grid-content-width")),
+        height: Number(block.getAttribute("data-grid-content-height"))
+      };
+    }
+
+    function gridBlockPositionFromNode(block) {
+      return {
+        x: Number(block.getAttribute("data-grid-position-x")),
+        y: Number(block.getAttribute("data-grid-position-y")),
+        align: block.getAttribute("data-grid-alignment"),
+        verticalAlign: block.getAttribute("data-grid-vertical-alignment"),
+        rotation: Number(block.getAttribute("data-grid-token-rotation"))
+      };
+    }
+
+    function renderedTokenBox(token) {
+      try {
+        const bounds = token.getBBox();
+        return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+      } catch {
+        return null;
+      }
+    }
+
+    function nudgeRenderedTokenIntoBox(token, bounds, availableBox) {
+      const text = token.querySelector(':scope > text[data-token-form="typography"]');
+      if (!text || !bounds || bounds.width > availableBox.width || bounds.height > availableBox.height) {
+        return bounds;
+      }
+      let dx = 0;
+      let dy = 0;
+      if (bounds.x < availableBox.x) dx = availableBox.x - bounds.x;
+      if (bounds.x + bounds.width > availableBox.x + availableBox.width) {
+        dx = availableBox.x + availableBox.width - bounds.x - bounds.width;
+      }
+      if (bounds.y < availableBox.y) dy = availableBox.y - bounds.y;
+      if (bounds.y + bounds.height > availableBox.y + availableBox.height) {
+        dy = availableBox.y + availableBox.height - bounds.y - bounds.height;
+      }
+      if (!dx && !dy) return bounds;
+      text.setAttribute("x", Number(text.getAttribute("x")) + dx);
+      text.setAttribute("y", Number(text.getAttribute("y")) + dy);
+      token.setAttribute("data-token-fit-offset", `${dx.toFixed(3)},${dy.toFixed(3)}`);
+      return renderedTokenBox(token);
+    }
+
+    function correctRenderedGridTokenOverflows() {
+      const component = art.querySelector("svg[data-component]");
+      if (!component) return;
+
+      component.querySelectorAll("[data-grid-block]").forEach(block => {
+        const token = block.querySelector(':scope > [data-grid-token]:not([data-grid-token-kind="graphic"])');
+        let text = token?.querySelector(':scope > text[data-token-form="typography"]');
+        if (!token || !text) return;
+
+        const availableBox = gridBlockContentBoxFromNode(block);
+        const position = gridBlockPositionFromNode(block);
+        const requestedSize = token.getAttribute("data-token-requested-size");
+        const value = text.textContent;
+        const typeface = text.getAttribute("data-token-typeface");
+        const tokenFunction = text.getAttribute("data-token-function");
+        const role = text.getAttribute("data-token-role");
+        let sizeIndex = DESIGN_TOKEN_SIZE_ORDER.indexOf(text.getAttribute("data-token-size"));
+        let bounds = renderedTokenBox(token);
+
+        while (bounds && !gridTokenFits(bounds, availableBox) && sizeIndex > 0) {
+          sizeIndex -= 1;
+          const item = typographyToken(value, {
+            typeface,
+            size: DESIGN_TOKEN_SIZE_ORDER[sizeIndex],
+            function: tokenFunction,
+            role,
+            context: "component"
+          });
+          renderTypographyGridToken(token, position, item);
+          token.setAttribute("data-token-size-fallback", String(requestedSize !== item.size));
+          text = token.querySelector(':scope > text[data-token-form="typography"]');
+          bounds = renderedTokenBox(token);
+        }
+
+        bounds = nudgeRenderedTokenIntoBox(token, bounds, availableBox);
+        const fits = Boolean(bounds && gridTokenFits(bounds, availableBox));
+        if (!fits) {
+          const fallbackBlock = {
+            width: Number(block.getAttribute("data-grid-column-span")),
+            height: Number(block.getAttribute("data-grid-row-span")),
+            cells: (block.getAttribute("data-grid-cells") || "1").split(",").map(Number)
+          };
+          const fallbackSelection = guaranteedGridTokenSelection(fallbackBlock, position, availableBox);
+          applyTypographyGridSelection(token, position, fallbackSelection);
+          bounds = renderedTokenBox(token);
+          bounds = nudgeRenderedTokenIntoBox(token, bounds, availableBox);
+        }
+        block.setAttribute("data-grid-block-empty", "false");
+        token.setAttribute("data-token-fit", String(Boolean(bounds && gridTokenFits(bounds, availableBox))));
+      });
+    }
+
+    function synchronizeRenderedGridTypographySizes() {
+      const component = art.querySelector("svg[data-component]");
+      if (!component) return false;
+      const groups = new Map();
+      component.querySelectorAll("[data-grid-block]").forEach(block => {
+        const footprint = block.getAttribute("data-grid-footprint");
+        if (!UNIFORM_TYPOGRAPHY_SIZE_FOOTPRINTS.has(footprint)) return;
+        const token = block.querySelector(':scope > [data-grid-token]:not([data-grid-token-kind="graphic"])');
+        const text = token?.querySelector(':scope > text[data-token-form="typography"]');
+        if (!token || !text) return;
+        const key = `${footprint}:${token.getAttribute("data-token-requested-size")}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push({ block, token, text });
+      });
+
+      let changed = false;
+      groups.forEach(entries => {
+        const validIndexes = entries
+          .map(({ text }) => DESIGN_TOKEN_SIZE_ORDER.indexOf(text.getAttribute("data-token-size")))
+          .filter(index => index >= 0);
+        if (!validIndexes.length) return;
+        const targetSize = DESIGN_TOKEN_SIZE_ORDER[Math.min(...validIndexes)];
+
+        entries.forEach(({ block, token, text }) => {
+          token.setAttribute("data-token-uniform-size", targetSize);
+          if (text.getAttribute("data-token-size") === targetSize) return;
+          const item = typographyToken(text.textContent, {
+            typeface: text.getAttribute("data-token-typeface"),
+            size: targetSize,
+            function: text.getAttribute("data-token-function"),
+            role: text.getAttribute("data-token-role"),
+            context: "component"
+          });
+          renderTypographyGridToken(token, gridBlockPositionFromNode(block), item);
+          token.setAttribute("data-token-size-fallback", String(token.getAttribute("data-token-requested-size") !== targetSize));
+          changed = true;
+        });
+      });
+      return changed;
+    }
+
+    function finalizeRenderedGridTypography() {
+      for (let pass = 0; pass <= DESIGN_TOKEN_SIZE_ORDER.length; pass += 1) {
+        correctRenderedGridTokenOverflows();
+        if (!synchronizeRenderedGridTypographySizes()) break;
+      }
+      correctRenderedGridTokenOverflows();
+    }
+
     function validateRenderedTokenRules() {
       const violations = [];
       const classified = [...art.querySelectorAll("[data-token-form]")];
@@ -2201,11 +2538,13 @@
           node.getAttribute("data-token-size"),
           node.getAttribute("data-token-function")
         );
+        const forceHeavyXlarge = node.getAttribute("data-token-size") === "xlarge" &&
+          node.closest('[data-token-force-heavy-xlarge="true"]');
+        const expectedWeightValue = forceHeavyXlarge
+          ? 900
+          : fontWeightValueForToken(node.getAttribute("data-token-size"), node.getAttribute("data-token-function"));
         return node.getAttribute("data-token-weight") !== expectedWeight ||
-          node.getAttribute("font-weight") !== String(fontWeightValueForToken(
-            node.getAttribute("data-token-size"),
-            node.getAttribute("data-token-function")
-          ));
+          node.getAttribute("font-weight") !== String(expectedWeightValue);
       });
       if (typographyWithInvalidWeight.length) {
         violations.push(`typography-invalid-weight:${typographyWithInvalidWeight.length}`);
@@ -2246,6 +2585,10 @@
         const blocksWithInvalidPosition = gridBlocks.filter(block =>
           !Number.isFinite(Number(block.getAttribute("data-grid-position-x"))) ||
           !Number.isFinite(Number(block.getAttribute("data-grid-position-y"))) ||
+          !Number.isFinite(Number(block.getAttribute("data-grid-content-x"))) ||
+          !Number.isFinite(Number(block.getAttribute("data-grid-content-y"))) ||
+          !Number.isFinite(Number(block.getAttribute("data-grid-content-width"))) ||
+          !Number.isFinite(Number(block.getAttribute("data-grid-content-height"))) ||
           !TOKEN_ALIGNMENTS.includes(block.getAttribute("data-grid-alignment")) ||
           !TOKEN_VERTICAL_ALIGNMENTS.includes(block.getAttribute("data-grid-vertical-alignment"))
         );
@@ -2272,6 +2615,7 @@
         });
         const xxxlargeFootprintBlocksWithInvalidToken = gridBlocks.filter(block => {
           if (!["2x3", "3x2"].includes(block.getAttribute("data-grid-footprint"))) return false;
+          if (ALLOW_EMPTY_GRID_BLOCKS && block.getAttribute("data-grid-block-empty") === "true") return false;
           const token = block.querySelector(":scope > [data-grid-token]");
           const typography = token?.querySelector(':scope > text[data-token-form="typography"]');
           return block.getAttribute("data-grid-alignment") !== "center" ||
@@ -2279,41 +2623,108 @@
             !token ||
             token.getAttribute("data-grid-token-kind") !== "block-xxxlarge" ||
             !typography ||
-            typography.getAttribute("data-token-size") !== "xxxlarge" ||
-            typography.getAttribute("font-size") !== "256";
+            token.getAttribute("data-token-requested-size") !== "xxxlarge";
         });
         const centeredXxlargeFootprintBlocksWithInvalidToken = gridBlocks.filter(block => {
           if (!["1x3", "3x1"].includes(block.getAttribute("data-grid-footprint"))) return false;
+          if (ALLOW_EMPTY_GRID_BLOCKS && block.getAttribute("data-grid-block-empty") === "true") return false;
           const token = block.querySelector(":scope > [data-grid-token]");
           const typography = token?.querySelector(':scope > text[data-token-form="typography"]');
           const expectedRotation = block.getAttribute("data-grid-footprint") === "1x3" ? "90" : "0";
+          const orientationMode = token?.getAttribute("data-token-orientation");
+          const isGlyphStack = orientationMode === "glyph-sideways-stack";
+          const validOrientation = expectedRotation === "90"
+            ? ["whole-rotate", "glyph-sideways-stack"].includes(orientationMode)
+            : orientationMode === "none";
+          const invalidGlyphStack = isGlyphStack && (
+            /[A-Za-z]/.test(typography?.textContent || "") ||
+            typography?.getAttribute("writing-mode") !== "vertical-rl" ||
+            typography?.getAttribute("text-orientation") !== "sideways" ||
+            typography?.getAttribute("dominant-baseline") !== "central" ||
+            Boolean(typography?.getAttribute("transform"))
+          );
           return block.getAttribute("data-grid-alignment") !== "center" ||
             block.getAttribute("data-grid-vertical-alignment") !== "middle" ||
             block.getAttribute("data-grid-token-rotation") !== expectedRotation ||
             !token ||
             token.getAttribute("data-grid-token-kind") !== "block-xxlarge" ||
             token.getAttribute("data-token-rotation") !== expectedRotation ||
+            !validOrientation ||
             !typography ||
-            typography.getAttribute("data-token-size") !== "xxlarge" ||
-            typography.getAttribute("font-size") !== "128" ||
-            (expectedRotation === "90" && !(typography.getAttribute("transform") || "").startsWith("rotate(90 "));
+            token.getAttribute("data-token-requested-size") !== "xxlarge" ||
+            invalidGlyphStack ||
+            (expectedRotation === "90" && orientationMode === "whole-rotate" &&
+              !(typography.getAttribute("transform") || "").startsWith("rotate(90 "));
         });
         const oversizedSquareBlocksWithInvalidToken = gridBlocks.filter(block => {
           if (block.getAttribute("data-grid-footprint") !== "2x2") return false;
+          if (ALLOW_EMPTY_GRID_BLOCKS && block.getAttribute("data-grid-block-empty") === "true") return false;
           const token = block.querySelector(":scope > [data-grid-token]");
           const typography = token?.querySelector(':scope > text[data-token-form="typography"]');
-          const tokenSize = typography?.getAttribute("data-token-size");
+          const requestedSize = token?.getAttribute("data-token-requested-size");
           return !token ||
             token.getAttribute("data-grid-token-kind") !== "block-2x2-oversized" ||
             !typography ||
-            !["xxlarge", "xxxlarge"].includes(tokenSize) ||
-            typography.getAttribute("font-size") !== String(TYPOGRAPHY_INTRINSIC_FONT_SIZES[tokenSize]);
+            !["xxlarge", "xxxlarge"].includes(requestedSize);
+        });
+        const tokensWithInvalidSizeFallback = [...component.querySelectorAll("[data-grid-token]")].filter(token => {
+          const requestedSize = token.getAttribute("data-token-requested-size");
+          const kind = token.getAttribute("data-grid-token-kind");
+          const sizedElement = kind === "graphic"
+            ? token
+            : token.querySelector(':scope > text[data-token-form="typography"]');
+          const actualSize = sizedElement?.getAttribute("data-token-size");
+          const requestedIndex = DESIGN_TOKEN_SIZE_ORDER.indexOf(requestedSize);
+          const actualIndex = DESIGN_TOKEN_SIZE_ORDER.indexOf(actualSize);
+          const expectedFallback = requestedSize !== actualSize;
+          return requestedIndex < 0 ||
+            actualIndex < 0 ||
+            actualIndex > requestedIndex ||
+            token.getAttribute("data-token-size-fallback") !== String(expectedFallback);
         });
         const tokensWithInvalidPlacement = [...component.querySelectorAll("[data-grid-token]")].filter(token =>
           token.getAttribute("data-token-placement") !== "position-only" ||
           token.getAttribute("data-token-scale") !== "1" ||
           (token.getAttribute("transform") || "").includes("scale(")
         );
+        const typographyTokensWithInvalidOrientation = [...component.querySelectorAll('[data-grid-token]:not([data-grid-token-kind="graphic"])')].filter(token => {
+          const orientationMode = token.getAttribute("data-token-orientation");
+          const rotation = token.getAttribute("data-token-rotation");
+          const text = token.querySelector(':scope > text[data-token-form="typography"]');
+          if (!TOKEN_ORIENTATIONS.includes(orientationMode) || !text) return true;
+          if (orientationMode === "none") return rotation !== "0";
+          if (orientationMode === "whole-rotate") return rotation !== "90";
+          return rotation !== "90" || /[A-Za-z]/.test(text.textContent || "");
+        });
+        const tokensWithInvalidContextualHeavyFlag = gridBlocks.filter(block => {
+          const token = block.querySelector(":scope > [data-grid-token]");
+          if (!token) return false;
+          const expectsHeavyXlarge = CONTEXTUAL_HEAVY_XLARGE_FOOTPRINTS.has(block.getAttribute("data-grid-footprint")) &&
+            token.getAttribute("data-grid-token-kind") !== "graphic";
+          return token.getAttribute("data-token-force-heavy-xlarge") !== String(expectsHeavyXlarge);
+        });
+        const uniformTypographyBlocks = gridBlocks.filter(block =>
+          UNIFORM_TYPOGRAPHY_SIZE_FOOTPRINTS.has(block.getAttribute("data-grid-footprint"))
+        );
+        const uniformTypographySizes = uniformTypographyBlocks.map(block => {
+          const token = block.querySelector(':scope > [data-grid-token]:not([data-grid-token-kind="graphic"])');
+          const text = token?.querySelector(':scope > text[data-token-form="typography"]');
+          return text?.getAttribute("data-token-size");
+        }).filter(Boolean);
+        const uniformTypographyHasInvalidSize = new Set(uniformTypographySizes).size > 1 ||
+          uniformTypographyBlocks.some(block => {
+            const token = block.querySelector(':scope > [data-grid-token]:not([data-grid-token-kind="graphic"])');
+            const text = token?.querySelector(':scope > text[data-token-form="typography"]');
+            return !token || !text || token.getAttribute("data-token-uniform-size") !== text.getAttribute("data-token-size");
+          });
+        const typographyTokensOutsideContentBox = gridBlocks.filter(block => {
+          const token = block.querySelector(':scope > [data-grid-token]:not([data-grid-token-kind="graphic"])');
+          if (!token) return false;
+          const bounds = renderedTokenBox(token);
+          return token.getAttribute("data-token-fit") !== "true" ||
+            !bounds ||
+            !gridTokenFits(bounds, gridBlockContentBoxFromNode(block));
+        });
         const typographyWithInvalidIntrinsicSize = [...component.querySelectorAll('[data-grid-token]:not([data-grid-token-kind="graphic"])')].filter(token => {
           const text = token.querySelector(":scope > text");
           const tokenSize = text?.getAttribute("data-token-size");
@@ -2358,7 +2769,12 @@
           xxxlargeFootprintBlocksWithInvalidToken.length > 0 ||
           centeredXxlargeFootprintBlocksWithInvalidToken.length > 0 ||
           oversizedSquareBlocksWithInvalidToken.length > 0 ||
+          tokensWithInvalidSizeFallback.length > 0 ||
           tokensWithInvalidPlacement.length > 0 ||
+          typographyTokensWithInvalidOrientation.length > 0 ||
+          tokensWithInvalidContextualHeavyFlag.length > 0 ||
+          uniformTypographyHasInvalidSize ||
+          typographyTokensOutsideContentBox.length > 0 ||
           typographyWithInvalidIntrinsicSize.length > 0 ||
           duplicateUniqueRoles.length > 0 ||
           duplicateTypographyWords.length > 0 ||
@@ -2383,6 +2799,7 @@
       }
 
       art.setAttribute("data-rule-violations", String(violations.length));
+      art.setAttribute("data-rule-violation-list", violations.join(","));
       if (violations.length) console.warn("Token rule violations", violations);
       return violations;
     }
@@ -2409,6 +2826,7 @@
         art.appendChild(renderComponent(w, h));
         seedLabel.textContent = `SEED ${seedHex()} / COMP ${activeComponentRatio} / BLOCKS ${activeBlockLayout} / BORDER ${activeBorderMode}`;
       }
+      finalizeRenderedGridTypography();
       validateRenderedTokenRules();
     }
 
