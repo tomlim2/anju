@@ -181,7 +181,7 @@ weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 
 - `english`: `"Noto Sans"`를 기본으로 쓴다. 브랜드명, 영문 title, warning phrase, status phrase, display keyword에 쓴다.
 - `mono`: `"Noto Sans Mono"`를 기본으로 쓴다. code, serial, port, table, numeric data, data view에 쓴다.
 - `korean`: `"Noto Sans KR"`를 기본으로 쓴다. 한글이 포함된 텍스트는 자동으로 이 role을 쓴다.
-- `hanja`: `"Noto Sans KR"`를 기본으로 쓰고, 없는 glyph는 `"Noto Sans SC"`로 fallback한다. 독립 한자 display glyph는 원칙적으로 쓰지 않되, 현재는 예외로 `林`만 display typography에 허용한다.
+- `hanja`: `"Noto Sans KR"`를 기본으로 쓰고, 없는 glyph는 `"Noto Sans SC"`로 fallback한다. 현재 독립 한자 display typography에는 `林`을 일반 content keyword로 허용한다.
 - `chinese`: `"Noto Sans SC"`를 기본으로 쓴다. `你好?`, `刷新`, 중국어 날짜 표기처럼 Simplified Chinese glyph가 필요한 token에 쓴다.
 - `ui`: generator controls와 seed label에 쓰는 UI font다. Noto Sans, Noto Sans KR, Noto Sans SC 순서로 fallback한다.
 
@@ -190,6 +190,12 @@ weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 
 `REPORT`, `STATUS`, `MODULE`, `ACCESS` 같은 요소는 `display keyword`다. 이들은 code나 data view가 아니므로 `typeface: "english"`를 명시하고 Noto Sans English role로 표시한다. display keyword는 글자 사이에 임의 공백을 넣거나 과한 tracking을 주지 않고, 단어 그대로 조판한다.
 
 `안녕?`, `你好?`, `HELLO?`는 greeting typography다. 인사말은 `greetingTokens`에 `{ value, typeface }` 형태로 묶고, display typography 후보에만 넣는다. barcode, serial, table, code 같은 data view에는 넣지 않는다.
+
+사용자가 제공한 action text에서는 반복 목적어 `it`을 제외하고 중복 단어를 합쳐 62개의 고유 표현을 추출한다. `QUICK`은 `빠르게 / QUICK / 快速`으로 한 번만 포함한다. `visualTokens.actionTokens`는 각 항목을 `{ korean, english, chinese }`로 묶어 의미 대응을 유지한다. 예시는 `구매 / BUY / 购买`, `분해 / BREAK / 拆解`, `추출 / RIP / 提取`, `종료 / LEAVE / 退出`이다.
+
+`actionTypographyTokens()`는 세 언어를 모두 `content / action-keyword` typography로 만든다. 일반 display에서는 `large 32px`, `3x1`·`1x3` block에서는 `xxlarge 128px`, `3x2`·`2x3` block에서는 `xxxlarge 256px` 후보로 사용한다. block에는 고유 크기로 들어가는 번역만 선택하며 fitting이나 scale 변형은 하지 않는다.
+
+HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를 `sign / status-code` 보조 typography로 사용한다. `small 8px`와 `medium 16px`에 분산하고 일반 block의 sign 후보로만 조합한다. `STATUS` 역시 `medium / sign / status`로만 사용하며 hero 후보에는 넣지 않는다.
 
 웹에서 보기 위해 `Noto Sans`, `Noto Sans KR`, `Noto Sans SC`, `Noto Sans Mono`는 `fonts/` 안에 로컬 파일로 번들한다. HTML은 `./fonts/fonts.css`를 import하고, SVG export도 같은 CSS 파일을 절대 URL로 넣는다. 외부 Google Fonts 요청을 기다리지 않도록 하기 위한 결정이며, 앱은 로컬 폰트가 붙은 뒤 첫 렌더가 되도록 `document.fonts.load()`와 `document.fonts.ready`를 짧게 기다린다.
 
@@ -203,7 +209,7 @@ weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 
 - 영어 예: `JULY 5, 2026`, `JULY 5, 2026 15:24:03`, `REFRESHED 15:24:03`, `TIMESTAMP 1783232643000`.
 - 중국어 예: `2026年7月5日`, `二〇二六年七月五日`, `刷新 15:24:03`, `时间戳 1783232643000`.
 
-날짜/시간 표기는 `primary` 또는 `content` cell의 단일 typography token으로만 들어간다. barcode, serial, code, table, QR, port 같은 data/graphic token 내부에는 넣지 않는다. 중국어/한자는 날짜 표기 안에서만 허용하는 것을 기본으로 하되, 독립 display glyph는 `林`만 예외로 허용한다. 날짜/시간은 오늘과 리프레시 시점에 따라 변하므로, 같은 seed라도 날짜나 시간이 다르면 완전히 동일한 typography가 재현되지 않을 수 있다.
+날짜/시간 표기는 `primary` 또는 `content` cell의 단일 typography token으로만 들어간다. barcode, serial, code, table, QR, port 같은 data/graphic token 내부에는 넣지 않는다. 중국어/한자는 날짜 표기와 다국어 action keyword에 사용하며, 독립 display keyword로는 `林`을 허용한다. 날짜/시간은 오늘과 리프레시 시점에 따라 변하므로, 같은 seed라도 날짜나 시간이 다르면 완전히 동일한 typography가 재현되지 않을 수 있다.
 
 ## Random Block Grid System
 
@@ -470,4 +476,7 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-11: xxxlarge용 임의 `?`, `0` fallback을 제거하고 기존 xxlarge hero token의 256px 변형만 사용하도록 수정.
 - 2026-07-11: `3x1`, `1x3` block을 center/middle anchor의 xxlarge 128px typography 전용으로 변경.
 - 2026-07-11: 1x3 token을 90도 회전하고 3x1/1x3 생성에 최소 두 개의 적합 hero 후보를 요구해 독립 한자 `林` 편중을 완화.
+- 2026-07-12: `林`의 `hero-glyph` 예외를 제거하고 action vocabulary와 동일한 `large / xxlarge / xxxlarge` 일반 content 후보 레벨로 조정.
+- 2026-07-12: HTTP 상태 코드 7개를 small/medium 보조 sign token으로 추가하고 `STATUS`의 xlarge hero 분류를 제거.
 - 2026-07-11: `3x2`, `2x3` block의 xxxlarge token anchor를 center/middle로 고정.
+- 2026-07-12: 제공된 action text에서 62개 고유 표현을 추출하고 한글·영어·중국어 대응 token을 large, xxlarge, xxxlarge display 후보에 추가.
