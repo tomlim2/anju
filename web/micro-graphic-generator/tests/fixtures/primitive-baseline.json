@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "seed": 12648430,
+  "primitives": {
+    "barcode": { "sha256": "c4138d99e0bd3104c0f5da7d052368f100b1902a2c53317c8f4f51d5d256ecaf", "prng": { "drawCount": 144, "state": 1765120446 } },
+    "pseudoQr": { "sha256": "c6615a65214902351887ee37ca525e729d96141717bfb12cdd5b3d0430c84f20", "prng": { "drawCount": 186, "state": 1381473264 } },
+    "miniTable": { "sha256": "f44108e2cc8524c6e986d5cbfb10b2ba898820763e632523489f71f1d216224e", "prng": { "drawCount": 16, "state": 3547897662 } },
+    "wave": { "sha256": "8a4e9dd30f46bcd98b1547c6b5c00202eff59143392669f14e1e626b2e972038", "prng": { "drawCount": 45, "state": 828731391 } },
+    "microBadge": { "sha256": "be558c6ecd1375a12690c5a6c0538d429550e76a7c502dde2d06b6e3fd80bcbe", "prng": { "drawCount": 1, "state": 1844214243 } }
+  }
+}

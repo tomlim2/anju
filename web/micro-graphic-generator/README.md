@@ -2,7 +2,7 @@
 
 ## 목표
 
-브라우저에서 새로고침하거나 Random 버튼을 누를 때마다 다른 타이포그래픽 기반 마이크로 그래픽을 생성한다. 도구는 최대한 단순하게 유지한다. 일단은 HTML 한 파일, 흑백 중심, 한글과 영어 혼합, PNG/SVG 내보내기가 핵심이다.
+브라우저에서 새로고침하거나 Random 버튼을 누를 때마다 다른 타이포그래픽 기반 마이크로 그래픽을 생성한다. 도구는 최대한 단순하게 유지한다. 정적 HTML과 native ES module, 흑백 중심, 한글과 영어 혼합, PNG/SVG 내보내기가 핵심이다.
 
 완성 포스터보다는 기술 라벨, SF 인터페이스 조각, 제조 스티커, 상태 카드, 바코드, 작은 시스템 다이어그램 같은 시각 조각을 만든다. 나중에 더 큰 그래픽, UI 텍스처, 진 페이지, 모션 소스, Cargo 스타일 쇼케이스에 재료로 붙일 수 있는 결과물을 목표로 한다.
 
@@ -20,7 +20,7 @@
 
 ## 현재 범위
 
-- `index.html` 단일 파일 앱.
+- `index.html`은 markup과 `src/app.js` entry만 가지며, 생성 규칙과 renderer는 `src/` native ES module로 분리한다.
 - SVG 기반 렌더링.
 - Random 버튼으로 현재 mode의 새 랜덤 seed 생성.
 - 캔버스 클릭으로 새 결과 생성.
@@ -30,6 +30,23 @@
 - 화면 크기 기준 2x PNG 내보내기.
 - SVG 내보내기로 벡터 후작업 가능.
 - 화면 모서리에 seed 표시, export 파일명에도 seed 포함.
+
+## 실행 및 기준선 테스트
+
+공식 실행 계약은 `localhost-only`다. 개발과 검토는 정적 HTTP 서버를 통해 수행하며, native ES module을 사용하는 이후 리팩터링 단계에서는 `file://` 직접 실행을 지원 대상으로 두지 않는다. 모듈 추출 전 단일 파일 버전은 `file://`에서도 동작하는 것을 기록했지만 필수 회귀 gate는 아니다. 계약 원본은 `tests/launch-contract.json`이다.
+
+```bash
+npm install
+npm run test:generator:install
+npm run test:generator
+npm run test:generator:soak
+```
+
+`test:generator`는 pure contract, 고정 seed fixture, UI interaction, SVG/PNG export와 Random 100회를 검사한다. `test:generator:soak`는 같은 검사를 Random 1,000회로 확장한다. 브라우저 lifecycle과 port `4191`은 Playwright가 소유하므로 테스트 중 별도 서버를 실행하지 않는다.
+
+## 리팩터링 체크포인트
+
+Phase 0~6의 코드 분리는 구현됐고 Phase 5~6의 최종 gate 보강과 Phase 7 문서·시각 QA가 남아 있다. 현재 통과한 gate와 미완료 항목은 `REFACTORING_PLAN.md`의 `구현 체크포인트`를 source of truth로 사용한다. README 아래쪽의 `Layout renderer`, `contentPanel` 같은 이름은 이전 구조를 설명하는 legacy 문구이며 Phase 7에서 현재 `grid-layout`, `grid-selection`, `grid-renderer`, `grid-finalizer` 경계로 교체할 예정이다.
 
 ## 용어
 
@@ -234,7 +251,7 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 - 가장 면적이 큰 block 중 하나를 `primary` 후보로 정한다. `GRID_PRIMARY_CHANCE`는 현재 `1`이며 `primary`는 최대 하나다.
 - `primary`는 block 면적에 따라 `large`, `xlarge`, `xxlarge` content를 우선 사용한다. 선택한 typography가 block을 넘으면 같은 단어와 typeface를 유지한 채 다음 작은 design token size로 내린다.
 - `2x2` block은 graphic을 허용하지 않고 `xxlarge 128px` 또는 `xxxlarge 256px`에서 시작한다. block의 현재 origin에 따른 left/center/right와 top/middle/bottom anchor 및 inset은 변경하지 않는다. 요청 크기가 넘치면 다음 작은 token size로 단계적으로 내린다.
-- `3x1`, `1x3` block은 graphic을 허용하지 않고 `xxlarge 128px`에서 시작한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor에 배치한다. `1x3` 영문은 단어 전체를 오른쪽 90도로 회전한다. 한글·중국어는 단어 전체 90도 회전과 각 glyph를 오른쪽으로 돌려 위에서 아래로 쌓는 세로 조판 중 하나를 랜덤으로 사용한다. 같은 component 안의 `1x3` token 중 하나가 작은 size로 내려가면 나머지도 가장 작은 실제 size로 통일한다.
+- `3x1`, `1x3` block은 graphic을 허용하지 않고 `xxlarge 128px`에서 시작한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor에 배치한다. `1x3` 영문은 단어 전체를 오른쪽 90도로 회전한다. 한글·중국어는 단어 전체 90도 회전과 각 glyph를 오른쪽으로 돌려 위에서 아래로 쌓는 세로 조판 중 하나를 랜덤으로 사용한다. 같은 component 안에서 동일한 `3x1` 또는 `1x3` token 중 하나가 작은 size로 내려가면 같은 footprint의 나머지도 가장 작은 실제 size로 통일한다.
 - `2x3`, `3x2` block은 graphic을 허용하지 않고 `xxxlarge 256px`에서 시작한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor를 유지하며, 넘치면 다음 작은 token size로 내린다.
 - block이 3열 전체를 차지하면 가로 center, 왼쪽 경계에 닿으면 left, 오른쪽 경계에 닿으면 right anchor를 사용한다.
 - block이 3행 전체를 차지하면 세로 middle, 위 경계에 닿으면 top, 아래 경계에 닿으면 bottom anchor를 사용한다.
@@ -492,6 +509,6 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-12: block typography에 실제 폰트 메트릭과 렌더 후 SVG 경계 평가 phase를 추가해 `CODE`, `NAME`처럼 추정 폭보다 넓은 글자도 다음 크기로 fallback하도록 보강.
 - 2026-07-12: 빈 block 생성을 보류하고 최소 `small 8px`까지 내려도 실패한 typography는 짧은 cell index data token으로 교체하도록 변경.
 - 2026-07-12: `1x3` 세로 block의 한글·중국어 typography에 전체 90도 회전과 glyph별 오른쪽 회전 세로 조판 두 가지 분기를 추가하고 영문은 기존 전체 회전만 유지.
-- 2026-07-12: 같은 component의 `1x3` typography가 서로 다른 크기로 fallback되면 가장 작은 실제 size로 일괄 통일하고, `3x1`·`1x3`·`3x2`·`2x3` block 안의 `xlarge` content만 900 weight를 사용하도록 변경.
+- 2026-07-12: 같은 component의 `3x1` 또는 `1x3` typography가 서로 다른 크기로 fallback되면 footprint별 가장 작은 실제 size로 일괄 통일하고, `3x1`·`1x3`·`3x2`·`2x3` block 안의 `xlarge` content만 900 weight를 사용하도록 변경.
 - 2026-07-11: `3x2`, `2x3` block의 xxxlarge token anchor를 center/middle로 고정.
 - 2026-07-12: 제공된 action text에서 62개 고유 표현을 추출하고 한글·영어·중국어 대응 token을 large, xxlarge, xxxlarge display 후보에 추가.

@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "fixtures": [
+    {
+      "schemaVersion": 1,
+      "name": "oversized-square-fallback",
+      "seed": 1,
+      "now": "2026-07-12T00:00:00.000Z",
+      "viewport": { "width": 1440, "height": 900 },
+      "expected": {
+        "mode": "random",
+        "tone": "light",
+        "grid": true,
+        "componentRatio": "5:2",
+        "borderMode": "stroke",
+        "blockLayout": "2x1+1x1+1x2+2x2",
+        "blocks": [
+          { "footprint": "2x1", "cells": [1, 2], "role": "table-cell", "value": "SPEC 98%", "kind": "data", "requestedSize": "small", "actualSize": "small", "weight": 400, "orientation": "none", "fit": true },
+          { "footprint": "1x1", "cells": [3], "role": "version", "value": "V1.2", "kind": "data", "requestedSize": "small", "actualSize": "small", "weight": 400, "orientation": "none", "fit": true },
+          { "footprint": "1x2", "cells": [4, 7], "role": "status", "value": "RUNNING", "kind": "sign", "requestedSize": "medium", "actualSize": "small", "weight": 400, "orientation": "none", "fit": true },
+          { "footprint": "2x2", "cells": [5, 6, 8, 9], "role": "action-keyword", "value": "SCAN", "kind": "block-2x2-oversized", "requestedSize": "xxxlarge", "actualSize": "small", "weight": 400, "orientation": "none", "fit": true }
+        ]
+      },
+      "expectedPrng": { "drawCount": 513, "state": 3290391542 }
+    },
+    {
+      "schemaVersion": 1,
+      "name": "vertical-whole-rotate",
+      "seed": 3,
+      "now": "2026-07-12T00:00:00.000Z",
+      "viewport": { "width": 1440, "height": 900 },
+      "expected": {
+        "mode": "random",
+        "tone": "light",
+        "grid": true,
+        "componentRatio": "4:3",
+        "borderMode": "stroke",
+        "blockLayout": "1x3+1x2+1x2+1x1+1x1",
+        "blocks": [
+          { "footprint": "1x3", "cells": [1, 4, 7], "role": "action-keyword", "value": "启动", "kind": "block-xxlarge", "requestedSize": "xxlarge", "actualSize": "xxlarge", "weight": 900, "orientation": "whole-rotate", "fit": true },
+          { "footprint": "1x2", "cells": [2, 5], "role": "barcode", "value": "barcode", "kind": "graphic", "requestedSize": "large", "actualSize": "large", "weight": null, "orientation": "none", "fit": true },
+          { "footprint": "1x2", "cells": [3, 6], "role": "access-status", "value": "ACCESS GRANTED", "kind": "sign", "requestedSize": "medium", "actualSize": "small", "weight": 400, "orientation": "none", "fit": true },
+          { "footprint": "1x1", "cells": [8], "role": "pseudo-qr", "value": "pseudo-qr", "kind": "graphic", "requestedSize": "medium", "actualSize": "medium", "weight": null, "orientation": "none", "fit": true },
+          { "footprint": "1x1", "cells": [9], "role": "table", "value": "table", "kind": "graphic", "requestedSize": "large", "actualSize": "large", "weight": null, "orientation": "none", "fit": true }
+        ]
+      },
+      "expectedPrng": { "drawCount": 646, "state": 2075508801 }
+    },
+    {
+      "schemaVersion": 1,
+      "name": "vertical-uniform-glyph-stack",
+      "seed": 7,
+      "now": "2026-07-12T00:00:00.000Z",
+      "viewport": { "width": 1440, "height": 900 },
+      "expected": {
+        "mode": "random",
+        "tone": "light",
+        "grid": true,
+        "componentRatio": "1:1",
+        "borderMode": "stroke",
+        "blockLayout": "1x3+1x3+1x3",
+        "blocks": [
+          { "footprint": "1x3", "cells": [1, 4, 7], "role": "action-keyword", "value": "填充", "kind": "block-xxlarge", "requestedSize": "xxlarge", "actualSize": "xlarge", "weight": 900, "orientation": "glyph-sideways-stack", "fit": true },
+          { "footprint": "1x3", "cells": [2, 5, 8], "role": "action-keyword", "value": "RIP", "kind": "block-xxlarge", "requestedSize": "xxlarge", "actualSize": "xlarge", "weight": 900, "orientation": "whole-rotate", "fit": true },
+          { "footprint": "1x3", "cells": [3, 6, 9], "role": "action-keyword", "value": "WORK", "kind": "block-xxlarge", "requestedSize": "xxlarge", "actualSize": "xlarge", "weight": 900, "orientation": "whole-rotate", "fit": true }
+        ]
+      },
+      "expectedPrng": { "drawCount": 638, "state": 307884189 }
+    },
+    {
+      "schemaVersion": 1,
+      "name": "maximum-two-by-three",
+      "seed": 19,
+      "now": "2026-07-12T00:00:00.000Z",
+      "viewport": { "width": 1440, "height": 900 },
+      "expected": {
+        "mode": "random",
+        "tone": "light",
+        "grid": true,
+        "componentRatio": "1:1",
+        "borderMode": "stroke",
+        "blockLayout": "2x3+1x3",
+        "blocks": [
+          { "footprint": "2x3", "cells": [1, 2, 4, 5, 7, 8], "role": "hero-keyword", "value": "접속", "kind": "block-xxxlarge", "requestedSize": "xxxlarge", "actualSize": "xxlarge", "weight": 900, "orientation": "none", "fit": true },
+          { "footprint": "1x3", "cells": [3, 6, 9], "role": "action-keyword", "value": "채우기", "kind": "block-xxlarge", "requestedSize": "xxlarge", "actualSize": "xxlarge", "weight": 900, "orientation": "glyph-sideways-stack", "fit": true }
+        ]
+      },
+      "expectedPrng": { "drawCount": 439, "state": 898507574 }
+    },
+    {
+      "schemaVersion": 1,
+      "name": "maximum-three-by-two",
+      "seed": 71,
+      "now": "2026-07-12T00:00:00.000Z",
+      "viewport": { "width": 1440, "height": 900 },
+      "expected": {
+        "mode": "random",
+        "tone": "light",
+        "grid": true,
+        "componentRatio": "4:3",
+        "borderMode": "stroke",
+        "blockLayout": "3x1+3x2",
+        "blocks": [
+          { "footprint": "3x1", "cells": [1, 2, 3], "role": "action-keyword", "value": "CUT", "kind": "block-xxlarge", "requestedSize": "xxlarge", "actualSize": "xxlarge", "weight": 900, "orientation": "none", "fit": true },
+          { "footprint": "3x2", "cells": [4, 5, 6, 7, 8, 9], "role": "action-keyword", "value": "查看", "kind": "block-xxxlarge", "requestedSize": "xxxlarge", "actualSize": "xxlarge", "weight": 900, "orientation": "none", "fit": true }
+        ]
+      },
+      "expectedPrng": { "drawCount": 453, "state": 770625232 }
+    }
+  ]
+}
