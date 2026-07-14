@@ -6,6 +6,10 @@ const repoRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const playwrightCli = fileURLToPath(new URL("../../../node_modules/@playwright/test/cli.js", import.meta.url));
 const soak = process.argv.includes("--soak");
 const requireAcceptance = process.argv.includes("--require-acceptance");
+const extended = soak || requireAcceptance;
+
+const smokePureTest = "canonical composition layouts preserve rectangular complete 3x3 coverage";
+const smokeBrowserTest = "every supported ratio mounts one exact typography-first Component";
 
 assertRuntimeConformance();
 
@@ -19,22 +23,36 @@ function run(command, args, env = process.env) {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
-run(process.execPath, ["--test", "web/micro-graphic-generator/tests/pure.test.mjs"]);
 run(process.execPath, [
-  "web/micro-graphic-generator/scripts/generate-composition-browser-cases.mjs"
+  "--test",
+  ...(!extended ? [`--test-name-pattern=${smokePureTest}`] : []),
+  "web/micro-graphic-generator/tests/pure.test.mjs"
 ]);
-run(process.execPath, [
-  "web/micro-graphic-generator/scripts/generate-expressive-range-report.mjs",
-  ...(requireAcceptance ? ["--require-acceptance"] : [])
-]);
-run(process.execPath, [
-  "web/micro-graphic-generator/scripts/generate-blind-evaluation-corpus.mjs",
-  ...(requireAcceptance ? ["--require-acceptance"] : [])
-]);
-if (requireAcceptance) {
-  run(process.execPath, ["web/micro-graphic-generator/scripts/generate-motif-calibration.mjs"]);
+
+if (extended) {
+  run(process.execPath, [
+    "web/micro-graphic-generator/scripts/generate-composition-browser-cases.mjs"
+  ]);
+  run(process.execPath, [
+    "web/micro-graphic-generator/scripts/generate-expressive-range-report.mjs",
+    ...(requireAcceptance ? ["--require-acceptance"] : [])
+  ]);
+  run(process.execPath, [
+    "web/micro-graphic-generator/scripts/generate-blind-evaluation-corpus.mjs",
+    ...(requireAcceptance ? ["--require-acceptance"] : [])
+  ]);
+  if (requireAcceptance) {
+    run(process.execPath, ["web/micro-graphic-generator/scripts/generate-motif-calibration.mjs"]);
+  }
 }
-run(process.execPath, [playwrightCli, "test", "--config", "web/micro-graphic-generator/tests/playwright.config.mjs"], {
+
+run(process.execPath, [
+  playwrightCli,
+  "test",
+  "--config",
+  "web/micro-graphic-generator/tests/playwright.config.mjs",
+  ...(!extended ? ["--grep", smokeBrowserTest] : [])
+], {
   ...process.env,
-  GENERATOR_RANDOM_ITERATIONS: soak || requireAcceptance ? "1000" : "100"
+  GENERATOR_RANDOM_ITERATIONS: extended ? "1000" : "1"
 });
