@@ -242,6 +242,8 @@ weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 
 
 사용자가 제공한 action text에서는 반복 목적어 `it`을 제외하고 중복 단어를 합쳐 62개의 고유 표현을 추출한다. `QUICK`은 `빠르게 / QUICK / 快速`으로 한 번만 포함한다. `visualTokens.actionTokens`는 각 항목을 `{ korean, english, chinese }`로 묶어 의미 대응을 유지한다. 예시는 `구매 / BUY / 购买`, `분해 / BREAK / 拆解`, `추출 / RIP / 提取`, `종료 / LEAVE / 退出`이다.
 
+semantic production generator의 `command` 후보 풀도 이 62개 번역 세트를 전부 사용한다. 각 generation은 seed로 서로 다른 action 세트 최대 2개를 활성화한 뒤 그 안에서 한글·영어·중국어 표현을 선택한다. `QUICK`도 다른 action과 같은 hero 후보 풀에 포함하며, 레지스트리나 catalog에만 남겨 두지 않는다.
+
 `actionTypographyTokens()`는 세 언어를 모두 `content / action-keyword` typography로 만든다. 일반 display에서는 `large 32px`, `3x1`·`1x3` block에서는 `xxlarge 128px`, `3x2`·`2x3` block에서는 `xxxlarge 256px` 후보로 사용한다. block에는 고유 크기로 들어가는 번역만 선택하며 fitting이나 scale 변형은 하지 않는다.
 
 HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를 `sign / status-code` 보조 typography로 사용한다. `small 8px`와 `medium 16px`에 분산하고 일반 block의 sign 후보로만 조합한다. `STATUS` 역시 `medium / sign / status`로만 사용하며 hero 후보에는 넣지 않는다.

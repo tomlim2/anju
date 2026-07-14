@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "ownerSnapshotRevision": "sha256:45e8782b741d0ee10e1c9cd3d06c17bc31ea5498cf650bf38af891a56cead384",
+  "ownerSnapshotRevision": "sha256:9eee9203b495183d5720bf6816956d3657822d20f2265c67f0952526d01e68b5",
   "generationTimestamp": "2026-07-14T12:00:00+09:00",
   "viewport": {
     "width": 1440,
@@ -9,7 +9,7 @@
   "ratios": [
     {
       "ratio": "1:1",
-      "seed": 2
+      "seed": 0
     },
     {
       "ratio": "2:3",
@@ -17,34 +17,34 @@
     },
     {
       "ratio": "2:5",
-      "seed": 4
+      "seed": 17
     },
     {
       "ratio": "3:2",
-      "seed": 0
+      "seed": 4
     },
     {
       "ratio": "5:2",
-      "seed": 23
+      "seed": 5
     },
     {
       "ratio": "4:3",
-      "seed": 11
+      "seed": 6
     },
     {
       "ratio": "3:4",
-      "seed": 9
+      "seed": 10
     }
   ],
   "recipes": [
     {
       "recipeId": "command",
-      "ratio": "2:5",
-      "seed": 4
+      "ratio": "1:1",
+      "seed": 3
     },
     {
       "recipeId": "status",
-      "ratio": "3:2",
+      "ratio": "1:1",
       "seed": 0
     }
   ],
@@ -52,25 +52,25 @@
     {
       "motifId": "motif.barcode",
       "ratio": "1:1",
-      "seed": 6,
+      "seed": 2,
       "heroFinalizationClass": "requested"
     },
     {
       "motifId": "motif.pseudo-qr",
-      "ratio": "3:4",
-      "seed": 55,
+      "ratio": "3:2",
+      "seed": 39,
       "heroFinalizationClass": "downshifted"
     },
     {
       "motifId": "motif.table",
-      "ratio": "4:3",
-      "seed": 45,
+      "ratio": "3:2",
+      "seed": 72,
       "heroFinalizationClass": "requested"
     },
     {
       "motifId": "motif.wave",
-      "ratio": "2:3",
-      "seed": 62,
+      "ratio": "3:2",
+      "seed": 151,
       "heroFinalizationClass": "downshifted"
     }
   ],
@@ -78,9 +78,9 @@
     "seed": 0
   },
   "visual": {
-    "desktopCommandSeed": 4,
+    "desktopCommandSeed": 3,
     "portraitMotifSeed": 17,
-    "portraitMotifId": "motif.pseudo-qr",
-    "mobileComposeSeed": 2
+    "portraitMotifId": "motif.barcode",
+    "mobileComposeSeed": 0
   }
 }

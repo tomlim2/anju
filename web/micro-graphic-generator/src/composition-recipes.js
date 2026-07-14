@@ -1,4 +1,9 @@
-export const RECIPE_REGISTRY_VERSION = 1;
+import {
+  actionCommandTranslationSetIds,
+  actionModifierTranslationSetIds
+} from "./vocabulary.js";
+
+export const RECIPE_REGISTRY_VERSION = 2;
 
 function selector(kind, value) {
   return Object.freeze({ [kind]: value });
@@ -21,7 +26,7 @@ export const compositionRecipes = Object.freeze([
     coherenceMode: "direct",
     blockCount: Object.freeze({ min: 2, max: 5 }),
     slots: Object.freeze([
-      slot("hero", "hero", 1, 1, "lexical", ["action"], "primary"),
+      slot("hero", "hero", 1, 1, "lexical", ["action", "modifier"], "primary"),
       slot("subject", "support", 1, 1, "lexical", ["topic", "identity"], "secondary"),
       slot("meta", "metadata", 0, 2, "lexical", ["reference", "value"], "tertiary"),
       slot("motif", "motif", 0, 1, "graphic", null, "secondary")
@@ -92,15 +97,9 @@ export const compositionRecipes = Object.freeze([
 export const activeRecipeIds = Object.freeze(["command", "status"]);
 
 const commandSetIds = [
-  "upgrade.command",
-  "update.command",
-  "lock.command",
-  "unlock.command",
-  "start.command",
-  "pause.command",
-  "check.command",
-  "scan.command"
-];
+  ...actionCommandTranslationSetIds,
+  ...actionModifierTranslationSetIds
+].sort();
 const statusSetIds = [
   "access-denied.status",
   "verified.status",

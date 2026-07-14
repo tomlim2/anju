@@ -55,6 +55,7 @@ import {
 import {
   activeRecipeIds,
   compositionRecipes,
+  pilotCandidateTranslationSetGroups,
   relationEdges
 } from "../src/composition-recipes.js";
 import {
@@ -104,6 +105,8 @@ import {
 } from "../src/typography-metrics.js";
 import {
   VOCABULARY_VERSION,
+  actionCommandTranslationSetIds,
+  actionModifierTranslationSetIds,
   actionTranslationAudit,
   compositionExamples,
   lexicalFamilies,
@@ -231,10 +234,11 @@ test("workflow-style trust bootstrap extraction includes its executable closure"
       candidateRoot,
       "--candidate-root",
       candidateRoot,
-      "--allow-genesis"
+      "--base-ref",
+      "HEAD"
     ], { cwd: temporaryRoot, encoding: "utf8" });
     assert.equal(result.status, 0, result.stderr || result.stdout);
-    assert.match(result.stdout, /composition owner bootstrap verified \(genesis\)/);
+    assert.match(result.stdout, /composition owner bootstrap verified \(base-ref\)/);
   } finally {
     await rm(temporaryRoot, { recursive: true, force: true });
   }
@@ -1023,6 +1027,21 @@ test("command and status recipe registries enforce naming and endpoint boundarie
   );
   assert.ok(relationEdges.some(edge => edge.relation === "recoveryFor"));
 
+  const commandGroup = pilotCandidateTranslationSetGroups.find(group => group.id === "command");
+  const technologicSetIds = [
+    ...actionCommandTranslationSetIds,
+    ...actionModifierTranslationSetIds
+  ].sort();
+  assert.deepEqual(commandGroup.ids, technologicSetIds);
+  assert.deepEqual(actionModifierTranslationSetIds, ["quick.modifier"]);
+  technologicSetIds.forEach(commandSetId => {
+    assert.ok(relationEdges.some(edge =>
+      edge.relation === "actsOn"
+      && edge.from.translationSetId === commandSetId
+      && edge.to.translationSetId === "system.topic"
+    ), commandSetId);
+  });
+
   const invalidEndpointRecipes = structuredClone(compositionRecipes);
   invalidEndpointRecipes[0].slots[0].cardinality.max = 2;
   assert.throws(() => validateRecipeRegistry({
@@ -1185,6 +1204,20 @@ test("candidate materialization is keyed, inventory-local, and multilingual over
       .forEach(candidate => languages.add(candidate.language));
   }
   assert.deepEqual([...languages].sort(), ["en", "ko", "zh"]);
+
+  const selectedCommandSets = new Set();
+  const technologicSetIds = new Set([
+    ...actionCommandTranslationSetIds,
+    ...actionModifierTranslationSetIds
+  ]);
+  for (let seed = 0; seed < 512; seed += 1) {
+    const { inventory } = createCompositionTestContext({ seed });
+    inventory.rankedCandidateIds
+      .map(id => inventory.candidateById.get(id))
+      .filter(candidate => candidate.sourceKind === "lexical" && technologicSetIds.has(candidate.translationSetId))
+      .forEach(candidate => selectedCommandSets.add(candidate.translationSetId));
+  }
+  assert.deepEqual([...selectedCommandSets].sort(), [...technologicSetIds].sort());
   const seed = deriveSeed({ seed: 10 }, "selection");
   assert.equal(keyedValue(seed, "tie"), keyedValue(seed, "tie"));
   assert.notEqual(keyedValue(seed, "tie"), keyedValue(seed, "materialization"));

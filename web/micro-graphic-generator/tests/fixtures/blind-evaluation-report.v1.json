@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "corpusId": "blind-evaluation:v1:e5e4298b45e1512177",
-  "corpusSha256": "sha256:e550b8b60f578fc0ffbfc6f0574f9ab324c7fe51370dfb6e214d179b62f56dc9",
+  "corpusId": "blind-evaluation:v1:040df5b1e9f6b0d5bb",
+  "corpusSha256": "sha256:40727cd1839c92ec44072e297a1cfa79c287c464dc6b723039442983279d7519",
   "translationErrorLedgerRevision": "sha256:fcf74fed5b6ac4dd7124998b0d06733357ea1cb63df0055fef87694638b4268e",
   "evaluationTooling": {
     "schemaVersion": 1,
@@ -141,11 +141,11 @@
       },
       {
         "path": "web/micro-graphic-generator/src/composition-owner-snapshot.js",
-        "sha256Hex": "36bf669db0b4336bb9e6f311a0d5cc897813bf9f22dea782108836a8da4b0317"
+        "sha256Hex": "0a5760324a83a3ab170e46b9891c4382f8d5f7f6b7ac4c4f697a96b7eaf9ab11"
       },
       {
         "path": "web/micro-graphic-generator/src/composition-recipes.js",
-        "sha256Hex": "2130ee6e5c08fbb141bfca0b6a9e8a54128ffdeb35d8332f0a2a2b3cbf4b61a9"
+        "sha256Hex": "66997c44aa23b170df787108e2f25b1e75a843fc5cb8b06303d19fbc3da91f24"
       },
       {
         "path": "web/micro-graphic-generator/src/config.js",
@@ -177,7 +177,7 @@
       },
       {
         "path": "web/micro-graphic-generator/src/vocabulary.js",
-        "sha256Hex": "643647db64552bea7d46946e1d5cf0fbc4288b5e4948b13b710144d0656e48fd"
+        "sha256Hex": "19f23883f155b84b9e16dea95711d64ce4450268c83d5228e6980bc3f941b65c"
       },
       {
         "path": "web/micro-graphic-generator/tests/blind-review-server.mjs",
@@ -204,7 +204,7 @@
         "sha256Hex": "a0407edc484920e8328ab5fda7381889982ed03f2e2195ba7047905a42da3f7c"
       }
     ],
-    "revision": "sha256:8ee20ed62b43a50c6bc760c1a1cf70d9d952e7b817b831dfa76e2c3bcaea9cdd"
+    "revision": "sha256:8173b899b5061dfeedb91cb9f8a58305f2634693c473fd24b861d071ed07c0fa"
   },
   "pairCount": 110,
   "reviewResultCount": 0,
@@ -213,7 +213,7 @@
     "pairCount": 110,
     "minimumPairCountPass": true,
     "presentationRuns": {
-      "maximumGroupRun": 2,
+      "maximumGroupRun": 1,
       "maximumStratumRun": 2
     },
     "strata": [
@@ -291,6 +291,14 @@
     "ratios": [
       {
         "id": "1:1",
+        "pairCount": 14,
+        "leftCount": 7,
+        "rightCount": 7,
+        "difference": 0,
+        "pass": true
+      },
+      {
+        "id": "2:3",
         "pairCount": 13,
         "leftCount": 6,
         "rightCount": 7,
@@ -298,19 +306,11 @@
         "pass": true
       },
       {
-        "id": "2:3",
-        "pairCount": 15,
-        "leftCount": 7,
-        "rightCount": 8,
-        "difference": 1,
-        "pass": true
-      },
-      {
         "id": "2:5",
-        "pairCount": 22,
-        "leftCount": 11,
-        "rightCount": 11,
-        "difference": 0,
+        "pairCount": 19,
+        "leftCount": 10,
+        "rightCount": 9,
+        "difference": 1,
         "pass": true
       },
       {
@@ -323,25 +323,25 @@
       },
       {
         "id": "3:4",
-        "pairCount": 19,
-        "leftCount": 10,
-        "rightCount": 9,
-        "difference": 1,
-        "pass": true
-      },
-      {
-        "id": "4:3",
-        "pairCount": 14,
-        "leftCount": 7,
-        "rightCount": 7,
+        "pairCount": 22,
+        "leftCount": 11,
+        "rightCount": 11,
         "difference": 0,
         "pass": true
       },
       {
-        "id": "5:2",
+        "id": "4:3",
         "pairCount": 13,
-        "leftCount": 7,
-        "rightCount": 6,
+        "leftCount": 6,
+        "rightCount": 7,
+        "difference": 1,
+        "pass": true
+      },
+      {
+        "id": "5:2",
+        "pairCount": 15,
+        "leftCount": 8,
+        "rightCount": 7,
         "difference": 1,
         "pass": true
       }

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "vocabularyVersion": 1,
-  "registryDigest": "sha256:2a84b2cd112383353164605dccb877355e00a729c753af6753dc3522cf6666cb",
+  "vocabularyVersion": 2,
+  "registryDigest": "sha256:1086429cdeb5f6de97aaa9ffad9e288c607a4b2b8038af4d11acdb7922d6acd5",
   "counts": {
     "lexicalUses": 236,
     "translationSets": 74,

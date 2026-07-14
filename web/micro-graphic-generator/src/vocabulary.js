@@ -95,7 +95,7 @@ export const visualTokens = {
   }
 };
 
-export const VOCABULARY_VERSION = 1;
+export const VOCABULARY_VERSION = 2;
 
 const LANGUAGE_METADATA = Object.freeze({
   en: { script: "latin", typeface: "english" },
@@ -215,6 +215,20 @@ for (const group of visualTokens.actionTokens) {
     members: Object.freeze(members)
   }));
 }
+
+export const actionCommandTranslationSetIds = Object.freeze(
+  actionTranslationSets
+    .filter(set => set.id.endsWith(".command"))
+    .map(set => set.id)
+    .sort()
+);
+
+export const actionModifierTranslationSetIds = Object.freeze(
+  actionTranslationSets
+    .filter(set => set.id.endsWith(".modifier"))
+    .map(set => set.id)
+    .sort()
+);
 
 const curatedMultilingualGroups = [
   {
