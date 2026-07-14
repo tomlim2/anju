@@ -30,6 +30,10 @@ import {
   validateReviewerQualificationSet
 } from "./evaluation-model.mjs";
 import { selectCompleteBlindCorpus } from "./blind-evaluation-corpus-lib.mjs";
+import {
+  emptyBlindReviewCollection,
+  rebaseEmptyBlindReviewCollection
+} from "./blind-review-collection-transition.mjs";
 import { startOwnedTestServer } from "./owned-test-server.mjs";
 import { buildEvaluationToolingEvidence } from "./evaluation-tooling-evidence.mjs";
 
@@ -863,19 +867,19 @@ async function readQualificationSet() {
   }
 }
 
-async function readReviewCollection(corpus, qualificationSet) {
+async function readReviewCollection(corpus, qualificationSet, { allowEmptyRebase = false } = {}) {
   try {
     const collection = JSON.parse(await readFile(reviewsPath, "utf8"));
-    validateBlindReviewCollection(collection, corpus, { qualificationSet });
+    try {
+      validateBlindReviewCollection(collection, corpus, { qualificationSet });
+    } catch (error) {
+      if (allowEmptyRebase) return rebaseEmptyBlindReviewCollection(collection, corpus);
+      throw error;
+    }
     return collection;
   } catch (error) {
     if (error?.code === "ENOENT") {
-      return {
-        schemaVersion: 1,
-        corpusId: corpus.corpusId,
-        translationErrorLedgerRevision: corpus.translationErrorLedgerRevision,
-        results: []
-      };
+      return emptyBlindReviewCollection(corpus);
     }
     throw error;
   }
@@ -1041,7 +1045,7 @@ async function generateFrozenCorpus() {
     };
     validateBlindCorpus(corpus, { activeRecipeIds, activeMotifIds });
     const qualificationSet = await readQualificationSet();
-    const reviews = await readReviewCollection(corpus, qualificationSet);
+    const reviews = await readReviewCollection(corpus, qualificationSet, { allowEmptyRebase: true });
     const report = buildBlindEvaluationReport({
       corpus,
       reviewResults: reviews.results,

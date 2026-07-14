@@ -358,8 +358,8 @@ export function validatePlannerResultShape(result, path = "plannerResult") {
     if (!selection.recipeOrder.includes(selection.selectedRecipeId)) {
       fail(`${path}.initialSelection.selectedRecipeId`, "selected recipe is outside recipe order");
     }
-    if (!Array.isArray(selection.topRankKey) || selection.topRankKey.length !== 6) {
-      fail(`${path}.initialSelection.topRankKey`, "expected six-number rank key");
+    if (!Array.isArray(selection.topRankKey) || selection.topRankKey.length !== 7) {
+      fail(`${path}.initialSelection.topRankKey`, "expected seven-number rank key");
     }
     selection.topRankKey.forEach((value, index) => {
       if (!Number.isFinite(value)) fail(`${path}.initialSelection.topRankKey[${index}]`, "expected finite number");
@@ -684,7 +684,7 @@ export function validateRecipeRegistry({
       assertRecord(slot, slotPath);
       assertExactKeys(slot, [
         "id", "compositionRole", "cardinality", "source", "prominence"
-      ], ["acceptsAnyTag"], slotPath);
+      ], ["acceptsAnyTag", "optionalPresenceRate"], slotPath);
       assertString(slot.id, `${slotPath}.id`);
       if (slotById.has(slot.id)) fail(path, `duplicate slot ${slot.id}`);
       assertEnum(slot.compositionRole, COMPOSITION_ROLE_VALUES, `${slotPath}.compositionRole`);
@@ -694,6 +694,17 @@ export function validateRecipeRegistry({
       assertExactKeys(slot.cardinality, ["min", "max"], [], `${slotPath}.cardinality`);
       assertIntegerRange(slot.cardinality.min, 0, 2, `${slotPath}.cardinality.min`);
       assertIntegerRange(slot.cardinality.max, slot.cardinality.min, 2, `${slotPath}.cardinality.max`);
+      if (slot.optionalPresenceRate !== undefined) {
+        if (
+          slot.cardinality.min !== 0
+          || slot.cardinality.max !== 1
+          || !Number.isFinite(slot.optionalPresenceRate)
+          || slot.optionalPresenceRate <= 0
+          || slot.optionalPresenceRate >= 1
+        ) {
+          fail(`${slotPath}.optionalPresenceRate`, "expected a rate between 0 and 1 on an optional max-one slot");
+        }
+      }
       if (slot.source === "lexical") {
         assertStringArray(slot.acceptsAnyTag, `${slotPath}.acceptsAnyTag`, { min: 1 });
         slot.acceptsAnyTag.forEach(tag => assertEnum(tag, TAG_VALUES, `${slotPath}.acceptsAnyTag`));

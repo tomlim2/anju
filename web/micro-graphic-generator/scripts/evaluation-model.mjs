@@ -6,7 +6,7 @@ import {
 } from "../src/composition-model.js";
 import { blindPresentationRunSummary } from "./blind-evaluation-corpus-lib.mjs";
 
-export const EVALUATION_SCHEMA_VERSION = 1;
+export const EVALUATION_SCHEMA_VERSION = 2;
 export const BLIND_EVALUATION_SCHEMA_VERSION = 1;
 
 const LANGUAGES = Object.freeze(["en", "ko", "zh"]);
@@ -92,6 +92,12 @@ function exactVersionTuple(left, right) {
 function assertInteger(value, path, { min = Number.MIN_SAFE_INTEGER, max = Number.MAX_SAFE_INTEGER } = {}) {
   if (!Number.isInteger(value) || value < min || value > max) {
     fail(path, `expected integer in range ${min}-${max}`);
+  }
+}
+
+function assertFiniteNumber(value, path, { min = -Infinity, max = Infinity } = {}) {
+  if (!Number.isFinite(value) || value < min || value > max) {
+    fail(path, `expected finite number in range ${min}-${max}`);
   }
 }
 
@@ -191,7 +197,9 @@ export function validateExpressiveRangeInputFixture(fixture, { expectedCount = n
   assertExactKeys(fixture, [
     "schemaVersion", "sampleSeriesId", "generationInputCount", "generationInputs"
   ], "expressiveRangeInputs");
-  if (fixture.schemaVersion !== EVALUATION_SCHEMA_VERSION) fail("expressiveRangeInputs.schemaVersion", "expected 1");
+  if (fixture.schemaVersion !== EVALUATION_SCHEMA_VERSION) {
+    fail("expressiveRangeInputs.schemaVersion", `expected ${EVALUATION_SCHEMA_VERSION}`);
+  }
   assertString(fixture.sampleSeriesId, "expressiveRangeInputs.sampleSeriesId");
   assertArray(fixture.generationInputs, "expressiveRangeInputs.generationInputs");
   if (fixture.generationInputCount !== fixture.generationInputs.length) {
@@ -240,7 +248,7 @@ function validateInitialSelectionEvent(event, path) {
     assertString(event.selectedRecipeId, `${path}.selectedRecipeId`);
     assertString(event.selectedPlanId, `${path}.selectedPlanId`);
     assertString(event.heroLexicalUseId, `${path}.heroLexicalUseId`);
-    if (!Array.isArray(event.topRankKey) || event.topRankKey.length !== 6) fail(`${path}.topRankKey`, "expected RankKey");
+    if (!Array.isArray(event.topRankKey) || event.topRankKey.length !== 7) fail(`${path}.topRankKey`, "expected RankKey");
     if (event.topTiePlanIds.length === 0) fail(`${path}.topTiePlanIds`, "selected event needs a tie set");
     if (!Number.isInteger(event.selectedTieIndex) || event.selectedTieIndex < 0 || event.selectedTieIndex >= event.topTiePlanIds.length) {
       fail(`${path}.selectedTieIndex`, "out of range");
@@ -374,27 +382,52 @@ function implementationDistribution(initialEvents) {
   };
 }
 
-function concentrationRows(acceptedEvents) {
-  const counts = new Map();
-  acceptedEvents.forEach(event => counts.set(event.heroLexicalUseId, (counts.get(event.heroLexicalUseId) || 0) + 1));
-  const denominator = acceptedEvents.length;
-  const nonZeroMedianCount = median([...counts.values()]);
-  const nonZeroMedianRate = denominator === 0 ? 0 : nonZeroMedianCount / denominator;
-  const heroes = [...counts.entries()]
-    .map(([heroLexicalUseId, observedCount]) => ({
-      heroLexicalUseId,
-      observedCount,
-      observedRate: round9(observedCount / denominator),
-      medianMultiple: nonZeroMedianCount === 0 ? 0 : round9(observedCount / nonZeroMedianCount),
-      concentrationTriggered: nonZeroMedianCount > 0 && observedCount > nonZeroMedianCount * 2
-    }))
-    .sort((left, right) => right.observedCount - left.observedCount || compareStrings(left.heroLexicalUseId, right.heroLexicalUseId));
+export function summarizeEditorialConcentration(acceptedEvents) {
+  const eventsByStratum = groupBy(
+    acceptedEvents,
+    event => `${event.recipeId}/${event.heroLanguage}`
+  );
+  const strata = [];
+  const heroes = [];
+  for (const [stratumId, events] of [...eventsByStratum.entries()].sort(([left], [right]) =>
+    compareStrings(left, right)
+  )) {
+    const [recipeId, language] = stratumId.split("/");
+    const counts = new Map();
+    events.forEach(event => counts.set(
+      event.heroLexicalUseId,
+      (counts.get(event.heroLexicalUseId) || 0) + 1
+    ));
+    const denominator = events.length;
+    const nonZeroMedianCount = median([...counts.values()]);
+    const stratumHeroes = [...counts.entries()]
+      .map(([heroLexicalUseId, observedCount]) => ({
+        stratumId,
+        heroLexicalUseId,
+        observedCount,
+        observedRate: round9(observedCount / denominator),
+        medianMultiple: nonZeroMedianCount === 0 ? 0 : round9(observedCount / nonZeroMedianCount),
+        concentrationTriggered: nonZeroMedianCount > 0 && observedCount > nonZeroMedianCount * 2
+      }))
+      .sort((left, right) =>
+        right.observedCount - left.observedCount
+        || compareStrings(left.heroLexicalUseId, right.heroLexicalUseId)
+      );
+    strata.push({
+      id: stratumId,
+      recipeId,
+      language,
+      acceptedOutputCount: denominator,
+      nonZeroMedianCount: round9(nonZeroMedianCount),
+      nonZeroMedianRate: round9(nonZeroMedianCount / denominator),
+      topShare: stratumHeroes[0]?.observedRate || 0,
+      hhi: round9(stratumHeroes.reduce((sum, hero) => sum + hero.observedRate ** 2, 0))
+    });
+    heroes.push(...stratumHeroes);
+  }
   return {
-    acceptedOutputCount: denominator,
-    nonZeroMedianCount: round9(nonZeroMedianCount),
-    nonZeroMedianRate: round9(nonZeroMedianRate),
-    topShare: heroes[0]?.observedRate || 0,
-    hhi: round9(heroes.reduce((sum, hero) => sum + hero.observedRate ** 2, 0)),
+    acceptedOutputCount: acceptedEvents.length,
+    strata,
     heroes
   };
 }
@@ -460,6 +493,8 @@ export function summarizeMountedOutcomes(attemptEvents, {
 
 function openConcentrationReview(reportSeriesId, tuple, concentration, hero) {
   const slug = hero.heroLexicalUseId.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase();
+  const stratum = concentration.strata.find(record => record.id === hero.stratumId);
+  if (!stratum) fail("editorialConcentration.strata", `missing stratum ${hero.stratumId}`);
   return {
     schemaVersion: 1,
     id: `concentration:${reportSeriesId}:${slug}`,
@@ -468,7 +503,7 @@ function openConcentrationReview(reportSeriesId, tuple, concentration, hero) {
     heroLexicalUseId: hero.heroLexicalUseId,
     trigger: {
       observedRate: hero.observedRate,
-      nonZeroMedianRate: concentration.nonZeroMedianRate,
+      nonZeroMedianRate: stratum.nonZeroMedianRate,
       multiple: hero.medianMultiple
     },
     status: "open",
@@ -565,7 +600,9 @@ function validateCompleteSuccessorReport(report, path) {
     "successorReportSetRevision", "populationCounts", "implementationDistribution",
     "mountedOutcomeDistribution", "editorialConcentration", "concentrationReviews", "acceptance"
   ], path);
-  if (report.schemaVersion !== EVALUATION_SCHEMA_VERSION) fail(`${path}.schemaVersion`, "expected 1");
+  if (report.schemaVersion !== EVALUATION_SCHEMA_VERSION) {
+    fail(`${path}.schemaVersion`, `expected ${EVALUATION_SCHEMA_VERSION}`);
+  }
   assertString(report.reportSeriesId, `${path}.reportSeriesId`);
   assertDigest(report.inputFixtureSha256, `${path}.inputFixtureSha256`);
   if (report.inputCount !== 10_000) fail(`${path}.inputCount`, "successor must contain the official 10,000 inputs");
@@ -583,7 +620,7 @@ function validateCompleteSuccessorReport(report, path) {
   assertString(report.eventArtifact.path, `${path}.eventArtifact.path`);
   assertDigest(report.eventArtifact.sha256, `${path}.eventArtifact.sha256`);
   assertInteger(report.eventArtifact.recordCount, `${path}.eventArtifact.recordCount`, { min: 10_000 });
-  validateEvaluationToolingEvidence(report.evaluationTooling, "expressive-range-v1");
+  validateEvaluationToolingEvidence(report.evaluationTooling, "expressive-range-v2");
   assertDigest(report.curationReviewerDirectoryRevision, `${path}.curationReviewerDirectoryRevision`);
   assertDigest(report.successorReportSetRevision, `${path}.successorReportSetRevision`);
   assertObject(report.populationCounts, `${path}.populationCounts`);
@@ -614,40 +651,106 @@ function validateCompleteSuccessorReport(report, path) {
   const concentration = report.editorialConcentration;
   assertObject(concentration, `${path}.editorialConcentration`);
   assertExactKeys(concentration, [
-    "acceptedOutputCount", "nonZeroMedianCount", "nonZeroMedianRate", "topShare", "hhi", "heroes"
+    "acceptedOutputCount", "strata", "heroes"
   ], `${path}.editorialConcentration`);
   assertInteger(concentration.acceptedOutputCount, `${path}.editorialConcentration.acceptedOutputCount`, { min: 1 });
   if (concentration.acceptedOutputCount !== report.populationCounts["accepted-output"]) {
     fail(`${path}.editorialConcentration.acceptedOutputCount`, "accepted population mismatch");
   }
+  assertArray(concentration.strata, `${path}.editorialConcentration.strata`);
+  const stratumById = new Map();
+  concentration.strata.forEach((stratum, index) => {
+    const stratumPath = `${path}.editorialConcentration.strata[${index}]`;
+    assertObject(stratum, stratumPath);
+    assertExactKeys(stratum, [
+      "id", "recipeId", "language", "acceptedOutputCount", "nonZeroMedianCount",
+      "nonZeroMedianRate", "topShare", "hhi"
+    ], stratumPath);
+    assertString(stratum.id, `${stratumPath}.id`);
+    assertString(stratum.recipeId, `${stratumPath}.recipeId`);
+    assertEnum(stratum.language, LANGUAGES, `${stratumPath}.language`);
+    if (stratum.id !== `${stratum.recipeId}/${stratum.language}`) {
+      fail(`${stratumPath}.id`, "stratum ID must be recipe/language");
+    }
+    if (stratumById.has(stratum.id)) fail(stratumPath, "duplicate stratum ID");
+    assertInteger(stratum.acceptedOutputCount, `${stratumPath}.acceptedOutputCount`, { min: 1 });
+    for (const key of ["nonZeroMedianCount", "nonZeroMedianRate", "topShare", "hhi"]) {
+      assertFiniteNumber(stratum[key], `${stratumPath}.${key}`, { min: 0 });
+    }
+    stratumById.set(stratum.id, stratum);
+  });
+  const stratumIds = concentration.strata.map(stratum => stratum.id);
+  if (!sameStringArray(stratumIds, [...stratumIds].sort(compareStrings))) {
+    fail(`${path}.editorialConcentration.strata`, "strata must be ascending by ID");
+  }
   assertArray(concentration.heroes, `${path}.editorialConcentration.heroes`);
   const heroIds = new Set();
   let observedTotal = 0;
+  const heroesByStratum = new Map(stratumIds.map(stratumId => [stratumId, []]));
   concentration.heroes.forEach((hero, index) => {
     const heroPath = `${path}.editorialConcentration.heroes[${index}]`;
     assertObject(hero, heroPath);
     assertExactKeys(hero, [
-      "heroLexicalUseId", "observedCount", "observedRate", "medianMultiple", "concentrationTriggered"
+      "stratumId", "heroLexicalUseId", "observedCount", "observedRate", "medianMultiple",
+      "concentrationTriggered"
     ], heroPath);
+    assertString(hero.stratumId, `${heroPath}.stratumId`);
+    if (!stratumById.has(hero.stratumId)) fail(`${heroPath}.stratumId`, "unknown stratum");
     assertString(hero.heroLexicalUseId, `${heroPath}.heroLexicalUseId`);
     if (heroIds.has(hero.heroLexicalUseId)) fail(heroPath, "duplicate hero ID");
     heroIds.add(hero.heroLexicalUseId);
     assertInteger(hero.observedCount, `${heroPath}.observedCount`, { min: 1 });
+    assertFiniteNumber(hero.observedRate, `${heroPath}.observedRate`, { min: 0, max: 1 });
+    assertFiniteNumber(hero.medianMultiple, `${heroPath}.medianMultiple`, { min: 0 });
+    if (typeof hero.concentrationTriggered !== "boolean") {
+      fail(`${heroPath}.concentrationTriggered`, "expected boolean");
+    }
     observedTotal += hero.observedCount;
+    heroesByStratum.get(hero.stratumId).push(hero);
   });
   if (observedTotal !== concentration.acceptedOutputCount) {
     fail(`${path}.editorialConcentration.heroes`, "hero counts do not cover accepted outputs");
   }
-  const medianCount = median(concentration.heroes.map(hero => hero.observedCount));
-  if (concentration.nonZeroMedianCount !== round9(medianCount)) {
-    fail(`${path}.editorialConcentration.nonZeroMedianCount`, "median count mismatch");
-  }
-  concentration.heroes.forEach((hero, index) => {
-    const expectedTriggered = hero.observedCount > medianCount * 2;
-    if (hero.concentrationTriggered !== expectedTriggered) {
-      fail(`${path}.editorialConcentration.heroes[${index}].concentrationTriggered`, "trigger differs from counts");
+  let stratumAcceptedTotal = 0;
+  concentration.strata.forEach((stratum, stratumIndex) => {
+    const stratumPath = `${path}.editorialConcentration.strata[${stratumIndex}]`;
+    const stratumHeroes = heroesByStratum.get(stratum.id);
+    if (stratumHeroes.length === 0) fail(stratumPath, "stratum has no heroes");
+    const acceptedOutputCount = stratumHeroes.reduce((sum, hero) => sum + hero.observedCount, 0);
+    if (acceptedOutputCount !== stratum.acceptedOutputCount) {
+      fail(`${stratumPath}.acceptedOutputCount`, "hero counts do not cover stratum outputs");
     }
+    stratumAcceptedTotal += acceptedOutputCount;
+    const medianCount = median(stratumHeroes.map(hero => hero.observedCount));
+    const medianRate = round9(medianCount / acceptedOutputCount);
+    if (stratum.nonZeroMedianCount !== round9(medianCount)) {
+      fail(`${stratumPath}.nonZeroMedianCount`, "median count mismatch");
+    }
+    if (stratum.nonZeroMedianRate !== medianRate) {
+      fail(`${stratumPath}.nonZeroMedianRate`, "median rate mismatch");
+    }
+    const expectedTopShare = Math.max(...stratumHeroes.map(hero => round9(hero.observedCount / acceptedOutputCount)));
+    const expectedHhi = round9(stratumHeroes.reduce((sum, hero) => {
+      const rate = round9(hero.observedCount / acceptedOutputCount);
+      return sum + rate ** 2;
+    }, 0));
+    if (stratum.topShare !== expectedTopShare) fail(`${stratumPath}.topShare`, "top share mismatch");
+    if (stratum.hhi !== expectedHhi) fail(`${stratumPath}.hhi`, "HHI mismatch");
+    stratumHeroes.forEach(hero => {
+      const heroPath = `${path}.editorialConcentration.heroes:${hero.heroLexicalUseId}`;
+      const expectedRate = round9(hero.observedCount / acceptedOutputCount);
+      const expectedMultiple = medianCount === 0 ? 0 : round9(hero.observedCount / medianCount);
+      const expectedTriggered = medianCount > 0 && hero.observedCount > medianCount * 2;
+      if (hero.observedRate !== expectedRate) fail(`${heroPath}.observedRate`, "stratum rate mismatch");
+      if (hero.medianMultiple !== expectedMultiple) fail(`${heroPath}.medianMultiple`, "stratum multiple mismatch");
+      if (hero.concentrationTriggered !== expectedTriggered) {
+        fail(`${heroPath}.concentrationTriggered`, "trigger differs from stratum counts");
+      }
+    });
   });
+  if (stratumAcceptedTotal !== concentration.acceptedOutputCount) {
+    fail(`${path}.editorialConcentration.strata`, "strata do not cover accepted outputs");
+  }
   assertArray(report.concentrationReviews, `${path}.concentrationReviews`);
   assertObject(report.acceptance, `${path}.acceptance`);
   if (report.acceptance.pass !== true) fail(`${path}.acceptance.pass`, "successor report must pass all gates");
@@ -738,12 +841,12 @@ export function buildExpressiveRangeReport({
   const attemptEvents = events.filter(event => event.population === "attempt");
   const acceptedEvents = events.filter(event => event.population === "accepted-output");
   const implementation = implementationDistribution(initialEvents);
-  const concentration = concentrationRows(acceptedEvents);
+  const concentration = summarizeEditorialConcentration(acceptedEvents);
   const mountedOutcomes = summarizeMountedOutcomes(attemptEvents, {
     acceptedOutputCount: populations["accepted-output"],
     populationAttemptCount: populations.attempt
   });
-  validateEvaluationToolingEvidence(evaluationTooling, "expressive-range-v1");
+  validateEvaluationToolingEvidence(evaluationTooling, "expressive-range-v2");
   const successorReports = validateSuccessorReportSet(successorReportSet);
   const curationReviewerById = validateCurationReviewerDirectory(curationReviewerDirectory);
   const overrideByHero = new Map(reviewOverrides.map(review => [review.heroLexicalUseId, review]));

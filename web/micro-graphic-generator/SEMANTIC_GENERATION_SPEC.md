@@ -21,9 +21,9 @@
 | B | 완료 | command/status 2-5 block universe, canonical hash, exact queue, planning oracle와 browser parity 통과 |
 | C | 완료 | live plan projection, motif render, mounted finalization/validation, bounded replan/known-good, export metadata 통과 |
 | D | 자동 hardening 완료 | 4 motif의 requested/downshifted 8개 cell을 frozen corpus로 확보. perceptual first-read 판정은 Phase E blind review와 함께 대기 |
-| E | 도구와 fixture 완료 | expressive range는 통과. 110쌍 blind human review와 qualified translation-ledger adjudication은 사람의 입력이 필요해 pending; 후속 recipe expansion은 활성화하지 않음 |
+| E | 도구와 fixture 완료 | expressive range는 통과. 80쌍 blind human review와 qualified translation-ledger adjudication은 사람의 입력이 필요해 pending; 후속 recipe expansion은 활성화하지 않음 |
 
-2026-07-14 자동 증거는 pure `49/49`, browser `25/25`, Chromium Random `1,000/1,000`, expressive-range input `10,000`과 accepted output `10,000`/terminal failure `0`이다. Blind corpus `blind-evaluation:v1:e5e4298b45e1512177`는 60,000 candidate seed, 10,814 baseline-eligible row에서 counterbalanced 110쌍을 고정했고 6개 linguistic stratum과 8개 motif/finalization cell coverage를 통과했다. 전체 acceptance가 아직 false인 유일한 이유는 이 frozen corpus의 qualified human review가 제출되지 않았기 때문이다. 사람의 평가 결과나 별도 trust-root commit을 자동 생성해 통과로 기록하지 않는다.
+2026-07-14 자동 증거는 pure `53/53`, browser `25/25`, Chromium Random `1,000/1,000`, expressive-range input `10,000`과 accepted output `10,000`/terminal failure `0`이다. Blind corpus `blind-evaluation:v1:3a4aebc13cbd1c8d54`는 60,000 candidate seed, 10,696 baseline-eligible row에서 counterbalanced 80쌍을 고정했고 6개 linguistic stratum과 8개 motif/finalization cell coverage를 통과했다. 전체 acceptance는 frozen corpus의 qualified human review와 merge-base trust foundation을 활성화하는 별도 reviewed commit이 모두 완료될 때까지 pending이다. 사람의 평가 결과나 별도 trust-root commit을 자동 생성해 통과로 기록하지 않는다.
 
 ## Product Definition
 
@@ -427,6 +427,15 @@ Rules:
       prominence: "primary"
     },
     {
+      id: "modifier",
+      compositionRole: "support",
+      cardinality: { min: 0, max: 1 },
+      source: "lexical",
+      acceptsAnyTag: ["modifier"],
+      optionalPresenceRate: 0.25,
+      prominence: "secondary"
+    },
+    {
       id: "subject",
       compositionRole: "support",
       cardinality: { min: 1, max: 1 },
@@ -451,7 +460,13 @@ Rules:
     }
   ],
   requiredRelations: [
-    { fromSlot: "hero", relations: ["actsOn"], toSlot: "subject" }
+    { fromSlot: "hero", relations: ["actsOn"], toSlot: "subject" },
+    {
+      fromSlot: "modifier",
+      relations: ["modifies"],
+      toSlot: "hero",
+      whenSlotPresent: "modifier"
+    }
   ],
   pairRules: {
     prefer: [{
@@ -483,6 +498,8 @@ Cardinality contract:
 - 각 slot instance는 정확히 한 block에 배정되고, 각 block은 정확히 한 `slotInstanceId`를 참조한다.
 - pilot의 `command`와 `status` recipe는 preserved layout contract의 2, 3, 4, 5 block plan을 모두 표현할 수 있어야 한다.
 - `layoutPreferences`의 모든 key는 같은 recipe에 선언된 exact slot definition ID여야 한다. `metadata` 같은 role alias나 unknown key는 recipe validation에서 reject한다.
+- command materialization은 61개 action translation set 중 정확히 1개를 keyed selection으로 활성화한다. `QUICK`은 별도 modifier group에서 활성화되며 hero domain에 들어가지 않는다. Modifier slot은 `optionalPresenceRate: 0.25`를 선언하고 입력별 deterministic presence preference를 사용한다. Slot이 존재하면 required `modifies` edge로 action hero에 연결되어야 한다.
+- action에서 subject로 향하는 active `actsOn` edge는 vocabulary 목록에서 자동 생성하지 않는다. 모든 active action은 recipe owner의 명시적 reviewed target matrix에 최소 1개 subject를 가져야 하며, vocabulary에 action을 추가했지만 matrix review가 없으면 module initialization을 실패시킨다.
 
 Normative `status` pilot recipe:
 
@@ -697,11 +714,12 @@ Canonical rank fields:
 `composition-plan-validator.js`의 pure `derivePlanRankFacts`가 아래 field 계산과 `PlanRankFacts` 조립의 유일한 owner다. planner는 returned `rankKey`를 비교만 한다.
 
 - `preferRuleMatchCount`: recipe의 각 `pairRules.prefer` rule은 selected lexical slot instance의 ordered pair와 approved relation edge가 selector/relation을 모두 만족하면 1, 아니면 0이다. 한 rule이 여러 pair와 match해도 최대 1이며 모든 rule 값을 합한다.
+- `optionalPresencePreferenceMatchCount`: `optionalPresenceRate`를 선언한 optional max-one slot마다 `keyedValue(deriveSeed(generationInput, "optional-slot-presence"), "<recipeId>:<slotDefinitionId>") < optionalPresenceRate`로 목표 presence를 정한다. Tuple의 해당 slot 유무가 목표와 같으면 1, 다르면 0이다. 이는 의미가 있는 optional token을 실제 승인 출력에 노출하면서 레이아웃 fit margin이 항상 짧은 tuple만 선택하는 것을 막는다.
 - `heroSizeRank`: `small=0`, `medium=1`, `large=2`, `xlarge=3`, `xxlarge=4`, `xxxlarge=5`다.
 - `heroWeightRank`: hero block의 `requestedFontWeight`가 `400=0`, `700=1`, `900=2`다. `requestedWeight` label만으로 rank를 추론하지 않는다.
 - `heroBlockArea`: hero block의 `cells.length`다.
 - `minNormalizedFitMargin`: 각 block의 usable box와 predicted final intrinsic bounds로 `min((usableWidth - predictedWidth) / usableWidth, (usableHeight - predictedHeight) / usableHeight)`를 계산하고 plan 전체 최솟값을 취한다. Typography plan block은 footprint policy의 start `requestedSize`를 보존하고, injected pure measurer가 같은 lexical use의 ordered discrete fallback에서 처음 fit하는 size/weight를 predicted final bounds로 사용한다. Motif는 materialized intrinsic bounds를 사용한다. 어떤 typography fallback도 fit하지 않으면 hard-invalid다. `Math.round(value * 1e6) / 1e6`로 정규화하고 `-0`은 `0`으로 바꾼다. hard-valid plan이므로 값은 0 이상이다. fit은 이미 hard gate이므로 이 margin은 fitting plans 사이에서 hero hierarchy 뒤의 여유 공간 tie-breaker다.
-- Retained decision은 같은 predicted bounds와 reviewed motif factor로 finalizer와 동일한 정규화 면적 산식을 적용한 보수적 cross-kind preflight도 통과해야 한다. Predicted motif score가 predicted typography hero score보다 크거나 같으면 hard-invalid다. 이 preflight는 명백히 실패할 후보를 mount 전에 제거할 뿐이며, approved font의 실제 transformed bounds를 사용하는 mounted occupancy gate를 대체하지 않는다.
+- Retained decision은 reviewed motif factor와 finalizer의 정규화 면적 산식을 적용한 보수적 cross-kind preflight도 통과해야 한다. Motif가 있으면 hero의 predicted fitted size에서 지원되는 다음 작은 discrete size를 한 단계 reserve size로 삼아 같은 typeface/weight/orientation으로 다시 측정한다. 이미 `small`이면 현재 predicted bounds를 유지한다. Predicted motif score가 이 reserved typography hero score보다 크거나 같으면 hard-invalid다. 이 one-tier reserve는 font metric과 mounted glyph bounds 차이로 hero가 한 단계 downshift돼도 계층이 유지되는 후보만 남기며, approved font의 실제 transformed bounds를 사용하는 mounted occupancy gate를 대체하지 않는다.
 - `layoutPreferenceMatchCount`: 각 declared `<slotDefinitionId, predicate>` pair는 해당 slot definition의 block 중 하나라도 predicate를 만족하면 1, 아니면 0이며 최대 1이다. `largest-viable-footprint`는 `deriveTupleLayoutFacts`가 만든 같은 tuple의 viable layout set에서 해당 slot이 얻을 수 있는 최대 cell count와 같음, `edge`는 block이 3x3 외곽 row/column에 닿음, `corner`는 cell `1|3|7|9` 중 하나를 포함함을 뜻한다. viable set은 reserved known-good와 동일한 layout도 포함한다. reservation은 queue eligibility만 바꾸고 plan-local rank explanation은 바꾸지 않는다. 이 세 predicate 이외의 값은 recipe validation에서 reject한다.
 
 모든 항목은 큰 값이 우선이며 `RankKey`를 다음 순서로 lexicographic compare한다.
@@ -709,6 +727,7 @@ Canonical rank fields:
 ```text
 [
   preferRuleMatchCount,
+  optionalPresencePreferenceMatchCount,
   heroSizeRank,
   heroWeightRank,
   heroBlockArea,
@@ -717,7 +736,7 @@ Canonical rank fields:
 ]
 ```
 
-정규화된 여섯 값이 모두 같을 때만 top tie다. top tie는 `planId` ascending으로 stable sort한다. `selectionRandomSource()`는 `[0, 1)`의 값 `u`를 정확히 한 번 반환하고 `selectedTieIndex = min(tieCount - 1, floor(u * tieCount))`로 initial plan을 고른다. tie가 하나여도 draw는 한 번 소비한다. 사용 이력, accepted-output 빈도, novelty, diversity는 pilot runtime rank나 planner input에 들어가지 않으며 expressive-range telemetry와 editorial review에서만 다룬다.
+정규화된 일곱 값이 모두 같을 때만 top tie다. top tie는 `planId` ascending으로 stable sort한다. `selectionRandomSource()`는 `[0, 1)`의 값 `u`를 정확히 한 번 반환하고 `selectedTieIndex = min(tieCount - 1, floor(u * tieCount))`로 initial plan을 고른다. tie가 하나여도 draw는 한 번 소비한다. 사용 이력, accepted-output 빈도, novelty, diversity는 pilot runtime rank나 planner input에 들어가지 않으며 expressive-range telemetry와 editorial review에서만 다룬다.
 
 ### Recipe-First Arbitration
 
@@ -908,7 +927,7 @@ type AttemptResult = {
 Planner return contract:
 
 ```ts
-type RankKey = readonly [number, number, number, number, number, number];
+type RankKey = readonly [number, number, number, number, number, number, number];
 
 type InitialSelection =
   | {
@@ -1307,8 +1326,9 @@ No-candidate transition:
     }
   ],
   decisionTrace: {
-    rankKey: [1, 5, 2, 6, 0.1875, 3],
+    rankKey: [1, 1, 5, 2, 6, 0.1875, 3],
     preferRuleMatchIds: ["command.target-affinity"],
+    optionalPresencePreferenceMatchIds: ["modifier:present"],
     minNormalizedFitMargin: 0.1875,
     layoutPreferenceMatches: [
       "hero:largest-viable-footprint",
@@ -1604,7 +1624,7 @@ ranked-universe derivation은 canonical raw tuple을 평가할 때, known-good i
 
 `grid-layout.js`의 pure `enumerateCanonicalLayouts(slotInstanceIds)`는 candidate value, recipe semantics, block policy, fit, rank, plan ID, reservation을 참조하지 않고 canonical-order slot instance IDs를 rectangular 3x3 complete-coverage block assignment로 열거한다. 각 `CanonicalLayoutAssignment`는 stable `layoutKey`와 block별 `footprint`, sorted `cells`, `slotInstanceId`만 가지며 `layoutKey` ascending으로 반환된다. 같은 input은 deep-equal 결과를 만들고 다른 family inventory나 planner queue 상태는 결과를 바꾸지 않는다.
 
-`composition-plan-validator.js`의 pure `deriveTupleLayoutFacts(compatibleTuple, context)`는 이 enumerator의 전체 출력과 `context.generationInput`의 exact ratio, viewport, safe box geometry를 받아 block policy, candidate source compatibility, requested start size/alignment/vertical-alignment/orientation alternatives, typography variant derivation, motif bounds, fallback-resolved predicted fit을 확장·필터링한다. Predicted actual size/weight는 viability와 rank margin 계산에만 쓰는 validator-local 사실이며 plan identity에는 들어가지 않는다. 먼저 stable viable block decisions와 `maxCellCountBySlotInstanceId`를 확정한 뒤 validator-owned pure `derivePlanRankFacts(compatibleTuple, decision, { maxCellCountBySlotInstanceId }, context)`로 각 decision의 exact six-field key와 explanation을 만든다. 결과는 위 exact `TupleLayoutFacts` schema이며 viable decisions는 `decisionFingerprint` ascending이다. fingerprint는 sorted complete block decisions의 `hashCanonical`이다.
+`composition-plan-validator.js`의 pure `deriveTupleLayoutFacts(compatibleTuple, context)`는 이 enumerator의 전체 출력과 `context.generationInput`의 exact ratio, viewport, safe box geometry를 받아 block policy, candidate source compatibility, requested start size/alignment/vertical-alignment/orientation alternatives, typography variant derivation, motif bounds, fallback-resolved predicted fit을 확장·필터링한다. Predicted actual size/weight는 viability와 rank margin 계산에만 쓰는 validator-local 사실이며 plan identity에는 들어가지 않는다. 먼저 stable viable block decisions와 `maxCellCountBySlotInstanceId`를 확정한 뒤 validator-owned pure `derivePlanRankFacts(compatibleTuple, decision, { maxCellCountBySlotInstanceId }, context)`로 각 decision의 exact seven-field key와 explanation을 만든다. 결과는 위 exact `TupleLayoutFacts` schema이며 viable decisions는 `decisionFingerprint` ascending이다. fingerprint는 sorted complete block decisions의 `hashCanonical`이다.
 
 planner는 `TupleLayoutFacts.viableDecisions`에서 plans를 만들고 제공된 `rankFacts.rankKey`를 compare할 뿐 rank field를 다시 계산하지 않는다. known-good instantiator는 template blocks와 같은 `decisionFingerprint` record의 blocks/rank facts를 plan에 복사한다. complete validator는 plan slots로 compatible tuple을 재구성하고 같은 facts에서 decision fingerprint를 찾아 plan blocks와 `decisionTrace`를 deep-compare한다. 이 내부 계산은 `validateCompositionPlan`을 재귀 호출하지 않는다. reserved plan ID와 queue eligibility는 facts 입력이 아니므로 instantiated known-good plan도 planner enumeration 전에 같은 기준으로 검증할 수 있다.
 
@@ -1950,7 +1970,7 @@ validator는 기존 `{ rule, valid, nodes, detail }` 형식을 유지한다.
 - shared tuple compatibility를 통한 command/status blockCount/cardinality, accepted tag, max-one endpoint의 unconditional/conditional requiredRelations와 multi-instance required-endpoint recipe rejection 검사
 - layout preference key가 declared slot definition ID인지와 role alias/unknown key rejection 검사
 - directed relation selector resolution, full selector-discriminator duplicate key의 lexical-use/translation-set/tag fixture, direct avoid의 ordered-distinct forward/reverse/self/no-match와 forbidden relation field, avoid/required/prefer precedence, positive command/status edge와 recovery selected/no-edge/absent fixture 검사
-- validator-owned rank derivation의 prefer rule당 최대 1 match, hierarchy-first six-field `RankKey` field order, fit-margin 6-decimal normalization과 planner-owned descending lexicographic comparator 검사
+- validator-owned rank derivation의 prefer rule당 최대 1 match, deterministic optional-presence match, hierarchy-first seven-field `RankKey` field order, fit-margin 6-decimal normalization과 planner-owned descending lexicographic comparator 검사
 - 같은 semantic score에서 둘 다 fit하지만 큰 hero의 margin이 더 작은 fixture가 hero size/weight/area 우선으로 선택되는지 검사
 - 동일 `RankKey` plan ID stable sort, `[0,1)` draw의 selected tie index, usage/frequency history가 planner input과 rank에 없음을 검사
 - duplicate alternate edge rejection, multi-slot `alternatePriorityKey` ordering, motif-only other-replan 분류 검사
@@ -2012,7 +2032,7 @@ validator는 기존 `{ rule, valid, nodes, detail }` 형식을 유지한다.
 
 ### Expressive-Range Telemetry
 
-`tests/fixtures/expressive-range-inputs.v1.json`은 sample schema version과 10,000개의 canonical `GenerationInput`을 고정한다. sample file, semantic version tuple, font asset revision 또는 owner snapshot revision이 바뀌면 별도 report series를 만든다.
+`tests/fixtures/expressive-range-inputs.v2.json`은 sample schema version과 10,000개의 canonical `GenerationInput`을 고정한다. sample file, semantic version tuple, font asset revision 또는 owner snapshot revision이 바뀌면 별도 report series를 만든다.
 
 Telemetry는 다음 population을 섞지 않는다.
 
@@ -2033,13 +2053,13 @@ expected(h) = Σ_i count(plan in T_i whose hero is h) / |T_i|
 
 동일한 sample의 initial selected plan으로 `observed(h)`를 구한다. `expected(h) >= 25`인 hero에서 `observed / expected`가 `0.5-2.0` 밖이면 implementation distribution failure다. 이 검사는 enumeration, tie selection, random stream coupling 버그를 찾는다.
 
-Editorial concentration은 `accepted-output` population의 별도 report다. hero별 selection rate, top share, non-zero median, HHI를 기록하고 한 hero가 non-zero median의 2배를 넘으면 curation review를 연다. mounted rejection과 known-good 사용도 함께 표시한다. 이는 `林` 같은 token의 과집중을 발견하기 위한 신호이며 구조 validator failure로 처리하지 않는다.
+Editorial concentration은 `accepted-output` population의 별도 report다. 서로 다른 vocabulary cardinality를 가진 recipe를 하나의 global median으로 비교하지 않는다. `recipeId/heroLanguage`의 6개 stratum별로 hero selection rate, top share, non-zero median, HHI를 기록하고 같은 stratum 안에서 한 hero가 non-zero median의 2배를 넘으면 curation review를 연다. Stratum count 합은 accepted-output count와 정확히 같아야 하고 각 hero는 정확히 한 stratum에 속해야 한다. mounted rejection과 known-good 사용도 함께 표시한다. 이는 특정 token의 과집중을 발견하기 위한 신호이며 구조 validator failure로 처리하지 않는다.
 
 ```js
 {
   schemaVersion: 1,
-  id: "concentration:series-v1:forest-topic-zh",
-  reportSeriesId: "expressive-range:v1",
+  id: "concentration:series-v2:upgrade-command-zh",
+  reportSeriesId: "expressive-range:v2",
   vocabularyVersion: 1,
   recipeVersion: 1,
   motifVersion: 1,
@@ -2048,7 +2068,7 @@ Editorial concentration은 `accepted-output` population의 별도 report다. her
   fontMetricsVersion: 1,
   fontAssetRevision: "sha256:6d4f...",
   ownerSnapshotRevision: "sha256:ab91...",
-  heroLexicalUseId: "forest.topic.zh",
+  heroLexicalUseId: "upgrade.command.zh",
   trigger: {
     observedRate: 0.081,
     nonZeroMedianRate: 0.034,
@@ -2073,6 +2093,7 @@ Threshold를 넘긴 hero마다 full version tuple과 owner snapshot에 고정된
 - frozen set은 `command|status × ko/hangul|en/latin|zh/han`의 6개 linguistic stratum에 각각 최소 10쌍을 배정한다.
 - 별도 visual-hierarchy cell은 active `motifId × heroFinalizationClass` 전부다. class는 candidate hero의 finalization `fallbackTier === 0`이면 `requested`, `> 0`이면 `downshifted`다. 각 cell은 해당 exact motif를 가진 candidate pair 최소 10개를 요구한다. 한 pair는 linguistic stratum 하나와 visual cell 하나에 동시에 count할 수 있다.
 - frozen fixture는 아래 replay schema를 사용하고 baseline/candidate artifact를 생성 시점에 repository test artifact로 고정한다.
+- 새 frozen corpus identity를 생성할 때 기존 review collection이 schema-valid하고 결과가 정확히 0건인 경우만 새 corpus/translation-ledger identity로 재기반한다. 결과가 한 건이라도 있거나 collection shape가 잘못되면 자동 이관하지 않고 생성을 실패시킨다.
 - `candidateSide`는 fixture 생성 시 고정하고 전체, ratio별, linguistic stratum별, visual-hierarchy cell별 left/right 수 차이가 최대 1이 되도록 counterbalance한다.
 - source를 가리고 baseline/candidate의 `evaluatedLanguages` 합집합 모두에 qualified인 서로 다른 reviewer 최소 2명이 독립 평가한다. 한 reviewer가 전체 corpus의 모든 언어 자격을 가질 필요는 없지만 자신이 맡은 fixture의 언어는 모두 충족해야 한다. fixture와 side assignment는 평가 중 재생성하지 않는다.
 - 평가 항목은 hero clarity, semantic plausibility, legibility, visual interest, evaluated language별 lexical naturalness다. mixed-language fixture에는 multilingual naturalness를 추가한다.
@@ -2411,7 +2432,7 @@ Gate:
 
 Work:
 
-- `tests/fixtures/expressive-range-inputs.v1.json`과 population별 telemetry report를 생성한다.
+- `tests/fixtures/expressive-range-inputs.v2.json`과 population별 telemetry report를 생성한다.
 - revision/full-input/artifact-hash를 가진 6개 linguistic stratum 및 every active motif × requested/downshifted visual-hierarchy cell의 blind fixture와 immutable SVG/PNG artifact를 생성한다.
 - 언어별 reviewer qualification snapshot과 translation-error ledger version을 review result에 고정한다.
 - linguistic/visual cell minimum을 모두 만족하는 60쌍 이상 blind comparison을 실행한다.

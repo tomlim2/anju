@@ -25,7 +25,7 @@ export function generatePlanningComplexityFixture({ fixturePath, write = false }
   const nextFixture = {
     ...fixture,
     schemaVersion: 2,
-    oracleContractVersion: 2,
+    oracleContractVersion: 3,
     activeSnapshot
   };
   if (write) writeFileSync(fixturePath, `${canonicalJson(nextFixture)}\n`);

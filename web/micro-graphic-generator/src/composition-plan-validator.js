@@ -827,6 +827,31 @@ function predictedOccupancyScore(bounds, safeBox, safetyFactor) {
   return round6(normalizedArea * safetyFactor);
 }
 
+function lexicalOccupancyReserveBounds({
+  candidate,
+  slot,
+  layoutBlock,
+  decision,
+  context
+}) {
+  const supportedSizes = fallbackSizes(decision.predictedActualSize, candidate);
+  const reserveSize = supportedSizes[Math.min(1, supportedSizes.length - 1)];
+  if (reserveSize === decision.predictedActualSize) return decision.predictedBounds;
+  const reserveVariant = context.deriveTypographyTokenVariant(candidate, {
+    requestedSize: reserveSize,
+    footprint: layoutBlock.footprint,
+    compositionRole: slot.definition.compositionRole
+  });
+  return context.measureTypography({
+    text: candidate.visibleText,
+    typeface: candidate.typeface,
+    fontWeight: reserveVariant.requestedFontWeight,
+    size: reserveSize,
+    lineHeight: 1,
+    orientationMode: decision.orientationMode
+  });
+}
+
 function lexicalBlockDecision({
   candidate,
   slot,
@@ -962,8 +987,17 @@ function preliminaryDecision(tuple, layout, context, requestedSizeBySlotId) {
     if (!decision) return null;
     decisions.push({ ...decision, id: `block-${decisions.length + 1}` });
   }
+  const heroOccupancyBounds = motifBlocks.length
+    ? lexicalOccupancyReserveBounds({
+        candidate: heroCandidate,
+        slot: heroSlot,
+        layoutBlock: heroLayoutBlock,
+        decision: heroDecision,
+        context
+      })
+    : heroDecision.predictedBounds;
   const heroOccupancy = predictedOccupancyScore(
-    heroDecision.predictedBounds,
+    heroOccupancyBounds,
     context.generationInput.safeBox,
     1
   );
@@ -1040,6 +1074,20 @@ function preferRuleMatches(recipe, tuple, context) {
   return matches.sort(compareStrings);
 }
 
+function optionalPresencePreferenceMatches(recipe, tuple, context) {
+  const presenceSeed = deriveSeed(context.generationInput, "optional-slot-presence");
+  const presentSlotDefinitionIds = new Set(tuple.slots.map(slot => slot.slotDefinitionId));
+  return recipe.slots.flatMap(definition => {
+    if (definition.optionalPresenceRate === undefined) return [];
+    const wantsPresence = keyedValue(presenceSeed, `${recipe.id}:${definition.id}`)
+      < definition.optionalPresenceRate;
+    const isPresent = presentSlotDefinitionIds.has(definition.id);
+    return wantsPresence === isPresent
+      ? [`${definition.id}:${wantsPresence ? "present" : "absent"}`]
+      : [];
+  }).sort(compareStrings);
+}
+
 function touchesEdge(cells) {
   return cells.some(cell => [1, 2, 3, 4, 6, 7, 8, 9].includes(cell));
 }
@@ -1061,6 +1109,7 @@ export function derivePlanRankFacts({
   const heroSlot = tuple.slots.find(slot => definitionById.get(slot.slotDefinitionId).compositionRole === "hero");
   const heroBlock = blocks.find(block => block.slotInstanceId === heroSlot.id);
   const preferRuleMatchIds = preferRuleMatches(recipe, tuple, context);
+  const optionalPresencePreferenceMatchIds = optionalPresencePreferenceMatches(recipe, tuple, context);
   const layoutPreferenceMatches = [];
   for (const [slotDefinitionId, preferences] of Object.entries(recipe.layoutPreferences)) {
     const relevantBlocks = blocks.filter(block =>
@@ -1079,6 +1128,7 @@ export function derivePlanRankFacts({
   }
   const rankKey = Object.freeze([
     preferRuleMatchIds.length,
+    optionalPresencePreferenceMatchIds.length,
     SIZE_RANK.get(heroBlock.requestedSize),
     WEIGHT_RANK.get(heroBlock.requestedFontWeight),
     heroBlock.cells.length,
@@ -1088,6 +1138,7 @@ export function derivePlanRankFacts({
   return deepFreeze({
     rankKey,
     preferRuleMatchIds,
+    optionalPresencePreferenceMatchIds,
     minNormalizedFitMargin: round6(minNormalizedFitMargin),
     layoutPreferenceMatches
   });

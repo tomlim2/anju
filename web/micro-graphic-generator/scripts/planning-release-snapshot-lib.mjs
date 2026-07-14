@@ -152,11 +152,12 @@ function compareStrings(left, right) {
 }
 
 export const PLANNING_RELEASE_DOMAIN_POLICY = deepFreeze({
-  schemaVersion: 1,
-  policyId: "active-owner-max-domain-v1",
+  schemaVersion: 2,
+  policyId: "active-owner-max-domain-v2",
   representativeLanguage: "en",
   translationSetIdsByGroup: {
-    command: ["update.command", "upgrade.command"],
+    command: ["upgrade.command"],
+    modifier: ["quick.modifier"],
     recovery: ["retry.command"],
     status: ["access-denied.status"],
     subject: ["network.topic", "system.topic"]
@@ -168,7 +169,9 @@ export const PLANNING_RELEASE_DOMAIN_POLICY = deepFreeze({
   motifCandidateId: "motif.barcode:medium",
   dominanceRules: [
     "group-selection-equals-runtime-max-active",
-    "command-representatives-cover-every-active-subject",
+    "every-command-has-an-explicit-reviewed-subject",
+    "command-representative-maximizes-subject-relations",
+    "modifier-representative-requires-an-action",
     "status-representative-maximizes-subject-and-recovery-relations",
     "distinct-visible-text-is-worst-case-for-duplicate-pruning",
     "one-candidate-per-runtime-metadata-family",
@@ -213,12 +216,30 @@ function validateDomainPolicy(owner) {
   }
 
   const commandGroup = groupsById.get("command");
+  const modifierGroup = groupsById.get("modifier");
   const subjectGroup = groupsById.get("subject");
-  for (const commandSetId of commandGroup.ids) {
-    for (const subjectSetId of subjectGroup.ids) {
-      if (!owner.relationEdges.some(edge => relationMatchesSet(edge, commandSetId, "actsOn", subjectSetId))) {
-        throw new Error(`command relation coverage is incomplete for ${commandSetId}/${subjectSetId}`);
-      }
+  const commandSubjectCounts = commandGroup.ids.map(commandSetId => ({
+    commandSetId,
+    count: subjectGroup.ids.filter(subjectSetId =>
+      owner.relationEdges.some(edge => relationMatchesSet(edge, commandSetId, "actsOn", subjectSetId))
+    ).length
+  }));
+  if (commandSubjectCounts.some(record => record.count < 1)) {
+    throw new Error("every command requires at least one reviewed subject relation");
+  }
+  const maximumCommandSubjectCount = Math.max(...commandSubjectCounts.map(record => record.count));
+  const selectedCommandSetId = PLANNING_RELEASE_DOMAIN_POLICY.translationSetIdsByGroup.command[0];
+  if (commandSubjectCounts.find(record => record.commandSetId === selectedCommandSetId)?.count !== maximumCommandSubjectCount) {
+    throw new Error("planning release command representative does not maximize subject relations");
+  }
+  for (const modifierSetId of modifierGroup.ids) {
+    if (!owner.relationEdges.some(edge =>
+      edge.reviewStatus === "approved"
+      && edge.relation === "modifies"
+      && edge.from?.translationSetId === modifierSetId
+      && edge.to?.tag === "action"
+    )) {
+      throw new Error(`modifier relation coverage is incomplete for ${modifierSetId}`);
     }
   }
   const recoverySetId = groupsById.get("recovery").ids[0];

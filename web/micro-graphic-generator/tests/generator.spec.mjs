@@ -918,6 +918,9 @@ test(`deterministic generation keeps ${randomIterations} seeds structurally vali
   await openGenerator(page, { seed: cases.retry.seed });
   const result = await page.evaluate(iterations => {
     const hook = window.__MICRO_GRAPHIC_TEST__;
+    let commandOutputCount = 0;
+    let quickSupportOutputCount = 0;
+    let quickHeroOutputCount = 0;
     for (let index = 0; index < iterations; index += 1) {
       const seed = (0x9e3779b9 * (index + 1)) >>> 0;
       const snapshot = hook.renderSeed(seed);
@@ -926,6 +929,12 @@ test(`deterministic generation keeps ${randomIterations} seeds structurally vali
       const rankedAttempts = generation.attempts.filter(attempt => attempt.envelope.candidateSource === "ranked");
       const knownGoodAttempts = generation.attempts.filter(attempt => attempt.envelope.candidateSource === "known-good");
       const blocks = snapshot.fingerprint.blocks;
+      if (snapshot.fingerprint.recipeId === "command") {
+        commandOutputCount += 1;
+        const quickBlocks = blocks.filter(block => block.lexicalUseId?.startsWith("quick.modifier."));
+        quickSupportOutputCount += quickBlocks.filter(block => block.compositionRole === "support").length;
+        quickHeroOutputCount += quickBlocks.filter(block => block.compositionRole === "hero").length;
+      }
       const cells = blocks.flatMap(block => block.cells).sort((left, right) => left - right);
       const uniqueMotifViolation = ["motif.barcode", "motif.pseudo-qr"].some(motifId =>
         blocks.filter(block => block.motifId === motifId).length > 1
@@ -965,34 +974,48 @@ test(`deterministic generation keeps ${randomIterations} seeds structurally vali
         };
       }
     }
-    return { failure: null, iterations };
+    return {
+      failure: null,
+      iterations,
+      commandOutputCount,
+      quickSupportOutputCount,
+      quickHeroOutputCount
+    };
   }, randomIterations);
 
   expect(result.failure, JSON.stringify(result.failure, null, 2)).toBeNull();
   expect(result.iterations).toBe(randomIterations);
+  expect(result.commandOutputCount).toBeGreaterThan(0);
+  expect(result.quickSupportOutputCount).toBeGreaterThan(0);
+  expect(result.quickHeroOutputCount).toBe(0);
   expect(errors).toEqual([]);
 });
 
 test("predicted motif occupancy avoids normal known-good fallback", async ({ page }) => {
   const errors = captureErrors(page);
   await openGenerator(page, { seed: cases.retry.seed });
-  const result = await page.evaluate(() => {
+  const results = await page.evaluate(() => {
     const hook = window.__MICRO_GRAPHIC_TEST__;
-    const snapshot = hook.renderSeed(2296984526);
-    const generation = hook.generation();
-    return {
-      snapshot,
-      terminalResult: generation.terminalResult,
-      knownGoodAttempts: generation.attempts.filter(attempt =>
-        attempt.envelope.candidateSource === "known-good"
-      ),
-      accepted: generation.attempts.find(attempt => attempt.status === "accept") || null
-    };
+    return [2296984526, 3241047230].map(seed => {
+      const snapshot = hook.renderSeed(seed);
+      const generation = hook.generation();
+      return {
+        seed,
+        snapshot,
+        terminalResult: generation.terminalResult,
+        knownGoodAttempts: generation.attempts.filter(attempt =>
+          attempt.envelope.candidateSource === "known-good"
+        ),
+        accepted: generation.attempts.find(attempt => attempt.status === "accept") || null
+      };
+    });
   });
-  expect(result.snapshot.violations).toBe(0);
-  expect(result.terminalResult).toBeNull();
-  expect(result.knownGoodAttempts).toEqual([]);
-  expect(result.accepted?.envelope.candidateSource).toBe("ranked");
+  for (const result of results) {
+    expect(result.snapshot.violations, `seed ${result.seed}`).toBe(0);
+    expect(result.terminalResult, `seed ${result.seed}`).toBeNull();
+    expect(result.knownGoodAttempts, `seed ${result.seed}`).toEqual([]);
+    expect(result.accepted?.envelope.candidateSource, `seed ${result.seed}`).toBe("ranked");
+  }
   expect(errors).toEqual([]);
 });
 

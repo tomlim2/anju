@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "corpusId": "blind-evaluation:v1:040df5b1e9f6b0d5bb",
-  "corpusSha256": "sha256:40727cd1839c92ec44072e297a1cfa79c287c464dc6b723039442983279d7519",
+  "corpusId": "blind-evaluation:v1:3a4aebc13cbd1c8d54",
+  "corpusSha256": "sha256:e891ae871cb1e488f2ff279a622d9541d5bb644bc0b5e20e3c741eec05a8cc47",
   "translationErrorLedgerRevision": "sha256:fcf74fed5b6ac4dd7124998b0d06733357ea1cb63df0055fef87694638b4268e",
   "evaluationTooling": {
     "schemaVersion": 1,
@@ -104,20 +104,24 @@
         "sha256Hex": "f833c7594d6aa965f475ee4fc8197e5676d889ba4c24780683017ced4c6bf64a"
       },
       {
+        "path": "web/micro-graphic-generator/scripts/blind-review-collection-transition.mjs",
+        "sha256Hex": "1b36faa03ee757ee12c68a166daa338713b447aede22d56000ab34a0b4bee17a"
+      },
+      {
         "path": "web/micro-graphic-generator/scripts/composition-owner-manifest-lib.mjs",
         "sha256Hex": "7ec0588df00deda8195965abbc98e623b31fa873e634450b70357977b5d71034"
       },
       {
         "path": "web/micro-graphic-generator/scripts/evaluation-model.mjs",
-        "sha256Hex": "31cc932a8254ce20c779a7f9650b591bf8d8ffae38c49bd3a5817c8148c01f00"
+        "sha256Hex": "850551354577e2e16476cb6bb243c9fb4687d7a9e7bfe7093c00926df5e54d16"
       },
       {
         "path": "web/micro-graphic-generator/scripts/evaluation-tooling-evidence.mjs",
-        "sha256Hex": "0f7baa1ff8e588a713f39139126b866f3bb3d907eedeafe0c1a17281fb30f135"
+        "sha256Hex": "4a7dcc9abcd7b9d4ed412d32f811a369a97fc27e0a9f094772e47c3f5c88d7cf"
       },
       {
         "path": "web/micro-graphic-generator/scripts/generate-blind-evaluation-corpus.mjs",
-        "sha256Hex": "80bbe8bacb55d402858f3914063b4bf447ca93a3e7bf4e17dca766ec261c603d"
+        "sha256Hex": "4e2e3f79cc9cf6af38bab37296ae9ee67060f1c0f8e990ef32c978ea3d5e904b"
       },
       {
         "path": "web/micro-graphic-generator/scripts/owned-test-server.mjs",
@@ -137,15 +141,15 @@
       },
       {
         "path": "web/micro-graphic-generator/src/composition-model.js",
-        "sha256Hex": "434e2f4a488bfebb68641b1eaff1b9e3a576aa20c7a9f5790af20e30172029a7"
+        "sha256Hex": "6f6f47652d2b705d0eb9eb06642f38914c25e4a6bcc647d05e6f329131660bc8"
       },
       {
         "path": "web/micro-graphic-generator/src/composition-owner-snapshot.js",
-        "sha256Hex": "0a5760324a83a3ab170e46b9891c4382f8d5f7f6b7ac4c4f697a96b7eaf9ab11"
+        "sha256Hex": "70ee4de01b63d702f422f974ddeb0721d9cee1db38e956f1bb6fcdfdb0e708ff"
       },
       {
         "path": "web/micro-graphic-generator/src/composition-recipes.js",
-        "sha256Hex": "66997c44aa23b170df787108e2f25b1e75a843fc5cb8b06303d19fbc3da91f24"
+        "sha256Hex": "902ee633dc3651f59ce1cf3ab64b2ff294c10dc11ae84d4696debd6e38a1a33e"
       },
       {
         "path": "web/micro-graphic-generator/src/config.js",
@@ -204,42 +208,42 @@
         "sha256Hex": "a0407edc484920e8328ab5fda7381889982ed03f2e2195ba7047905a42da3f7c"
       }
     ],
-    "revision": "sha256:8173b899b5061dfeedb91cb9f8a58305f2634693c473fd24b861d071ed07c0fa"
+    "revision": "sha256:da5e57241d70aabda783bb8b46fc7d5d826c9b4c3c1048374ddd37ecdca9a98b"
   },
-  "pairCount": 110,
+  "pairCount": 80,
   "reviewResultCount": 0,
   "observationCount": 0,
   "corpusCoverage": {
-    "pairCount": 110,
+    "pairCount": 80,
     "minimumPairCountPass": true,
     "presentationRuns": {
-      "maximumGroupRun": 1,
+      "maximumGroupRun": 2,
       "maximumStratumRun": 2
     },
     "strata": [
       {
         "id": "command/en/latin",
-        "pairCount": 10
+        "pairCount": 13
       },
       {
         "id": "command/ko/hangul",
-        "pairCount": 10
+        "pairCount": 13
       },
       {
         "id": "command/zh/han",
-        "pairCount": 10
+        "pairCount": 14
       },
       {
         "id": "status/en/latin",
-        "pairCount": 20
+        "pairCount": 13
       },
       {
         "id": "status/ko/hangul",
-        "pairCount": 40
+        "pairCount": 14
       },
       {
         "id": "status/zh/han",
-        "pairCount": 20
+        "pairCount": 13
       }
     ],
     "visualHierarchyCells": [
@@ -282,9 +286,9 @@
   "counterbalance": {
     "overall": {
       "id": "overall",
-      "pairCount": 110,
-      "leftCount": 55,
-      "rightCount": 55,
+      "pairCount": 80,
+      "leftCount": 40,
+      "rightCount": 40,
       "difference": 0,
       "pass": true
     },
@@ -299,22 +303,38 @@
       },
       {
         "id": "2:3",
-        "pairCount": 13,
+        "pairCount": 12,
         "leftCount": 6,
-        "rightCount": 7,
-        "difference": 1,
+        "rightCount": 6,
+        "difference": 0,
         "pass": true
       },
       {
         "id": "2:5",
-        "pairCount": 19,
-        "leftCount": 10,
-        "rightCount": 9,
+        "pairCount": 3,
+        "leftCount": 1,
+        "rightCount": 2,
         "difference": 1,
         "pass": true
       },
       {
         "id": "3:2",
+        "pairCount": 13,
+        "leftCount": 7,
+        "rightCount": 6,
+        "difference": 1,
+        "pass": true
+      },
+      {
+        "id": "3:4",
+        "pairCount": 12,
+        "leftCount": 6,
+        "rightCount": 6,
+        "difference": 0,
+        "pass": true
+      },
+      {
+        "id": "4:3",
         "pairCount": 14,
         "leftCount": 7,
         "rightCount": 7,
@@ -322,15 +342,17 @@
         "pass": true
       },
       {
-        "id": "3:4",
-        "pairCount": 22,
-        "leftCount": 11,
-        "rightCount": 11,
+        "id": "5:2",
+        "pairCount": 12,
+        "leftCount": 6,
+        "rightCount": 6,
         "difference": 0,
         "pass": true
-      },
+      }
+    ],
+    "strata": [
       {
-        "id": "4:3",
+        "id": "command/en/latin",
         "pairCount": 13,
         "leftCount": 6,
         "rightCount": 7,
@@ -338,61 +360,43 @@
         "pass": true
       },
       {
-        "id": "5:2",
-        "pairCount": 15,
-        "leftCount": 8,
+        "id": "command/ko/hangul",
+        "pairCount": 13,
+        "leftCount": 6,
         "rightCount": 7,
         "difference": 1,
-        "pass": true
-      }
-    ],
-    "strata": [
-      {
-        "id": "command/en/latin",
-        "pairCount": 10,
-        "leftCount": 5,
-        "rightCount": 5,
-        "difference": 0,
-        "pass": true
-      },
-      {
-        "id": "command/ko/hangul",
-        "pairCount": 10,
-        "leftCount": 5,
-        "rightCount": 5,
-        "difference": 0,
         "pass": true
       },
       {
         "id": "command/zh/han",
-        "pairCount": 10,
-        "leftCount": 5,
-        "rightCount": 5,
+        "pairCount": 14,
+        "leftCount": 7,
+        "rightCount": 7,
         "difference": 0,
         "pass": true
       },
       {
         "id": "status/en/latin",
-        "pairCount": 20,
-        "leftCount": 10,
-        "rightCount": 10,
-        "difference": 0,
+        "pairCount": 13,
+        "leftCount": 7,
+        "rightCount": 6,
+        "difference": 1,
         "pass": true
       },
       {
         "id": "status/ko/hangul",
-        "pairCount": 40,
-        "leftCount": 20,
-        "rightCount": 20,
+        "pairCount": 14,
+        "leftCount": 7,
+        "rightCount": 7,
         "difference": 0,
         "pass": true
       },
       {
         "id": "status/zh/han",
-        "pairCount": 20,
-        "leftCount": 10,
-        "rightCount": 10,
-        "difference": 0,
+        "pairCount": 13,
+        "leftCount": 7,
+        "rightCount": 6,
+        "difference": 1,
         "pass": true
       }
     ],
@@ -862,156 +866,6 @@
     },
     {
       "fixtureId": "blind-080",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-081",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-082",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-083",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-084",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-085",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-086",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-087",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-088",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-089",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-090",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-091",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-092",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-093",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-094",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-095",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-096",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-097",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-098",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-099",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-100",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-101",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-102",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-103",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-104",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-105",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-106",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-107",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-108",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-109",
-      "reviewerCount": 0,
-      "pass": false
-    },
-    {
-      "fixtureId": "blind-110",
       "reviewerCount": 0,
       "pass": false
     }
@@ -1732,186 +1586,6 @@
     },
     {
       "fixtureId": "blind-080",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-081",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-082",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-083",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-084",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-085",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-086",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-087",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-088",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-089",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-090",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-091",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-092",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-093",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-094",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-095",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-096",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-097",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-098",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-099",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-100",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-101",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-102",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-103",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-104",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-105",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-106",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-107",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-108",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-109",
-      "preferenceDisagreement": false,
-      "firstAttentionDisagreement": false,
-      "candidateHeroFirstReadDisagreement": false
-    },
-    {
-      "fixtureId": "blind-110",
       "preferenceDisagreement": false,
       "firstAttentionDisagreement": false,
       "candidateHeroFirstReadDisagreement": false

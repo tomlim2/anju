@@ -56,7 +56,8 @@ import {
   activeRecipeIds,
   compositionRecipes,
   pilotCandidateTranslationSetGroups,
-  relationEdges
+  relationEdges,
+  reviewedCommandTargetRelations
 } from "../src/composition-recipes.js";
 import {
   deriveCanonicalCardinalityShapes,
@@ -144,10 +145,16 @@ import {
   selectCompleteBlindCorpus
 } from "../scripts/blind-evaluation-corpus-lib.mjs";
 import {
+  emptyBlindReviewCollection,
+  rebaseEmptyBlindReviewCollection
+} from "../scripts/blind-review-collection-transition.mjs";
+import {
+  EVALUATION_SCHEMA_VERSION,
   blindCorpusPairIdentityRoot,
   blindNodeFingerprint,
   blindPairIdentityRevision,
   buildBlindEvaluationReport,
+  summarizeEditorialConcentration,
   summarizeMountedOutcomes,
   validateBlindCorpus,
   validateBlindDisplayManifest,
@@ -784,6 +791,45 @@ test("independent planning oracle fixes all four counter positions", async () =>
   }
 });
 
+test("editorial concentration compares heroes only within recipe and language strata", () => {
+  const balanced = [
+    ...Array.from({ length: 100 }, (_, index) => ({
+      recipeId: "command",
+      heroLanguage: "en",
+      heroLexicalUseId: `command-${index}.command.en`
+    })),
+    ...Array.from({ length: 50 }, () => ({
+      recipeId: "status",
+      heroLanguage: "en",
+      heroLexicalUseId: "running.status.en"
+    })),
+    ...Array.from({ length: 50 }, () => ({
+      recipeId: "status",
+      heroLanguage: "en",
+      heroLexicalUseId: "locked.status.en"
+    }))
+  ];
+  const summary = summarizeEditorialConcentration(balanced);
+  assert.deepEqual(summary.strata.map(stratum => stratum.id), ["command/en", "status/en"]);
+  assert.ok(summary.heroes.every(hero => hero.concentrationTriggered === false));
+  assert.equal(summary.strata.find(stratum => stratum.id === "command/en").nonZeroMedianCount, 1);
+  assert.equal(summary.strata.find(stratum => stratum.id === "status/en").nonZeroMedianCount, 50);
+
+  const genuineSkew = summarizeEditorialConcentration([
+    ...Array.from({ length: 3 }, () => ({
+      recipeId: "command",
+      heroLanguage: "ko",
+      heroLexicalUseId: "upgrade.command.ko"
+    })),
+    { recipeId: "command", heroLanguage: "ko", heroLexicalUseId: "update.command.ko" },
+    { recipeId: "command", heroLanguage: "ko", heroLexicalUseId: "scan.command.ko" }
+  ]);
+  assert.equal(
+    genuineSkew.heroes.find(hero => hero.heroLexicalUseId === "upgrade.command.ko").concentrationTriggered,
+    true
+  );
+});
+
 test("concentration resolutions require qualified roles or a non-triggering versioned successor", () => {
   const versionTuple = {
     ...OWNER_SNAPSHOT_MANIFEST.versionTuple,
@@ -838,10 +884,10 @@ test("concentration resolutions require qualified roles or a non-triggering vers
   };
   const successorTooling = buildEvaluationToolingEvidence(
     fileURLToPath(repoRoot),
-    "expressive-range-v1"
+    "expressive-range-v2"
   );
   const successor = {
-    schemaVersion: 1,
+    schemaVersion: EVALUATION_SCHEMA_VERSION,
     reportSeriesId: "series-v2",
     inputFixtureSha256: hashCanonical({ inputs: "successor-v2" }),
     inputCount: 10_000,
@@ -901,12 +947,19 @@ test("concentration resolutions require qualified roles or a non-triggering vers
     },
     editorialConcentration: {
       acceptedOutputCount: 10_000,
-      nonZeroMedianCount: 5_000,
-      nonZeroMedianRate: 0.5,
-      topShare: 0.5,
-      hhi: 0.5,
+      strata: [{
+        id: "command/en",
+        recipeId: "command",
+        language: "en",
+        acceptedOutputCount: 10_000,
+        nonZeroMedianCount: 5_000,
+        nonZeroMedianRate: 0.5,
+        topShare: 0.5,
+        hhi: 0.5
+      }],
       heroes: [
         {
+          stratumId: "command/en",
           heroLexicalUseId: fixedReview.heroLexicalUseId,
           observedCount: 5_000,
           observedRate: 0.5,
@@ -914,6 +967,7 @@ test("concentration resolutions require qualified roles or a non-triggering vers
           concentrationTriggered: false
         },
         {
+          stratumId: "command/en",
           heroLexicalUseId: "update.command.en",
           observedCount: 5_000,
           observedRate: 0.5,
@@ -957,10 +1011,12 @@ test("concentration resolutions require qualified roles or a non-triggering vers
     curationReviewerDirectory: directory
   }), /version did not increase/);
   const retriggered = structuredClone(successorSet);
-  retriggered.reports[0].editorialConcentration.nonZeroMedianCount = 1_000;
-  retriggered.reports[0].editorialConcentration.nonZeroMedianRate = 0.1;
-  retriggered.reports[0].editorialConcentration.topShare = 0.8;
-  retriggered.reports[0].editorialConcentration.hhi = 0.66;
+  Object.assign(retriggered.reports[0].editorialConcentration.strata[0], {
+    nonZeroMedianCount: 1_000,
+    nonZeroMedianRate: 0.1,
+    topShare: 0.8,
+    hhi: 0.66
+  });
   Object.assign(retriggered.reports[0].editorialConcentration.heroes[0], {
     observedCount: 8_000,
     observedRate: 0.8,
@@ -973,6 +1029,7 @@ test("concentration resolutions require qualified roles or a non-triggering vers
     medianMultiple: 1
   });
   retriggered.reports[0].editorialConcentration.heroes.push({
+    stratumId: "command/en",
     heroLexicalUseId: "retry.command.en",
     observedCount: 1_000,
     observedRate: 0.1,
@@ -1027,20 +1084,47 @@ test("command and status recipe registries enforce naming and endpoint boundarie
   );
   assert.ok(relationEdges.some(edge => edge.relation === "recoveryFor"));
 
+  const commandRecipe = compositionRecipes.find(recipe => recipe.id === "command");
+  assert.deepEqual(commandRecipe.slots.find(slot => slot.id === "hero").acceptsAnyTag, ["action"]);
+  assert.deepEqual(commandRecipe.slots.find(slot => slot.id === "modifier").acceptsAnyTag, ["modifier"]);
+  assert.ok(commandRecipe.requiredRelations.some(clause =>
+    clause.fromSlot === "modifier"
+    && clause.toSlot === "hero"
+    && clause.whenSlotPresent === "modifier"
+    && clause.relations.includes("modifies")
+  ));
   const commandGroup = pilotCandidateTranslationSetGroups.find(group => group.id === "command");
-  const technologicSetIds = [
-    ...actionCommandTranslationSetIds,
-    ...actionModifierTranslationSetIds
-  ].sort();
-  assert.deepEqual(commandGroup.ids, technologicSetIds);
+  const modifierGroup = pilotCandidateTranslationSetGroups.find(group => group.id === "modifier");
+  assert.deepEqual(commandGroup.ids, actionCommandTranslationSetIds);
+  assert.equal(commandGroup.maxActive, 1);
   assert.deepEqual(actionModifierTranslationSetIds, ["quick.modifier"]);
-  technologicSetIds.forEach(commandSetId => {
-    assert.ok(relationEdges.some(edge =>
-      edge.relation === "actsOn"
-      && edge.from.translationSetId === commandSetId
-      && edge.to.translationSetId === "system.topic"
-    ), commandSetId);
+  assert.deepEqual(modifierGroup, {
+    id: "modifier",
+    ids: ["quick.modifier"],
+    maxActive: 1
   });
+  assert.deepEqual(
+    reviewedCommandTargetRelations.map(record => record.commandSetId),
+    actionCommandTranslationSetIds
+  );
+  reviewedCommandTargetRelations.forEach(({ commandSetId, subjectSetIds }) => {
+    assert.ok(subjectSetIds.length >= 1, commandSetId);
+    subjectSetIds.forEach(subjectSetId => {
+      assert.ok(relationEdges.some(edge =>
+        edge.relation === "actsOn"
+        && edge.from.translationSetId === commandSetId
+        && edge.to.translationSetId === subjectSetId
+      ), `${commandSetId}/${subjectSetId}`);
+    });
+  });
+  assert.ok(!relationEdges.some(edge =>
+    edge.relation === "actsOn" && edge.from.translationSetId === "quick.modifier"
+  ));
+  assert.ok(relationEdges.some(edge =>
+    edge.relation === "modifies"
+    && edge.from.translationSetId === "quick.modifier"
+    && edge.to.tag === "action"
+  ));
 
   const invalidEndpointRecipes = structuredClone(compositionRecipes);
   invalidEndpointRecipes[0].slots[0].cardinality.max = 2;
@@ -1071,13 +1155,65 @@ test("command and status recipe registries enforce naming and endpoint boundarie
   }), /duplicate id/);
 });
 
+test("QUICK is optional command support and can never occupy the hero slot", () => {
+  const commandRecipe = compositionRecipes.find(recipe => recipe.id === "command");
+  const modifierDefinition = commandRecipe.slots.find(slot => slot.id === "modifier");
+  assert.equal(modifierDefinition.optionalPresenceRate, 0.25);
+
+  const { context, vocabulary } = createCompositionTestContext({ seed: 510 });
+  const tuples = enumerateCanonicalSemanticTuples("command", context);
+  let modifierTupleCount = 0;
+  for (const tuple of tuples) {
+    const heroSlot = tuple.slots.find(slot => slot.slotDefinitionId === "hero");
+    const hero = context.candidateById.get(heroSlot.candidateId);
+    assert.ok(hero.tags.includes("action"));
+    assert.ok(!hero.tags.includes("modifier"));
+    const modifierSlot = tuple.slots.find(slot => slot.slotDefinitionId === "modifier");
+    if (!modifierSlot) continue;
+    modifierTupleCount += 1;
+    const modifier = context.candidateById.get(modifierSlot.candidateId);
+    assert.equal(modifier.translationSetId, "quick.modifier");
+    assert.ok(relationEdges.some(edge =>
+      edge.relation === "modifies"
+      && edge.from.translationSetId === modifier.translationSetId
+      && edge.to.tag === "action"
+    ));
+  }
+  assert.ok(modifierTupleCount > 0);
+
+  for (const invalidRate of [0, 1, Number.NaN]) {
+    const invalidRecipes = structuredClone(compositionRecipes);
+    invalidRecipes[0].slots.find(slot => slot.id === "modifier").optionalPresenceRate = invalidRate;
+    assert.throws(() => validateRecipeRegistry({
+      recipes: invalidRecipes,
+      activeRecipeIds,
+      relationEdges,
+      lexicalUseById: vocabulary.lexicalUseById,
+      translationSetById: vocabulary.translationSetById
+    }), /optionalPresenceRate/);
+  }
+
+  const requiredPresenceRecipes = structuredClone(compositionRecipes);
+  requiredPresenceRecipes[0].slots.find(slot => slot.id === "hero").optionalPresenceRate = 0.25;
+  assert.throws(() => validateRecipeRegistry({
+    recipes: requiredPresenceRecipes,
+    activeRecipeIds,
+    relationEdges,
+    lexicalUseById: vocabulary.lexicalUseById,
+    translationSetById: vocabulary.translationSetById
+  }), /optionalPresenceRate/);
+});
+
 test("cardinality shapes use total-first order and cover every 2-5 block recipe form", () => {
   const { context } = createCompositionTestContext();
   const commandShapes = deriveCanonicalCardinalityShapes("command", context);
   const statusShapes = deriveCanonicalCardinalityShapes("status", context);
-  assert.equal(commandShapes.length, 6);
+  assert.equal(commandShapes.length, 11);
   assert.equal(statusShapes.length, 8);
-  assert.deepEqual(commandShapes.map(shape => shape.totalInstanceCount), [2, 3, 3, 4, 4, 5]);
+  assert.deepEqual(
+    commandShapes.map(shape => shape.totalInstanceCount),
+    [2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5]
+  );
   assert.deepEqual(statusShapes.map(shape => shape.totalInstanceCount), [2, 3, 3, 3, 4, 4, 4, 5]);
   for (const shapes of [commandShapes, statusShapes]) {
     shapes.forEach((shape, index) => {
@@ -1198,10 +1334,15 @@ test("candidate materialization is keyed, inventory-local, and multilingual over
   const languages = new Set();
   for (let seed = 0; seed < 60; seed += 1) {
     const { inventory } = createCompositionTestContext({ seed });
-    inventory.rankedCandidateIds
+    const selectedCandidates = inventory.rankedCandidateIds
       .map(id => inventory.candidateById.get(id))
-      .filter(candidate => candidate.sourceKind === "lexical" && candidate.tags.includes("action"))
-      .forEach(candidate => languages.add(candidate.language));
+      .filter(candidate => candidate.sourceKind === "lexical");
+    const actionCandidates = selectedCandidates.filter(candidate => candidate.tags.includes("action"));
+    const modifierCandidates = selectedCandidates.filter(candidate => candidate.tags.includes("modifier"));
+    assert.equal(actionCandidates.length, 2);
+    assert.equal(actionCandidates.filter(candidate => candidate.translationSetId !== "retry.command").length, 1);
+    assert.deepEqual(modifierCandidates.map(candidate => candidate.translationSetId), ["quick.modifier"]);
+    actionCandidates.forEach(candidate => languages.add(candidate.language));
   }
   assert.deepEqual([...languages].sort(), ["en", "ko", "zh"]);
 
@@ -1221,6 +1362,52 @@ test("candidate materialization is keyed, inventory-local, and multilingual over
   const seed = deriveSeed({ seed: 10 }, "selection");
   assert.equal(keyedValue(seed, "tie"), keyedValue(seed, "tie"));
   assert.notEqual(keyedValue(seed, "tie"), keyedValue(seed, "materialization"));
+});
+
+test("stored expressive evidence covers every action hero with balanced language exposure", async () => {
+  const report = await readJson(
+    "web/micro-graphic-generator/tests/fixtures/expressive-range-report.v2.json"
+  );
+  assert.equal(report.schemaVersion, EVALUATION_SCHEMA_VERSION);
+  assert.equal(report.acceptance.pass, true);
+  assert.deepEqual(report.concentrationReviews, []);
+  assert.deepEqual(
+    report.editorialConcentration.strata.map(stratum => stratum.id),
+    ["command/en", "command/ko", "command/zh", "status/en", "status/ko", "status/zh"]
+  );
+
+  const actionHeroIds = new Set(translationSets
+    .filter(set => actionCommandTranslationSetIds.includes(set.id))
+    .flatMap(set => set.members.map(member => member.lexicalUseId)));
+  const actionHeroes = report.editorialConcentration.heroes.filter(hero =>
+    actionHeroIds.has(hero.heroLexicalUseId)
+  );
+  assert.equal(actionHeroIds.size, 183);
+  assert.deepEqual(
+    actionHeroes.map(hero => hero.heroLexicalUseId).sort(),
+    [...actionHeroIds].sort()
+  );
+  assert.ok(Math.min(...actionHeroes.map(hero => hero.observedCount)) >= 5);
+  assert.ok(!report.editorialConcentration.heroes.some(hero =>
+    hero.heroLexicalUseId.startsWith("quick.modifier.")
+  ));
+
+  const commandByLanguage = Object.fromEntries(["en", "ko", "zh"].map(language => [
+    language,
+    actionHeroes
+      .filter(hero => hero.heroLexicalUseId.endsWith(`.${language}`))
+      .reduce((sum, hero) => sum + hero.observedCount, 0)
+  ]));
+  const languageCounts = Object.values(commandByLanguage);
+  assert.ok(Math.max(...languageCounts) / Math.min(...languageCounts) <= 1.2, commandByLanguage);
+
+  const recipeCounts = Object.fromEntries(["command", "status"].map(recipeId => [
+    recipeId,
+    report.editorialConcentration.strata
+      .filter(stratum => stratum.recipeId === recipeId)
+      .reduce((sum, stratum) => sum + stratum.acceptedOutputCount, 0)
+  ]));
+  assert.ok(Math.max(...Object.values(recipeCounts)) / Math.min(...Object.values(recipeCounts)) <= 1.1, recipeCounts);
 });
 
 test("typography metric fixture and block weight variants are exact", async () => {
@@ -1900,6 +2087,35 @@ test("baseline fixtures use the current schema and fixed viewport", async () => 
   assert.deepEqual(exportBaseline.viewport, { width: 1440, height: 900 });
   assert.equal(Object.keys(exportBaseline.states).length, 4);
   assert.equal(Object.keys(primitiveBaseline.primitives).length, 5);
+});
+
+test("blind regeneration rebases only a structurally valid empty review collection", () => {
+  const corpus = {
+    corpusId: "blind-evaluation:v1:new",
+    translationErrorLedgerRevision: `sha256:${"b".repeat(64)}`
+  };
+  const expected = emptyBlindReviewCollection(corpus);
+  assert.deepEqual(expected, {
+    schemaVersion: 1,
+    corpusId: corpus.corpusId,
+    translationErrorLedgerRevision: corpus.translationErrorLedgerRevision,
+    results: []
+  });
+  const previous = {
+    schemaVersion: 1,
+    corpusId: "blind-evaluation:v1:old",
+    translationErrorLedgerRevision: `sha256:${"a".repeat(64)}`,
+    results: []
+  };
+  assert.deepEqual(rebaseEmptyBlindReviewCollection(previous, corpus), expected);
+  assert.throws(() => rebaseEmptyBlindReviewCollection({
+    ...previous,
+    results: [{ reviewerId: "human-review-must-not-be-dropped" }]
+  }, corpus), /only an empty result set/);
+  assert.throws(() => rebaseEmptyBlindReviewCollection({
+    ...previous,
+    unexpected: true
+  }, corpus), /unexpected fields/);
 });
 
 test("blind corpus selection covers every cell and counterbalances all overlapping groups", () => {

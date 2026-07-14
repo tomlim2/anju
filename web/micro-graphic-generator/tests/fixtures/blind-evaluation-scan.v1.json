@@ -29,835 +29,625 @@
   },
   "baselineRevision": "git:6e656422e5cf067aea0c192ccbfaf62b3380a0a6+evaluation-adapter:sha256:4a21f6375d78f9679600511ea0495df48c0880e637df76d9f20095bf7399b404",
   "baselineAdapterRevision": "sha256:4a21f6375d78f9679600511ea0495df48c0880e637df76d9f20095bf7399b404",
-  "candidateRevision": "owner:sha256:9eee9203b495183d5720bf6816956d3657822d20f2265c67f0952526d01e68b5",
-  "ownerSnapshotRevision": "sha256:9eee9203b495183d5720bf6816956d3657822d20f2265c67f0952526d01e68b5",
+  "candidateRevision": "owner:sha256:a1eb5849cec1d9be995e07933f0af01708d40b6208a526ba7a7cf5a60ce2bde9",
+  "ownerSnapshotRevision": "sha256:a1eb5849cec1d9be995e07933f0af01708d40b6208a526ba7a7cf5a60ce2bde9",
   "candidateRows": {
     "count": 60000,
-    "revision": "sha256:903f5e965f7c29922945519813cf77ef75b4f68e6541e797684d45f671ab07e6"
+    "revision": "sha256:28f9a395c42832abf6cce402186715d7aca6c912a83232de01ca78cbd358e16a"
   },
   "baselineEligibleRows": {
-    "count": 10954,
-    "revision": "sha256:3598714658b72462e6fe62f6c47f2329f26f93b8892f7655c0e3282d6db3f670"
+    "count": 10696,
+    "revision": "sha256:ff8dbebe442aecedf1abd670dbd9f8ede1a840e5b2a9105bc42fdc11e9db1d2c"
   },
   "coverage": {
     "scanLimit": 60000,
     "candidateRows": 60000,
-    "baselineEligibleRows": 10954,
+    "baselineEligibleRows": 10696,
     "baselineEligibility": {
-      "noComparableBaseline": 21773,
+      "noComparableBaseline": 22902,
       "heroLanguageMismatch": 0,
-      "evaluatedLanguageMismatch": 27273,
-      "eligible": 10954
+      "evaluatedLanguageMismatch": 26402,
+      "eligible": 10696
     },
     "candidateVisualCells": {
-      "motif.barcode/requested": 100,
-      "motif.barcode/downshifted": 883,
-      "motif.pseudo-qr/requested": 84,
-      "motif.pseudo-qr/downshifted": 1277,
-      "motif.table/requested": 108,
-      "motif.table/downshifted": 912,
-      "motif.wave/requested": 109,
-      "motif.wave/downshifted": 966
+      "motif.barcode/requested": 248,
+      "motif.barcode/downshifted": 1004,
+      "motif.pseudo-qr/requested": 231,
+      "motif.pseudo-qr/downshifted": 1288,
+      "motif.table/requested": 242,
+      "motif.table/downshifted": 1123,
+      "motif.wave/requested": 255,
+      "motif.wave/downshifted": 1393
     },
     "candidateStrata": {
-      "command/en/latin": 13317,
-      "command/ko/hangul": 8657,
-      "command/zh/han": 8150,
-      "status/en/latin": 10038,
-      "status/ko/hangul": 9944,
-      "status/zh/han": 9894
+      "command/en/latin": 10015,
+      "command/ko/hangul": 9915,
+      "command/zh/han": 10027,
+      "status/en/latin": 9949,
+      "status/ko/hangul": 10023,
+      "status/zh/han": 10071
     },
     "visualCells": {
-      "motif.barcode/requested": 21,
-      "motif.barcode/downshifted": 181,
-      "motif.pseudo-qr/requested": 19,
-      "motif.pseudo-qr/downshifted": 268,
-      "motif.table/requested": 23,
-      "motif.table/downshifted": 182,
-      "motif.wave/requested": 16,
-      "motif.wave/downshifted": 181
+      "motif.barcode/requested": 37,
+      "motif.barcode/downshifted": 198,
+      "motif.pseudo-qr/requested": 51,
+      "motif.pseudo-qr/downshifted": 255,
+      "motif.table/requested": 44,
+      "motif.table/downshifted": 239,
+      "motif.wave/requested": 50,
+      "motif.wave/downshifted": 240
     },
     "strata": {
-      "command/en/latin": 3273,
-      "command/ko/hangul": 1251,
-      "command/zh/han": 1040,
-      "status/en/latin": 2379,
-      "status/ko/hangul": 1636,
-      "status/zh/han": 1375
+      "command/en/latin": 2401,
+      "command/ko/hangul": 1587,
+      "command/zh/han": 1338,
+      "status/en/latin": 2367,
+      "status/ko/hangul": 1598,
+      "status/zh/han": 1405
     }
   },
   "selectionRows": [
     {
       "fixtureId": "blind-001",
-      "seed": 50446,
-      "stratumId": "command/zh/han",
-      "visualCellId": null,
+      "seed": 28676,
+      "stratumId": "status/zh/han",
+      "visualCellId": "motif.table/downshifted",
       "candidateSide": "right"
     },
     {
       "fixtureId": "blind-002",
-      "seed": 17692,
-      "stratumId": "command/ko/hangul",
-      "visualCellId": null,
+      "seed": 12744,
+      "stratumId": "command/zh/han",
+      "visualCellId": "motif.wave/requested",
       "candidateSide": "left"
     },
     {
       "fixtureId": "blind-003",
-      "seed": 7796,
-      "stratumId": "command/en/latin",
-      "visualCellId": null,
-      "candidateSide": "right"
+      "seed": 16203,
+      "stratumId": "status/en/latin",
+      "visualCellId": "motif.pseudo-qr/downshifted",
+      "candidateSide": "left"
     },
     {
       "fixtureId": "blind-004",
-      "seed": 41603,
-      "stratumId": "command/zh/han",
-      "visualCellId": null,
+      "seed": 2721,
+      "stratumId": "status/en/latin",
+      "visualCellId": "motif.barcode/downshifted",
       "candidateSide": "left"
     },
     {
       "fixtureId": "blind-005",
-      "seed": 14593,
-      "stratumId": "command/ko/hangul",
-      "visualCellId": null,
-      "candidateSide": "left"
+      "seed": 39396,
+      "stratumId": "command/zh/han",
+      "visualCellId": "motif.pseudo-qr/requested",
+      "candidateSide": "right"
     },
     {
       "fixtureId": "blind-006",
-      "seed": 46215,
-      "stratumId": "status/en/latin",
+      "seed": 37731,
+      "stratumId": "command/zh/han",
+      "visualCellId": "motif.wave/requested",
+      "candidateSide": "left"
+    },
+    {
+      "fixtureId": "blind-007",
+      "seed": 6141,
+      "stratumId": "command/ko/hangul",
+      "visualCellId": "motif.table/requested",
+      "candidateSide": "left"
+    },
+    {
+      "fixtureId": "blind-008",
+      "seed": 31725,
+      "stratumId": "status/zh/han",
       "visualCellId": "motif.table/downshifted",
       "candidateSide": "right"
     },
     {
-      "fixtureId": "blind-007",
-      "seed": 33050,
-      "stratumId": "status/zh/han",
-      "visualCellId": "motif.wave/downshifted",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-008",
-      "seed": 45308,
-      "stratumId": "command/en/latin",
-      "visualCellId": null,
-      "candidateSide": "left"
-    },
-    {
       "fixtureId": "blind-009",
-      "seed": 55953,
-      "stratumId": "command/zh/han",
-      "visualCellId": null,
+      "seed": 36469,
+      "stratumId": "command/en/latin",
+      "visualCellId": "motif.wave/downshifted",
       "candidateSide": "right"
     },
     {
       "fixtureId": "blind-010",
-      "seed": 33510,
-      "stratumId": "command/ko/hangul",
-      "visualCellId": null,
+      "seed": 53039,
+      "stratumId": "status/en/latin",
+      "visualCellId": "motif.pseudo-qr/downshifted",
       "candidateSide": "right"
     },
     {
       "fixtureId": "blind-011",
-      "seed": 43293,
-      "stratumId": "status/en/latin",
-      "visualCellId": "motif.table/downshifted",
-      "candidateSide": "right"
+      "seed": 34811,
+      "stratumId": "command/ko/hangul",
+      "visualCellId": "motif.pseudo-qr/requested",
+      "candidateSide": "left"
     },
     {
       "fixtureId": "blind-012",
-      "seed": 14922,
+      "seed": 22928,
+      "stratumId": "status/zh/han",
+      "visualCellId": "motif.table/downshifted",
+      "candidateSide": "left"
+    },
+    {
+      "fixtureId": "blind-013",
+      "seed": 3268,
+      "stratumId": "command/zh/han",
+      "visualCellId": "motif.pseudo-qr/requested",
+      "candidateSide": "left"
+    },
+    {
+      "fixtureId": "blind-014",
+      "seed": 6837,
+      "stratumId": "command/zh/han",
+      "visualCellId": "motif.wave/requested",
+      "candidateSide": "left"
+    },
+    {
+      "fixtureId": "blind-015",
+      "seed": 7055,
       "stratumId": "status/zh/han",
       "visualCellId": "motif.wave/downshifted",
       "candidateSide": "left"
     },
     {
-      "fixtureId": "blind-013",
-      "seed": 57614,
-      "stratumId": "command/en/latin",
-      "visualCellId": null,
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-014",
-      "seed": 55506,
-      "stratumId": "status/en/latin",
-      "visualCellId": "motif.barcode/downshifted",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-015",
-      "seed": 39034,
-      "stratumId": "status/zh/han",
-      "visualCellId": "motif.pseudo-qr/downshifted",
-      "candidateSide": "right"
-    },
-    {
       "fixtureId": "blind-016",
-      "seed": 55972,
-      "stratumId": "command/ko/hangul",
-      "visualCellId": null,
+      "seed": 1771,
+      "stratumId": "status/zh/han",
+      "visualCellId": "motif.barcode/downshifted",
       "candidateSide": "left"
     },
     {
       "fixtureId": "blind-017",
-      "seed": 7940,
+      "seed": 32155,
       "stratumId": "status/en/latin",
-      "visualCellId": "motif.table/downshifted",
+      "visualCellId": "motif.barcode/downshifted",
       "candidateSide": "left"
     },
     {
       "fixtureId": "blind-018",
-      "seed": 32528,
-      "stratumId": "status/zh/han",
+      "seed": 21072,
+      "stratumId": "command/en/latin",
       "visualCellId": "motif.wave/downshifted",
       "candidateSide": "right"
     },
     {
       "fixtureId": "blind-019",
-      "seed": 3657,
-      "stratumId": "command/zh/han",
-      "visualCellId": null,
-      "candidateSide": "right"
+      "seed": 7034,
+      "stratumId": "command/ko/hangul",
+      "visualCellId": "motif.table/requested",
+      "candidateSide": "left"
     },
     {
       "fixtureId": "blind-020",
-      "seed": 13866,
-      "stratumId": "command/en/latin",
-      "visualCellId": null,
+      "seed": 10399,
+      "stratumId": "status/en/latin",
+      "visualCellId": "motif.pseudo-qr/downshifted",
       "candidateSide": "left"
     },
     {
       "fixtureId": "blind-021",
-      "seed": 52339,
+      "seed": 7640,
       "stratumId": "status/en/latin",
-      "visualCellId": "motif.barcode/downshifted",
-      "candidateSide": "right"
+      "visualCellId": "motif.wave/downshifted",
+      "candidateSide": "left"
     },
     {
       "fixtureId": "blind-022",
-      "seed": 17675,
+      "seed": 37991,
       "stratumId": "command/ko/hangul",
-      "visualCellId": null,
-      "candidateSide": "right"
+      "visualCellId": "motif.wave/requested",
+      "candidateSide": "left"
     },
     {
       "fixtureId": "blind-023",
-      "seed": 45054,
+      "seed": 17868,
       "stratumId": "status/zh/han",
       "visualCellId": "motif.pseudo-qr/downshifted",
       "candidateSide": "right"
     },
     {
       "fixtureId": "blind-024",
-      "seed": 51959,
-      "stratumId": "status/en/latin",
-      "visualCellId": "motif.table/downshifted",
+      "seed": 58985,
+      "stratumId": "command/ko/hangul",
+      "visualCellId": "motif.barcode/requested",
       "candidateSide": "right"
     },
     {
       "fixtureId": "blind-025",
-      "seed": 42681,
-      "stratumId": "command/zh/han",
-      "visualCellId": null,
+      "seed": 57207,
+      "stratumId": "command/ko/hangul",
+      "visualCellId": "motif.pseudo-qr/requested",
       "candidateSide": "right"
     },
     {
       "fixtureId": "blind-026",
-      "seed": 49281,
+      "seed": 17676,
       "stratumId": "command/en/latin",
-      "visualCellId": null,
+      "visualCellId": "motif.barcode/requested",
       "candidateSide": "right"
     },
     {
       "fixtureId": "blind-027",
-      "seed": 9602,
-      "stratumId": "status/zh/han",
-      "visualCellId": "motif.wave/downshifted",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-028",
-      "seed": 18507,
-      "stratumId": "status/zh/han",
-      "visualCellId": "motif.pseudo-qr/downshifted",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-029",
-      "seed": 39613,
-      "stratumId": "status/en/latin",
-      "visualCellId": "motif.table/downshifted",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-030",
-      "seed": 15301,
+      "seed": 33351,
       "stratumId": "status/en/latin",
       "visualCellId": "motif.barcode/downshifted",
       "candidateSide": "right"
     },
     {
-      "fixtureId": "blind-031",
-      "seed": 24924,
-      "stratumId": "command/zh/han",
-      "visualCellId": null,
+      "fixtureId": "blind-028",
+      "seed": 24760,
+      "stratumId": "status/zh/han",
+      "visualCellId": "motif.wave/downshifted",
       "candidateSide": "left"
     },
     {
-      "fixtureId": "blind-032",
-      "seed": 52070,
-      "stratumId": "command/en/latin",
-      "visualCellId": null,
+      "fixtureId": "blind-029",
+      "seed": 3846,
+      "stratumId": "command/zh/han",
+      "visualCellId": "motif.pseudo-qr/requested",
+      "candidateSide": "left"
+    },
+    {
+      "fixtureId": "blind-030",
+      "seed": 55638,
+      "stratumId": "command/zh/han",
+      "visualCellId": "motif.wave/requested",
       "candidateSide": "right"
     },
     {
+      "fixtureId": "blind-031",
+      "seed": 45115,
+      "stratumId": "status/zh/han",
+      "visualCellId": "motif.table/downshifted",
+      "candidateSide": "right"
+    },
+    {
+      "fixtureId": "blind-032",
+      "seed": 44419,
+      "stratumId": "command/zh/han",
+      "visualCellId": "motif.barcode/requested",
+      "candidateSide": "left"
+    },
+    {
       "fixtureId": "blind-033",
-      "seed": 26505,
-      "stratumId": "command/ko/hangul",
-      "visualCellId": null,
+      "seed": 19739,
+      "stratumId": "command/en/latin",
+      "visualCellId": "motif.table/requested",
       "candidateSide": "left"
     },
     {
       "fixtureId": "blind-034",
-      "seed": 25695,
-      "stratumId": "status/zh/han",
+      "seed": 19552,
+      "stratumId": "command/en/latin",
       "visualCellId": "motif.wave/downshifted",
       "candidateSide": "left"
     },
     {
       "fixtureId": "blind-035",
-      "seed": 32870,
+      "seed": 26541,
       "stratumId": "status/en/latin",
-      "visualCellId": "motif.barcode/downshifted",
+      "visualCellId": "motif.table/downshifted",
       "candidateSide": "left"
     },
     {
       "fixtureId": "blind-036",
-      "seed": 4667,
+      "seed": 51836,
       "stratumId": "status/zh/han",
+      "visualCellId": "motif.barcode/downshifted",
+      "candidateSide": "right"
+    },
+    {
+      "fixtureId": "blind-037",
+      "seed": 31336,
+      "stratumId": "command/ko/hangul",
+      "visualCellId": "motif.table/requested",
+      "candidateSide": "right"
+    },
+    {
+      "fixtureId": "blind-038",
+      "seed": 4247,
+      "stratumId": "status/en/latin",
       "visualCellId": "motif.pseudo-qr/downshifted",
       "candidateSide": "left"
     },
     {
-      "fixtureId": "blind-037",
-      "seed": 58236,
-      "stratumId": "command/zh/han",
-      "visualCellId": null,
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-038",
-      "seed": 39362,
-      "stratumId": "status/en/latin",
-      "visualCellId": "motif.table/downshifted",
-      "candidateSide": "right"
-    },
-    {
       "fixtureId": "blind-039",
-      "seed": 20498,
+      "seed": 39208,
       "stratumId": "command/ko/hangul",
-      "visualCellId": null,
+      "visualCellId": "motif.barcode/downshifted",
       "candidateSide": "right"
     },
     {
       "fixtureId": "blind-040",
-      "seed": 56001,
-      "stratumId": "status/zh/han",
-      "visualCellId": "motif.wave/downshifted",
-      "candidateSide": "left"
+      "seed": 14358,
+      "stratumId": "command/zh/han",
+      "visualCellId": "motif.table/downshifted",
+      "candidateSide": "right"
     },
     {
       "fixtureId": "blind-041",
-      "seed": 33109,
-      "stratumId": "command/en/latin",
-      "visualCellId": null,
+      "seed": 3002,
+      "stratumId": "command/ko/hangul",
+      "visualCellId": "motif.pseudo-qr/requested",
       "candidateSide": "left"
     },
     {
       "fixtureId": "blind-042",
-      "seed": 34246,
+      "seed": 14803,
       "stratumId": "status/zh/han",
-      "visualCellId": "motif.barcode/downshifted",
-      "candidateSide": "left"
+      "visualCellId": "motif.wave/downshifted",
+      "candidateSide": "right"
     },
     {
       "fixtureId": "blind-043",
-      "seed": 51786,
-      "stratumId": "status/en/latin",
-      "visualCellId": "motif.pseudo-qr/downshifted",
+      "seed": 40544,
+      "stratumId": "command/en/latin",
+      "visualCellId": "motif.wave/requested",
       "candidateSide": "right"
     },
     {
       "fixtureId": "blind-044",
-      "seed": 37092,
+      "seed": 28725,
       "stratumId": "command/zh/han",
-      "visualCellId": null,
-      "candidateSide": "left"
+      "visualCellId": "motif.table/requested",
+      "candidateSide": "right"
     },
     {
       "fixtureId": "blind-045",
-      "seed": 21696,
-      "stratumId": "status/en/latin",
+      "seed": 15101,
+      "stratumId": "command/en/latin",
       "visualCellId": "motif.table/downshifted",
       "candidateSide": "left"
     },
     {
       "fixtureId": "blind-046",
-      "seed": 20559,
-      "stratumId": "status/zh/han",
-      "visualCellId": "motif.pseudo-qr/downshifted",
-      "candidateSide": "right"
+      "seed": 14290,
+      "stratumId": "command/en/latin",
+      "visualCellId": "motif.barcode/requested",
+      "candidateSide": "left"
     },
     {
       "fixtureId": "blind-047",
-      "seed": 40751,
-      "stratumId": "status/en/latin",
-      "visualCellId": "motif.barcode/downshifted",
+      "seed": 44664,
+      "stratumId": "command/zh/han",
+      "visualCellId": "motif.wave/requested",
       "candidateSide": "right"
     },
     {
       "fixtureId": "blind-048",
-      "seed": 35924,
-      "stratumId": "status/zh/han",
-      "visualCellId": "motif.wave/downshifted",
+      "seed": 53095,
+      "stratumId": "command/en/latin",
+      "visualCellId": "motif.barcode/downshifted",
       "candidateSide": "right"
     },
     {
       "fixtureId": "blind-049",
-      "seed": 9004,
+      "seed": 52733,
       "stratumId": "command/en/latin",
-      "visualCellId": null,
-      "candidateSide": "right"
+      "visualCellId": "motif.pseudo-qr/requested",
+      "candidateSide": "left"
     },
     {
       "fixtureId": "blind-050",
-      "seed": 52835,
+      "seed": 44984,
       "stratumId": "command/ko/hangul",
-      "visualCellId": null,
+      "visualCellId": "motif.wave/requested",
       "candidateSide": "right"
     },
     {
       "fixtureId": "blind-051",
-      "seed": 50715,
+      "seed": 36248,
       "stratumId": "status/zh/han",
-      "visualCellId": "motif.barcode/downshifted",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-052",
-      "seed": 7230,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.pseudo-qr/requested",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-053",
-      "seed": 39208,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.barcode/requested",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-054",
-      "seed": 50585,
-      "stratumId": "status/en/latin",
       "visualCellId": "motif.pseudo-qr/downshifted",
       "candidateSide": "left"
     },
     {
-      "fixtureId": "blind-055",
-      "seed": 38582,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.table/requested",
+      "fixtureId": "blind-052",
+      "seed": 55379,
+      "stratumId": "command/zh/han",
+      "visualCellId": "motif.barcode/requested",
       "candidateSide": "right"
     },
     {
+      "fixtureId": "blind-053",
+      "seed": 29411,
+      "stratumId": "command/ko/hangul",
+      "visualCellId": "motif.pseudo-qr/downshifted",
+      "candidateSide": "right"
+    },
+    {
+      "fixtureId": "blind-054",
+      "seed": 59783,
+      "stratumId": "status/en/latin",
+      "visualCellId": "motif.table/downshifted",
+      "candidateSide": "right"
+    },
+    {
+      "fixtureId": "blind-055",
+      "seed": 2686,
+      "stratumId": "command/ko/hangul",
+      "visualCellId": "motif.barcode/requested",
+      "candidateSide": "left"
+    },
+    {
       "fixtureId": "blind-056",
-      "seed": 28186,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.wave/requested",
+      "seed": 18684,
+      "stratumId": "status/en/latin",
+      "visualCellId": "motif.wave/downshifted",
       "candidateSide": "right"
     },
     {
       "fixtureId": "blind-057",
-      "seed": 11192,
-      "stratumId": "status/en/latin",
-      "visualCellId": "motif.table/downshifted",
+      "seed": 1253,
+      "stratumId": "status/zh/han",
+      "visualCellId": "motif.barcode/downshifted",
       "candidateSide": "left"
     },
     {
       "fixtureId": "blind-058",
-      "seed": 16598,
-      "stratumId": "status/ko/hangul",
+      "seed": 21237,
+      "stratumId": "command/zh/han",
       "visualCellId": "motif.pseudo-qr/requested",
-      "candidateSide": "left"
+      "candidateSide": "right"
     },
     {
       "fixtureId": "blind-059",
-      "seed": 22588,
-      "stratumId": "status/ko/hangul",
+      "seed": 39121,
+      "stratumId": "command/en/latin",
       "visualCellId": "motif.table/requested",
-      "candidateSide": "left"
+      "candidateSide": "right"
     },
     {
       "fixtureId": "blind-060",
-      "seed": 13329,
-      "stratumId": "command/zh/han",
-      "visualCellId": null,
+      "seed": 11124,
+      "stratumId": "status/zh/han",
+      "visualCellId": "motif.table/downshifted",
       "candidateSide": "left"
     },
     {
       "fixtureId": "blind-061",
-      "seed": 2457,
+      "seed": 6964,
+      "stratumId": "status/ko/hangul",
+      "visualCellId": "motif.barcode/requested",
+      "candidateSide": "left"
+    },
+    {
+      "fixtureId": "blind-062",
+      "seed": 34261,
+      "stratumId": "status/ko/hangul",
+      "visualCellId": "motif.table/requested",
+      "candidateSide": "right"
+    },
+    {
+      "fixtureId": "blind-063",
+      "seed": 27665,
+      "stratumId": "command/ko/hangul",
+      "visualCellId": "motif.table/requested",
+      "candidateSide": "right"
+    },
+    {
+      "fixtureId": "blind-064",
+      "seed": 37763,
       "stratumId": "status/ko/hangul",
       "visualCellId": "motif.barcode/requested",
       "candidateSide": "right"
     },
     {
-      "fixtureId": "blind-062",
-      "seed": 25781,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.wave/requested",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-063",
-      "seed": 29856,
-      "stratumId": "status/zh/han",
-      "visualCellId": "motif.wave/downshifted",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-064",
-      "seed": 14171,
+      "fixtureId": "blind-065",
+      "seed": 38897,
       "stratumId": "status/ko/hangul",
       "visualCellId": "motif.table/requested",
       "candidateSide": "left"
     },
     {
-      "fixtureId": "blind-065",
-      "seed": 32562,
+      "fixtureId": "blind-066",
+      "seed": 44933,
+      "stratumId": "command/en/latin",
+      "visualCellId": "motif.pseudo-qr/downshifted",
+      "candidateSide": "right"
+    },
+    {
+      "fixtureId": "blind-067",
+      "seed": 19530,
       "stratumId": "status/ko/hangul",
       "visualCellId": "motif.wave/requested",
       "candidateSide": "left"
     },
     {
-      "fixtureId": "blind-066",
-      "seed": 11845,
-      "stratumId": "status/en/latin",
-      "visualCellId": "motif.barcode/downshifted",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-067",
-      "seed": 30046,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.pseudo-qr/requested",
-      "candidateSide": "right"
-    },
-    {
       "fixtureId": "blind-068",
-      "seed": 52336,
+      "seed": 20970,
       "stratumId": "status/ko/hangul",
       "visualCellId": "motif.barcode/requested",
       "candidateSide": "right"
     },
     {
       "fixtureId": "blind-069",
-      "seed": 52169,
-      "stratumId": "status/zh/han",
-      "visualCellId": "motif.pseudo-qr/downshifted",
-      "candidateSide": "right"
+      "seed": 57304,
+      "stratumId": "command/en/latin",
+      "visualCellId": "motif.wave/downshifted",
+      "candidateSide": "left"
     },
     {
       "fixtureId": "blind-070",
-      "seed": 48013,
+      "seed": 9445,
       "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.table/requested",
+      "visualCellId": "motif.pseudo-qr/requested",
       "candidateSide": "right"
     },
     {
       "fixtureId": "blind-071",
-      "seed": 51472,
+      "seed": 51539,
       "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.wave/requested",
+      "visualCellId": "motif.table/downshifted",
       "candidateSide": "left"
     },
     {
       "fixtureId": "blind-072",
-      "seed": 6047,
-      "stratumId": "command/en/latin",
-      "visualCellId": null,
+      "seed": 44618,
+      "stratumId": "status/en/latin",
+      "visualCellId": "motif.barcode/downshifted",
       "candidateSide": "right"
     },
     {
       "fixtureId": "blind-073",
-      "seed": 26788,
+      "seed": 55320,
       "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.pseudo-qr/requested",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-074",
-      "seed": 31141,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.barcode/requested",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-075",
-      "seed": 4733,
-      "stratumId": "command/ko/hangul",
-      "visualCellId": null,
+      "visualCellId": "motif.barcode/downshifted",
       "candidateSide": "left"
     },
     {
-      "fixtureId": "blind-076",
-      "seed": 23245,
+      "fixtureId": "blind-074",
+      "seed": 1278,
       "stratumId": "status/ko/hangul",
       "visualCellId": "motif.table/requested",
       "candidateSide": "left"
     },
     {
-      "fixtureId": "blind-077",
-      "seed": 33452,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.pseudo-qr/requested",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-078",
-      "seed": 14356,
-      "stratumId": "status/zh/han",
-      "visualCellId": "motif.table/downshifted",
+      "fixtureId": "blind-075",
+      "seed": 40571,
+      "stratumId": "status/en/latin",
+      "visualCellId": "motif.pseudo-qr/downshifted",
       "candidateSide": "right"
     },
     {
+      "fixtureId": "blind-076",
+      "seed": 28550,
+      "stratumId": "status/ko/hangul",
+      "visualCellId": "motif.wave/requested",
+      "candidateSide": "right"
+    },
+    {
+      "fixtureId": "blind-077",
+      "seed": 30097,
+      "stratumId": "status/ko/hangul",
+      "visualCellId": "motif.pseudo-qr/requested",
+      "candidateSide": "right"
+    },
+    {
+      "fixtureId": "blind-078",
+      "seed": 24564,
+      "stratumId": "command/zh/han",
+      "visualCellId": "motif.pseudo-qr/downshifted",
+      "candidateSide": "left"
+    },
+    {
       "fixtureId": "blind-079",
-      "seed": 1138,
+      "seed": 16948,
       "stratumId": "status/ko/hangul",
       "visualCellId": "motif.barcode/requested",
       "candidateSide": "left"
     },
     {
       "fixtureId": "blind-080",
-      "seed": 38451,
+      "seed": 5492,
       "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.wave/requested",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-081",
-      "seed": 24440,
-      "stratumId": "status/en/latin",
-      "visualCellId": "motif.table/downshifted",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-082",
-      "seed": 29241,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.table/requested",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-083",
-      "seed": 14173,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.barcode/requested",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-084",
-      "seed": 41863,
-      "stratumId": "status/zh/han",
-      "visualCellId": "motif.barcode/downshifted",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-085",
-      "seed": 14019,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.pseudo-qr/requested",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-086",
-      "seed": 45787,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.wave/requested",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-087",
-      "seed": 58252,
-      "stratumId": "status/en/latin",
       "visualCellId": "motif.wave/downshifted",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-088",
-      "seed": 51458,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.table/requested",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-089",
-      "seed": 37987,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.barcode/requested",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-090",
-      "seed": 16730,
-      "stratumId": "status/zh/han",
-      "visualCellId": "motif.pseudo-qr/downshifted",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-091",
-      "seed": 49109,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.wave/requested",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-092",
-      "seed": 38938,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.pseudo-qr/requested",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-093",
-      "seed": 50905,
-      "stratumId": "status/en/latin",
-      "visualCellId": "motif.pseudo-qr/downshifted",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-094",
-      "seed": 697,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.table/requested",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-095",
-      "seed": 57247,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.barcode/requested",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-096",
-      "seed": 45740,
-      "stratumId": "command/ko/hangul",
-      "visualCellId": null,
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-097",
-      "seed": 55670,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.wave/requested",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-098",
-      "seed": 10145,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.pseudo-qr/requested",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-099",
-      "seed": 6418,
-      "stratumId": "command/en/latin",
-      "visualCellId": null,
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-100",
-      "seed": 19577,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.table/requested",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-101",
-      "seed": 38804,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.barcode/requested",
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-102",
-      "seed": 30939,
-      "stratumId": "status/zh/han",
-      "visualCellId": "motif.wave/downshifted",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-103",
-      "seed": 20316,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.wave/requested",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-104",
-      "seed": 5267,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.pseudo-qr/requested",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-105",
-      "seed": 26320,
-      "stratumId": "command/zh/han",
-      "visualCellId": null,
-      "candidateSide": "right"
-    },
-    {
-      "fixtureId": "blind-106",
-      "seed": 15865,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.table/requested",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-107",
-      "seed": 7400,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.barcode/requested",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-108",
-      "seed": 18841,
-      "stratumId": "status/en/latin",
-      "visualCellId": "motif.barcode/downshifted",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-109",
-      "seed": 9205,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.pseudo-qr/requested",
-      "candidateSide": "left"
-    },
-    {
-      "fixtureId": "blind-110",
-      "seed": 44341,
-      "stratumId": "status/ko/hangul",
-      "visualCellId": "motif.wave/requested",
       "candidateSide": "right"
     }
   ],
-  "selectionRevision": "sha256:4b1f271a2455a82565491700608220ca28be9f0b8450015e8349a6e1428439d3",
-  "scanEvidenceRevision": "sha256:f017f4f90c6ed09b9b2e4c0eb63181d545a4c904b2fc379ae371a0b5ae51d494"
+  "selectionRevision": "sha256:5fa3260186dcbcfc918aa281048304b97c9bd41c7484d7f08b66be18abfabf11",
+  "scanEvidenceRevision": "sha256:88159b1d759c63ace448d3c230c67fb1c10efe00485263faf65a1cd457fbc94b"
 }

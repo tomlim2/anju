@@ -15,7 +15,7 @@ const ORACLE_SOURCE_PATH = fileURLToPath(import.meta.url);
 const ORACLE_REPOSITORY_PATH = "web/micro-graphic-generator/scripts/verify-planning-complexity.mjs";
 
 const ORACLE_CONTRACT = Object.freeze({
-  schemaVersion: 2,
+  schemaVersion: 3,
   predicates: Object.freeze([
     "total-first-cardinality",
     "source-and-tag-domain",
@@ -28,7 +28,8 @@ const ORACLE_CONTRACT = Object.freeze({
     "rectangular-partition-reference-v1",
     "block-requested-size-cartesian-reference-v1",
     "synthetic-fault-injection-v1",
-    "production-active-owner-parity-v2"
+    "active-owner-domain-coverage-v2",
+    "production-active-owner-parity-v3"
   ]),
   allFitPolicy: Object.freeze({
     schemaVersion: 1,
@@ -510,7 +511,7 @@ function assertActiveSnapshot(snapshot) {
     || new Set(recipeIds).size !== recipeIds.length
     || recipeIds.some((id, index) => index > 0 && recipeIds[index - 1] >= id)
   ) throw new Error("active planning recipe IDs must be exact and ascending");
-  if (snapshot.coverageProof?.policyId !== "active-owner-max-domain-v1") {
+  if (snapshot.coverageProof?.policyId !== "active-owner-max-domain-v2") {
     throw new Error("active planning snapshot lacks owner-domain coverage proof");
   }
 }

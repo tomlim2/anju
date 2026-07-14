@@ -42,15 +42,16 @@ npm install
 npm run test:generator:install
 npm run test:generator
 npm run test:generator:soak
+npm run test:generator:acceptance
 ```
 
-`test:generator`는 pure/architecture contract, owner snapshot과 planning oracle, 고정 seed fixture, UI interaction, SVG/PNG export, 3개 visual reference, Random 100회, frozen expressive-range/blind-evaluation artifact를 검사한다. `test:generator:soak`는 browser Random 검사를 1,000회로 확장한다. 브라우저 lifecycle과 port `4191`은 Playwright가 소유하므로 테스트 중 별도 서버를 실행하지 않는다.
+`test:generator`는 pure/architecture contract, owner snapshot과 planning oracle, 고정 seed fixture, UI interaction, SVG/PNG export, 3개 visual reference, Random 100회, frozen expressive-range/blind-evaluation artifact의 무결성을 검사한다. `test:generator:soak`는 browser Random 검사를 1,000회로 확장한다. `test:generator:acceptance`는 여기에 expressive open review 0과 qualified blind human review 완료를 필수 gate로 추가한다. 기본 회귀 테스트의 성공을 전체 acceptance 성공으로 표현하지 않는다. 브라우저 lifecycle과 port `4191`은 Playwright가 소유하므로 테스트 중 별도 서버를 실행하지 않는다.
 
 ## Typography-First Pilot Checkpoint
 
-2026-07-14 기준으로 `SEMANTIC_GENERATION_SPEC.md`의 command/status pilot runtime과 모든 locally implementable Phase A-E surface를 구현했다. 현재 자동 gate는 pure `49/49`, browser `25/25`, Random soak `1,000/1,000`, expressive-range `10,000` input/`10,000` accepted output/terminal failure `0`으로 통과한다. Blind evaluation은 60,000 candidate seed에서 110개 counterbalanced pair를 고정했으며 linguistic 6개 stratum과 motif requested/downshifted 8개 cell coverage를 충족한다.
+2026-07-14 기준으로 `SEMANTIC_GENERATION_SPEC.md`의 command/status pilot runtime과 모든 locally implementable Phase A-E surface를 구현했다. 현재 자동 gate는 pure `53/53`, browser `25/25`, Random soak `1,000/1,000`, expressive-range `10,000` input/`10,000` accepted output/terminal failure `0`으로 통과한다. Blind corpus `blind-evaluation:v1:3a4aebc13cbd1c8d54`는 60,000 candidate seed와 10,696 baseline-eligible row에서 80개 counterbalanced pair를 고정했으며 linguistic 6개 stratum과 motif requested/downshifted 8개 cell coverage를 충족한다.
 
-전체 acceptance는 의도적으로 pending이다. Frozen blind pair마다 자격을 갖춘 서로 다른 reviewer 2명의 실제 평가가 필요하고, owner trust foundation은 merge-base에서 실행되는 별도 reviewed commit으로 먼저 활성화해야 한다. 로컬 candidate verifier는 `node web/micro-graphic-generator/scripts/verify-composition-owner-snapshot.mjs --allow-local`로 통과하며, human 결과가 없는 상태를 임의 점수로 채우거나 trust-root commit을 가장하지 않는다. 리뷰 UI만 변경했을 때는 frozen scan/artifact를 다시 만들지 않고 `node web/micro-graphic-generator/scripts/generate-blind-evaluation-corpus.mjs --refresh-report`로 모든 frozen identity를 검증한 뒤 tooling evidence report만 갱신한다.
+전체 acceptance는 의도적으로 pending이다. Frozen blind pair마다 자격을 갖춘 서로 다른 reviewer 2명의 실제 평가가 필요하고, owner trust foundation은 merge-base에서 실행되는 별도 reviewed commit으로 먼저 활성화해야 한다. 로컬 candidate verifier는 `node web/micro-graphic-generator/scripts/verify-composition-owner-snapshot.mjs --allow-local`로 통과하며, human 결과가 없는 상태를 임의 점수로 채우거나 trust-root commit을 가장하지 않는다. 리뷰 UI만 변경했을 때는 frozen scan/artifact를 다시 만들지 않고 `node web/micro-graphic-generator/scripts/generate-blind-evaluation-corpus.mjs --refresh-report`로 모든 frozen identity를 검증한 뒤 tooling evidence report만 갱신한다. Corpus identity를 새로 만들 때 기존 review collection이 정확히 비어 있는 경우만 새 identity로 재기반하며, 실제 review가 한 건이라도 있으면 자동 이관을 중단한다.
 
 ## 리팩터링 체크포인트
 
@@ -242,7 +243,7 @@ weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 
 
 사용자가 제공한 action text에서는 반복 목적어 `it`을 제외하고 중복 단어를 합쳐 62개의 고유 표현을 추출한다. `QUICK`은 `빠르게 / QUICK / 快速`으로 한 번만 포함한다. `visualTokens.actionTokens`는 각 항목을 `{ korean, english, chinese }`로 묶어 의미 대응을 유지한다. 예시는 `구매 / BUY / 购买`, `분해 / BREAK / 拆解`, `추출 / RIP / 提取`, `종료 / LEAVE / 退出`이다.
 
-semantic production generator의 `command` 후보 풀도 이 62개 번역 세트를 전부 사용한다. 각 generation은 seed로 서로 다른 action 세트 최대 2개를 활성화한 뒤 그 안에서 한글·영어·중국어 표현을 선택한다. `QUICK`도 다른 action과 같은 hero 후보 풀에 포함하며, 레지스트리나 catalog에만 남겨 두지 않는다.
+semantic production generator는 61개 command 번역 세트 중 정확히 1개를 layout ranking 전에 선택하고, 그 세트의 한글·영어·중국어 표현 중 하나를 action hero로 사용한다. 따라서 글자 길이와 fit margin이 서로 다른 action 의미 사이의 당첨률을 바꾸지 않는다. `QUICK` 1개 세트는 별도 modifier 후보로 활성화되며 단독 hero나 `actsOn` 주체가 될 수 없다. Command의 `optionalPresenceRate: 0.25` support slot에서만 `modifies` 관계를 충족할 때 표시하며, 입력별 deterministic presence decision을 레이아웃 여유 점수보다 먼저 적용한다. 전체 62개 세트는 production-visible이지만 hero command 61개와 support modifier 1개의 역할은 분리한다.
 
 `actionTypographyTokens()`는 세 언어를 모두 `content / action-keyword` typography로 만든다. 일반 display에서는 `large 32px`, `3x1`·`1x3` block에서는 `xxlarge 128px`, `3x2`·`2x3` block에서는 `xxxlarge 256px` 후보로 사용한다. block에는 고유 크기로 들어가는 번역만 선택하며 fitting이나 scale 변형은 하지 않는다.
 

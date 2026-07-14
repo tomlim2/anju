@@ -6,7 +6,7 @@ import { deriveRuntimeResourceClosure } from "./composition-owner-manifest-lib.m
 import { parseModuleSpecifiersWithLiteralDynamicImports } from "./static-module-specifiers.mjs";
 
 const PROFILE_CONTRACTS = Object.freeze({
-  "expressive-range-v1": Object.freeze({
+  "expressive-range-v2": Object.freeze({
     moduleEntrypoints: Object.freeze([
       "web/micro-graphic-generator/scripts/generate-expressive-range-report.mjs",
       "web/micro-graphic-generator/tests/static-server.mjs"

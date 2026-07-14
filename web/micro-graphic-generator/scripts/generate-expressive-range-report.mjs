@@ -7,15 +7,16 @@ import { OWNER_SNAPSHOT_REVISION } from "../src/composition-owner-snapshot.js";
 import { assertRuntimeConformance } from "../tests/runtime-conformance.mjs";
 import { startOwnedTestServer } from "./owned-test-server.mjs";
 import {
+  EVALUATION_SCHEMA_VERSION,
   buildExpressiveRangeReport,
   validateExpressiveRangeInputFixture
 } from "./evaluation-model.mjs";
 import { buildEvaluationToolingEvidence } from "./evaluation-tooling-evidence.mjs";
 
 const repoRoot = fileURLToPath(new URL("../../..", import.meta.url));
-const fixturePath = fileURLToPath(new URL("../tests/fixtures/expressive-range-inputs.v1.json", import.meta.url));
-const eventsPath = fileURLToPath(new URL("../tests/fixtures/expressive-range-events.v1.jsonl", import.meta.url));
-const reportPath = fileURLToPath(new URL("../tests/fixtures/expressive-range-report.v1.json", import.meta.url));
+const fixturePath = fileURLToPath(new URL("../tests/fixtures/expressive-range-inputs.v2.json", import.meta.url));
+const eventsPath = fileURLToPath(new URL("../tests/fixtures/expressive-range-events.v2.jsonl", import.meta.url));
+const reportPath = fileURLToPath(new URL("../tests/fixtures/expressive-range-report.v2.json", import.meta.url));
 const curationReviewerDirectoryPath = fileURLToPath(new URL(
   "../tests/fixtures/curation-reviewer-directory.v1.json",
   import.meta.url
@@ -114,7 +115,7 @@ async function readResolutionEvidence() {
 
 function eventArtifact(text, recordCount) {
   return {
-    path: "web/micro-graphic-generator/tests/fixtures/expressive-range-events.v1.jsonl",
+    path: "web/micro-graphic-generator/tests/fixtures/expressive-range-events.v2.jsonl",
     sha256: `sha256:${sha256Hex(utf8Bytes(text))}`,
     recordCount
   };
@@ -140,7 +141,7 @@ async function verifyStoredReport() {
     inputFixture,
     events,
     eventArtifact: eventArtifact(eventsText, events.length),
-    evaluationTooling: buildEvaluationToolingEvidence(repoRoot, "expressive-range-v1"),
+    evaluationTooling: buildEvaluationToolingEvidence(repoRoot, "expressive-range-v2"),
     reviewOverrides: report.concentrationReviews,
     ...resolutionEvidence
   });
@@ -171,8 +172,8 @@ async function generateReport() {
     if (ownerSnapshotRevisions.size !== 1) throw new Error("expressive-range run crossed owner snapshots");
     const ownerSnapshotRevision = [...ownerSnapshotRevisions][0];
     const inputFixture = {
-      schemaVersion: 1,
-      sampleSeriesId: `expressive-range:v1:${ownerSnapshotRevision.slice("sha256:".length, "sha256:".length + 12)}`,
+      schemaVersion: EVALUATION_SCHEMA_VERSION,
+      sampleSeriesId: `expressive-range:v2:${ownerSnapshotRevision.slice("sha256:".length, "sha256:".length + 12)}`,
       generationInputCount: records.length,
       generationInputs: records.map(record => record.generationInput)
     };
@@ -189,7 +190,7 @@ async function generateReport() {
       inputFixture,
       events,
       eventArtifact: eventArtifact(eventsText, events.length),
-      evaluationTooling: buildEvaluationToolingEvidence(repoRoot, "expressive-range-v1"),
+      evaluationTooling: buildEvaluationToolingEvidence(repoRoot, "expressive-range-v2"),
       reviewOverrides,
       ...resolutionEvidence
     });

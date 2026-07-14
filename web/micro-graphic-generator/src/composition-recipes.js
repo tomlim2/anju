@@ -3,19 +3,20 @@ import {
   actionModifierTranslationSetIds
 } from "./vocabulary.js";
 
-export const RECIPE_REGISTRY_VERSION = 2;
+export const RECIPE_REGISTRY_VERSION = 4;
 
 function selector(kind, value) {
   return Object.freeze({ [kind]: value });
 }
 
-function slot(id, compositionRole, min, max, source, acceptsAnyTag, prominence) {
+function slot(id, compositionRole, min, max, source, acceptsAnyTag, prominence, optionalPresenceRate = null) {
   return Object.freeze({
     id,
     compositionRole,
     cardinality: Object.freeze({ min, max }),
     source,
     ...(acceptsAnyTag ? { acceptsAnyTag: Object.freeze(acceptsAnyTag) } : {}),
+    ...(optionalPresenceRate === null ? {} : { optionalPresenceRate }),
     prominence
   });
 }
@@ -26,13 +27,20 @@ export const compositionRecipes = Object.freeze([
     coherenceMode: "direct",
     blockCount: Object.freeze({ min: 2, max: 5 }),
     slots: Object.freeze([
-      slot("hero", "hero", 1, 1, "lexical", ["action", "modifier"], "primary"),
+      slot("hero", "hero", 1, 1, "lexical", ["action"], "primary"),
+      slot("modifier", "support", 0, 1, "lexical", ["modifier"], "secondary", 0.25),
       slot("subject", "support", 1, 1, "lexical", ["topic", "identity"], "secondary"),
       slot("meta", "metadata", 0, 2, "lexical", ["reference", "value"], "tertiary"),
       slot("motif", "motif", 0, 1, "graphic", null, "secondary")
     ]),
     requiredRelations: Object.freeze([
-      Object.freeze({ fromSlot: "hero", relations: Object.freeze(["actsOn"]), toSlot: "subject" })
+      Object.freeze({ fromSlot: "hero", relations: Object.freeze(["actsOn"]), toSlot: "subject" }),
+      Object.freeze({
+        fromSlot: "modifier",
+        relations: Object.freeze(["modifies"]),
+        toSlot: "hero",
+        whenSlotPresent: "modifier"
+      })
     ]),
     pairRules: Object.freeze({
       prefer: Object.freeze([
@@ -97,9 +105,9 @@ export const compositionRecipes = Object.freeze([
 export const activeRecipeIds = Object.freeze(["command", "status"]);
 
 const commandSetIds = [
-  ...actionCommandTranslationSetIds,
-  ...actionModifierTranslationSetIds
+  ...actionCommandTranslationSetIds
 ].sort();
+const modifierSetIds = [...actionModifierTranslationSetIds].sort();
 const statusSetIds = [
   "access-denied.status",
   "verified.status",
@@ -108,9 +116,88 @@ const statusSetIds = [
   "locked.status"
 ];
 
+const REVIEWED_COMMAND_SUBJECTS = Object.freeze({
+  "break.command": Object.freeze(["system.topic"]),
+  "bring.command": Object.freeze(["system.topic"]),
+  "burn.command": Object.freeze(["system.topic"]),
+  "buy.command": Object.freeze(["system.topic"]),
+  "call.command": Object.freeze(["network.topic", "system.topic"]),
+  "change.command": Object.freeze(["system.topic"]),
+  "charge.command": Object.freeze(["system.topic"]),
+  "check.command": Object.freeze(["network.topic", "system.topic"]),
+  "click.command": Object.freeze(["network.topic", "system.topic"]),
+  "code.command": Object.freeze(["system.topic"]),
+  "crack.command": Object.freeze(["network.topic", "system.topic"]),
+  "cross.command": Object.freeze(["system.topic"]),
+  "cut.command": Object.freeze(["system.topic"]),
+  "drag-and-drop.command": Object.freeze(["system.topic"]),
+  "erase.command": Object.freeze(["system.topic"]),
+  "fax.command": Object.freeze(["network.topic"]),
+  "fill.command": Object.freeze(["system.topic"]),
+  "find.command": Object.freeze(["network.topic", "system.topic"]),
+  "fix.command": Object.freeze(["system.topic"]),
+  "format.command": Object.freeze(["system.topic"]),
+  "jam.command": Object.freeze(["network.topic"]),
+  "leave.command": Object.freeze(["system.topic"]),
+  "load.command": Object.freeze(["network.topic", "system.topic"]),
+  "lock.command": Object.freeze(["network.topic", "system.topic"]),
+  "mail.command": Object.freeze(["network.topic"]),
+  "name.command": Object.freeze(["system.topic"]),
+  "paste.command": Object.freeze(["system.topic"]),
+  "pause.command": Object.freeze(["system.topic"]),
+  "pay.command": Object.freeze(["system.topic"]),
+  "play.command": Object.freeze(["system.topic"]),
+  "plug.command": Object.freeze(["network.topic", "system.topic"]),
+  "point.command": Object.freeze(["system.topic"]),
+  "press.command": Object.freeze(["system.topic"]),
+  "print.command": Object.freeze(["system.topic"]),
+  "read.command": Object.freeze(["network.topic", "system.topic"]),
+  "rename.command": Object.freeze(["system.topic"]),
+  "rewrite.command": Object.freeze(["system.topic"]),
+  "rip.command": Object.freeze(["system.topic"]),
+  "save.command": Object.freeze(["system.topic"]),
+  "scan.command": Object.freeze(["network.topic", "system.topic"]),
+  "scroll.command": Object.freeze(["network.topic", "system.topic"]),
+  "send.command": Object.freeze(["network.topic"]),
+  "snap.command": Object.freeze(["system.topic"]),
+  "start.command": Object.freeze(["system.topic"]),
+  "surf.command": Object.freeze(["network.topic"]),
+  "switch.command": Object.freeze(["network.topic", "system.topic"]),
+  "touch.command": Object.freeze(["system.topic"]),
+  "trash.command": Object.freeze(["system.topic"]),
+  "tune.command": Object.freeze(["system.topic"]),
+  "turn.command": Object.freeze(["system.topic"]),
+  "unlock.command": Object.freeze(["network.topic", "system.topic"]),
+  "unzip.command": Object.freeze(["system.topic"]),
+  "update.command": Object.freeze(["network.topic", "system.topic"]),
+  "upgrade.command": Object.freeze(["network.topic", "system.topic"]),
+  "use.command": Object.freeze(["system.topic"]),
+  "view.command": Object.freeze(["network.topic", "system.topic"]),
+  "watch.command": Object.freeze(["network.topic", "system.topic"]),
+  "work.command": Object.freeze(["system.topic"]),
+  "write.command": Object.freeze(["system.topic"]),
+  "zip.command": Object.freeze(["system.topic"]),
+  "zoom.command": Object.freeze(["system.topic"])
+});
+
+const reviewedCommandSetIds = Object.keys(REVIEWED_COMMAND_SUBJECTS).sort();
+if (
+  reviewedCommandSetIds.length !== commandSetIds.length
+  || reviewedCommandSetIds.some((setId, index) => setId !== commandSetIds[index])
+) {
+  throw new Error("every active command requires an explicit reviewed subject relation");
+}
+
+export const reviewedCommandTargetRelations = Object.freeze(
+  reviewedCommandSetIds.map(commandSetId => Object.freeze({
+    commandSetId,
+    subjectSetIds: REVIEWED_COMMAND_SUBJECTS[commandSetId]
+  }))
+);
+
 const relationRecords = [];
-for (const commandSetId of commandSetIds) {
-  for (const subjectSetId of ["system.topic", "network.topic"]) {
+for (const { commandSetId, subjectSetIds } of reviewedCommandTargetRelations) {
+  for (const subjectSetId of subjectSetIds) {
     relationRecords.push(Object.freeze({
       id: `edge.${commandSetId}.acts-on.${subjectSetId}`,
       from: selector("translationSetId", commandSetId),
@@ -121,6 +208,14 @@ for (const commandSetId of commandSetIds) {
     }));
   }
 }
+relationRecords.push(Object.freeze({
+  id: "edge.quick-modifier.modifies.action",
+  from: selector("translationSetId", "quick.modifier"),
+  relation: "modifies",
+  to: selector("tag", "action"),
+  directed: true,
+  reviewStatus: "approved"
+}));
 for (const statusSetId of statusSetIds) {
   for (const subjectSetId of ["system.topic", "network.topic"]) {
     relationRecords.push(Object.freeze({
@@ -159,6 +254,7 @@ export const relationEdges = Object.freeze(relationRecords);
 
 export const pilotCandidateTranslationSetIds = Object.freeze([
   ...commandSetIds,
+  ...modifierSetIds,
   ...statusSetIds,
   "system.topic",
   "network.topic",
@@ -167,7 +263,8 @@ export const pilotCandidateTranslationSetIds = Object.freeze([
 ].sort());
 
 export const pilotCandidateTranslationSetGroups = Object.freeze([
-  Object.freeze({ id: "command", ids: Object.freeze([...commandSetIds].sort()), maxActive: 2 }),
+  Object.freeze({ id: "command", ids: Object.freeze([...commandSetIds].sort()), maxActive: 1 }),
+  Object.freeze({ id: "modifier", ids: Object.freeze([...modifierSetIds].sort()), maxActive: 1 }),
   Object.freeze({ id: "status", ids: Object.freeze([...statusSetIds].sort()), maxActive: 1 }),
   Object.freeze({ id: "subject", ids: Object.freeze(["network.topic", "system.topic"]), maxActive: 2 }),
   Object.freeze({ id: "recovery", ids: Object.freeze(["retry.command"]), maxActive: 1 })
