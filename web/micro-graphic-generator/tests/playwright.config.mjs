@@ -1,9 +1,13 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "@playwright/test";
+import { assertRuntimeConformance } from "./runtime-conformance.mjs";
 
 const testDir = fileURLToPath(new URL(".", import.meta.url));
 const contract = JSON.parse(readFileSync(new URL("./launch-contract.json", import.meta.url), "utf8"));
+const projectName = "chromium-http";
+
+assertRuntimeConformance({ playwrightProject: projectName });
 
 export default defineConfig({
   testDir,
@@ -29,5 +33,5 @@ export default defineConfig({
         timeout: 30_000
       }
     : undefined,
-  projects: [{ name: "chromium-http" }]
+  projects: [{ name: projectName }]
 });

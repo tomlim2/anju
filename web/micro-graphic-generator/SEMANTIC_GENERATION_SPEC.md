@@ -2,16 +2,28 @@
 
 ## Status
 
-- 상태: Review-fix complete, Phase A implementation ready
+- 상태: Pilot runtime implementation complete, external acceptance pending
 - 재작성일: 2026-07-13
-- 리뷰 완료일: 2026-07-13
+- 구현 기준일: 2026-07-14
 - 대상: `web/micro-graphic-generator`
-- 기준 커밋: `000324e Restrict CJK vertical typography orientation`
-- 구현 상태: 문서만 재작성했으며 실행 코드와 시각 결과는 변경하지 않았다.
-- 리뷰 상태: Knitten review-fix Loop 18 종료, blocker 0, changed-surface coverage 완료
+- 구현 기준: `6e65642 Add typography-first generator specification` 위 working tree
+- 구현 상태: Phase A-E pilot의 runtime, curated/versioned data, deterministic planning/fallback, SVG metadata, trust/conformance tooling, automated evidence와 human-review fixture를 구현했다.
+- 리뷰 상태: specification Knitten review-fix Loop 18 종료; implementation final review는 아래 자동 gate 이후 수행한다.
 - 근거: `SEMANTIC_CLASSIFICATION_COLD_START_REVIEW.md`의 findings와 typography-first product definition을 반영했다.
 
 이 문서는 이전 `Semantic Composition Generation Specification`을 대체한다. 이전 draft의 full semantic ontology, DIKW facet, 고정 semantic zone, 8개 exclusive archetype은 구현 대상으로 보지 않는다.
+
+### Implementation Checkpoint
+
+| Phase | 상태 | 증거 또는 남은 승인 |
+| --- | --- | --- |
+| A | 코드와 local candidate activation 완료 | owner ledger 1행과 `--allow-local` verifier 통과. merge-base에서 실행할 별도 reviewed trust-foundation commit은 배포 승인으로 남음 |
+| B | 완료 | command/status 2-5 block universe, canonical hash, exact queue, planning oracle와 browser parity 통과 |
+| C | 완료 | live plan projection, motif render, mounted finalization/validation, bounded replan/known-good, export metadata 통과 |
+| D | 자동 hardening 완료 | 4 motif의 requested/downshifted 8개 cell을 frozen corpus로 확보. perceptual first-read 판정은 Phase E blind review와 함께 대기 |
+| E | 도구와 fixture 완료 | expressive range는 통과. 110쌍 blind human review와 qualified translation-ledger adjudication은 사람의 입력이 필요해 pending; 후속 recipe expansion은 활성화하지 않음 |
+
+2026-07-14 자동 증거는 pure `49/49`, browser `25/25`, Chromium Random `1,000/1,000`, expressive-range input `10,000`과 accepted output `10,000`/terminal failure `0`이다. Blind corpus `blind-evaluation:v1:e5e4298b45e1512177`는 60,000 candidate seed, 10,814 baseline-eligible row에서 counterbalanced 110쌍을 고정했고 6개 linguistic stratum과 8개 motif/finalization cell coverage를 통과했다. 전체 acceptance가 아직 false인 유일한 이유는 이 frozen corpus의 qualified human review가 제출되지 않았기 때문이다. 사람의 평가 결과나 별도 trust-root commit을 자동 생성해 통과로 기록하지 않는다.
 
 ## Product Definition
 
@@ -688,7 +700,8 @@ Canonical rank fields:
 - `heroSizeRank`: `small=0`, `medium=1`, `large=2`, `xlarge=3`, `xxlarge=4`, `xxxlarge=5`다.
 - `heroWeightRank`: hero block의 `requestedFontWeight`가 `400=0`, `700=1`, `900=2`다. `requestedWeight` label만으로 rank를 추론하지 않는다.
 - `heroBlockArea`: hero block의 `cells.length`다.
-- `minNormalizedFitMargin`: 각 block의 usable box와 predicted intrinsic bounds로 `min((usableWidth - predictedWidth) / usableWidth, (usableHeight - predictedHeight) / usableHeight)`를 계산하고 plan 전체 최솟값을 취한다. typography는 block의 exact `requestedFontWeight`를 전달한 injected pure measurer, motif는 materialized intrinsic bounds를 사용한다. `Math.round(value * 1e6) / 1e6`로 정규화하고 `-0`은 `0`으로 바꾼다. hard-valid plan이므로 값은 0 이상이다. fit은 이미 hard gate이므로 이 margin은 fitting plans 사이에서 hero hierarchy 뒤의 여유 공간 tie-breaker다.
+- `minNormalizedFitMargin`: 각 block의 usable box와 predicted final intrinsic bounds로 `min((usableWidth - predictedWidth) / usableWidth, (usableHeight - predictedHeight) / usableHeight)`를 계산하고 plan 전체 최솟값을 취한다. Typography plan block은 footprint policy의 start `requestedSize`를 보존하고, injected pure measurer가 같은 lexical use의 ordered discrete fallback에서 처음 fit하는 size/weight를 predicted final bounds로 사용한다. Motif는 materialized intrinsic bounds를 사용한다. 어떤 typography fallback도 fit하지 않으면 hard-invalid다. `Math.round(value * 1e6) / 1e6`로 정규화하고 `-0`은 `0`으로 바꾼다. hard-valid plan이므로 값은 0 이상이다. fit은 이미 hard gate이므로 이 margin은 fitting plans 사이에서 hero hierarchy 뒤의 여유 공간 tie-breaker다.
+- Retained decision은 같은 predicted bounds와 reviewed motif factor로 finalizer와 동일한 정규화 면적 산식을 적용한 보수적 cross-kind preflight도 통과해야 한다. Predicted motif score가 predicted typography hero score보다 크거나 같으면 hard-invalid다. 이 preflight는 명백히 실패할 후보를 mount 전에 제거할 뿐이며, approved font의 실제 transformed bounds를 사용하는 mounted occupancy gate를 대체하지 않는다.
 - `layoutPreferenceMatchCount`: 각 declared `<slotDefinitionId, predicate>` pair는 해당 slot definition의 block 중 하나라도 predicate를 만족하면 1, 아니면 0이며 최대 1이다. `largest-viable-footprint`는 `deriveTupleLayoutFacts`가 만든 같은 tuple의 viable layout set에서 해당 slot이 얻을 수 있는 최대 cell count와 같음, `edge`는 block이 3x3 외곽 row/column에 닿음, `corner`는 cell `1|3|7|9` 중 하나를 포함함을 뜻한다. viable set은 reserved known-good와 동일한 layout도 포함한다. reservation은 queue eligibility만 바꾸고 plan-local rank explanation은 바꾸지 않는다. 이 세 predicate 이외의 값은 recipe validation에서 reject한다.
 
 모든 항목은 큰 값이 우선이며 `RankKey`를 다음 순서로 lexicographic compare한다.
@@ -1001,7 +1014,7 @@ Planning counters는 다음 네 가지다.
 
 `scripts/verify-planning-complexity.mjs`는 non-runtime independent reference evaluator다. production `composition-plan-validator.js`, `grid-layout.js`, planner 또는 그 helper를 import하지 않고 generated canonical JSON snapshot의 recipe/cardinality/relation/avoid records, candidate records, 3x3 cell bitmasks와 block-policy alternative counts를 직접 해석한다. 별도 depth-first walker와 rectangular-partition reference enumerator로 cardinality shape/order, repeated-slot symmetry, tuple compatibility, prefix visits와 tuple fingerprints를 재구성한다. layout에서는 모든 typography/motif predicted-fit predicate가 pass한다고 가정해 모든 supported geometry를 덮는 raw-decision upper bound와 per-tuple retained upper bound를 계산한다. known-good reservation은 absent 상태를 worst case로 사용한다. 이 oracle은 runtime behavior owner가 아니며 release comparison 전용 duplicated implementation이다.
 
-Release verifier는 active recipe마다 production instrumented all-fit dry run과 independent oracle를 모두 실행한다. exact tuple fingerprint set/order, prefix-visit count와 raw layout-decision count는 서로 같아야 하고, production retained/ranked counts는 oracle all-fit upper bounds 이하여야 한다. `PlanningComplexityCertificate`의 네 max field는 oracle이 승인한 upper bounds이고 config limits 이하여야 한다. `oracleRevision`은 reference evaluator source/contract hashes, `fixtureRevision`은 canonical input snapshot, all-fit policy와 expected oracle output의 `hashCanonical` digest다. generated `OwnerSnapshotManifest`는 active recipe마다 exact 한 certificate를 recipe ID ascending으로 가진다. certificate set/count/order/version/revision 또는 comparison이 맞지 않으면 snapshot을 activate하지 않고 `createPlanValidationContext`가 planner 호출 전에 실패한다. limits나 production/oracle derivation이 바뀌면 실제 owner의 `configVersion` 또는 `compositionEngineVersion`과 owner snapshot을 함께 올린다.
+Release verifier는 active recipe마다 production instrumented all-fit dry run과 independent oracle를 모두 실행한다. exact tuple fingerprint set/order, prefix-visit count와 raw layout-decision count는 서로 같아야 하고, production retained/ranked counts는 oracle all-fit upper bounds 이하여야 한다. Observation policy `production-all-predicted-fit-v2`는 모든 block에서 fit하고 motif보다 강한 synthetic typography bounds `100x100`을 사용해 fit/occupancy pruning 이전의 상한을 유지한다. `PlanningComplexityCertificate`의 네 max field는 oracle이 승인한 upper bounds이고 config limits 이하여야 한다. `oracleRevision`은 reference evaluator source/contract hashes, `fixtureRevision`은 canonical input snapshot, all-fit policy와 expected oracle output의 `hashCanonical` digest다. generated `OwnerSnapshotManifest`는 active recipe마다 exact 한 certificate를 recipe ID ascending으로 가진다. certificate set/count/order/version/revision 또는 comparison이 맞지 않으면 snapshot을 activate하지 않고 `createPlanValidationContext`가 planner 호출 전에 실패한다. limits나 production/oracle derivation이 바뀌면 실제 owner의 `configVersion` 또는 `compositionEngineVersion`과 owner snapshot을 함께 올린다.
 
 Runtime planner derivation과 `validatePlannerResult`의 fresh derivation은 네 counters를 독립 측정해 certificate와 config limits를 assert한다. certified snapshot에서 예상 밖의 breach가 나면 app은 mount 전에 generation을 fail closed하고 stable planning-complexity diagnostic을 기록하며 이전 valid component를 보존한다. 이전 component가 없으면 container를 비운다. truncated universe, partial queue, 거짓 `no-candidate`, half-valid `PlannerResult`는 만들지 않는다. full `searchQueue` completeness 계약은 release-validated bounded snapshot에만 성립하며 검증 중 transient complete collection은 preserved result queue와 fresh validation universe 두 세트를 넘지 않는다.
 
@@ -1591,7 +1604,7 @@ ranked-universe derivation은 canonical raw tuple을 평가할 때, known-good i
 
 `grid-layout.js`의 pure `enumerateCanonicalLayouts(slotInstanceIds)`는 candidate value, recipe semantics, block policy, fit, rank, plan ID, reservation을 참조하지 않고 canonical-order slot instance IDs를 rectangular 3x3 complete-coverage block assignment로 열거한다. 각 `CanonicalLayoutAssignment`는 stable `layoutKey`와 block별 `footprint`, sorted `cells`, `slotInstanceId`만 가지며 `layoutKey` ascending으로 반환된다. 같은 input은 deep-equal 결과를 만들고 다른 family inventory나 planner queue 상태는 결과를 바꾸지 않는다.
 
-`composition-plan-validator.js`의 pure `deriveTupleLayoutFacts(compatibleTuple, context)`는 이 enumerator의 전체 출력과 `context.generationInput`의 exact ratio, viewport, safe box geometry를 받아 block policy, candidate source compatibility, requested size/alignment/vertical-alignment/orientation alternatives, typography variant derivation, motif bounds, predicted fit을 확장·필터링한다. 먼저 stable viable block decisions와 `maxCellCountBySlotInstanceId`를 확정한 뒤 validator-owned pure `derivePlanRankFacts(compatibleTuple, decision, { maxCellCountBySlotInstanceId }, context)`로 각 decision의 exact six-field key와 explanation을 만든다. 결과는 위 exact `TupleLayoutFacts` schema이며 viable decisions는 `decisionFingerprint` ascending이다. fingerprint는 sorted complete block decisions의 `hashCanonical`이다.
+`composition-plan-validator.js`의 pure `deriveTupleLayoutFacts(compatibleTuple, context)`는 이 enumerator의 전체 출력과 `context.generationInput`의 exact ratio, viewport, safe box geometry를 받아 block policy, candidate source compatibility, requested start size/alignment/vertical-alignment/orientation alternatives, typography variant derivation, motif bounds, fallback-resolved predicted fit을 확장·필터링한다. Predicted actual size/weight는 viability와 rank margin 계산에만 쓰는 validator-local 사실이며 plan identity에는 들어가지 않는다. 먼저 stable viable block decisions와 `maxCellCountBySlotInstanceId`를 확정한 뒤 validator-owned pure `derivePlanRankFacts(compatibleTuple, decision, { maxCellCountBySlotInstanceId }, context)`로 각 decision의 exact six-field key와 explanation을 만든다. 결과는 위 exact `TupleLayoutFacts` schema이며 viable decisions는 `decisionFingerprint` ascending이다. fingerprint는 sorted complete block decisions의 `hashCanonical`이다.
 
 planner는 `TupleLayoutFacts.viableDecisions`에서 plans를 만들고 제공된 `rankFacts.rankKey`를 compare할 뿐 rank field를 다시 계산하지 않는다. known-good instantiator는 template blocks와 같은 `decisionFingerprint` record의 blocks/rank facts를 plan에 복사한다. complete validator는 plan slots로 compatible tuple을 재구성하고 같은 facts에서 decision fingerprint를 찾아 plan blocks와 `decisionTrace`를 deep-compare한다. 이 내부 계산은 `validateCompositionPlan`을 재귀 호출하지 않는다. reserved plan ID와 queue eligibility는 facts 입력이 아니므로 instantiated known-good plan도 planner enumeration 전에 같은 기준으로 검증할 수 있다.
 

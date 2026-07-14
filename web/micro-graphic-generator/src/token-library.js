@@ -1,4 +1,10 @@
-import { GRAPHIC_SIZE_SCALE, GRAPHIC_TOKEN_SIZES } from "./config.js";
+import { canonicalJson, hashCanonical } from "./canonical-hash.js";
+import {
+  DESIGN_TOKEN_SIZE_ORDER,
+  GRAPHIC_SIZE_SCALE,
+  GRAPHIC_TOKEN_SIZES
+} from "./config.js";
+import { deriveSeed, keyedValue } from "./random.js";
 import { typographyToken } from "./token-model.js";
 
 export function createTokenLibrary({ randomSource, visualTokens, generationDate, measureBadgeWidth }) {
@@ -240,4 +246,182 @@ export function createTokenLibrary({ randomSource, visualTokens, generationDate,
     createGraphicTokenDescriptors,
     createTypographyTokenGroups
   };
+}
+
+function compositionTokenFunction(use) {
+  if (use.tags.includes("reference") || use.tags.includes("value")) return "data";
+  if (use.tags.includes("state") || use.tags.includes("result") || use.tags.includes("greeting")) return "sign";
+  return "content";
+}
+
+function compositionTokenRole(use) {
+  if (use.marker === "mention") return "mention";
+  if (use.marker === "hashtag") return "hashtag";
+  if (use.tags.includes("action")) return "action-keyword";
+  if (use.tags.includes("state") || use.tags.includes("result")) return "status";
+  if (use.tags.includes("identity")) return "identity";
+  if (use.tags.includes("topic")) return "topic";
+  if (use.tags.includes("reference") || use.tags.includes("value")) return "reference";
+  return "display-keyword";
+}
+
+function normalizedVisibleText(value) {
+  return value.normalize("NFKC").trim().replace(/\s+/g, " ").toUpperCase();
+}
+
+function lexicalCandidateForUse(use, vocabularyVersion, translationSetId) {
+  const tokenFamilyId = use.familyId;
+  const materializationOrdinal = use.materializationOrdinal;
+  const materializationKey = hashCanonical({
+    ownerVersion: vocabularyVersion,
+    familyKey: tokenFamilyId,
+    materializationOrdinal
+  });
+  const canonicalInstanceKey = use.instanceKey?.normalize("NFKC").trim() || null;
+  const candidateId = canonicalInstanceKey === null
+    ? tokenFamilyId
+    : `${tokenFamilyId}:${hashCanonical(canonicalInstanceKey)}`;
+  return Object.freeze({
+    sourceKind: "lexical",
+    vocabularyVersion,
+    candidateId,
+    tokenFamilyId,
+    materializationOrdinal,
+    materializationKey,
+    supportedSizes: Object.freeze([...DESIGN_TOKEN_SIZE_ORDER]),
+    visibleText: use.text,
+    normalizedVisibleText: normalizedVisibleText(use.text),
+    lexicalUseId: use.id,
+    translationSetId,
+    tags: Object.freeze([...use.tags]),
+    language: use.language,
+    script: use.script,
+    typeface: use.typeface,
+    tokenFunction: compositionTokenFunction(use),
+    tokenRole: compositionTokenRole(use),
+    instanceKey: canonicalInstanceKey,
+    phrasePackId: use.phrasePackId,
+    reviewStatus: use.reviewStatus
+  });
+}
+
+export function validateCompositionLexicalCandidate(candidate, {
+  vocabularyVersion,
+  lexicalUseById,
+  translationSetByLexicalUseId
+}) {
+  const use = lexicalUseById.get(candidate?.lexicalUseId);
+  if (!use) throw new Error(`unknown candidate lexical use ${candidate?.lexicalUseId}`);
+  const translationValue = translationSetByLexicalUseId.get(use.id);
+  const translationSetId = translationValue?.id || translationValue || null;
+  const expected = lexicalCandidateForUse(use, vocabularyVersion, translationSetId);
+  if (canonicalJson(candidate) !== canonicalJson(expected)) {
+    throw new Error(`candidate lexical identity mismatch ${candidate?.candidateId || use.id}`);
+  }
+  return true;
+}
+
+function keyedIndex(generationInput, key, length) {
+  if (!Number.isInteger(length) || length < 1) throw new Error(`empty keyed inventory for ${key}`);
+  return Math.min(length - 1, Math.floor(keyedValue(generationInput, key) * length));
+}
+
+export function createCompositionCandidateInventory({
+  generationInput,
+  vocabularyVersion,
+  lexicalUses,
+  translationSets,
+  rankedTranslationSetIds,
+  rankedTranslationSetGroups = null,
+  rankedMetadataLexicalUseIds,
+  motifCandidates
+}) {
+  const materializationSeed = deriveSeed(generationInput, "materialization");
+  const translationSetByUseId = new Map();
+  const translationSetById = new Map();
+  for (const set of translationSets) {
+    if (translationSetById.has(set.id)) throw new Error(`duplicate translation set ${set.id}`);
+    translationSetById.set(set.id, set);
+    for (const member of set.members) {
+      if (translationSetByUseId.has(member.lexicalUseId)) {
+        throw new Error(`duplicate translation membership ${member.lexicalUseId}`);
+      }
+      translationSetByUseId.set(member.lexicalUseId, set.id);
+    }
+  }
+
+  const candidateById = new Map();
+  const candidateIdByLexicalUseId = new Map();
+  for (const use of lexicalUses) {
+    const candidate = lexicalCandidateForUse(
+      use,
+      vocabularyVersion,
+      translationSetByUseId.get(use.id) || null
+    );
+    if (candidateById.has(candidate.candidateId)) throw new Error(`duplicate candidate ${candidate.candidateId}`);
+    candidateById.set(candidate.candidateId, candidate);
+    candidateIdByLexicalUseId.set(use.id, candidate.candidateId);
+  }
+
+  for (const candidate of motifCandidates) {
+    if (candidateById.has(candidate.candidateId)) throw new Error(`duplicate candidate ${candidate.candidateId}`);
+    candidateById.set(candidate.candidateId, candidate);
+  }
+
+  const selectedTranslationSetIds = rankedTranslationSetGroups
+    ? rankedTranslationSetGroups.flatMap(group => {
+        const scored = group.ids.map(setId => ({
+          setId,
+          score: keyedValue(materializationSeed, `group:${group.id}:${setId}`)
+        }));
+        scored.sort((left, right) => left.score - right.score || (
+          left.setId < right.setId ? -1 : left.setId > right.setId ? 1 : 0
+        ));
+        return scored.slice(0, group.maxActive).map(entry => entry.setId);
+      })
+    : [...rankedTranslationSetIds];
+  const rankedCandidateIds = [];
+  for (const setId of [...new Set(selectedTranslationSetIds)].sort()) {
+    const set = translationSetById.get(setId);
+    if (!set) throw new Error(`unknown ranked translation set ${setId}`);
+    const approvedMembers = set.members
+      .map(member => candidateById.get(candidateIdByLexicalUseId.get(member.lexicalUseId)))
+      .filter(candidate => candidate?.reviewStatus === "approved")
+      .sort((left, right) => left.candidateId < right.candidateId ? -1 : left.candidateId > right.candidateId ? 1 : 0);
+    rankedCandidateIds.push(
+      approvedMembers[keyedIndex(materializationSeed, `translation:${setId}`, approvedMembers.length)].candidateId
+    );
+  }
+
+  const metadataByFamily = new Map();
+  for (const lexicalUseId of rankedMetadataLexicalUseIds) {
+    const candidate = candidateById.get(candidateIdByLexicalUseId.get(lexicalUseId));
+    if (!candidate) throw new Error(`unknown ranked metadata use ${lexicalUseId}`);
+    const family = lexicalUseId.startsWith("http-status.") ? "http-status" : "generic-code";
+    const candidates = metadataByFamily.get(family) || [];
+    candidates.push(candidate);
+    metadataByFamily.set(family, candidates);
+  }
+  for (const [family, candidates] of [...metadataByFamily.entries()].sort(([left], [right]) =>
+    left < right ? -1 : left > right ? 1 : 0
+  )) {
+    candidates.sort((left, right) => left.candidateId < right.candidateId ? -1 : left.candidateId > right.candidateId ? 1 : 0);
+    rankedCandidateIds.push(
+      candidates[keyedIndex(materializationSeed, `metadata:${family}`, candidates.length)].candidateId
+    );
+  }
+
+  const sortedMotifs = [...motifCandidates].sort((left, right) =>
+    left.candidateId < right.candidateId ? -1 : left.candidateId > right.candidateId ? 1 : 0
+  );
+  rankedCandidateIds.push(
+    sortedMotifs[keyedIndex(materializationSeed, "pilot-motif", sortedMotifs.length)].candidateId
+  );
+
+  const rankedIds = [...new Set(rankedCandidateIds)].sort();
+  return Object.freeze({
+    candidateById,
+    rankedCandidateIds: Object.freeze(rankedIds),
+    candidateIdByLexicalUseId
+  });
 }

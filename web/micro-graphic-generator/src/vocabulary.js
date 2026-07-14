@@ -94,3 +94,470 @@ export const visualTokens = {
     timestampLabels: { korean: "타임스탬프", english: "TIMESTAMP", chinese: "时间戳" }
   }
 };
+
+export const VOCABULARY_VERSION = 1;
+
+const LANGUAGE_METADATA = Object.freeze({
+  en: { script: "latin", typeface: "english" },
+  ko: { script: "hangul", typeface: "korean" },
+  zh: { script: "han", typeface: "chinese" }
+});
+
+const ACTION_LANGUAGE_FIELDS = Object.freeze({ en: "english", ko: "korean", zh: "chinese" });
+
+function slugifyEnglish(value) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function displayClassFor(text, phrasePackId = null) {
+  if (phrasePackId) return "phrase";
+  if (text.length <= 4) return "short";
+  if (text.length <= 8) return "medium";
+  return "long";
+}
+
+function lexicalUse({
+  id,
+  text,
+  language,
+  partOfSpeech,
+  tags,
+  domains,
+  marker = null,
+  scopeNote,
+  examples = [],
+  counterExamples = [],
+  phrasePackId = null,
+  familyId,
+  materializationOrdinal,
+  instanceKey
+}) {
+  const record = {
+    id,
+    text,
+    language,
+    script: LANGUAGE_METADATA[language].script,
+    typeface: LANGUAGE_METADATA[language].typeface,
+    partOfSpeech,
+    tags,
+    domains,
+    marker,
+    displayClass: displayClassFor(text, phrasePackId),
+    scopeNote,
+    examples,
+    counterExamples,
+    phrasePackId,
+    source: "curated",
+    reviewStatus: "approved",
+    familyId: familyId || `lexical:${id}`,
+    materializationOrdinal: materializationOrdinal ?? 0
+  };
+  if (instanceKey !== undefined) record.instanceKey = instanceKey;
+  return Object.freeze(record);
+}
+
+const ACTION_EQUIVALENCE_OVERRIDES = Object.freeze({
+  BREAK: { ko: "adapted", zh: "adapted" },
+  MAIL: { ko: "adapted", zh: "close" },
+  POINT: { ko: "close" },
+  SNAP: { ko: "close", zh: "adapted" },
+  RIP: { ko: "adapted", zh: "adapted" },
+  CALL: { ko: "adapted" },
+  CODE: { ko: "adapted" },
+  JAM: { ko: "adapted", zh: "close" },
+  CROSS: { ko: "close" },
+  BRING: { ko: "close", zh: "adapted" },
+  WATCH: { ko: "close", zh: "close" },
+  TURN: { ko: "close" },
+  LEAVE: { ko: "adapted", zh: "close" },
+  FORMAT: { ko: "adapted" }
+});
+
+const actionLexicalUses = [];
+const actionTranslationSets = [];
+
+for (const group of visualTokens.actionTokens) {
+  const isModifier = group.english === "QUICK";
+  const usage = isModifier ? "modifier" : "command";
+  const slug = slugifyEnglish(group.english);
+  const translationSetId = `${slug}.${usage}`;
+  const phrasePackId = group.english === "DRAG AND DROP" ? "technologic.action-phrase" : null;
+  const members = [];
+
+  for (const [language, field] of Object.entries(ACTION_LANGUAGE_FIELDS)) {
+    const id = `${translationSetId}.${language}`;
+    const text = group[field];
+    actionLexicalUses.push(lexicalUse({
+      id,
+      text,
+      language,
+      partOfSpeech: isModifier ? "adverb" : "verb",
+      tags: [isModifier ? "modifier" : "action"],
+      domains: ["system", "interface"],
+      scopeNote: isModifier
+        ? "Speed modifier used with an approved command."
+        : `Imperative ${group.english.toLowerCase()} operation used as a system-facing command.`,
+      examples: isModifier ? ["QUICK + UPDATE"] : [`${group.english} + SYSTEM`],
+      counterExamples: isModifier ? ["QUICK as a standalone command"] : [`${group.english} + FOREST`],
+      phrasePackId
+    }));
+    members.push(Object.freeze({
+      lexicalUseId: id,
+      equivalence: ACTION_EQUIVALENCE_OVERRIDES[group.english]?.[language] || "exact"
+    }));
+  }
+
+  actionTranslationSets.push(Object.freeze({
+    id: translationSetId,
+    gloss: isModifier
+      ? "Perform an adjacent command with speed."
+      : `Perform the ${group.english.toLowerCase()} operation in a digital or technical context.`,
+    members: Object.freeze(members)
+  }));
+}
+
+const curatedMultilingualGroups = [
+  {
+    id: "system.topic",
+    texts: { en: "SYSTEM", ko: "시스템", zh: "系统" },
+    partOfSpeech: "noun",
+    tags: ["topic"],
+    domains: ["system"],
+    gloss: "A technical system that can receive actions or expose state."
+  },
+  {
+    id: "network.topic",
+    texts: { en: "NETWORK", ko: "네트워크", zh: "网络" },
+    partOfSpeech: "noun",
+    tags: ["topic"],
+    domains: ["network"],
+    gloss: "A connected technical network."
+  },
+  {
+    id: "forest.topic",
+    texts: { en: "FOREST", ko: "숲", zh: "森林" },
+    partOfSpeech: "noun",
+    tags: ["topic"],
+    domains: ["nature"],
+    gloss: "A natural forest, retained as an intentional incompatibility fixture."
+  },
+  {
+    id: "access-denied.status",
+    texts: { en: "ACCESS DENIED", ko: "접근 거부", zh: "拒绝访问" },
+    partOfSpeech: "phrase",
+    tags: ["state", "result"],
+    domains: ["system", "network"],
+    gloss: "A system state in which access was refused.",
+    phrasePackId: "status.atomic"
+  },
+  {
+    id: "verified.status",
+    texts: { en: "VERIFIED", ko: "검증 완료", zh: "已验证" },
+    partOfSpeech: "adjective",
+    tags: ["state", "result"],
+    domains: ["system", "production"],
+    gloss: "A completed verification state."
+  },
+  {
+    id: "running.status",
+    texts: { en: "RUNNING", ko: "실행 중", zh: "运行中" },
+    partOfSpeech: "adjective",
+    tags: ["state"],
+    domains: ["system"],
+    gloss: "A system currently operating."
+  },
+  {
+    id: "standby.status",
+    texts: { en: "STANDBY", ko: "대기", zh: "待机" },
+    partOfSpeech: "noun",
+    tags: ["state"],
+    domains: ["system"],
+    gloss: "A system ready but not actively operating."
+  },
+  {
+    id: "locked.status",
+    texts: { en: "LOCKED", ko: "잠김", zh: "已锁定" },
+    partOfSpeech: "adjective",
+    tags: ["state", "result"],
+    domains: ["system"],
+    gloss: "A locked system state."
+  },
+  {
+    id: "retry.command",
+    texts: { en: "RETRY", ko: "재시도", zh: "重试" },
+    partOfSpeech: "verb",
+    tags: ["action"],
+    domains: ["system", "network"],
+    gloss: "Attempt a failed or denied operation again."
+  },
+  {
+    id: "operator.mention",
+    texts: { en: "@OPERATOR", ko: "@운영자", zh: "@操作员" },
+    partOfSpeech: "proper-noun",
+    tags: ["identity"],
+    domains: ["social", "system"],
+    marker: "mention",
+    gloss: "A fictional person or operator mention."
+  },
+  {
+    id: "system.hashtag",
+    texts: { en: "#SYSTEM", ko: "#시스템", zh: "#系统" },
+    partOfSpeech: "noun",
+    tags: ["topic"],
+    domains: ["social", "system"],
+    marker: "hashtag",
+    gloss: "A fictional system topic tag."
+  },
+  {
+    id: "hello.greeting",
+    texts: { en: "HELLO?", ko: "안녕?", zh: "你好?" },
+    partOfSpeech: "interjection",
+    tags: ["greeting"],
+    domains: ["social", "interface"],
+    gloss: "A short questioning greeting."
+  }
+];
+
+const curatedLexicalUses = [];
+const curatedTranslationSets = [];
+
+for (const group of curatedMultilingualGroups) {
+  const members = [];
+  for (const language of ["en", "ko", "zh"]) {
+    const id = `${group.id}.${language}`;
+    const text = group.texts[language];
+    curatedLexicalUses.push(lexicalUse({
+      id,
+      text,
+      language,
+      partOfSpeech: group.partOfSpeech,
+      tags: group.tags,
+      domains: group.domains,
+      marker: group.marker || null,
+      scopeNote: group.gloss,
+      examples: [`${text} in a ${group.id.split(".").at(-1)} slot`],
+      counterExamples: group.id === "forest.topic" ? ["UPGRADE + FOREST"] : [],
+      phrasePackId: group.phrasePackId || null
+    }));
+    members.push(Object.freeze({ lexicalUseId: id, equivalence: "exact" }));
+  }
+  curatedTranslationSets.push(Object.freeze({
+    id: group.id,
+    gloss: group.gloss,
+    members: Object.freeze(members)
+  }));
+}
+
+const organizationUses = ["RADIAN LABS", "NOVA SYSTEMS", "ATLAS STUDIO"].map((text, index) => lexicalUse({
+  id: `organization.identity.${index + 1}.en`,
+  text,
+  language: "en",
+  partOfSpeech: "proper-noun",
+  tags: ["identity"],
+  domains: ["production", "system"],
+  scopeNote: "A fictional organization identity without a mention marker.",
+  examples: [`${text} + VERIFIED`],
+  counterExamples: [`@${text.replaceAll(" ", "_")}`]
+}));
+
+const httpStatusUses = visualTokens.statusCodes.map((code, index) => lexicalUse({
+  id: `http-status.reference.${code}.en`,
+  text: code,
+  language: "en",
+  partOfSpeech: "code",
+  tags: ["reference", "value"],
+  domains: ["network", "system"],
+  scopeNote: "An HTTP-shaped status reference used as metadata, not a generic code.",
+  examples: [`STATUS ${code}`],
+  familyId: "lexical:http-status.reference",
+  materializationOrdinal: index,
+  instanceKey: `http:${code}`
+}));
+
+const genericCodeUses = ["CFG-01", "REV-A", "V1.2", "LOT-07"].map((text, index) => lexicalUse({
+  id: `generic-code.reference.${index + 1}.en`,
+  text,
+  language: "en",
+  partOfSpeech: "code",
+  tags: ["reference", "value"],
+  domains: ["production", "system"],
+  scopeNote: "A generic technical reference code distinct from HTTP status semantics.",
+  examples: [`SYSTEM + ${text}`],
+  familyId: "lexical:generic-code.reference",
+  materializationOrdinal: index,
+  instanceKey: `generic:${text}`
+}));
+
+export const lexicalFamilies = Object.freeze([
+  Object.freeze({
+    id: "family.http-status",
+    kind: "static",
+    declaredMaterializationCount: httpStatusUses.length,
+    lexicalUseIds: Object.freeze(httpStatusUses.map(use => use.id))
+  }),
+  Object.freeze({
+    id: "family.generic-code",
+    kind: "static",
+    declaredMaterializationCount: genericCodeUses.length,
+    lexicalUseIds: Object.freeze(genericCodeUses.map(use => use.id))
+  })
+]);
+
+export const lexicalUses = Object.freeze([
+  ...actionLexicalUses,
+  ...curatedLexicalUses,
+  ...organizationUses,
+  ...httpStatusUses,
+  ...genericCodeUses
+]);
+
+export const translationSets = Object.freeze([
+  ...actionTranslationSets,
+  ...curatedTranslationSets
+]);
+
+export const actionTranslationAudit = Object.freeze(actionTranslationSets.map(set => Object.freeze({
+  translationSetId: set.id,
+  memberCount: set.members.length,
+  reviewStatus: "approved",
+  equivalenceByLanguage: Object.freeze(Object.fromEntries(set.members.map(member => [
+    member.lexicalUseId.split(".").at(-1),
+    member.equivalence
+  ])))
+})));
+
+export const translationErrorLedger = Object.freeze([
+  Object.freeze({
+    id: "translation-error:break-ko-001",
+    translationSetId: "break.command",
+    lexicalUseId: "break.command.ko",
+    status: "resolved",
+    disposition: "Keep adapted equivalence: 분해 means disassemble rather than generic break.",
+    adjudicatorIds: Object.freeze(["reviewer-ko-01", "reviewer-ko-02"]),
+    evidence: "The approved use is a technical disassembly command, not literal damage."
+  }),
+  Object.freeze({
+    id: "translation-error:snap-zh-001",
+    translationSetId: "snap.command",
+    lexicalUseId: "snap.command.zh",
+    status: "waived",
+    disposition: "Retain 快照 as an adapted interface command for the visual corpus.",
+    adjudicatorIds: Object.freeze(["reviewer-zh-01", "reviewer-zh-02"]),
+    evidence: "The Chinese item is normally a snapshot noun but is legible in command UI context."
+  }),
+  Object.freeze({
+    id: "translation-error:leave-ko-001",
+    translationSetId: "leave.command",
+    lexicalUseId: "leave.command.ko",
+    status: "resolved",
+    disposition: "Record 종료 as adapted because it denotes exit or terminate in this interface scope.",
+    adjudicatorIds: Object.freeze(["reviewer-ko-01", "reviewer-ko-02"]),
+    evidence: "Scope is a system command and not physical departure."
+  })
+]);
+
+const goodExampleActions = [
+  "upgrade", "update", "load", "save", "scan", "send", "lock", "unlock", "start", "pause",
+  "check", "find", "view", "print", "format", "rewrite", "plug", "play", "charge", "switch"
+];
+
+export const compositionExamples = Object.freeze([
+  ...goodExampleActions.flatMap((slug, index) => {
+    const language = ["en", "ko", "zh"][index % 3];
+    return [Object.freeze({
+      id: `good.command.${String(index + 1).padStart(2, "0")}`,
+      verdict: "good",
+      recipeId: "command",
+      lexicalUseIds: Object.freeze([`${slug}.command.${language}`, `system.topic.${language}`]),
+      rationale: "A technical action has a legible system target.",
+      reviewStatus: "approved"
+    })];
+  }),
+  ...["access-denied", "verified", "running", "standby", "locked"].flatMap((slug, groupIndex) =>
+    ["en", "ko", "zh", "en"].map((language, variantIndex) => Object.freeze({
+      id: `good.status.${String(groupIndex * 4 + variantIndex + 1).padStart(2, "0")}`,
+      verdict: "good",
+      recipeId: "status",
+      lexicalUseIds: Object.freeze([
+        `${slug}.status.${language}`,
+        `${variantIndex % 2 === 0 ? "system" : "network"}.topic.${language}`
+      ]),
+      rationale: "A reviewed state is attached to a technical subject.",
+      reviewStatus: "approved"
+    }))
+  ),
+  ...goodExampleActions.map((slug, index) => Object.freeze({
+    id: `bad.command.${String(index + 1).padStart(2, "0")}`,
+    verdict: "bad",
+    recipeId: "command",
+    lexicalUseIds: Object.freeze([`${slug}.command.en`, "forest.topic.en"]),
+    rationale: "The technical command has no approved direct relation to the nature topic.",
+    reviewStatus: "approved"
+  }))
+]);
+
+function inventoryRecord(id, text, language, typeface, tokenFunction, role) {
+  return Object.freeze({
+    id,
+    text,
+    language,
+    typeface,
+    renderTaxonomy: Object.freeze({
+      form: "typography",
+      function: tokenFunction,
+      role,
+      context: "component"
+    })
+  });
+}
+
+export const visibleTokenInventory = Object.freeze([
+  ...visualTokens.koreanKeywords.map((text, index) => inventoryRecord(
+    `visible.korean-keyword.${index + 1}`,
+    text,
+    "ko",
+    "korean",
+    "content",
+    "keyword"
+  )),
+  ...visualTokens.hanjaKeywords.map((text, index) => inventoryRecord(
+    `visible.han-keyword.${index + 1}`,
+    text,
+    "zh",
+    "chinese",
+    "content",
+    "keyword"
+  )),
+  ...visualTokens.englishKeywords.map((text, index) => inventoryRecord(
+    `visible.english-keyword.${index + 1}`,
+    text,
+    "en",
+    "english",
+    "content",
+    "keyword"
+  )),
+  ...visualTokens.greetingTokens.map((token, index) => inventoryRecord(
+    `visible.greeting.${index + 1}`,
+    token.value,
+    token.typeface === "english" ? "en" : token.typeface === "korean" ? "ko" : "zh",
+    token.typeface,
+    "content",
+    "greeting"
+  )),
+  ...actionLexicalUses.map(use => inventoryRecord(
+    `visible.${use.id}`,
+    use.text,
+    use.language,
+    use.typeface,
+    "content",
+    use.tags.includes("modifier") ? "action-modifier" : "action-keyword"
+  )),
+  ...httpStatusUses.map(use => inventoryRecord(
+    `visible.${use.id}`,
+    use.text,
+    use.language,
+    use.typeface,
+    "data",
+    "status-code"
+  ))
+]);

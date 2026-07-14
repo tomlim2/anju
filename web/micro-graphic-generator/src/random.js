@@ -1,3 +1,5 @@
+import { hashCanonical } from "./canonical-hash.js";
+
 const MULBERRY32_STEP = 0x6D2B79F5;
 
 export function mulberry32(seed) {
@@ -116,4 +118,17 @@ export function createReplayRandomSource(values) {
       }
     }
   };
+}
+
+export function deriveSeed(input, label) {
+  if (typeof label !== "string" || label.length === 0) {
+    throw new TypeError("deriveSeed requires a non-empty label");
+  }
+  const digest = hashCanonical({ input, label });
+  return Number.parseInt(digest.slice("sha256:".length, "sha256:".length + 8), 16) >>> 0;
+}
+
+export function keyedValue(seedInput, key) {
+  const seed = deriveSeed(seedInput, key);
+  return mulberry32(seed)();
 }

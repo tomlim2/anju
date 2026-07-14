@@ -281,3 +281,137 @@ export function createGraphicPrimitives({ randomSource, visualTokens }) {
 
   return { label, microBadgeWidth, microBadge, barcode, pseudoQr, miniTable, wave };
 }
+
+function bitAt(bits, index) {
+  return bits[index % bits.length] === "1";
+}
+
+function finderModule(row, column, count) {
+  const origins = [[0, 0], [0, count - 7], [count - 7, 0]];
+  return origins.some(([originRow, originColumn]) => {
+    const localRow = row - originRow;
+    const localColumn = column - originColumn;
+    if (localRow < 0 || localRow > 6 || localColumn < 0 || localColumn > 6) return false;
+    return localRow === 0 || localRow === 6 || localColumn === 0 || localColumn === 6
+      || (localRow >= 2 && localRow <= 4 && localColumn >= 2 && localColumn <= 4);
+  });
+}
+
+export function motifRenderTelemetry(renderParams) {
+  if (renderParams.graphicType === "barcode") {
+    const painted = [...renderParams.barPattern].filter(bit => bit === "1").length;
+    return Object.freeze({ primitiveCount: painted + 1, density: painted / renderParams.barPattern.length });
+  }
+  if (renderParams.graphicType === "pseudo-qr") {
+    let painted = 0;
+    for (let row = 0; row < renderParams.moduleCount; row += 1) {
+      for (let column = 0; column < renderParams.moduleCount; column += 1) {
+        if (finderModule(row, column, renderParams.moduleCount) || bitAt(renderParams.payloadBits, row * renderParams.moduleCount + column)) painted += 1;
+      }
+    }
+    return Object.freeze({ primitiveCount: painted, density: painted / (renderParams.moduleCount ** 2) });
+  }
+  if (renderParams.graphicType === "table") {
+    const cellCount = renderParams.columns * renderParams.rows;
+    const filled = Array.from({ length: cellCount }, (_, index) => bitAt(renderParams.densityKey, index)).filter(Boolean).length;
+    return Object.freeze({ primitiveCount: renderParams.columns + renderParams.rows + filled, density: filled / cellCount });
+  }
+  if (renderParams.graphicType === "wave") {
+    return Object.freeze({ primitiveCount: renderParams.pointCount + 3, density: 0.18 });
+  }
+  throw new Error(`Unknown composition motif: ${renderParams.graphicType}`);
+}
+
+export function renderCompositionMotif(group, intrinsicBounds, renderParams) {
+  const width = intrinsicBounds.width;
+  const height = intrinsicBounds.height;
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    throw new Error("composition motif requires positive intrinsic bounds");
+  }
+  group.appendChild(rect(0, 0, width, height, { fill: "transparent", stroke: false, opacity: 0 }));
+
+  if (renderParams.graphicType === "barcode") {
+    const captionHeight = TYPOGRAPHY_INTRINSIC_FONT_SIZES.small + 2;
+    const barHeight = Math.max(1, height - captionHeight);
+    const quiet = width * 0.04;
+    const moduleWidth = (width - quiet * 2) / renderParams.barPattern.length;
+    [...renderParams.barPattern].forEach((bit, index) => {
+      if (bit !== "1") return;
+      group.appendChild(rect(
+        quiet + index * moduleWidth,
+        0,
+        Math.max(0.5, moduleWidth),
+        barHeight,
+        { fill: "currentColor", stroke: false }
+      ));
+    });
+    group.appendChild(textNode(width / 2, height, renderParams.value, {
+      size: TYPOGRAPHY_INTRINSIC_FONT_SIZES.small,
+      tokenSize: "small",
+      tokenFunction: "data",
+      tokenRole: "barcode-caption",
+      tokenContext: "primitive-detail",
+      typeface: "mono",
+      align: "center",
+      fontWeightOverride: 400
+    }));
+  } else if (renderParams.graphicType === "pseudo-qr") {
+    const stepX = width / renderParams.moduleCount;
+    const stepY = height / renderParams.moduleCount;
+    for (let row = 0; row < renderParams.moduleCount; row += 1) {
+      for (let column = 0; column < renderParams.moduleCount; column += 1) {
+        const index = row * renderParams.moduleCount + column;
+        if (!finderModule(row, column, renderParams.moduleCount) && !bitAt(renderParams.payloadBits, index)) continue;
+        group.appendChild(rect(
+          column * stepX,
+          row * stepY,
+          Math.max(0.5, stepX * 0.9),
+          Math.max(0.5, stepY * 0.9),
+          { fill: "currentColor", stroke: false }
+        ));
+      }
+    }
+  } else if (renderParams.graphicType === "table") {
+    const cellWidth = width / renderParams.columns;
+    const cellHeight = height / renderParams.rows;
+    group.appendChild(rect(0, 0, width, height));
+    for (let column = 1; column < renderParams.columns; column += 1) {
+      group.appendChild(line(column * cellWidth, 0, column * cellWidth, height));
+    }
+    for (let row = 1; row < renderParams.rows; row += 1) {
+      group.appendChild(line(0, row * cellHeight, width, row * cellHeight));
+    }
+    for (let row = 0; row < renderParams.rows; row += 1) {
+      for (let column = 0; column < renderParams.columns; column += 1) {
+        const index = row * renderParams.columns + column;
+        if (!bitAt(renderParams.densityKey, index)) continue;
+        group.appendChild(rect(
+          column * cellWidth + cellWidth * 0.18,
+          row * cellHeight + cellHeight * 0.28,
+          cellWidth * 0.52,
+          Math.max(1, cellHeight * 0.16),
+          { fill: "currentColor", stroke: false }
+        ));
+      }
+    }
+  } else if (renderParams.graphicType === "wave") {
+    const points = [];
+    for (let index = 0; index < renderParams.pointCount; index += 1) {
+      const fraction = renderParams.pointCount === 1 ? 0 : index / (renderParams.pointCount - 1);
+      const sample = Number.parseInt(renderParams.amplitudeKey.slice((index * 2) % renderParams.amplitudeKey.length, ((index * 2) % renderParams.amplitudeKey.length) + 2).padEnd(2, "0"), 2) / 3;
+      const signed = sample * 2 - 1;
+      points.push([fraction * width, height * (0.5 + signed * 0.34)]);
+    }
+    for (let index = 1; index < 4; index += 1) {
+      group.appendChild(line(0, height * index / 4, width, height * index / 4, { dash: "2 8", opacity: 0.25 }));
+    }
+    group.appendChild(polyline(points));
+  } else {
+    throw new Error(`Unknown composition motif: ${renderParams.graphicType}`);
+  }
+
+  const telemetry = motifRenderTelemetry(renderParams);
+  group.setAttribute("data-motif-primitive-count", String(telemetry.primitiveCount));
+  group.setAttribute("data-motif-density", String(Math.round(telemetry.density * 1_000_000) / 1_000_000));
+  return group;
+}

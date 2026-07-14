@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "vocabularyVersion": 1,
+  "registryDigest": "sha256:2a84b2cd112383353164605dccb877355e00a729c753af6753dc3522cf6666cb",
+  "counts": {
+    "lexicalUses": 236,
+    "translationSets": 74,
+    "actionAudits": 62,
+    "translationLedger": 3,
+    "goodExamples": 40,
+    "badExamples": 20,
+    "lexicalFamilies": 2,
+    "visibleTokenInventory": 229
+  },
+  "requiredUseIds": [
+    "upgrade.command.en",
+    "upgrade.command.ko",
+    "upgrade.command.zh",
+    "quick.modifier.en",
+    "system.topic.en",
+    "access-denied.status.en",
+    "retry.command.en",
+    "operator.mention.en",
+    "system.hashtag.en",
+    "http-status.reference.404.en",
+    "generic-code.reference.1.en"
+  ]
+}

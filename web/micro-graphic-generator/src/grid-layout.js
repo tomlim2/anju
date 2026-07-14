@@ -181,3 +181,105 @@ export function gridTokenFits(bounds, availableBox) {
 export function uniformTypographyGroupKey(footprint, requestedSize) {
   return `${footprint}:${requestedSize}`;
 }
+
+export const COMPOSITION_BASE_PARTITIONS = Object.freeze({
+  2: Object.freeze([[1, 2, 3, 4, 5, 6], [7, 8, 9]]),
+  3: Object.freeze([[1, 2, 3], [4, 5, 6], [7, 8, 9]]),
+  4: Object.freeze([[1, 2, 4, 5], [3], [6], [7, 8, 9]]),
+  5: Object.freeze([[1, 2, 4, 5], [3], [6], [7, 8], [9]])
+});
+
+function transformCell(cell, transformIndex) {
+  const row = Math.floor((cell - 1) / 3);
+  const column = (cell - 1) % 3;
+  const transforms = [
+    [row, column],
+    [column, 2 - row],
+    [2 - row, 2 - column],
+    [2 - column, row],
+    [row, 2 - column],
+    [2 - row, column],
+    [column, row],
+    [2 - column, 2 - row]
+  ];
+  const [nextRow, nextColumn] = transforms[transformIndex];
+  return nextRow * 3 + nextColumn + 1;
+}
+
+function blockFromCells(cells, slotInstanceId) {
+  const sortedCells = [...cells].sort((a, b) => a - b);
+  const rows = sortedCells.map(cell => Math.floor((cell - 1) / 3));
+  const columns = sortedCells.map(cell => (cell - 1) % 3);
+  const minRow = Math.min(...rows);
+  const maxRow = Math.max(...rows);
+  const minColumn = Math.min(...columns);
+  const maxColumn = Math.max(...columns);
+  const width = maxColumn - minColumn + 1;
+  const height = maxRow - minRow + 1;
+  if (width * height !== sortedCells.length) throw new Error("composition block must be rectangular");
+  return Object.freeze({
+    footprint: `${width}x${height}`,
+    cells: Object.freeze(sortedCells),
+    slotInstanceId
+  });
+}
+
+export function enumerateCanonicalLayouts(slotInstanceIds) {
+  if (!Array.isArray(slotInstanceIds) || slotInstanceIds.length < 2 || slotInstanceIds.length > 5) {
+    throw new TypeError("canonical layouts require 2-5 slot instance IDs");
+  }
+  if (new Set(slotInstanceIds).size !== slotInstanceIds.length) {
+    throw new Error("canonical layout slot IDs must be unique");
+  }
+  const base = COMPOSITION_BASE_PARTITIONS[slotInstanceIds.length];
+  const partitions = new Map();
+  for (let transformIndex = 0; transformIndex < 4; transformIndex += 1) {
+    const transformed = base
+      .map(cells => cells.map(cell => transformCell(cell, transformIndex)).sort((a, b) => a - b))
+      .sort((left, right) => left[0] - right[0] || left.length - right.length);
+    const partitionKey = transformed.map(cells => cells.join(".")).join("|");
+    partitions.set(partitionKey, transformed);
+  }
+
+  const layouts = [];
+  for (const [partitionKey, partition] of [...partitions.entries()].sort(([left], [right]) =>
+    left < right ? -1 : left > right ? 1 : 0
+  )) {
+    for (let offset = 0; offset < slotInstanceIds.length; offset += 1) {
+      const blocks = partition.map((cells, blockIndex) => blockFromCells(
+        cells,
+        slotInstanceIds[(blockIndex + offset) % slotInstanceIds.length]
+      ));
+      layouts.push(Object.freeze({
+        layoutKey: `layout:${slotInstanceIds.length}:${partitionKey}:${offset}`,
+        blocks: Object.freeze(blocks)
+      }));
+    }
+  }
+  return Object.freeze(layouts);
+}
+
+export function compositionBlockGeometry(safeBox, cells) {
+  if (!Array.isArray(cells) || cells.length === 0) throw new TypeError("composition block cells are required");
+  const rows = cells.map(cell => Math.floor((cell - 1) / 3));
+  const columns = cells.map(cell => (cell - 1) % 3);
+  const minRow = Math.min(...rows);
+  const maxRow = Math.max(...rows);
+  const minColumn = Math.min(...columns);
+  const maxColumn = Math.max(...columns);
+  const block = {
+    row: minRow,
+    column: minColumn,
+    width: maxColumn - minColumn + 1,
+    height: maxRow - minRow + 1
+  };
+  if (block.width * block.height !== cells.length) throw new Error("composition cells are not rectangular");
+  const outerBox = gridBlockBox(safeBox, block);
+  return Object.freeze({
+    block: Object.freeze({ ...block, cells: Object.freeze([...cells].sort((a, b) => a - b)) }),
+    outerBox: Object.freeze(outerBox),
+    contentBox: Object.freeze(blockContentBox(outerBox, block)),
+    alignment: blockHorizontalAlignment(block),
+    verticalAlignment: blockVerticalAlignment(block)
+  });
+}

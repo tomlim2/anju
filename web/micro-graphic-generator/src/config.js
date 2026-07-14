@@ -1,4 +1,13 @@
 export const SVG_NS = "http://www.w3.org/2000/svg";
+export const COMPOSITION_POLICY_VERSION = 1;
+export const NODE_CONFORMANCE_RUNTIME = "v22.12.0";
+export const BROWSER_CONFORMANCE_PROFILE = "playwright-1.61.1/chromium-http";
+export const MAX_MOUNTED_RANKED_ATTEMPTS = 8;
+export const MAX_CANONICAL_PREFIX_VISITS_PER_RECIPE = 50_000;
+export const MAX_LAYOUT_DECISION_EXPANSIONS_PER_RECIPE = 200_000;
+export const MAX_RETAINED_VIABLE_DECISIONS_PER_TUPLE = 1_024;
+export const MAX_RANKED_PLANS_PER_RECIPE = 4_096;
+export const CANONICAL_COMPONENT_MAX_DIMENSION = 960;
 export const EXPORT_SCALE = 2;
 export const MIN_VIEWPORT = { width: 900, height: 620 };
 export const PADDING_TOKENS = {
@@ -82,7 +91,7 @@ export const COMPOSITION_RULE_GROUPS = [
       "3X1 / 1X3  CENTER MIDDLE / XXL / CJK STACK / LATIN ROTATE",
       "2X3 / 3X2  CENTER MIDDLE / XXXL START",
       "OVERFLOW  NEXT SMALLER SIZE / SCALE 1",
-      "SMALLEST FAIL  CELL INDEX FALLBACK",
+      "SMALLEST FAIL  REPLAN / KNOWN-GOOD",
       "TOKEN  POSITION ONLY / INTRINSIC SIZE",
       "STROKE  THIN ACTIVE / THICK RESERVED",
       "SPIN  NONE / SUBTLE / MEDIUM"
@@ -114,3 +123,47 @@ export const componentBorderModes = ["stroke", "no-stroke", "corner-stroke"];
 export const LAYOUT_GRID = { columns: 3, rows: 3 };
 export const GRID_PRIMARY_CHANCE = 1;
 export const UNIQUE_GRID_TOKEN_ROLES = ["barcode", "pseudo-qr"];
+
+export function deriveTypographyWeight({
+  tokenFunction,
+  size,
+  footprint
+}) {
+  const sizeIndex = DESIGN_TOKEN_SIZE_ORDER.indexOf(size);
+  if (sizeIndex < 0) throw new Error(`unknown typography size ${size}`);
+  const bold = tokenFunction === "content" && sizeIndex >= 2;
+  if (!bold) return Object.freeze({ tokenWeight: "normal", fontWeight: 400 });
+  const xlargeWeight = GRID_BLOCK_POLICY_BY_FOOTPRINT.get(footprint)?.xlargeWeight || null;
+  const heavy = HEAVY_TOKEN_SIZES.includes(size)
+    || (size === "xlarge" && xlargeWeight === 900);
+  return Object.freeze({ tokenWeight: "bold", fontWeight: heavy ? 900 : 700 });
+}
+
+export function compositionTypographyFallbackSizes(requestedSize) {
+  const requestedIndex = DESIGN_TOKEN_SIZE_ORDER.indexOf(requestedSize);
+  if (requestedIndex < 0) throw new Error(`unknown requested size ${requestedSize}`);
+  return Object.freeze(DESIGN_TOKEN_SIZE_ORDER.slice(0, requestedIndex + 1).reverse());
+}
+
+export function deriveTypographyTokenVariant(candidateFamily, blockDecision) {
+  if (candidateFamily?.sourceKind !== "lexical") {
+    throw new TypeError("typography variant requires a lexical candidate");
+  }
+  const requestedSize = blockDecision.requestedSize;
+  if (!candidateFamily.supportedSizes.includes(requestedSize)) {
+    throw new Error(`candidate does not support size ${requestedSize}`);
+  }
+  const { tokenWeight: requestedWeight, fontWeight: requestedFontWeight } = deriveTypographyWeight({
+    tokenFunction: candidateFamily.tokenFunction,
+    compositionRole: blockDecision.compositionRole,
+    size: requestedSize,
+    footprint: blockDecision.footprint
+  });
+
+  return Object.freeze({
+    tokenId: `type:${candidateFamily.lexicalUseId}:${requestedSize}:${requestedFontWeight}`,
+    requestedSize,
+    requestedWeight,
+    requestedFontWeight
+  });
+}

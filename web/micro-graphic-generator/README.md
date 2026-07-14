@@ -35,7 +35,7 @@
 
 공식 실행 계약은 `localhost-only`다. 현재 앱은 native ES module을 사용하므로 개발과 검토는 정적 HTTP 서버를 통해 수행하며 `file://` 직접 실행은 지원하지 않는다. 계약 원본은 `tests/launch-contract.json`이다.
 
-테스트 harness는 Node.js 18 이상을 요구한다.
+테스트와 생성 fixture는 exact Node.js `22.12.0`과 Playwright `1.61.1`의 `chromium-http` profile을 요구한다. `.node-version`, `package.json`, CI와 runtime conformance gate가 이 조합을 고정한다.
 
 ```bash
 npm install
@@ -44,7 +44,13 @@ npm run test:generator
 npm run test:generator:soak
 ```
 
-`test:generator`는 pure/architecture contract, 고정 seed fixture, UI interaction, SVG/PNG export, 5개 visual reference와 Random 100회를 검사한다. `test:generator:soak`는 같은 검사를 Random 1,000회로 확장한다. 브라우저 lifecycle과 port `4191`은 Playwright가 소유하므로 테스트 중 별도 서버를 실행하지 않는다.
+`test:generator`는 pure/architecture contract, owner snapshot과 planning oracle, 고정 seed fixture, UI interaction, SVG/PNG export, 3개 visual reference, Random 100회, frozen expressive-range/blind-evaluation artifact를 검사한다. `test:generator:soak`는 browser Random 검사를 1,000회로 확장한다. 브라우저 lifecycle과 port `4191`은 Playwright가 소유하므로 테스트 중 별도 서버를 실행하지 않는다.
+
+## Typography-First Pilot Checkpoint
+
+2026-07-14 기준으로 `SEMANTIC_GENERATION_SPEC.md`의 command/status pilot runtime과 모든 locally implementable Phase A-E surface를 구현했다. 현재 자동 gate는 pure `49/49`, browser `25/25`, Random soak `1,000/1,000`, expressive-range `10,000` input/`10,000` accepted output/terminal failure `0`으로 통과한다. Blind evaluation은 60,000 candidate seed에서 110개 counterbalanced pair를 고정했으며 linguistic 6개 stratum과 motif requested/downshifted 8개 cell coverage를 충족한다.
+
+전체 acceptance는 의도적으로 pending이다. Frozen blind pair마다 자격을 갖춘 서로 다른 reviewer 2명의 실제 평가가 필요하고, owner trust foundation은 merge-base에서 실행되는 별도 reviewed commit으로 먼저 활성화해야 한다. 로컬 candidate verifier는 `node web/micro-graphic-generator/scripts/verify-composition-owner-snapshot.mjs --allow-local`로 통과하며, human 결과가 없는 상태를 임의 점수로 채우거나 trust-root commit을 가장하지 않는다. 리뷰 UI만 변경했을 때는 frozen scan/artifact를 다시 만들지 않고 `node web/micro-graphic-generator/scripts/generate-blind-evaluation-corpus.mjs --refresh-report`로 모든 frozen identity를 검증한 뒤 tooling evidence report만 갱신한다.
 
 ## 리팩터링 체크포인트
 
@@ -55,18 +61,22 @@ Phase 0~7의 리팩터링과 필수 gate가 완료됐다. 현재 완료 범위, 
 `index.html`에는 화면 markup과 `src/app.js` module entry만 둔다. production bundler는 사용하지 않으며 localhost 정적 서버에서 native ES module을 직접 로드한다.
 
 - `config.js`: token size, stroke, typeface, ordered block policy의 단일 source다.
-- `vocabulary.js`: 다국어 단어와 가짜 data label만 소유한다.
-- `token-library.js`: vocabulary를 typography token group과 graphic descriptor로 조립한다.
+- `vocabulary.js`: reviewed `lexicalUse`, translation set, translation audit와 error ledger를 소유한다.
+- `composition-recipes.js`, `composition-model.js`: active recipe, sparse relation과 immutable schema를 소유한다.
+- `token-library.js`, `motifs.js`: versioned vocabulary와 motif registry를 generation-scoped candidate inventory로 materialize한다.
+- `composition-plan-validator.js`, `composition-planner.js`: canonical tuple/layout universe, rank, exact queue와 complete plan/result validation을 소유한다.
+- `composition-known-good.js`: current `GenerationInput`에서 complete-validate되는 reserved known-good template를 제공한다.
+- `canonical-hash.js`, `composition-owner-snapshot.js`: plan identity와 source/data/asset owner revision을 고정한다.
 - `random.js`, `token-model.js`, `layout.js`, `grid-layout.js`: DOM 없는 계산과 data contract를 담당한다.
-- `typography.js`, `svg.js`, `graphics.js`: typography style/metric, 낮은 수준 SVG helper, graphic primitive를 담당한다.
-- `grid-selection.js`: block plan을 받아 token과 deterministic fallback을 선택한다. SVG를 만들지 않는다.
+- `typography.js`, `typography-metrics.js`, `svg.js`, `graphics.js`: typography metric/style, 낮은 수준 SVG helper, graphic primitive를 담당한다.
+- `grid-selection.js`: validated `CompositionPlan`을 renderer 입력으로 그대로 투영한다. 후보를 다시 고르거나 fallback을 만들지 않는다.
 - `grid-renderer.js`: grid plan을 detached SVG tree로 만든다. `getBBox()`나 mounted DOM을 사용하지 않는다.
-- `grid-finalizer.js`: mount 이후 typography overflow, position nudge, footprint별 size 동기화만 수행한다.
+- `grid-finalizer.js`: mount 이후 실제 bounds를 읽고 같은 lexical use의 discrete size downshift와 footprint별 size 동기화만 수행한다.
 - `validation.js`: DOM을 읽어 rule별 structured result를 반환하며 DOM과 console을 변경하지 않는다.
 - `catalog-renderer.js`, `export.js`: Compose catalog와 PNG/SVG export를 각각 소유한다.
-- `app.js`: state, mount, controls, validation reporting을 조정하는 유일한 application shell이다.
+- `app.js`: GenerationInput/context 생성, 최대 8개 ranked attempt, known-good handoff, mount, controls와 telemetry를 조정하는 유일한 application shell이다.
 
-핵심 generation 흐름은 `plan blocks → select tokens → render detached SVG → mount → finalize typography → validate/report` 순서다. random draw는 planning/selection에만 허용하며 finalization, validation, export는 PRNG state를 변경하지 않는다.
+핵심 generation 흐름은 `freeze GenerationInput → materialize candidates → plan semantic tuple + 3x3 layout → exact plan projection → render detached SVG → mount → finalize → validate → accept/replan` 순서다. planning, materialization, selection random stream은 label별로 분리되며 finalization, validation, export는 PRNG state를 변경하지 않는다.
 
 ## 용어
 
@@ -79,8 +89,8 @@ Phase 0~7의 리팩터링과 필수 gate가 완료됐다. 현재 완료 범위, 
 - `Display keyword`: `REPORT`, `STATUS`, `MODULE`, `ACCESS`처럼 제목이나 상태 문구처럼 읽히는 영어 keyword다. data value가 아니며 SUIT English role을 쓴다.
 - `Layout grid`: Component safe area를 가로 3열, 세로 3행으로 나눈 보이지 않는 좌표계다.
 - `Grid block`: 3×3 cell 중 하나 이상의 직사각형 영역을 점유하고 token 하나를 소유하는 단위다.
-- `Grid plan`: block geometry, position, selected token, fallback token을 담은 renderer 입력 data다.
-- `Finalization`: mounted SVG의 실제 `getBBox()`를 읽고 작은 size fallback과 position nudge를 적용하는 단계다.
+- `CompositionPlan`: recipe, resolved lexical/motif slots, block cells, requested size/weight/orientation/alignment와 rank facts를 담는 content-addressed renderer 계약이다.
+- `Finalization`: mounted SVG의 실제 `getBBox()`를 읽고 같은 lexical use 안에서 discrete size downshift와 동일 footprint size 동기화를 적용하는 단계다. 의미나 위치를 바꾸지 않는다.
 - `Seed`: 랜덤 결과를 다시 추적하기 위한 값. 화면 왼쪽 아래에 표시한다.
 
 ## 현재 시각 규칙
@@ -98,7 +108,7 @@ Phase 0~7의 리팩터링과 필수 gate가 완료됐다. 현재 완료 범위, 
 - 각 block의 token content box는 block footprint와 `MARGIN_TOKENS.small`을 기준으로 계산한다. primitive 내부 여백은 `PADDING_TOKENS.small`을 쓴다.
 - 디자인 토큰 사이의 간격은 `MARGIN_TOKENS.small`, `MARGIN_TOKENS.medium`, `MARGIN_TOKENS.large`만 쓴다.
 - 모든 display token, greeting token, date/time token, data token은 자신이 받은 padded box 안에서만 spawn한다. 긴 문자는 `maxWidth` 기준으로 축소한다.
-- Block typography는 실제 폰트 메트릭으로 1차 평가하고, SVG 렌더 뒤 `getBBox()`로 content box를 다시 평가한다. 경계를 넘으면 단어·typeface·position은 유지하고 다음 작은 token size로 단계적으로 다시 렌더한다. 빈 block 생성은 현재 보류하며, `small 8px`에서도 실패하면 짧은 cell index data token으로 교체한다.
+- Block typography는 고정 font metric으로 1차 평가하고, SVG 렌더 뒤 `getBBox()`로 content box를 다시 평가한다. 경계를 넘으면 lexical use, typeface, position을 유지하고 다음 작은 token size로 단계적으로 다시 렌더한다. `small 8px`에서도 실패하면 token을 바꾸지 않고 plan 전체를 reject해 다음 ranked plan으로 넘어간다.
 - 텍스트 정렬은 `left`, `center`, `right` 세 가지만 허용한다. SVG의 `start`, `middle`, `end`는 내부 변환값으로만 쓴다.
 - 디자인 토큰은 `small`, `medium`, `large`, `xlarge`, `xxlarge`, `xxxlarge` 여섯 크기 단계로 나누고, 크기 단계가 한 행을 어떻게 점유하는지 정한다.
 - 토큰의 형태는 `typography`, `graphic`으로 나누고 기능은 `content`, `data`, `symbol`, `sign`으로 별도 기록한다.
@@ -263,12 +273,11 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 각 렌더는 9개 cell을 아래 footprint 중 2-5개의 직사각형 block으로 빈틈없이 나눈다.
 
 - `1x1`, `2x2`, `1x2`, `1x3`, `2x3`, `2x1`, `3x1`, `3x2`만 허용한다. `3x3` 단일 block은 사용하지 않는다.
-- `grid-layout.js`의 `buildGridBlockLayout()`은 block이 겹치거나 3x3 경계를 벗어나지 않으면서 1-9 cell을 정확히 한 번씩 덮도록 패킹한다.
-- 각 block에는 token 하나가 반드시 들어간다. `grid-selection.js`는 block마다 `primary`, `content`, `data`, `sign`, `graphic` 후보를 탐색하고 content box에 맞는 token과 deterministic fallback을 함께 만든다.
-- `Random`을 누를 때 component ratio, block 조합, block 위치, token이 모두 다시 생성된다.
-- `barcode`와 `pseudo-qr`는 Component 안에서 각각 최대 하나만 사용할 수 있다. 한 block에서 선택되면 이후 block 후보에서 제외한다.
-- 가장 면적이 큰 block 중 하나를 `primary` 후보로 정한다. `GRID_PRIMARY_CHANCE`는 현재 `1`이며 `primary`는 최대 하나다.
-- `primary`는 block 면적에 따라 `large`, `xlarge`, `xxlarge` content를 우선 사용한다. 선택한 typography가 block을 넘으면 같은 단어와 typeface를 유지한 채 다음 작은 design token size로 내린다.
+- `grid-layout.js`의 `enumerateCanonicalLayouts()`은 2-5개 slot을 block이 겹치거나 3x3 경계를 벗어나지 않으면서 1-9 cell을 정확히 한 번씩 덮는 stable order로 열거한다.
+- 각 block에는 resolved slot 하나가 반드시 들어간다. `grid-selection.js`는 validated `CompositionPlan`의 cells, token, size, weight, orientation과 alignment를 변경 없이 renderer에 넘긴다.
+- `Random`을 누르면 새 canonical `GenerationInput`으로 recipe, lexical/motif materialization, layout과 plan selection이 deterministic하게 다시 생성된다.
+- Component에는 typography hero가 정확히 하나 있고 primary prominence도 정확히 하나다. graphic motif는 hero/primary가 될 수 없다.
+- duplicate visible text/translation set/motif와 required relation, barcode/pseudo-QR uniqueness는 tuple/plan validator가 mount 전에 검사한다.
 - `2x2` block은 graphic을 허용하지 않고 `xxlarge 128px` 또는 `xxxlarge 256px`에서 시작한다. block의 현재 origin에 따른 left/center/right와 top/middle/bottom anchor 및 inset은 변경하지 않는다. 요청 크기가 넘치면 다음 작은 token size로 단계적으로 내린다.
 - `3x1`, `1x3` block은 graphic을 허용하지 않고 `xxlarge 128px`에서 시작한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor에 배치한다. `1x3` 영문은 단어 전체를 오른쪽 90도로 회전하고, 한글·한자는 각 glyph를 오른쪽으로 돌려 위에서 아래로 쌓는 세로 조판만 사용한다. 같은 component 안에서 동일한 `3x1` 또는 `1x3` token 중 하나가 작은 size로 내려가면 같은 footprint의 나머지도 가장 작은 실제 size로 통일한다.
 - `2x3`, `3x2` block은 graphic을 허용하지 않고 `xxxlarge 256px`에서 시작한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor를 유지하며, 넘치면 다음 작은 token size로 내린다.
@@ -282,13 +291,13 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 - barcode, pseudo-QR, table, wave를 포함한 graphic token은 `medium` 또는 `large`만 사용한다. `large`는 `medium`의 가로세로를 같은 비율로 1.5배 확장한다.
 - barcode 숫자 typography는 barcode 크기와 관계없이 항상 `small 8px`를 사용한다. 별도 fitting이나 다른 크기는 허용하지 않는다.
 - random block grid에서는 연속적인 font fit, `textLength`, SVG `scale()`을 적용하지 않는다. typography overflow는 `256 → 128 → 64 → 32 → 16 → 8px`의 정의된 token size만 사용해 해결한다.
-- SVG에는 `data-layout-mode="random-blocks"`, 각 block의 footprint, origin, 점유 cell, 좌표, 가로·세로 anchor, token kind를 기록한다. token에는 `data-token-requested-size`와 `data-token-size-fallback`을 기록해 요청 크기와 실제 fallback 여부를 추적한다.
+- SVG에는 `data-layout-mode="composition-blocks"`, plan ID, owner/input revision, recipe, 각 block의 footprint/cells/alignment와 lexical/motif identity를 기록한다. token에는 requested/actual size, weight, prominence와 mounted occupancy metadata를 기록한다.
 
 `validation.js`의 `VALIDATION_RULES`는 taxonomy, typeface, weight, line-height, stroke, grid structure, block policy, size fallback, placement, orientation, fit, duplicate, graphic size, barcode caption을 개별 rule id로 검사한다. validator는 structured result만 반환하며 `app.js`의 `reportValidationResults()`만 SVG metadata와 console warning을 기록한다.
 
-## Layout Archetype
+## Legacy Layout Archetype Notes
 
-`Layout archetype`은 Component 안쪽 정보 구조를 정하는 상위 분류다. 하나의 Component는 우선 하나의 archetype을 가진다. archetype은 시각 스타일 이름이 아니라 정보의 목적을 정하는 이름이다.
+아래 `Layout archetype` 목록은 초기 탐색 기록이며 active generation 계약이 아니다. 현재 production은 non-exclusive vocabulary tag와 versioned `command`, `status` CompositionRecipe를 사용하고, 확장 recipe는 별도 recipe version과 평가 gate를 거쳐 활성화한다.
 
 - `Title`: 이름, 제목, 대표 키워드 중심. 큰 display type, 짧은 subtitle, 작은 code를 쓴다. 내부에 표나 많은 수치를 넣지 않는다.
 - `Data`: 표, 성분표, 그래프, 수치 묶음처럼 정보를 읽게 하는 구성. mini table, wave graph, dense numeric label을 쓴다. 제목은 보조 역할로 둔다.
@@ -333,22 +342,23 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 
 현재 element와 실행 책임은 아래 module 층위로 정리한다.
 
-- `Policy/Data`: `config.js`, `vocabulary.js`가 rule과 raw data를 소유한다.
-- `Token contracts`: `token-model.js`, `token-library.js`, `typography.js`가 token 생성, size fallback, typeface/weight/metric 해석을 소유한다.
+- `Policy/Data`: `config.js`, `vocabulary.js`, `composition-recipes.js`, `motifs.js`가 versioned rule과 registry를 소유한다.
+- `Composition contracts`: `composition-model.js`, `composition-plan-validator.js`, `composition-planner.js`, `composition-known-good.js`가 input, tuple, layout decision, plan, queue와 fallback handoff를 소유한다.
+- `Token contracts`: `token-model.js`, `token-library.js`, `typography.js`, `typography-metrics.js`가 candidate materialization, typeface/weight/metric 해석을 소유한다.
 - `Pure geometry`: `layout.js`, `grid-layout.js`가 padding, alignment, footprint packing과 coverage를 계산한다.
 - `SVG primitives`: `svg.js`, `graphics.js`가 낮은 수준 node와 barcode, pseudo-QR, table, wave, badge를 만든다.
-- `Grid pipeline`: `grid-selection.js`, `grid-renderer.js`, `grid-finalizer.js`가 선택, detached SVG 생성, mounted typography 보정을 순서대로 수행한다.
+- `Grid pipeline`: `grid-selection.js`, `grid-renderer.js`, `grid-finalizer.js`가 exact plan projection, detached SVG 생성, mounted typography 보정을 순서대로 수행한다.
 - `Rule inspection`: `validation.js`가 renderer metadata와 실제 bounds를 읽어 rule별 결과를 만든다.
 - `Application surfaces`: `catalog-renderer.js`, `export.js`, `app.js`가 Compose 화면, export, UI orchestration을 담당한다.
 
 ## Boundary Contracts
 
 - `config.js`와 `vocabulary.js`는 DOM과 application state를 참조하지 않는다.
-- `random.js`, `token-model.js`, `layout.js`, `grid-layout.js`는 pure module이며 browser global을 참조하지 않는다.
+- `random.js`, `token-model.js`, `layout.js`, `grid-layout.js`와 composition model/planner/validator는 pure module이며 browser global을 참조하지 않는다.
 - `grid-layout.js`는 vocabulary, Canvas metric, SVG를 알지 않고 cell/footprint geometry만 반환한다.
-- `grid-selection.js`는 plain object plan만 만들며 SVG node를 만들지 않는다. token 중복 Set을 변경할 수 있는 유일한 grid 단계다.
+- `grid-selection.js`는 complete-valid `CompositionPlan`을 plain renderer input으로 투영하며 SVG node, vocabulary, random, alternate candidate를 다루지 않는다.
 - `grid-renderer.js`는 detached SVG tree만 만들며 `getBBox()`와 mounted DOM을 사용하지 않는다.
-- `grid-finalizer.js`는 전달받은 mounted Component 내부 typography만 변경한다. random과 vocabulary를 사용하지 않고 selection이 준비한 fallback만 소비한다.
+- `grid-finalizer.js`는 전달받은 mounted Component 내부 typography size만 discrete token 단계로 변경한다. random과 vocabulary를 사용하지 않고 lexical meaning, alignment, orientation과 block cells를 유지한다.
 - `validation.js`는 DOM을 읽을 수 있지만 수정하거나 random을 소비하지 않는다.
 - `app.js`만 Canvas mount, controls, seed label, validation metadata와 console reporting을 변경한다.
 - `export.js`는 현재 SVG를 복제할 뿐 render나 random state를 다시 실행하지 않는다.
@@ -358,16 +368,17 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 
 새 요소를 추가할 때는 아래 owner를 기준으로 변경한다.
 
-- 새 단어, 조직명, action 번역, 날짜 label: `vocabulary.js`의 `visualTokens`에 추가한다.
-- 새 typography/graphic 후보 조합: `token-library.js`의 group 또는 descriptor factory에 추가한다.
+- 새 단어, 조직명, action 번역: `vocabulary.js`에 reviewed lexical use를 추가하고 translation set/audit/error-ledger fixture를 함께 갱신한다.
+- 새 candidate materialization: `token-library.js`의 family-local materializer와 pilot candidate allowlist를 함께 갱신한다.
+- 새 semantic 조합: `composition-recipes.js`에 slot/relation/pair rule을 추가하고 planning-complexity fixture와 owner snapshot을 다시 승인한다.
 - 새 token size, typeface, stroke, spacing: `config.js`를 변경하고 `token-model.js` 또는 `typography.js` resolver test를 함께 갱신한다.
 - 새 footprint 또는 footprint rule: ordered `GRID_BLOCK_POLICIES` 한 곳에 추가한다. 별도 footprint 배열을 만들지 않는다.
-- 새 token 선택 전략: `grid-selection.js`에서 plain selection contract를 확장한다. renderer 안에서 후보를 다시 고르지 않는다.
-- 새 graphic primitive: `graphics.js`에 추가하고 `grid-renderer.js`와 `catalog-renderer.js`의 descriptor dispatch를 연결한다.
+- 새 plan rank/selection 전략: `composition-plan-validator.js`의 canonical universe/rank facts와 `composition-planner.js`를 함께 변경한다. `grid-selection.js`와 renderer에서 후보를 다시 고르지 않는다.
+- 새 graphic motif: `motifs.js`의 versioned schema/materializer, `graphics.js` renderer, opacity calibration fixture와 blind visual-hierarchy cell을 함께 추가한다.
 - 새 validation rule: `validation.js`에 `{ rule, valid, nodes, detail }` 결과를 반환하는 validator를 만들고 `VALIDATION_RULES`에 등록한다.
 - 새 Compose section: `catalog-renderer.js`에 추가하며 생성 Component state를 변경하지 않는다.
 - 새 export 형식: `export.js`에 추가하고 export 전후 PRNG/fingerprint 불변 test를 작성한다.
-- 새 Component ratio: `app.js`의 `componentTemplates`에 `{ label, ratio, scale }`을 추가한다.
+- 새 Component ratio: `app.js`의 ratio contract와 safe-box fixture, known-good template, browser/blind ratio counterbalance를 함께 추가한다.
 - 새 border mode: `config.js`의 `componentBorderModes`와 `app.js`의 `renderComponentBorder()`를 함께 갱신한다.
 - 새 application mode나 control: `app.js`의 state transition과 event binding을 변경하고 왕복 fingerprint test를 추가한다.
 

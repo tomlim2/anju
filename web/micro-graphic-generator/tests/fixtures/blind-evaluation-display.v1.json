@@ -1,0 +1,3648 @@
+{
+  "schemaVersion": 1,
+  "corpusId": "blind-evaluation:v1:e5e4298b45e1512177",
+  "corpusSha256": "sha256:e550b8b60f578fc0ffbfc6f0574f9ab324c7fe51370dfb6e214d179b62f56dc9",
+  "translationErrorLedgerRevision": "sha256:fcf74fed5b6ac4dd7124998b0d06733357ea1cb63df0055fef87694638b4268e",
+  "frozenAt": "2026-07-14T12:00:00+09:00",
+  "fixtures": [
+    {
+      "fixtureId": "blind-001",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:990bd8ed8d73c2eb2c0155b803f27512fbb2f3d1367aa527a141d57436ff860a",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-001.left.svg",
+          "sha256": "sha256:7998aad1190cc3936f1fa37524463b3b8b2e3ad1e2911fdf98acff28da433627",
+          "byteLength": 3170
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-001.left.png",
+          "sha256": "sha256:cebee80fb045b136fb7847aa778a2b7f45b6d7f0d1b87c753fc800557dc15d1c",
+          "byteLength": 11792
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:e8d5e6950cdbf42c093f9689d5b79c4d63fffcebc29b1aa70335afc9783bebce",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-001.right.svg",
+          "sha256": "sha256:793f5a1fccdc0d99f98534e21efe06b7d15cab90a3db787ad9168835ec6ea7f1",
+          "byteLength": 1992
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-001.right.png",
+          "sha256": "sha256:c27ca4de757ed4fb3b0be5b278471b5910d86811dab9c7cad172998653a0bd0e",
+          "byteLength": 15481
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-002",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:722fdcdc703570c8a18c909a03e5a1e268b090c55c9445778b5be4d510e6801e",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-002.left.svg",
+          "sha256": "sha256:f707c4b10d5f1825448a8395e53a85cf1f19c3436f4e9310ba293d2f97baa19b",
+          "byteLength": 2173
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-002.left.png",
+          "sha256": "sha256:cd4a5a7fc626ea8b3726ea9c8e39ea338ab49915e56902ccf270a3da06b5da40",
+          "byteLength": 17476
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:baa6dca35607f35e02d92cb92ffba514c3737698cb5d33f9682122e10d6e66b2",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-002.right.svg",
+          "sha256": "sha256:4bf399829d01b58230da36d9371d0405f3e27438245a3eeaa9c981ccf535f54a",
+          "byteLength": 2017
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-002.right.png",
+          "sha256": "sha256:bdf0cca8bd62822f1ecaa50c606fd42e4a0d39ac30b0dafbd588b671c68ec47e",
+          "byteLength": 25497
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-003",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:e9cce4f87fbecdd77e1206844454314c9dbc76190c36ef328d2765cbbfd8b547",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-003.left.svg",
+          "sha256": "sha256:f22d98eaf62cc02dbb890ff174d2e5f0b22f8b590a55a82db0011df6e22e403d",
+          "byteLength": 3770
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-003.left.png",
+          "sha256": "sha256:6f40bd7e59c46f08afb1169cc8db0dc2d040daf51f31cb0794d3789d1b82ccf8",
+          "byteLength": 20039
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:1f81788860139da9470beb4258071df55f05ea31bca96ad70e5019a93288ebbd",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-003.right.svg",
+          "sha256": "sha256:8cd10611422473e19168c5669371c3c066ffefc4fed77a127659bb987c44dc8b",
+          "byteLength": 3166
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-003.right.png",
+          "sha256": "sha256:b1dc729a4e51458203cad8b6722f7c92e79bbe08c2b4d3bc32d0761b4a590d53",
+          "byteLength": 21848
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-004",
+      "evaluatedLanguages": [
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:45db7977006e5286a69762f9d19ea430b46a771a3c04bcdb109fd8633f785898",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-004.left.svg",
+          "sha256": "sha256:a9590b13c10af21bf97db40a71a4a8e849bc516994652a7afb5ae769119512a9",
+          "byteLength": 2243
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-004.left.png",
+          "sha256": "sha256:ac46addbf9ef7ed3722cda7b56f9e8ee03fcbeafeef232f9d62459044ddf43fd",
+          "byteLength": 14479
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:fd481aa6d8c39e726b2c6e8fd1790c490f700c2644fc80b83f2710918fca2893",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-004.right.svg",
+          "sha256": "sha256:64e931f992774581225aff7dadfed5264cf62ec86614023bea4f3faf999fee08",
+          "byteLength": 3108
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-004.right.png",
+          "sha256": "sha256:146cf573197201354b2cebf8944bd40159eeb8e33b8e6670add54a4cc85e24a4",
+          "byteLength": 20014
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-005",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:60812c1238bddec926da894a783cba7f8504a0727fb0f4041e882b5378a02a5a",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-005.left.svg",
+          "sha256": "sha256:c3e303df4aaa38e220f9931b96e8b9df5b9afec864c6209f661638df280604e3",
+          "byteLength": 2179
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-005.left.png",
+          "sha256": "sha256:d110d648372db12f6548a702487080893cbfe05bcd6286877368d689864a11a5",
+          "byteLength": 15589
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:e39304fb8a86dd8fa4eb0edc1be65d484d4052b4230d40171f2de95ffb395bbf",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-005.right.svg",
+          "sha256": "sha256:e4082fc295a17eaef724073a1c56439a58b059735ba6913978cc9e8100d04667",
+          "byteLength": 2693
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-005.right.png",
+          "sha256": "sha256:c80b217821036f6f053ec5fe4b04a8caf0363f8ead15738e3323b469dd66aa0b",
+          "byteLength": 22488
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-006",
+      "evaluatedLanguages": [
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:50726050d262f4efc61b1dbe80bb1d636b53d63ab208e4acf35638e4277ef6fe",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-006.left.svg",
+          "sha256": "sha256:f92f64a6e808c8c4e97629f5e7c4448a924f995a3e8ebaed4e04be9dd2655604",
+          "byteLength": 2252
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-006.left.png",
+          "sha256": "sha256:809111f4d6b93483e0ad6be8900f9a4e0c07d5ec5cea3ea05bbd1e4816610a2f",
+          "byteLength": 11647
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:51ce8af7f91473e20dec61728bd3af774297a4b16750559700d63f4f6f51e159",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-006.right.svg",
+          "sha256": "sha256:f2e05b3983498be74264605a2c134477ed51d68cf30e739fcc49d65c3fa320be",
+          "byteLength": 18191
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-006.right.png",
+          "sha256": "sha256:d49e673cb178ff1bf01e814ca7ed7d57ab372ccb309733bcaa6d6998b559f26b",
+          "byteLength": 15450
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-007",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:332e417493bbe143c84a045427e4ed939fe2fec074ec7abb803033ec17772a7d",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-007.left.svg",
+          "sha256": "sha256:5becd026545f89889f7e7cab09615c38fa88cb6434df6c5eac0ce27076dc51ed",
+          "byteLength": 3375
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-007.left.png",
+          "sha256": "sha256:842064d6a1b9ff12889f73b606d1003e9e13fab985f4bc7b7fcbd58ccaddcf98",
+          "byteLength": 19456
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:79e80da87de81f9352ffc389b5ca68ad29ab67b9dc7777258e88fa23acc8b579",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-007.right.svg",
+          "sha256": "sha256:d5051ce2293d5036a5b6ec07b1ba1fe01923de9aed36e934024bb8c5e611850f",
+          "byteLength": 3133
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-007.right.png",
+          "sha256": "sha256:6a97ca683f07453eb9c1217cc7b9e92c296c55bc2dea41517876c5abd177fa38",
+          "byteLength": 13458
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-008",
+      "evaluatedLanguages": [
+        "en",
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:c5244d98fb646332eb753c1c4dc2f0a2e247eaf7dfba24defc42ca9b9c09957a",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-008.left.svg",
+          "sha256": "sha256:2026efcba07b576895f980ec9b02a7e5fff56d84fe742b45f08725bd18477536",
+          "byteLength": 4738
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-008.left.png",
+          "sha256": "sha256:516ab2a48854cc5fc98374aeb6ac514589360dfc0aa6d7eeb42272631026a3a6",
+          "byteLength": 19658
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:8881f1d49875c763e41d47e30c4a77a1fb1975b31305ab21f258268a8ce2e6c6",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-008.right.svg",
+          "sha256": "sha256:65d1d6fe6194731a03950cc0b48ff3dddcc50a518f2388ffcebcfea381b1e7fb",
+          "byteLength": 2544
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-008.right.png",
+          "sha256": "sha256:5d61df50ca7d4a002bb941604fdc7b1bd491d3edcf527bc6309ed1822285b6ee",
+          "byteLength": 23009
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-009",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:7ec642e79454d46dce8c87e79ee7d6e57d086d8678fdbc63306822f7184c517b",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-009.left.svg",
+          "sha256": "sha256:4b278bec00d276cb026cb61885cfa0c2d076bf513a971bf299b6611e0e0595eb",
+          "byteLength": 5462
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-009.left.png",
+          "sha256": "sha256:9c2550b8b520c21106340d5dd40bc2740101fd85a7ff7a21f900504a55539fcf",
+          "byteLength": 17032
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:6c54bafc07bb93ef1654781ebf1f58b2252f4311adad9b4aabab22e30d81d87a",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-009.right.svg",
+          "sha256": "sha256:1178838d4cce454980f159571adbcc239d65d91af7332dfa5893fdf0f2cde534",
+          "byteLength": 18091
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-009.right.png",
+          "sha256": "sha256:f07f0b4bc8af4d81c1c20d1d90fd1f459d35cd8f08866a8cd6734c5b5d394676",
+          "byteLength": 15230
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-010",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:fec93c915cad370b4d86d5858039a914ac056e9e2245408d52e7be0904cbe3c4",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-010.left.svg",
+          "sha256": "sha256:faa804062a3a2056e9ab54ef467ac82ba52c8b6eca6ab9c6848532a04bc6c55c",
+          "byteLength": 2031
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-010.left.png",
+          "sha256": "sha256:a1175ac93e23cd79df3388dc0d1022766275fcce44ea2a29aea0bbf844cd99d9",
+          "byteLength": 15409
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:994b1d58efcc09b00746129a47e82007fa7eaf4b5be4e4fb0208fcb1d928feae",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-010.right.svg",
+          "sha256": "sha256:2c218d1c30d14c936733cd7da1b0602c53ba6ee8dd6974e3fa2e13470ec82d8e",
+          "byteLength": 1947
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-010.right.png",
+          "sha256": "sha256:8e49cfd112b0e5ae8a2fd3400619ff43dc1c583a87d2c8aad38358cb80e46342",
+          "byteLength": 17155
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-011",
+      "evaluatedLanguages": [
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:5fcd52311fb16f47401645f3a49becf198ff9d857d844fefc1a43c7e3a35a5af",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-011.left.svg",
+          "sha256": "sha256:d48856f71395b7476127b571fc53835f8d417cb115c78880ad1ee7baa17bb9e7",
+          "byteLength": 2170
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-011.left.png",
+          "sha256": "sha256:215d6db892e9f808e7fb982d91b3bc8d4dffd1326e0ca6428c21f7b43e0678d9",
+          "byteLength": 18777
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:affbfdd7c22cd49c1fdada8e41794fc6d350f9b88a73a5ef8808ee9afd69fee8",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-011.right.svg",
+          "sha256": "sha256:38f8c749fa13c1f741b4503147f9f9bde6d4da7fbe72a5c6a1e74131ecd8742b",
+          "byteLength": 3012
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-011.right.png",
+          "sha256": "sha256:f8dddcdcc8e245c1e6e12633f12fa20dae5a60d11bba100f5cdcc276aff47a96",
+          "byteLength": 26643
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-012",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:509ff09056a5ca2c8d2852420a521f511562b4ffbe2ed12ab02e91367c0d396f",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-012.left.svg",
+          "sha256": "sha256:09d1fe75eb5ba7b6d80e2702fbcd561f94df6d218e691d85a8259de9141e7442",
+          "byteLength": 3732
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-012.left.png",
+          "sha256": "sha256:d92a8ffce058b4239b345e277b6ce17af050af1658e2a8b980f819e1e9e37997",
+          "byteLength": 11891
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:3544c52c81ee20a6a6c48e869e53d2eee8883b9f771e11774d3aef29d7d78876",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-012.right.svg",
+          "sha256": "sha256:0a9b6eaee8c3eb63b1e9ab8da6b9606eae672d9dd78b196abd9b89c8bfbdb2ab",
+          "byteLength": 5790
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-012.right.png",
+          "sha256": "sha256:a848c09a1fa815cc0e3fc4b49ce0fcd03c9c7c3d16d3715d44ab2384fbd698ab",
+          "byteLength": 22064
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-013",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:a561cc66d98a07197f44c8add5adcc88fb2216afc5ee730381578dfd01567628",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-013.left.svg",
+          "sha256": "sha256:9e6138d9438846daa974030d0c9c8dc4e2836ba3cc9cb3770ad4ef03d4115f70",
+          "byteLength": 3132
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-013.left.png",
+          "sha256": "sha256:3b942ebe8fa4bbfe63132e2abb83e290b3d6bc5bf12ca175daa6ce0d0ee6f965",
+          "byteLength": 15880
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:cec00032b6ad68d924247574739e2bd29c332f79a44ded360abc3763c9c26261",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-013.right.svg",
+          "sha256": "sha256:22b0bf23476e7235e4cb7b15ec56bc33d8d9321371fec10fec058d7380e73702",
+          "byteLength": 4066
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-013.right.png",
+          "sha256": "sha256:9b71fd888d1c8468a130f2746fb50dd6e3997ebfaab99801134f7f13e78d8a1a",
+          "byteLength": 22903
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-014",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:494271b1891fbf41efeae13b77d4cd3f2adde628fa0bed9d34357589ed8edb13",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-014.left.svg",
+          "sha256": "sha256:4956f0f44d11a2e0e6fd2b03d06ade52c2c3130e81c8405b4b273c50d65dd264",
+          "byteLength": 4678
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-014.left.png",
+          "sha256": "sha256:3384f230ca1b82ca4fd19357773f64d637337e766433dd6654a927112d79481b",
+          "byteLength": 20333
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:6e1f8b20ffeac264ad53d129226e56982b1ce08b0d4b8e9662124abd0f2ada60",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-014.right.svg",
+          "sha256": "sha256:3eff2a68b51138aac0c8c3d608a9e3798a2d82b930b4b8129139de08ca6919d4",
+          "byteLength": 2612
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-014.right.png",
+          "sha256": "sha256:bb0bba0a35d08293a70ef3e99bd20763f5731ba569512f5659ff60a816a7235c",
+          "byteLength": 14248
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-015",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:faccf5267b8620102f021bb6b978b2ebc4c935f49bd89e8b35bc345ed7947b4b",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-015.left.svg",
+          "sha256": "sha256:ebc49a1997c0a4278646e826dfa2ec1f760afae7734873017122bc6c4c7a75b9",
+          "byteLength": 2171
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-015.left.png",
+          "sha256": "sha256:b16ffd21adbc02ef4fae96b745b86a1a03fd5eccd135295491cc86651f21a480",
+          "byteLength": 14464
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:61eb207f6f2af1575a3c2064faf68c4784af2d5e9abb0e84cca8dc0878a91834",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-015.right.svg",
+          "sha256": "sha256:3473763769c596a3bfbe83d4b4deb83b1e7dae5b25f5bf5fccf079a45ea52619",
+          "byteLength": 2835
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-015.right.png",
+          "sha256": "sha256:21e6e405d97bd7d9994cdf98c0aaf5d64b81853bf8c64af01ffc7d55ee194da3",
+          "byteLength": 21739
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-016",
+      "evaluatedLanguages": [
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:5cb1449cf9e341de8e963328a9bba11e4b9b03eca5cc81715f2e100fc4f8c44e",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-016.left.svg",
+          "sha256": "sha256:b648ae7ffb5194a6b43e114aa343391c2d1a495c4dff90c6309bca2a802e6508",
+          "byteLength": 1999
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-016.left.png",
+          "sha256": "sha256:4951f520c17cf028c9f92c797d13aef170c4714c69e761e91f53e07b0856a30a",
+          "byteLength": 15820
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:df300ef6d93e13552ef131f1281c6053f6f230c3c889c8e15c5ded74979e5f29",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-016.right.svg",
+          "sha256": "sha256:8eceaadbee58d5efa05cc39a3c45edad741d1beba1375c4ab2aa7cc1e2318150",
+          "byteLength": 2042
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-016.right.png",
+          "sha256": "sha256:d69ea84ac750bfe33d4990003f5ca0e819d3805d77560ce10f099a2484f7943c",
+          "byteLength": 13522
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-017",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:f1ef3d8d578ae9af4fc5d78c2d733241d964387549b5b65ca54a0d7594c13aaa",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-017.left.svg",
+          "sha256": "sha256:8f6ed209ac32d56d3ced1fff457d1effb63c944f0cb73edba73abfb91da18c2f",
+          "byteLength": 3373
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-017.left.png",
+          "sha256": "sha256:34d1a8415b1c2fbf32d0cc254c91d0473709c205fb3e97002a291ef7ad7231eb",
+          "byteLength": 15174
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:a32c092cd9c909931e9cb4b4ebecf1fb534ad8a44b31b47725afec5d9edc1cea",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-017.right.svg",
+          "sha256": "sha256:79e709b997af791bbe2adacc22519539e9a5122e160d59c0174cb7c347bf48c4",
+          "byteLength": 11762
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-017.right.png",
+          "sha256": "sha256:7ea4bf7fdbe500b7e21c38921684e34bf554a8e6f8c88779c016d362f9807ee3",
+          "byteLength": 22484
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-018",
+      "evaluatedLanguages": [
+        "en",
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:9bfb9fccfe7a4cbf5b11f279684d2c01f8096dbedbcbcd9c2b87e217b52887d0",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-018.left.svg",
+          "sha256": "sha256:8fe9b71d5a2418d6dd7424680bedb1148a9fe281150427508543bb5737e0d688",
+          "byteLength": 5311
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-018.left.png",
+          "sha256": "sha256:caf741c7ae8e8b2e72d6447272624d8e3a9b7dc01fbb31c21d6e34d63edd811c",
+          "byteLength": 16542
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:a6584ed524202c13f7f4bb550cf1fb90fb3a02e04ccd8234d5848c0546657e78",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-018.right.svg",
+          "sha256": "sha256:dbce8e84e43e0d2c15132c6576493615d7fdce525f42e3b6fb8229679b69ee5c",
+          "byteLength": 4300
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-018.right.png",
+          "sha256": "sha256:962a58a6c5003f4f76690536591a7a6901ef40f2dcb21c67d22757f2828b040d",
+          "byteLength": 21393
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-019",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:fd7820a394cb60565798f23c5e0e0e14cf19280aa5025a23591873432e5997d4",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-019.left.svg",
+          "sha256": "sha256:54ce892c2abf34a07945e4e783ffa084856cf1e32810140ea1ab8ac378f2f394",
+          "byteLength": 53063
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-019.left.png",
+          "sha256": "sha256:f0e7d4c0ebb5cc3f6f89105a0a472673b23e417e36ff609e1d0af0ca827b1e12",
+          "byteLength": 22127
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:f96a3c0fe9691705bd6773bad0b938bba1aee34173eebed3dca16529b8232990",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-019.right.svg",
+          "sha256": "sha256:7b59d8d8ce871caced005b4f54127ca165db6ebadb012d00c765e6811c2cb5a1",
+          "byteLength": 2615
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-019.right.png",
+          "sha256": "sha256:f4820ed51afbfac1256374b4940bbf3ec33dcbee8c8750de24df798c050324b4",
+          "byteLength": 17960
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-020",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:0c24a7a5e6fb1dcfb849d0b1bc425cdf21daddb5c7720c144228b4cd25868f1a",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-020.left.svg",
+          "sha256": "sha256:d653738fc97cb98d426cab9b036b3d12ad4932e91747010a7906896b815c063b",
+          "byteLength": 3135
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-020.left.png",
+          "sha256": "sha256:cd55c420f38bf2fd9cab6b06d43953ea0a0926728a2db114074393c9aa5e3a98",
+          "byteLength": 14889
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:036031e1a9e235436570145dc436f6b9808886c9be60d91ed072ac8c5726d90e",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-020.right.svg",
+          "sha256": "sha256:a2b4859570c1fea593f40e19b9f84ece14b20a28d8affc73be17961b34556bac",
+          "byteLength": 23848
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-020.right.png",
+          "sha256": "sha256:7f24f6f53aea00dff9392ea0418ea41612c563d80d82c7c362a53df7e692414e",
+          "byteLength": 17206
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-021",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:26acad157a9b5bffe6da7811d7e0eef83899d0ae6a9909b7d3613edd18fc8521",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-021.left.svg",
+          "sha256": "sha256:e902ea3e887408ae98904368e6398d367a4e7f1faccfd74eb3a0c01a39743148",
+          "byteLength": 2117
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-021.left.png",
+          "sha256": "sha256:883aaedb44e7791deb477bf01764267416fe438bdd8481494a08ddf56d0e68f4",
+          "byteLength": 20783
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:f0ab8fcc24b572a22bb6b5e15a699226b753f97f17bd80da95890b215681c92b",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-021.right.svg",
+          "sha256": "sha256:4276df8cca7517d1e7c6b60ecf1c24001c265c850fee4b1b9d3ef5cba07436c6",
+          "byteLength": 4791
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-021.right.png",
+          "sha256": "sha256:c2a2803a2a02854388f292ad5919cb64dec313f7772c483d8c7e72adefe9810c",
+          "byteLength": 20582
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-022",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:175d8916f3001a6e38e4a4a435c99713a5b5e01b8a36f991b81290085d42487f",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-022.left.svg",
+          "sha256": "sha256:7c3c9125043ff29d6dfd91948b95c43f13197f89f48cb20a2aae8a37258d35b7",
+          "byteLength": 3945
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-022.left.png",
+          "sha256": "sha256:0ae88644c1ffdb4c0170d43468b0da38e062a8b9c41b33d62658a42c1305d020",
+          "byteLength": 15659
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:c5ae0727d2f048f3813ab762f75da8d9f22b173dc2530133db32dce9ca9bb9b1",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-022.right.svg",
+          "sha256": "sha256:c92328653a6ff2f61191eb3271a2b0de4b5e1295524891a7eefedf0252a6abab",
+          "byteLength": 2181
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-022.right.png",
+          "sha256": "sha256:330f6f6255e09258a21c488b281bf68c1e5f1ad6276e5b465911ab07d8fc6b56",
+          "byteLength": 16032
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-023",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:5519c67e90c6d4fce658c7277c9b2a897beda03ffe2c500aa7b26ba99fa8a416",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-023.left.svg",
+          "sha256": "sha256:b316c09e18705a9bfa638bedfccadf70fbbb079af670d3a62a746ea48b11b541",
+          "byteLength": 2103
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-023.left.png",
+          "sha256": "sha256:74315342f9510ec67e4ba7126176249fb7b5925eb8c95055306aa91f27ea7806",
+          "byteLength": 17608
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:0e7b31f311094816efd8eafaf0dfcee217031be66c421ffabb61ff33970242aa",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-023.right.svg",
+          "sha256": "sha256:8a7612701e2d0a03520954746d4d88c95cf122365438aa71b3923e24451f90a6",
+          "byteLength": 2574
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-023.right.png",
+          "sha256": "sha256:a18bc4fe5b303c9d8f9a43ca9c49832ab21df41c3bcd8171f7261a692b7aa383",
+          "byteLength": 11734
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-024",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:048034795ee84f630648bad41dff1dd5baa1634106fdf76aeac520ff4b79323f",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-024.left.svg",
+          "sha256": "sha256:229ac9677b2b620050fbad77534b3e12b52ec947097c1c6b9cf99e5cc73e52dd",
+          "byteLength": 53360
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-024.left.png",
+          "sha256": "sha256:3c89c22c9cd1d7bf6f508f5b7d8fe15c2367c85f41f93e3d57a1feae25160dd5",
+          "byteLength": 20498
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:28b081872e9a43edd98b801d756faded028e71c6838e5f8a9a8056c2c6145906",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-024.right.svg",
+          "sha256": "sha256:64740721177b89acd3717d27ff0d36ad6b8cfd08d5e42a2279aae507e90803be",
+          "byteLength": 20290
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-024.right.png",
+          "sha256": "sha256:216fffad2dab1ba966b7828c809c4dc2b56ba3e00d1e9891ede880ca17fe2925",
+          "byteLength": 15632
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-025",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:858044c63cb10f38c64450677b320b5b65d52edb64f83c7405952a5d76a22614",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-025.left.svg",
+          "sha256": "sha256:60790d63c21d0dff239d7170ca896f6f7efce2617c26cdc783b1ebe9cc0b0d64",
+          "byteLength": 1972
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-025.left.png",
+          "sha256": "sha256:fb8567de8d1b1fd678f5b3140216570466204a3a839b1ca9fd57638dd282217c",
+          "byteLength": 16236
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:92851c4b71ae9939aae13272a28cbcd98212bfabd8be5d3c47bd757644ed246c",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-025.right.svg",
+          "sha256": "sha256:7f0448bdf99358da3ab8a092a83751d1bf9355eb93fa537d017f81d214e228dc",
+          "byteLength": 11748
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-025.right.png",
+          "sha256": "sha256:890ccaab62fc872d3ed59fcca95bbc1ed05d7057fc529241c61958474dccebc1",
+          "byteLength": 16810
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-026",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:8e264a07a9edb3470445ad3449a68f3a78d02ed8016523c7aff691d6a217cc94",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-026.left.svg",
+          "sha256": "sha256:d933cc3ebf35bf75a032d84419d75f9a4e1d8a351a1e6d36dd6a7cf2c8f5d211",
+          "byteLength": 2083
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-026.left.png",
+          "sha256": "sha256:28f8241fedfc58f23cc2bfa5f51c8dbf94cbdc49bcd5eccebd84f77b961a7d59",
+          "byteLength": 18557
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:f99db0b50bd7f18de88b195b3b7a90322612d3c70bc4fd1357e9146468752dbf",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-026.right.svg",
+          "sha256": "sha256:a7fc579c166d7d205e2a81251b231bb7ef8793148a3588d69439b3cead596751",
+          "byteLength": 5471
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-026.right.png",
+          "sha256": "sha256:8065cea2f0e234b9010b14db07122ee6a32e9147d251efad6436ed62ff6e6a7b",
+          "byteLength": 16820
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-027",
+      "evaluatedLanguages": [
+        "en",
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:30c3057660d61701a7100b93e3c48f34e840489ce3c227083b8e4a40ae6a9040",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-027.left.svg",
+          "sha256": "sha256:0e3866788b30d3f0dd67ab2c4c329048db685824621c06d4aa8d531c0f5b2aad",
+          "byteLength": 4859
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-027.left.png",
+          "sha256": "sha256:140416f46e77755a24df8bca1f73b30ca6e2c13b42de1f5b2146c06ad05bab87",
+          "byteLength": 21072
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:b73e7d3240f5101059506e8c3f4c7f03bbc8279e7c40601e06d016d536e8c7ef",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-027.right.svg",
+          "sha256": "sha256:b38ede813bd46fe92dfac847fa20ea98dcd9e9e464273067db8b1aafbb451b0c",
+          "byteLength": 2831
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-027.right.png",
+          "sha256": "sha256:811d8bf6bb732a1afc82e10124897023c39bece8111ca8762540bc946382dcff",
+          "byteLength": 17907
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-028",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:ead60d4e9c90643c5b777f60ed41f8ba4e1bcf552032ba99bc65b54e2cc6444c",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-028.left.svg",
+          "sha256": "sha256:2aafd51e5000906adb578a07dfaa416704314bf375923c575c2bbb22c12c849c",
+          "byteLength": 2609
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-028.left.png",
+          "sha256": "sha256:b74a523370dcbdca1b1d7553623332df90fd1a6a0731306e9fd6b85fd9403f18",
+          "byteLength": 17326
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:347fe92ca5cf874f66c2f5bb6087d3ce62e19303ae759c13f81492aff93b907a",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-028.right.svg",
+          "sha256": "sha256:69abfb2bb27875445489d27195494ebe7b2972a546fa7cedb7b6f2c728a0cc2c",
+          "byteLength": 1989
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-028.right.png",
+          "sha256": "sha256:eca33540365a0685e7eae5ecb7452a2a729af0657b86c344443f4c755412ad53",
+          "byteLength": 15841
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-029",
+      "evaluatedLanguages": [
+        "en"
+      ],
+      "left": {
+        "fingerprint": "sha256:a95b0ed5682ec09f5be7c7658f1a8d43aa0a568f81e5d2877ba59140a2582a0e",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-029.left.svg",
+          "sha256": "sha256:52a2b93e00159ba887d0d1cac592cd5c4b234d0f059e21d95917b988e76756d2",
+          "byteLength": 2048
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-029.left.png",
+          "sha256": "sha256:4f825ab508cb8e840029af343fbf514a4a276caf422c7f5dc49e388ed0dc5f92",
+          "byteLength": 22461
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:47b5cb87670a4a1b99265109d84b2c30eb212ef5c0880089694a599d2519c637",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-029.right.svg",
+          "sha256": "sha256:104b96b0132e772630984f781f753de3db024c3fe36c357c681964cf08e2e85d",
+          "byteLength": 2058
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-029.right.png",
+          "sha256": "sha256:55cef2b4ecb2bbbb6312556f9a03bdacb41285ff4ea131ab59610eeb0c7e029b",
+          "byteLength": 24343
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-030",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:5ab1256ecb72a409d251973654d17948c848f970aa0a6a5c711a236125ba9914",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-030.left.svg",
+          "sha256": "sha256:0e35be61df3664859a81b61feb737c405ef55726609270c9bae551b7deb170fc",
+          "byteLength": 2136
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-030.left.png",
+          "sha256": "sha256:a4dd9ba115efc90ac4a3f43e9f71125aa3850954f55c7a45014692e80cc042ee",
+          "byteLength": 20534
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:2fe6c507f3168c95d3b56e25c37d96b6244912de080ace3fa476bf58ed279002",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-030.right.svg",
+          "sha256": "sha256:bc6e8245a13ba4be3036a29670c769fdf4a5e9f941d663b08963eefd78a590d0",
+          "byteLength": 2858
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-030.right.png",
+          "sha256": "sha256:f35c431fed71742a278dd63c27a456fa55ba66ebc771dadf9fd2fd750f90c080",
+          "byteLength": 20439
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-031",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:0e5efa37215a34a75f6c27a4b1909bb1c8f2aed71108de110d41ec1712e23e99",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-031.left.svg",
+          "sha256": "sha256:4368c2c09450e857ea820d7182d0b9f98ae17c3b45c1c4acf455ab753ff83827",
+          "byteLength": 3305
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-031.left.png",
+          "sha256": "sha256:da2dc7ae2f8a7102a176085632e3fb9b7d4e541bd7e11d92508990214540ddd9",
+          "byteLength": 14846
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:40d9b05a116b96eeba36d861540e5bcb7627971129a0a55cc11b0ddf3ea434a7",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-031.right.svg",
+          "sha256": "sha256:e35ffaf82dcf849665fe418cb4ad8c48573b5603e556b52d35249d3bf81bc2ee",
+          "byteLength": 11977
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-031.right.png",
+          "sha256": "sha256:d0d27a2564921c9d795a2cb5de5b1d1e457dfb3496d08e2b0a5c816758c369a6",
+          "byteLength": 26330
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-032",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:444cf8439abf28ff6d61590a98956a5ada845693e434c09e006e8de158de9f2a",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-032.left.svg",
+          "sha256": "sha256:4380c8d90f4c11234b818e216bdfe28b58872b8b0db27e4b10f94f8e7de3dc7e",
+          "byteLength": 3908
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-032.left.png",
+          "sha256": "sha256:4191da9d5c3c8ef3783ac777a822868d0fc407aba5ef4f5285eb9c5550bd3ee7",
+          "byteLength": 12954
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:33aa344e0cb8b65a433e525eb5e169e9e527939ee5058e95dca9d2772e2e910d",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-032.right.svg",
+          "sha256": "sha256:2cf2e1d2d891ac2b8cc58feaa107928659e63bab91d949420fa68a9241dd6b64",
+          "byteLength": 12928
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-032.right.png",
+          "sha256": "sha256:5ce06a35f9afe2abe0753819589cb71b361c7a0273fa7d0ea88e96dc14a9aff2",
+          "byteLength": 22763
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-033",
+      "evaluatedLanguages": [
+        "en"
+      ],
+      "left": {
+        "fingerprint": "sha256:48c0f384ffe8b9ec06bff1a7f57d865594080913524792a16176c2629409d299",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-033.left.svg",
+          "sha256": "sha256:befbcb92f733d359db836db419201b7afa5261a60b59afa4554ba7457f39a007",
+          "byteLength": 5396
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-033.left.png",
+          "sha256": "sha256:f850cc0ac1a39d9372a827a0e56ba950f8a34a97dc51ab7b33206dbba6a4f87d",
+          "byteLength": 16699
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:f62953bb169334c2da8534999f7a0a67592c4bfc1984dedfb963300e4c8f892c",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-033.right.svg",
+          "sha256": "sha256:791e56076541956dc92e882d47ca5ffe79e7c177073e2b79e66cf08f4c21db35",
+          "byteLength": 2044
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-033.right.png",
+          "sha256": "sha256:ca220d49b370659b5a509a6b570375d1578343fc68eb2a36491f88caee6f7832",
+          "byteLength": 17110
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-034",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:ded80f6a2119dbad64d6f8d87f645af2adc90b0ceb66f82a99f4cf648d887037",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-034.left.svg",
+          "sha256": "sha256:611bd919f8206dc8fdc75454aabaca32ac036782b11d14531058197905524ae2",
+          "byteLength": 22517
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-034.left.png",
+          "sha256": "sha256:95fae1ac486abc65639cf33cb07e8e57679cc285b6bf8621438701e3030754e1",
+          "byteLength": 20704
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:72b053f4a54810c5fbec7ca4382a3553119b83a57df7552271e744fe00fff88e",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-034.right.svg",
+          "sha256": "sha256:371265f426a635962d2c30bf602f61c257291f5bca08dd2213d18e36c9408792",
+          "byteLength": 53416
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-034.right.png",
+          "sha256": "sha256:2dd3e2df7b8e97c3001fe7dcfc2ac160db76cd926ec02475366fb6d4908273f9",
+          "byteLength": 21565
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-035",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:0c24a7a5e6fb1dcfb849d0b1bc425cdf21daddb5c7720c144228b4cd25868f1a",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-035.left.svg",
+          "sha256": "sha256:d653738fc97cb98d426cab9b036b3d12ad4932e91747010a7906896b815c063b",
+          "byteLength": 3135
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-035.left.png",
+          "sha256": "sha256:cd55c420f38bf2fd9cab6b06d43953ea0a0926728a2db114074393c9aa5e3a98",
+          "byteLength": 14889
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:57934608e34a1adc6f8748261037aa558fc4d84f9fb81e08d9297f934d0cd69b",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-035.right.svg",
+          "sha256": "sha256:3ed6100edb305d369642cfe6edabf4e0efc90ec8604c2288f66d3934628b7902",
+          "byteLength": 18021
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-035.right.png",
+          "sha256": "sha256:c3588dd56e3fcb23b3d761e489d3829b5770c11e9aaab1c25c76b7582da5435d",
+          "byteLength": 20907
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-036",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:c7676a0592abff1aa1b29a72a806e0fa73437a18462199c6c1ae9eafb164c2a1",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-036.left.svg",
+          "sha256": "sha256:5cc642ce309f315df43039398abae2cdc55bad8d5c7ee899d0710dc273f701c8",
+          "byteLength": 54477
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-036.left.png",
+          "sha256": "sha256:18ad189db738bf28364cf9b30491b9d71af46521c01cc3a51a2841afc3845839",
+          "byteLength": 20075
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:60f0aeada4855d38dffbfffd06ce43ec907ca68855916b80e87aa5987509a971",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-036.right.svg",
+          "sha256": "sha256:d579a52da36c6cb19eb774d0074dff8be1531f67f10a16cce36740b8622916d1",
+          "byteLength": 4059
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-036.right.png",
+          "sha256": "sha256:f75a39698c1bec1b7b21362f1af230b27c843351c819f46a4d0dc835d16aaf65",
+          "byteLength": 20833
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-037",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:44715c778dd7bcf8df7be4de7449b6b0efe97263c56a9bf43f50174ec024d169",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-037.left.svg",
+          "sha256": "sha256:36432d8d4fc7b8e1c4229343c79b5cfee38ce80502cff1572844d409482b3647",
+          "byteLength": 2957
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-037.left.png",
+          "sha256": "sha256:fe6af1637eb471d6118d99fa0485880a16b25bc9cf90a544b0afe892651f93e3",
+          "byteLength": 21063
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:ad5fdce9c54642490787d805ccf87c4974fa06d35cfde748903f6b16376fb09f",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-037.right.svg",
+          "sha256": "sha256:47ac8086d8042f4b81fc48bc4adf39b59dc3ab881021e00a34f5d2de968ce987",
+          "byteLength": 4860
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-037.right.png",
+          "sha256": "sha256:862acd47d79dfd3998023d8ccf8b72ba5cf66d293ce20fbaa95cb2d75501cfaa",
+          "byteLength": 17434
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-038",
+      "evaluatedLanguages": [
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:99ec44d789c54521d32c45b9ce4160280e46a340c8bcf2ddc9791f3c31b1b551",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-038.left.svg",
+          "sha256": "sha256:e97c9b54f7d849d55dfa4b0402592377ccccd9a8069e98fb2eb3a0fb59b74cb8",
+          "byteLength": 2071
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-038.left.png",
+          "sha256": "sha256:25d93ed240c0561a7f02a2d13f2f7da2af81186ee46365737c3d05110649c6b8",
+          "byteLength": 14785
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:2a46c6c2f46f7bf9d3440eacade174cffcb51bc54e67d4c10df04479b0863609",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-038.right.svg",
+          "sha256": "sha256:bccd1099f32a8b94665eb8731d18231410f530850bb3a942ca72662921eba50e",
+          "byteLength": 2682
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-038.right.png",
+          "sha256": "sha256:ea226cce7a91cbea50aa29398a880348b41b8e379a6596764efa27c3038a064b",
+          "byteLength": 21380
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-039",
+      "evaluatedLanguages": [
+        "en"
+      ],
+      "left": {
+        "fingerprint": "sha256:d0ff515f13bc466ed7bfde04f9f682478df827167e57ad655ebbb299e4ff8358",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-039.left.svg",
+          "sha256": "sha256:53f1f5e3d8e9362473aeea21f0a1744eaf4019867a6f4c60b71c95c3e9a825e2",
+          "byteLength": 3027
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-039.left.png",
+          "sha256": "sha256:91627dcc9510aff4daf1ee85c2bcb0e5d3b4d5587d98c7f52d87193b9ec33311",
+          "byteLength": 23069
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:8efcbdb49c9337b0ee3ff531d3434aa1000930387a1ef6066b66bb7a47771ba4",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-039.right.svg",
+          "sha256": "sha256:e8dd8f82e310d53d6cb595d9ff3ba45419d05186891f54c4df413b17f2ef8ea6",
+          "byteLength": 3738
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-039.right.png",
+          "sha256": "sha256:97fca6299226d18c83fa7560779e7cc710f5f259fc78c6227d76c36847960ade",
+          "byteLength": 25954
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-040",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:50032da44be4127ca23d9570fe9d3bb473609d4382f5e9f7200a428c850fb434",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-040.left.svg",
+          "sha256": "sha256:806800d30f704e191226c21f4da7055e71ac5a8b73d3222097c3ce83a2ef6bb9",
+          "byteLength": 2141
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-040.left.png",
+          "sha256": "sha256:62c89f660c0803ef8ef6c1f13952728d49f5d28db39b454ee746ff9bd548cc75",
+          "byteLength": 20058
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:b4cfd259155d7dd8cedfc03b705473676facfd4e78a7a1335f2d6d1395dafcb5",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-040.right.svg",
+          "sha256": "sha256:bc628cd43bd216c5b7e25f7ac4f11189047609d0abfd80c0a591b324a3af5ff6",
+          "byteLength": 53504
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-040.right.png",
+          "sha256": "sha256:aa9b7b8396f18df52a93d15cbcd5e01f2563c81a84809badbb0ea4272fab715b",
+          "byteLength": 21916
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-041",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:23811d88c55be08d447e9f31102000b04242ac8b48a2265e14cbd4727f75acbc",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-041.left.svg",
+          "sha256": "sha256:a836d210c702191138d9ff0d11c40868a1a0577b72cb23cb9ca5b33ad90acd68",
+          "byteLength": 12010
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-041.left.png",
+          "sha256": "sha256:b999faa0747ad488d2666671ce78b546a3d8415101e2e28429b2c459c8bad849",
+          "byteLength": 26948
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:0fd9eaf042f8b27d9f546ef8a652fb2075ae9af18e6eb2c8b18bf2c5611c171c",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-041.right.svg",
+          "sha256": "sha256:fcaa14d486cfa5d7c8f6264421afac411240c3e5c06ad637fc491aa084110dfc",
+          "byteLength": 4106
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-041.right.png",
+          "sha256": "sha256:7427597127f963f271dd41313ca79524dce55aced7ec0caa5b602f610ecd80f3",
+          "byteLength": 11365
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-042",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:29ac8bd2dff54e46a0e35a9eae7224e11d75c4da45d577ee8fb2a36763a94424",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-042.left.svg",
+          "sha256": "sha256:6c55007204445bfeee9c1e8cf119b79a171a01e3407ac3c3626f77596bc84870",
+          "byteLength": 3042
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-042.left.png",
+          "sha256": "sha256:73e9248f093f07fa701544fa528990e15e60325883192b65b233ba5542d9ecf4",
+          "byteLength": 20274
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:de26c4a2fea3adb39eb78131ec2cf1c9e23edada7592dbb95aa719e8273e3712",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-042.right.svg",
+          "sha256": "sha256:89dfe64a1024262c3e47ce0e9548b601e336239839fb0c6b768549819715f99f",
+          "byteLength": 2139
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-042.right.png",
+          "sha256": "sha256:a5ce67f77e4c4a81f1f5440d063740d425fcf2ec09b020b7e7f7fe3071e2551a",
+          "byteLength": 14161
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-043",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:599003e384b0ce0e82c1571dd49d6ce5d1d8d97d7b8ad455944734cc641e5862",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-043.left.svg",
+          "sha256": "sha256:5fb19e647b2deba2be4b6d78944125c310f95c06ac002599179560d2bf914c47",
+          "byteLength": 5421
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-043.left.png",
+          "sha256": "sha256:fb68b8293413907adefdc4c6eb564f0a3917fb3d8bed47fcdc08b51fd770738c",
+          "byteLength": 17187
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:8c1f023f5b89ff712dda3b75381e84851c9bc6276a7a4380c25f50ca1810189a",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-043.right.svg",
+          "sha256": "sha256:1a6a995f414ba626c2d9c9630ebba2fdf02b315b7e6101d585e89adb76a0cc77",
+          "byteLength": 2901
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-043.right.png",
+          "sha256": "sha256:5612a8adf8f289bbf52e764b01b741474e84c0834e8889658cc0ac600ffcddbe",
+          "byteLength": 19969
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-044",
+      "evaluatedLanguages": [
+        "en",
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:968992e3a9bdc60f74e64149fa97474d7fde77a2dd77a6a13ecef38471fe60a0",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-044.left.svg",
+          "sha256": "sha256:0db19a128e9be6230b0b7c573bfd38eb5c4afac05dcff8e664389cf0fe3535cb",
+          "byteLength": 4884
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-044.left.png",
+          "sha256": "sha256:960956c1377aeed2775a8535b89a0072656fac03b16d98dc321143c3372569df",
+          "byteLength": 20659
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:80feadd014f0bd44a0843226ba861c665c103ed44163a01c6537034914bf5079",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-044.right.svg",
+          "sha256": "sha256:7c05dc4cb6ff2a18631ba78170fc211c3fcca2491e09b8410457e352bec10935",
+          "byteLength": 2762
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-044.right.png",
+          "sha256": "sha256:fb1edbd22066b3e1e8ac18fb8258d86ef2472de18065ce7cb2742c482efb5e0c",
+          "byteLength": 11460
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-045",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:8bf2d0a863a7aeec2532eadba67794f22a09f3473d6d0fe57b1571eb1f389393",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-045.left.svg",
+          "sha256": "sha256:42d737b585594b49206cc296880f1fcf3147689d47953a148e8d70c37cd1625e",
+          "byteLength": 17082
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-045.left.png",
+          "sha256": "sha256:50d03a018a4523561e43433e270cfcbc85aec3ad36fa0f92c0f0ba24afd1727a",
+          "byteLength": 15411
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:fc8faeb9f78f6cd1803e43abc2ce17efb95515841dc2ce759a495a5e0c9a1d11",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-045.right.svg",
+          "sha256": "sha256:61cce99712f99d0def1a1ea4ea83d0ecdad14a21ee771cce016372cdec1a433e",
+          "byteLength": 54486
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-045.right.png",
+          "sha256": "sha256:bc14529f5c1177807fa5da40c2c29082a2d455bd3d77552d49a735edc82d38b7",
+          "byteLength": 20334
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-046",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:1a66e1345923629a10cd79ac77f7f7fe7cda7b6f8278955a6b7c1c21c6c6d5d9",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-046.left.svg",
+          "sha256": "sha256:2cb9027cec88906ab55fa16ff4f97fb1b2ab3e80c12403d8b165aff642b62794",
+          "byteLength": 12911
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-046.left.png",
+          "sha256": "sha256:f74f4513ebbb7d77291b3c10a1fb1ebe1dfa44505755764282e8ea4e7d88a6aa",
+          "byteLength": 15807
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:fab60341df143c974c739a0a02856a5db3c04e6e680e857f3bc25aab16c6e640",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-046.right.svg",
+          "sha256": "sha256:c511e9d6908ba48f3d1e043e2f589b0586b530c8f5d0f8409a8a9fe967445a3a",
+          "byteLength": 22403
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-046.right.png",
+          "sha256": "sha256:3869621d59a8eca90780673674d84e37c7928f53031e4b81135a078c76bfca4a",
+          "byteLength": 20623
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-047",
+      "evaluatedLanguages": [
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:2c77bcc0454e03af8e413428f4d5b41a3454a452c9b4a398662341fd26d489a1",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-047.left.svg",
+          "sha256": "sha256:e5ab6aa8b69ea9e25059e7f921d1b13a961f2b664f816ca7ef5486db8c28faa6",
+          "byteLength": 2984
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-047.left.png",
+          "sha256": "sha256:bb6223415be8455ad480f1f3b8acd1e882e93ee5b0cf0900db70f87c27beb84a",
+          "byteLength": 19761
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:5cb070c78e95ce2aefe809972ef1129fc2dd39a58cf76ad8228bd0269bcda9fe",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-047.right.svg",
+          "sha256": "sha256:4b50d208733268ab2af20d9659d6e10b0fd3f3ec172fad989648bd7a7e826b1a",
+          "byteLength": 2201
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-047.right.png",
+          "sha256": "sha256:c1853d970b617895b4abc24662dea1d826f02df2ed6ac9beb7f6422f90bba570",
+          "byteLength": 16652
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-048",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:fcbe39eb356602674c28a146c574c55ef86384b7aeeeecc3fbbe55a7767b6603",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-048.left.svg",
+          "sha256": "sha256:6417ab7838540d1c7c88ca9cd90bbfc7527170f5037ead1fd9468b6a969e4818",
+          "byteLength": 3267
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-048.left.png",
+          "sha256": "sha256:6cea96ca96162d4604d0212d063c7c91f4ae1a1bebc9b08bef644adf1d95ff8a",
+          "byteLength": 14720
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:fe0ef06b85b5b3c1d832029bdabf82a00b958bd7ee161dfac62e9f86053f845a",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-048.right.svg",
+          "sha256": "sha256:80ce5072c3d3d51b1b8b398fae58c56ca05eb3e8fab93b7db320b97c4be20f79",
+          "byteLength": 2178
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-048.right.png",
+          "sha256": "sha256:28634d5844c2d3f33045a37999df04870e31b07539b558ebe0099ab93eb2400c",
+          "byteLength": 15562
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-049",
+      "evaluatedLanguages": [
+        "en",
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:e4642b41255c39d147891c2a2d362ad515e36f4456b6c5937948db3d0e168a73",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-049.left.svg",
+          "sha256": "sha256:e8dadee36cb56dafa74d0e736bbdebe27e77ea28bbac3bff9477d9906e92cdff",
+          "byteLength": 2766
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-049.left.png",
+          "sha256": "sha256:9250d045f6124a09bb87bb0e4cb7ca001b1e85779ee8d158f4a4b5ab82dcc3da",
+          "byteLength": 31953
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:e6a08daf399ab1405e2813064552e2949491b833a5218b02bdf04a4cbf570c3c",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-049.right.svg",
+          "sha256": "sha256:8fd14350faa55cd970a8fe57d484253399f3cda88a4d5715a086c0a84e0862c8",
+          "byteLength": 5340
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-049.right.png",
+          "sha256": "sha256:8e5729d6efeedeb2f593f20b60b221e5a0466adc008315469dac339de8cc813f",
+          "byteLength": 17690
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-050",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:27038a4e8ebd5cfdb74479eabd3153f4929bea492a3fbc2e8cf00a28289e2bb4",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-050.left.svg",
+          "sha256": "sha256:f996b5cc1bfbf11dbfc72cae494175ee94c397cff71b43983ee0796d8558b88d",
+          "byteLength": 6387
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-050.left.png",
+          "sha256": "sha256:fca9dbe9fe05a10fdfb667bce68ee220c11b2265e6b5166f69ecaf5470d73682",
+          "byteLength": 15771
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:4e355063beaf11ed1226e19b29404b08263564b91fdcadd7e26495aa4101f931",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-050.right.svg",
+          "sha256": "sha256:2ee25fe33d5a5586e91109fdb8f293a0c3a66aaa711c7bd66481ebeade6adf43",
+          "byteLength": 5829
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-050.right.png",
+          "sha256": "sha256:2880297a088ddba6952d960487a64cdcb6443bb039402e25660ec900016ec89b",
+          "byteLength": 17639
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-051",
+      "evaluatedLanguages": [
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:6511481b2706bc4bf34e6113ad9940acca664dab25e01015997574d9c5c47e6c",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-051.left.svg",
+          "sha256": "sha256:45799a6561769cfd304581537676dd9521dd501abbd493e49dad4c65046d18dc",
+          "byteLength": 2690
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-051.left.png",
+          "sha256": "sha256:940878ff82746456db64cdfc6348e333d8ac319c846f62bcf35e63cf51122104",
+          "byteLength": 15145
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:3ec69d2802fc491b9346421cf9074f0db7cdde31c6a69551f30e5c2f290a5970",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-051.right.svg",
+          "sha256": "sha256:122c4b3fa733030214d9ee9ba231201b15dca0e198ea47f85c69f281d367ee4f",
+          "byteLength": 2104
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-051.right.png",
+          "sha256": "sha256:b2379ef922a14e55d694f9a27b348cdb2eea6b51645727ec13c88ff22de67672",
+          "byteLength": 12939
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-052",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:82214921534dd36cc6bc11d8164c375ede9d82d8c2a1abc9e2cb500e6df2b251",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-052.left.svg",
+          "sha256": "sha256:c410b683e8b281b1f87fd5ada19552dad7c2583e4939e49f990c4637423ea0d1",
+          "byteLength": 53219
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-052.left.png",
+          "sha256": "sha256:bfe3913a708a1aef2e699c33d1d4d6dc50bcd806600d8a0a283343326857fd76",
+          "byteLength": 22071
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:6886a750537d61518db906fe6b99413e2d6aab699720c75885861224c7947916",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-052.right.svg",
+          "sha256": "sha256:81c5693a899d6be038149a5c14056cc067a87e00787b026965d0ad1755fe23f2",
+          "byteLength": 13155
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-052.right.png",
+          "sha256": "sha256:9e14126e9b00d8409560fb80a16d29b94258175f9e703f049f93a02f8c85abb9",
+          "byteLength": 17133
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-053",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:c5c667c92e6dd469ebaff178d44bea2c2c3bc7bf3f91c7c198f3c1a4f3b4d731",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-053.left.svg",
+          "sha256": "sha256:7018b8403823cd361d4717444ea735a5668906996d03a74167c17ac27eeda09a",
+          "byteLength": 13583
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-053.left.png",
+          "sha256": "sha256:5ea173b1f1f9ed06e1d5d0007e07ce8267c379e0892cf11a95afef00ad47a60e",
+          "byteLength": 16958
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:cd1185e5b00de79b1fae19a4f0be33ede91187c598ec75fa803dd934bf95eac0",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-053.right.svg",
+          "sha256": "sha256:21ae03fed44dd1d6d3721cc414e43c06d3519151b622308324dc760bf6d6775d",
+          "byteLength": 4693
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-053.right.png",
+          "sha256": "sha256:86a8d404662ddda9d4a2174e39036d2553bf5c509f555983d3342cd347340337",
+          "byteLength": 21003
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-054",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:05c5d8943ddddbeccab9fe4c976bcecbd4513611d119a6e1831af245880b19c8",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-054.left.svg",
+          "sha256": "sha256:6d336ff645cf8ef93b1577debfaac7cec985338466edd38b7e771c2b36088fb9",
+          "byteLength": 53487
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-054.left.png",
+          "sha256": "sha256:3a015cd8baf7071425bb8e23e88c085e91578569b7c9f7d5cda225aa26af5b56",
+          "byteLength": 21438
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:eb666f16fa918c0e80fe13b2d106db9bc2ba9fe8ed34beefca523d58c6fad745",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-054.right.svg",
+          "sha256": "sha256:8ab9f02cbbd5ddea73fd8582473bfbe7434581222e79bade84f0be1e7e769f2a",
+          "byteLength": 2142
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-054.right.png",
+          "sha256": "sha256:c77338c6fe2c88e6bc0def39c31223669a861f81d1cf14143e8a1652f4944422",
+          "byteLength": 18478
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-055",
+      "evaluatedLanguages": [
+        "en",
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:b31a5c2e2cfa0aebfde12e06b18b89cb121e4699c7612a3a0c67d6bd901599f0",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-055.left.svg",
+          "sha256": "sha256:1be61636f699a180014611c89614db4ad572b555308b7ef48a59eb3770c048d0",
+          "byteLength": 5925
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-055.left.png",
+          "sha256": "sha256:9397a0607e66ab2fc75cd4f7c1f7d54720b146dbd602d021fa368d91d28f8467",
+          "byteLength": 19257
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:bf749313e81199546a9905d1d66e796de9832a7a2c4a5554904f0a5073a0cba1",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-055.right.svg",
+          "sha256": "sha256:3914979c271d981d3f771263d5ad80682cfbfe71e722cf93596687d3254af5c2",
+          "byteLength": 3741
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-055.right.png",
+          "sha256": "sha256:e78a919ca11ca1bb66bec5b95c117e3a4b2c4db7bd209af257658d7127339993",
+          "byteLength": 17840
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-056",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:97d86c2443e05ab4a861fd3395dcae88eb7936d582a6e81c16ef7654e273504a",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-056.left.svg",
+          "sha256": "sha256:47426e4b12139b49b451af1dd7a3df27965d53fbf49c7cbe573977f5f51d770e",
+          "byteLength": 12111
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-056.left.png",
+          "sha256": "sha256:f255b210c71286efd4100edf4124149791258ed45026129e6d8a707a09e4e3e7",
+          "byteLength": 20597
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:3ca3809c90358ac1535eddd674e6a6ba2aaf340f7a85a281739f11f8b48fbecb",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-056.right.svg",
+          "sha256": "sha256:fd38446217eaa40863d0afe00858010c93faba5d82bfdc05d324a21fdab00a4b",
+          "byteLength": 4444
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-056.right.png",
+          "sha256": "sha256:1b1a611b383134b09105c660640fa8c86654e19dfb08889fa05225b0327f28dc",
+          "byteLength": 12206
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-057",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:210b1942f003658d38a4aae7a87f42ce0abe5d8ea6153d17ab769fc092c4c824",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-057.left.svg",
+          "sha256": "sha256:15806127428ff512b57e561b68d372c4c7ed8df649bdd3609013d47adbacffeb",
+          "byteLength": 2769
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-057.left.png",
+          "sha256": "sha256:66b5831eb09fa7d3880dc60ac31024626c3539a311612cbb142e5fae2a874c1a",
+          "byteLength": 20509
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:8e1abea4de26bb9859f4e2935166d3a98c331b8da0194b0a9ee33d2fe2c08097",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-057.right.svg",
+          "sha256": "sha256:68ad535458b030a1f47f99d9239462d08bc1da1f6ea039613a46ac6c70ac3501",
+          "byteLength": 5278
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-057.right.png",
+          "sha256": "sha256:f80fa4f83cb87381420fc4bc6af25b18e4adb122aef20b80e71bb3766ae108ee",
+          "byteLength": 16807
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-058",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:033ca7287124f683cca3ce9b1f236ab9b37a6dfdbf3e6b16af60c0f4764eb514",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-058.left.svg",
+          "sha256": "sha256:d327f6907d0cd4cc23eb3976472373630043784c54a2396617044712c3f42299",
+          "byteLength": 3874
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-058.left.png",
+          "sha256": "sha256:7d9993371015936271e422b15d99b2f90849a6e4abddf69f7502c2d2746e9198",
+          "byteLength": 18973
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:f6bce488cdcf39772d3590dafccc3f6968fed5b0a48dcecfb43006e91a198437",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-058.right.svg",
+          "sha256": "sha256:79b9bc6277ae93bb046c9f2339c8a89519b436e487ce617670adc0549b706f58",
+          "byteLength": 5748
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-058.right.png",
+          "sha256": "sha256:ed7957b7ab158167a64af6860db64d538defcd92cede8ec290715294b7d28f7d",
+          "byteLength": 22370
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-059",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:b98d736bd0227f5154a7339ee4d43353dbea905987ba1f3035d79a44c6118a31",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-059.left.svg",
+          "sha256": "sha256:e24574a13586a8e325159ad5e4246dab1d36b67d938039f771efb3780e7790e1",
+          "byteLength": 3422
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-059.left.png",
+          "sha256": "sha256:9f14a770412a2ea2f908d78d19ab393e24fcb61de45fb11bfd19ccb33bf2d0b2",
+          "byteLength": 17811
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:06089a597b7475c3f32e4f42f458ee8fc9291f25648c6f0f50ccbd265ca906f6",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-059.right.svg",
+          "sha256": "sha256:5687f2c405132ae45085dd7071a12026374be8f02701692843e1286d43c6adc0",
+          "byteLength": 5980
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-059.right.png",
+          "sha256": "sha256:9f86e9c13093906e74f73ced5d1cb6db8d79ec176d6dd5ee993c29f2a867a607",
+          "byteLength": 16592
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-060",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:617e27de105e9939289dcd35a9c8a58ae7e2cb2068f97d4bc46ed14e68674c61",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-060.left.svg",
+          "sha256": "sha256:b99fa1e6de3c06aa535c5ab51a21dbca40a81ad34e91147b5be9ed95a8902ac8",
+          "byteLength": 12919
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-060.left.png",
+          "sha256": "sha256:74c381a699bb636c10802287660e22ac5c7a973f24f3f463c1ebc0b082f1ecb8",
+          "byteLength": 25829
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:63ac6cd5a9cbe37d4cb2c94c4be53a1e0ac1bda1167b4d9eba92052ade17f852",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-060.right.svg",
+          "sha256": "sha256:c424b2fd5f5f4c659f14020ac4bde6f0c5cc6e40bb126e0ea606001e8d5cde91",
+          "byteLength": 3176
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-060.right.png",
+          "sha256": "sha256:9d79cdbfdbe48ba69a71c59fb6258690de790821d78bf3db41c00c51aaff7573",
+          "byteLength": 27102
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-061",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:c3c5908b2b45dc94483f4cb8c1bc9d533d7e1d87fcf3907261ce9a615bec51cc",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-061.left.svg",
+          "sha256": "sha256:d2fae6e95521ab77f4875cd2fb359686f8909a8decc86ba2134e1540c38fec14",
+          "byteLength": 12913
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-061.left.png",
+          "sha256": "sha256:4260c63f5546b1dbc72df31ae0816e0a11cd4e2ca246608d7148e526dd9ed01b",
+          "byteLength": 20552
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:25dd3b59a5cef10092cc11e207a4c9e91c2da4dc95c73d8e35a47928c74b1766",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-061.right.svg",
+          "sha256": "sha256:5efff011251f1686f0e9b599415f2edaf782bc938d1df4d9669a6c0e76864c86",
+          "byteLength": 3870
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-061.right.png",
+          "sha256": "sha256:59a2b59b62fcfd338e77c22b40e958b1a997d40eeac6a42f20cd23dc50c74dd5",
+          "byteLength": 24212
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-062",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:0aa82b5aa4091724f5ad400402d15709a04714427ceab252bd3cfcb7b0d0bd8c",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-062.left.svg",
+          "sha256": "sha256:07dbf7848b49308eeb79986fae995749f0238200755a107c508a5db338fbc7ad",
+          "byteLength": 53115
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-062.left.png",
+          "sha256": "sha256:f5630006d1a3705478683c527ce48150ec2b80cc59d2db4f0d6a92c1778bc569",
+          "byteLength": 25416
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:b1e78dc3fac7509ee6db56bd3656f48566aec3d253c525cbfe40cf38fd301870",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-062.right.svg",
+          "sha256": "sha256:acaeb24bd918bac51c5fcfb19c0c7428a25538bf7979f132d6bf220e3c03b2e4",
+          "byteLength": 21791
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-062.right.png",
+          "sha256": "sha256:cf3bccbd94a8f1d7de72267583b9abd026654cfb30dd132da8db712aee7af996",
+          "byteLength": 18304
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-063",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:1ca674175e02ed310e04c29a2615ad641b19a0af0cedbdcea8b6649d53293396",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-063.left.svg",
+          "sha256": "sha256:40250efa8f87aa2d00f9e99f131ba81bc228d136f35aa36be65ac499a8ac1945",
+          "byteLength": 1985
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-063.left.png",
+          "sha256": "sha256:743679f671d01206eb1c21f3c15d53e0e215ae68ece084c1dac071d9095b8323",
+          "byteLength": 13031
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:c63e817dc1fb5659b1c6d1e6b704ddb248d09914ea4f1986d8890d4217ed3ed5",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-063.right.svg",
+          "sha256": "sha256:28000a812568ad4e46af9edab3995f99b79de8be13a6339a4c0308b14ef691b2",
+          "byteLength": 11786
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-063.right.png",
+          "sha256": "sha256:4dad8538e71cf5684c09814be4a5e4f1094bec8b6564aaf79ac8ba7ec5bc6775",
+          "byteLength": 18001
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-064",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:0bc531d9f2698494a2f0ce1b7f4412476c25b2f5385f4dce75f6a3a4e595082f",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-064.left.svg",
+          "sha256": "sha256:9f65b32f7f8131acdca431f82e794aca4da9021594c951b79e39e18474433047",
+          "byteLength": 6745
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-064.left.png",
+          "sha256": "sha256:fed388dc4d163bb2d0f6f4ae8f1ef8e8b376bf02104f764a69e0173722f224dc",
+          "byteLength": 15472
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:9160d314f1623c0afa69685d9478a8c42d6f7d1b778bf88372ef31928928afb7",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-064.right.svg",
+          "sha256": "sha256:f2498914d71591f6c66cbae7f50380072659a4ff418bf305a583093ca7b19162",
+          "byteLength": 5548
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-064.right.png",
+          "sha256": "sha256:70e89986f1badf7c67217bf2d0ac3ea74f1c4ff9baf8fd34a4fb0402549e7a7c",
+          "byteLength": 18834
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-065",
+      "evaluatedLanguages": [
+        "en",
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:2813f7e906b75dec15801fa3c55c4acfeed183429c7796a1371c1c11ae83da59",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-065.left.svg",
+          "sha256": "sha256:51269046fcd38d91e2259b18bce30b5e5d7bb33798873659ff23f03ce466ddf1",
+          "byteLength": 11161
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-065.left.png",
+          "sha256": "sha256:6a8310a5aa93dbd2cea958c541b59b9709b8a1b09c7e77a132f4e9d6f7ffc3ef",
+          "byteLength": 20004
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:d5b50c72ca5dc683983d9dee81e132d47b74115be090a92ba129b84e0cec2ddd",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-065.right.svg",
+          "sha256": "sha256:26b67ab42065498e58c96aad49327414483cd4633d6b1cc5aa898b681e64934e",
+          "byteLength": 6116
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-065.right.png",
+          "sha256": "sha256:a6cd21ea3c34e2996af611b4e6e05ff5f3007b65efabc41535e42a180077ae5b",
+          "byteLength": 24199
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-066",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:ed7d90c6438abb71dcd48109607bf4c8ffc02e0e51e2a640284f630d21e401e9",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-066.left.svg",
+          "sha256": "sha256:b4b64133f2666b5267f7178be8838b8006a0023591be08d51f20e79a18d50779",
+          "byteLength": 4981
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-066.left.png",
+          "sha256": "sha256:0830c5dcd74a82dba70df06b826f4815fd840d83765ce0768da79128ff57d9ad",
+          "byteLength": 20889
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:95ab7ea8c69e464884b49e6c7b4ea360adbe00a6efb3c1c41a73214ce45d6cda",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-066.right.svg",
+          "sha256": "sha256:0a3ff54e81f814c189f6d18c167269c7b81f440ae001be72e3f44205dc7338c9",
+          "byteLength": 5760
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-066.right.png",
+          "sha256": "sha256:02dcc5fd05dc4642325a69fd4a40e1b8ce7f94211b43348c3ff382bc64af96c7",
+          "byteLength": 19958
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-067",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:30740eb5b53ad0d8f220b01722f4833bd7579e5e0363d4406a4fc404fd7a621b",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-067.left.svg",
+          "sha256": "sha256:c7bff9c39d6a2a7a4cd9c586123ce9d6c90cb2bd165094375ba44d1097720aab",
+          "byteLength": 6165
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-067.left.png",
+          "sha256": "sha256:bf942a621c198392c266ee9e17f8203f0c6473909e5fc9a75385fdc38712994b",
+          "byteLength": 15936
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:3b4af4c3d9ea1fbf4ce457443d5d5ca9d3990e11223a3c2f2d71415da0e50eca",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-067.right.svg",
+          "sha256": "sha256:6d46e9b6ed29b1bad5c551e90b1956cd8af34e7ab2587077889d75936c26e158",
+          "byteLength": 4657
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-067.right.png",
+          "sha256": "sha256:06cf7ea778dc76fdb8fede8dc89bdddbd2fd5c46e886be6484ea11768e66464e",
+          "byteLength": 18403
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-068",
+      "evaluatedLanguages": [
+        "en",
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:efbdfb9c8a43265c7cc9487bed583d35db14388f77c2d4cb617e989204b2a5e5",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-068.left.svg",
+          "sha256": "sha256:9e136272a30cd91ad5c37b7ed9a815dff34905be2da5ae575f48262a9f45958f",
+          "byteLength": 3748
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-068.left.png",
+          "sha256": "sha256:e33b98fcd6bf41013029ac1638d2a12ea421ff4c12e084bb85c092968ae92d93",
+          "byteLength": 18365
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:27ca188d4415237f312ca1c9793ff8d324643ac3daf83aa7e7f265492d302801",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-068.right.svg",
+          "sha256": "sha256:e3b7554ca753afa9e4fabcbbf622f236cb1e9ede5b3a88a8f1f6c424c5e4ab91",
+          "byteLength": 53047
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-068.right.png",
+          "sha256": "sha256:a320bc2fb84d3f24a02b2f20f5168939599b9041383c53e9d65f681aec01a519",
+          "byteLength": 25807
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-069",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:d49ebc52cf51ed32b4fade5f5c82415cf5edb4747726dc6ed8193c1d31aa040d",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-069.left.svg",
+          "sha256": "sha256:d93a4414555a94578aa1af2e0513534abb0e4ee91c90a67cbea998b1c441a9de",
+          "byteLength": 54494
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-069.left.png",
+          "sha256": "sha256:801980778e84e66731c3646ebcdce35293c5f7304bfa38aff2b4bd8108b9036b",
+          "byteLength": 20111
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:4c21189f6612273194932e85e890b516d8d367b7c34266b92dac9b266556aec1",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-069.right.svg",
+          "sha256": "sha256:56e0e02a58214f29e4e618156d8db7215d04667ed464ca8dcab5fd0b0bc53925",
+          "byteLength": 4138
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-069.right.png",
+          "sha256": "sha256:feb4e6642ed44cdbd0d242c55f268dd84a91ea19c25e45210160316391a0698c",
+          "byteLength": 11595
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-070",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:72517e0a411b21596042ce65ca9fbe5a953235367193d2d4c9b235bf8c8b58ce",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-070.left.svg",
+          "sha256": "sha256:412f5a865b771f74b4bbb83bd83a2ca8e2f6a9e466aff6459c70c7a960403c2d",
+          "byteLength": 6482
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-070.left.png",
+          "sha256": "sha256:29f57f2def0821d6d86aa63ae0d725fd6b6f07e5cdc16486e06d730d15ec82a7",
+          "byteLength": 18681
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:d191dce36ad51da4d3cac8e80c54ec5ddc5bc169b7352c081e24c2558e36c180",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-070.right.svg",
+          "sha256": "sha256:899b5e7be70dc915e553bb1b24f1e6fda74b799e68363bf321ee59a6374103ef",
+          "byteLength": 4559
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-070.right.png",
+          "sha256": "sha256:c4e61171ec1084b7911404eba9ee08bc4f7d1287f6a47fc1ed3551b8137a3610",
+          "byteLength": 15438
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-071",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:b21da78d2aa528b3f3e8aca322660efe434fff09e178c1adb38c98d7ef28b77b",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-071.left.svg",
+          "sha256": "sha256:3ac97e0f8d967d0b5fbb253e80e65214c5a0df2df2764a8366dd81c54cbc0d6d",
+          "byteLength": 3407
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-071.left.png",
+          "sha256": "sha256:940603e5a1fb11dbc0bcdc8f1c972ddef3009d4210a96d99abc898397346b2b6",
+          "byteLength": 16282
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:4978f9e7da9f3b4567d832889d5563e89ae49e78f0a2d133e1bf1c30d1a40605",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-071.right.svg",
+          "sha256": "sha256:72f0c2159557693a3325b58e427bc0b425c94cc3906e5677a3ed08ad83d5db3f",
+          "byteLength": 11964
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-071.right.png",
+          "sha256": "sha256:b3f017cfaa8a672fd60b43103a26743bee4df0bdbf1863437bf3b0245474dcb8",
+          "byteLength": 19424
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-072",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:66eecc43f400af92ac9a853a0fac82a2a9890ba55495545d7808813fb06b2e80",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-072.left.svg",
+          "sha256": "sha256:489558eef6e90ab582ed83488bfe61a73d35708f6b291bf9f3ee1ef17ffa0ffe",
+          "byteLength": 3295
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-072.left.png",
+          "sha256": "sha256:19fae5979d157d3b88f3284acc963d0ccf25a935cff4294a50c0030f90be332e",
+          "byteLength": 15197
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:69f2190d0080e0502ed9a0ddfb80844ba20d96a82789bd465072b525d6277503",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-072.right.svg",
+          "sha256": "sha256:88fec51382f1760a91a06afc0717eed9ae232b835de9ca6eac2a9d887f109d95",
+          "byteLength": 1976
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-072.right.png",
+          "sha256": "sha256:31e69fd6c6ced1edab1bda302d5549c95c680637db0d8f604856ce055c3d3ad7",
+          "byteLength": 15315
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-073",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:82108f25f35bfdd7ed01a009ff8e5ade1477e480bb4ba0514fb0a98baa423cba",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-073.left.svg",
+          "sha256": "sha256:5782df96060bd46b0cabf109586a96afe19aed45ca2002a6845092955bb83c70",
+          "byteLength": 54156
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-073.left.png",
+          "sha256": "sha256:6fd4c6de5b6f2113b3f386c790c7dd69b52318284ddcf5ce5159c08b7975554b",
+          "byteLength": 25679
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:f4c1fc9128185c1a4b9154c5e14b9878be8501a2c0ea016fc642eaa5eee61ef9",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-073.right.svg",
+          "sha256": "sha256:a49468b90b9cdf98a208ec2b03f2944d6747933a62015803c6a2ddc4b941cbb5",
+          "byteLength": 5860
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-073.right.png",
+          "sha256": "sha256:a89ad02444079ea79f922c218a32262b05dbe2ad675c253ebb8277aa68895e63",
+          "byteLength": 14800
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-074",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:db8dce6da4be12b42be921e74cb3ccaf2749a9a140eca9fd767679c64d9f846b",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-074.left.svg",
+          "sha256": "sha256:4cd23ebba169a27b692c7c4f950a09f466c6cbd58e4f65dacd095e0233847918",
+          "byteLength": 4881
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-074.left.png",
+          "sha256": "sha256:5076d657371977e50c04bafb4c024b71718c5ee76af374ed2e361a9dd44aba98",
+          "byteLength": 16907
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:d82f729a5dbc1cb7e8a8d4d5fa9dee4341b2357c50ab0b2d797a47ad3326fdfe",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-074.right.svg",
+          "sha256": "sha256:a49e9a3c68c9a8ff7067863f6c8cbf6e00b5dfd74615ae8234bba89c44cc6d30",
+          "byteLength": 2115
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-074.right.png",
+          "sha256": "sha256:53502dde48ecff608dbfa45de23745735b637f01eca95f9aef579277d11e8311",
+          "byteLength": 17097
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-075",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:40b8b68fb684a4eca615e0d45140ca1a027d827bee424f0cb99b00c2c7e20524",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-075.left.svg",
+          "sha256": "sha256:8ebd9f074e730ca5a0888150f45ae41ddc2cdd1d7e702a9618a6d5b5cea69d46",
+          "byteLength": 2693
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-075.left.png",
+          "sha256": "sha256:dbf9f3650a7a5ef8fad9d587c9ffc60a3bb022fe92462b04c38e228fa5090b2b",
+          "byteLength": 29164
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:f2e2418efa56a8cb60acf898a1b15a3eee8531df5de13d583908041b0f49db83",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-075.right.svg",
+          "sha256": "sha256:61217369530305e7639726185deb1fb3b755ab7d20094887ec33d7e86de00587",
+          "byteLength": 2182
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-075.right.png",
+          "sha256": "sha256:91971c699f8707cf31309e589315a8df86b226bbc1ad4193fbc64a013c8f7492",
+          "byteLength": 16143
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-076",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:842add4e1cee85f8620f833648536274c9c237d8f8c151d946dbe69b53e8fb81",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-076.left.svg",
+          "sha256": "sha256:f2c0efd6a30e14ed1b09bfe3a7802b93472f182fc7926c5d7acf34fc01966788",
+          "byteLength": 7235
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-076.left.png",
+          "sha256": "sha256:7a663d573dd05efb34450ab9fee71eb4c3ad8bf37da74ab6a5bde61d14d88aff",
+          "byteLength": 18136
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:9a667d2a313c38ead2ab1a9d7c52aa652d6fe61b58af15a25a871d0c5ad97c41",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-076.right.svg",
+          "sha256": "sha256:84a8faf6a8fbe3e60291151d1901b8c24f4c34f65f4e7d1b037c8e3efecf6755",
+          "byteLength": 5510
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-076.right.png",
+          "sha256": "sha256:4c0a76144ead20122a4239e53c98e27cfd53226af47e129410b543127e4c463a",
+          "byteLength": 18706
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-077",
+      "evaluatedLanguages": [
+        "en",
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:235cb1147acc72400ee40f6281b9aa163c9219c560884d548815a46e371643c4",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-077.left.svg",
+          "sha256": "sha256:f5614b68e5ebd7f013aed8bc934e9bf5a710c1c2d0f24d1031045abed291af46",
+          "byteLength": 2907
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-077.left.png",
+          "sha256": "sha256:cf3b1d97e075694f3904bc94d80fb71326f61d176d5988b1ca38f4d730c8c97d",
+          "byteLength": 28476
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:e60993d836db93152ccd5aa2f344930b815f5db239c86b68106f7b0c67541d91",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-077.right.svg",
+          "sha256": "sha256:ba3eae5ed232437258acc84e1191eeb5964eb73e70e40af5d15ba5be193fa797",
+          "byteLength": 11823
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-077.right.png",
+          "sha256": "sha256:6b098c67a27a572c37103c1804e9add6a10e47a6287d151a8ec44c059b8aa4df",
+          "byteLength": 19409
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-078",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:351e4363573d69c86e5d31eceda1898ef30d87c7ff44405912dae497df923e96",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-078.left.svg",
+          "sha256": "sha256:ec39e1a249c07f290a26a1e51ce481c5447a1566fa25d9d0376e0faa80d541ff",
+          "byteLength": 6906
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-078.left.png",
+          "sha256": "sha256:b2b778ba46fcff7020681b409cb19731e427d368731fd2447d9fbd8235821825",
+          "byteLength": 26016
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:16fc9fd3eef7aac281eb37c77055ee7053db9040454783dbef404fa3800d7ea2",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-078.right.svg",
+          "sha256": "sha256:32eae77044facf15f91dc019a9a579ee9be3726f9efb32e1abf7001a9677a4ee",
+          "byteLength": 35706
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-078.right.png",
+          "sha256": "sha256:b067aea324e0ecf6bb6db1775755e88d3da5e50fc49b1a6592b2790956b490a4",
+          "byteLength": 15942
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-079",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:cd1185e5b00de79b1fae19a4f0be33ede91187c598ec75fa803dd934bf95eac0",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-079.left.svg",
+          "sha256": "sha256:21ae03fed44dd1d6d3721cc414e43c06d3519151b622308324dc760bf6d6775d",
+          "byteLength": 4693
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-079.left.png",
+          "sha256": "sha256:86a8d404662ddda9d4a2174e39036d2553bf5c509f555983d3342cd347340337",
+          "byteLength": 21003
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:82011211f9978ca92a95f0ad976d406924b63c91d05661f0d702305148fabc50",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-079.right.svg",
+          "sha256": "sha256:27bd582718c38c68c00bbbd971cc5947910537db6cb67406e956a5ec937a9ddf",
+          "byteLength": 16970
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-079.right.png",
+          "sha256": "sha256:7f1de7b49b74c868038c8cb684872fe6570e06e9c533065dfa065981e2f0a59b",
+          "byteLength": 14341
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-080",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:64b67e6b06bec54641f59021dcaf80168401f09fbf865bdf2fa4c6063607913b",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-080.left.svg",
+          "sha256": "sha256:05fd7f3c0aa5d5546a345d21b293f8b97ca8e680584aee1b64b7792f3a020b0c",
+          "byteLength": 11840
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-080.left.png",
+          "sha256": "sha256:e10546f71051f407e14e2542f96bd815871a77a00737e255c28221ee336bdaec",
+          "byteLength": 13785
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:39d629a0fc1408564940c44f273d2b93fb22b743adbe9e8df8a5ac01da452614",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-080.right.svg",
+          "sha256": "sha256:96918c76dbef938140b442f63365d1d573b13e45bc36f18a702ae17ee8bf25c6",
+          "byteLength": 53342
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-080.right.png",
+          "sha256": "sha256:e5dc3fc599a3a9c2f6bb5c607c8ab711a24e8d2585341b997d2846b91e5e0b2e",
+          "byteLength": 24307
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-081",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:02a6a60b3d3a22539f83810b5044ab232eb29cec0a6669420510482a2c1704f2",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-081.left.svg",
+          "sha256": "sha256:26d21c909dc8784cd11419ac8e8b048d19a26a39a7b24b01744b8c2c133f54a5",
+          "byteLength": 4736
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-081.left.png",
+          "sha256": "sha256:4628f1f2274769c9f419d213a11a95e5926cf637889ac64e3b466d2860bf4263",
+          "byteLength": 17127
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:804a8e8ac85510c5c90e6851481ceb665c639f1b474f53e3ae2128f80b870f9e",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-081.right.svg",
+          "sha256": "sha256:2c5913c3aaef6fb1ce5050207293e7d8f33838b521f2810d8341325ba8e03ec8",
+          "byteLength": 5628
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-081.right.png",
+          "sha256": "sha256:9860a19b6af0c750afd5833a30c8c743b888646b1d359d8412803a6605214a61",
+          "byteLength": 19813
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-082",
+      "evaluatedLanguages": [
+        "en",
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:56f97382ba733f9303efade0d89c954d73925c8e8da35c6f255552cfb95ea62d",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-082.left.svg",
+          "sha256": "sha256:6420bbadd8988ab46e75cdb33e9f08c765aefd330b826cd26723e731de043455",
+          "byteLength": 6834
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-082.left.png",
+          "sha256": "sha256:e8674dec5ee7c8ceef0289cf409eafdd9b10d9ee20fe94a7f0174c197c95f1b6",
+          "byteLength": 19470
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:e7e6deed2d34d7e50affcdb1dc78bb08fb6bcadcac5e8fbdf9e1b37e9ed24b42",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-082.right.svg",
+          "sha256": "sha256:18d209a8b4a2ad347f4578115b674f93d64f09408d8c601b84df406ed3953790",
+          "byteLength": 3873
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-082.right.png",
+          "sha256": "sha256:9c545a1f913379b577a74368eae920583dd59d3182c2879f7b39d4899aa3db05",
+          "byteLength": 27708
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-083",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:5d46167ae53ac1315bdec1ed57a54b2954916f13838248d056075b6c36637a77",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-083.left.svg",
+          "sha256": "sha256:dd290bbd6182d4bbfcc40118acea6449dc9cdcba00a4ec2010c5e4ef1b88f4cf",
+          "byteLength": 2989
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-083.left.png",
+          "sha256": "sha256:b8d0b89a7c238654da3b86dbf07100398caa8f7c41599ceda71a043e4ef39d3c",
+          "byteLength": 24859
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:d7659f8636b60fdfdfbb2929194935f4049712694db1c178cb68b90fd64597e6",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-083.right.svg",
+          "sha256": "sha256:535cebd05142492f134b8d698cfcec02891255dd584e5e9a01a6363e8338192d",
+          "byteLength": 12931
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-083.right.png",
+          "sha256": "sha256:7c0162d90421b574ddd3f22529ef687eb94fdd8520079e110a0c6f299850e05e",
+          "byteLength": 16968
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-084",
+      "evaluatedLanguages": [
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:4f85171d96a9d97dbea32423d6acc741100d9f5929eecabbc76d41e82e99eff2",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-084.left.svg",
+          "sha256": "sha256:ab758d9b8a35da4342c8a062058e3e3ce8e882a6707aad41a8aacb70ae432a5f",
+          "byteLength": 2096
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-084.left.png",
+          "sha256": "sha256:c93a892fe0701144a9c462163b6ed5a3f598b7e7b61f2afdba01e31cc3605886",
+          "byteLength": 13585
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:baf19d1f55ac58e9b37216e4c160c0f9a23f74256dcb75bca37b9c9383668508",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-084.right.svg",
+          "sha256": "sha256:b26df98c2780c2992104413bd6645600c040f720e9221e652ee76e015a809537",
+          "byteLength": 2931
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-084.right.png",
+          "sha256": "sha256:4bfa7a7369999912e4c6b1dedd403bd7ca38248f55784fa2d6829a9553a0892b",
+          "byteLength": 17564
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-085",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:ddb88f186a13d86c6e0c5bb6a9ce7c12c24b188c613bc7b4a8fce002bf8dd716",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-085.left.svg",
+          "sha256": "sha256:41271c39bb8b6ed83f0708a36eb0fa8da34a9c349b70cdc042dc5fed4a4c12e7",
+          "byteLength": 4709
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-085.left.png",
+          "sha256": "sha256:504e8b6450c4d7b88b6b397c736c5509d0dd6f685239d5970c583e592a81b5c4",
+          "byteLength": 16723
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:8b183c9844912a4d9731c7cace09feaf5396e56068c4c97182fb621c5ecbdd9e",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-085.right.svg",
+          "sha256": "sha256:6dea7d8d39d8807489ae4eb08c459d45e25398787b317007351e69a48edac684",
+          "byteLength": 1939
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-085.right.png",
+          "sha256": "sha256:47fed5025c8f55415eb8e6dc7b8394432cbcac92a6f60bd109251c681b28e604",
+          "byteLength": 22994
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-086",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:fc54232a03ce281e6566b8d478538491fcd69e64d814997276ec2de00550aae5",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-086.left.svg",
+          "sha256": "sha256:76aafff3a8c15916f09d8952367847dd74813c06f4e66d30165e4304a476a94c",
+          "byteLength": 54462
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-086.left.png",
+          "sha256": "sha256:c37ec108b334bec5ace728336c0ca7bb888405a85c27b752a59b3573d9aec200",
+          "byteLength": 20983
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:6e830c216f33d7d8fdee1eb3dd2bf0c237c1f5b85c6a4ada50ceac1579e5fb5e",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-086.right.svg",
+          "sha256": "sha256:6ff64a02e69c607ec9a8e4edf2f2a95108e6e4ef1d45f4642eaca33b0ee07807",
+          "byteLength": 26243
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-086.right.png",
+          "sha256": "sha256:1a3016ca4c9b6ae6b3d66b7048cef73b0ee5091df0342bfc33392f9accc0dba2",
+          "byteLength": 21374
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-087",
+      "evaluatedLanguages": [
+        "en",
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:1947def39f38cb16139aaebab0f434907b7524f68d22fff31dc4ac7f265aebcb",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-087.left.svg",
+          "sha256": "sha256:97b419b59897125aefc48f11fb1ab65f8a97c2d54b1b3cc083fd84e017caecf6",
+          "byteLength": 3963
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-087.left.png",
+          "sha256": "sha256:d06b52f0ba47d6b0d5d64b045f06b1f1637480815f73a9a3bff776d792da1e75",
+          "byteLength": 18265
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:714284c5ae87a9e1e53a1fbbb15e5ff64cfa400322aa46f5e03c17e697979a22",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-087.right.svg",
+          "sha256": "sha256:e38192d3258126aa917822e83ed9aa3916a0a4abfdddd40efd7accd1e2eb9b8b",
+          "byteLength": 6918
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-087.right.png",
+          "sha256": "sha256:c7d62d88f139fac9b2f0344fb82c2c88ff3b67751b41c8fc70e11d696eb8a55a",
+          "byteLength": 22148
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-088",
+      "evaluatedLanguages": [
+        "en",
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:cb9299ae0406a36c7e4c1783f6e2abae40874ce5d598cf6ff37ae4d4b45bc7f0",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-088.left.svg",
+          "sha256": "sha256:deb6e3f7f7eded1dc662f13dc618700d9c6bc3a942e9991ad6248fd1bc522a58",
+          "byteLength": 12957
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-088.left.png",
+          "sha256": "sha256:798e94573b51a929f2b33cc679a8d87e1ce4d77b8c3a17b250bc68aaf061f64d",
+          "byteLength": 19910
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:8532f046329938952d033fd02f3507a686272d8498f4342c13cbd7eaa0e17209",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-088.right.svg",
+          "sha256": "sha256:2f1c6a1f88cf0c4a65a07afe3853f17864131896a85c2f00ca110011eb05411e",
+          "byteLength": 4163
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-088.right.png",
+          "sha256": "sha256:bf69e6f0c371ea3e74e2dda6ae5bf826683b5480ccf74b70f37442c61eedc566",
+          "byteLength": 24449
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-089",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:6f6db8be13edc708249d6f304183de8a16e828cfbb5ade6e9a23946cc9dcd8d3",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-089.left.svg",
+          "sha256": "sha256:9eca5b0b6da3365240f8b38618b9f273d981b9572934bda543dda0afd2fd5eef",
+          "byteLength": 2236
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-089.left.png",
+          "sha256": "sha256:b109b9a428a001a65708ec8ca56d396c73dad8c4e3ce33517ae6a8a9df3ae3ac",
+          "byteLength": 19418
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:5f9380050e4d59de5ab0b4799dee212b766a62505ee9724ed96a21fb11e8ff56",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-089.right.svg",
+          "sha256": "sha256:3c1ecc0abbeed4e32a490bc59dff8833df9dfab6d9b540c963df85a8f4e53e4f",
+          "byteLength": 5454
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-089.right.png",
+          "sha256": "sha256:305d95e91a4e5721888e7a44b3af862fb145d7746a204abb01801967382f8753",
+          "byteLength": 18213
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-090",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:7173c67c494d0236e588d8c1a382715af633b31a108e8f4ff97a0ebf445c1b81",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-090.left.svg",
+          "sha256": "sha256:47ac8ae03a44f7c441de2aaaf12001c9ca736d0eac0fae5cde2cc0bff1a6f658",
+          "byteLength": 12187
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-090.left.png",
+          "sha256": "sha256:e2954a241a3af46242f1e171437df83e09a10d963dd755fdfd594b81032cf737",
+          "byteLength": 25137
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:55a219b87fd722165a7d3a90fb2576b2c045f159bc6247f02aeb3195c6055aee",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-090.right.svg",
+          "sha256": "sha256:a41cd6d7e44b5824b38d61945fbb7af9154a26dd778c569f592baef78dac042f",
+          "byteLength": 3169
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-090.right.png",
+          "sha256": "sha256:09d33e5859cce03b04c0a69472fe233550f0cf0c7ab89932165a2a498a928ac5",
+          "byteLength": 19671
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-091",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:d26778aafb225c164a55a8b03797768767ec7fcd2242e2aada28ba83b85efd48",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-091.left.svg",
+          "sha256": "sha256:2e3b0bf61b8d1fef30eb1eacf67b7da84f040d0c472e65c1c381e06973203249",
+          "byteLength": 4837
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-091.left.png",
+          "sha256": "sha256:47bb8fc7ee3644a07127a7b81afe4230371d7b7da8596e399e596542e12c2e25",
+          "byteLength": 20185
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:51d7684a7771be270d3da77b9f0f33ca9a57d8092fbc6d1e74dc101c84760f83",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-091.right.svg",
+          "sha256": "sha256:c9d72aca867d0a14e84d29a09fe6934ee7823830a417c29d44ec3bb9a4cbf57a",
+          "byteLength": 4262
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-091.right.png",
+          "sha256": "sha256:42adcf27a48e5ec699163cb445c8c443235e6143b832260b9d0c71628c0f8a78",
+          "byteLength": 16514
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-092",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:aedcf848d5afde9d214d6697292bec7e918d8744435ef43e8f9505dfb3b99587",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-092.left.svg",
+          "sha256": "sha256:5314515f9a4a8044055c3c4922e29b305535bf86e947c945561703b420f94fcb",
+          "byteLength": 3672
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-092.left.png",
+          "sha256": "sha256:ebcfd93b0b7d7ef08ee607ea9a06bafb48781b0f5ccba1f7d7614814fe481ba7",
+          "byteLength": 17019
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:c67934b770d7634d61a991bd9d0737fb9f86b8d601a0a967039c6928c7eebff2",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-092.right.svg",
+          "sha256": "sha256:09fd9ad5e93212ade4fd0cc1d5b6a3a0b4d52e63bfd0b40076d5422d13ec587a",
+          "byteLength": 54428
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-092.right.png",
+          "sha256": "sha256:01395a2379e7028ea1e6653501f2952b3cbd3debdb86d0e93ea440c5a4e5dd15",
+          "byteLength": 21087
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-093",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:bd9cb7ba22873e5bd16b1a64aaee24bdc5e0b0922530eb8fd58aa4ab3f7598a2",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-093.left.svg",
+          "sha256": "sha256:d2c4c243eabecd911eff084457c5e32a2fcc62375229310ef7a623efc6991bff",
+          "byteLength": 12164
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-093.left.png",
+          "sha256": "sha256:7a0e2b0015eeb9be88f84651d7e6f7d1c838e9ae43e09feaea943f24416954cb",
+          "byteLength": 27456
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:b821c2b7fcccab544c5fae608c36d0aa0aebba5fcefd80d62f33bdb7b629345d",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-093.right.svg",
+          "sha256": "sha256:feafed7afd85e5624713c811056add5a7860c9c17f2ab96fca148a7f2c725d25",
+          "byteLength": 3945
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-093.right.png",
+          "sha256": "sha256:a74417b30f813ef85bd60e9f5cd08b31cabfe1bd83be7d0b3e45cc33d7d37a01",
+          "byteLength": 19238
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-094",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:8bdb792ce32677d86c2ade3a47d558fa55610c6044e90a44281c778690951c7e",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-094.left.svg",
+          "sha256": "sha256:82c7ee653d179d7c8a5f9899b08ba9bd495a285af26fc4fbc0c8d09da10b0258",
+          "byteLength": 1972
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-094.left.png",
+          "sha256": "sha256:7c6e4a5b1df103c95f67137f106486487c99cbd19eabee1c16fb72c220d68461",
+          "byteLength": 23056
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:a511301f0837bc3c2bfe5a73c918791b98307e59bc8d1d6fb1c5f04ca086f6b0",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-094.right.svg",
+          "sha256": "sha256:80bae4296b4b4a4f0cd2f573ed23171c8afd11f9a6d371cf7f6667c041aa7243",
+          "byteLength": 10931
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-094.right.png",
+          "sha256": "sha256:f78bae2c4ccfb0ef716b7e4772c799dc89bfa4b1dddc6f41875fc6e30a368779",
+          "byteLength": 20384
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-095",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:27248f943d59a624f772a74880ebaeca4b7069de975c2128f0a04cef174701c4",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-095.left.svg",
+          "sha256": "sha256:59b2a9d98a51eb70025f77be2a46143c28bad8ac21327b15ab3792c0d70893f8",
+          "byteLength": 6867
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-095.left.png",
+          "sha256": "sha256:aa353459ac7025131094c16b586a51633930ba2f9b119e783fec75298ed7778c",
+          "byteLength": 16980
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:cce995bdb33cc4a40643c44a5a9ed5f0bfb9dfc53be2986b1dcfd3a45535754d",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-095.right.svg",
+          "sha256": "sha256:a706863643ff1c9d509b1d42f9aa3395e5202018e1650616a0e8c72ac5fd6f13",
+          "byteLength": 4955
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-095.right.png",
+          "sha256": "sha256:d637bc55cd341275682582091eedccef3d35b657a914d88bebf867209d902cd6",
+          "byteLength": 12136
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-096",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:00dbc6c58fb9e78943cce72a667ceffc0e8bc8e0aeef8a3d091e0794061fdb80",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-096.left.svg",
+          "sha256": "sha256:49a19f043d1a8bd99786e0d71453901394e23d3c697f2b9c29feff1a7dd221fd",
+          "byteLength": 2116
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-096.left.png",
+          "sha256": "sha256:c040936749e0692bbe18dda083cef76899fc821033421529f48daad7b4d1559a",
+          "byteLength": 22448
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:97bc4195a624ef337786427a186b6ca9fbd5937640b7c126f672ae3d33a2bec1",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-096.right.svg",
+          "sha256": "sha256:387d3c54c0e0afc867b154ced806f75a7e48d8ad76af1e2b6da1aedf9b2915ba",
+          "byteLength": 53158
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-096.right.png",
+          "sha256": "sha256:b9e03ddb228544e1cd3628eac715773e7d6de751b9efd3cccc8b3fd83dfa3673",
+          "byteLength": 28401
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-097",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:05bbb7cfdd6e0286a0dbeb5e334273a89e4d8a9d9d84d8e7e6a50479f743e7e2",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-097.left.svg",
+          "sha256": "sha256:fca0cdd7e3879d331d129f9351496275741769c86aae6b97072086b4d0f6cbda",
+          "byteLength": 5806
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-097.left.png",
+          "sha256": "sha256:919cfd4270ba3e0bc1f286a41717480f28db4cd1483390c46b9bd3270ae5fc9f",
+          "byteLength": 20128
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:2ba3237b201fc28dabaf1e4e0400540f92f4bb9e8493c2bd95546abac91b81c2",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-097.right.svg",
+          "sha256": "sha256:145351249b60a788547d22ec6cfbdc0158f172f7905d8baa21b33c398b105618",
+          "byteLength": 3687
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-097.right.png",
+          "sha256": "sha256:48ec4ca89c036422b0e7cf7f18dc03076b4bb62956e352c8c2e705591f785fa2",
+          "byteLength": 25722
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-098",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:08c3e82defa58bb0365eb56648e562b402a277ba7c64bdf8ab0d1dda06be9e7a",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-098.left.svg",
+          "sha256": "sha256:f44f88800ee7c42f1a29ab718401cbbfb1eda43b426cfda4feae0fc1e61633b0",
+          "byteLength": 1875
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-098.left.png",
+          "sha256": "sha256:f1a7e95681c40f1e02bc16405ebbee550da25a12279a1cb282d15d20ff3ba582",
+          "byteLength": 25483
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:959118ed4d6f026c1b99007f68c7f1b7491e857da67520324ed3b8c4c323fa50",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-098.right.svg",
+          "sha256": "sha256:d81f28ef11dc8ecb4bd98447ee15cded1d875e5ca271f34038fc94484c044174",
+          "byteLength": 53338
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-098.right.png",
+          "sha256": "sha256:50e022a700e4e49fd2c14e1211ff3f07265544f0dbe5d5b291c9e7092e22d7e9",
+          "byteLength": 20090
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-099",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:79297ab3a007a6f1683631fd44e7986f1a823391b53924b2f4702c3177ccd2a9",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-099.left.svg",
+          "sha256": "sha256:af05888c45fc16d12d685da82711c28f24ecd633be0bbb895df9096222c28b40",
+          "byteLength": 22954
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-099.left.png",
+          "sha256": "sha256:0f486ba576ac2c1540c8c2a691a0081d11f01a75dd5dcb2e125147aecf68caf6",
+          "byteLength": 18257
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:99a3a0e6524a90323598a66a8d0298676335ac3c84e9ce44820d70e9721f796f",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-099.right.svg",
+          "sha256": "sha256:970bf13578d9cd082e156233ae4601ae54006b47e1bfc08dd79e317ebb3eedd0",
+          "byteLength": 54451
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-099.right.png",
+          "sha256": "sha256:c934c868adaca388e11b3de2970b3c79eed797a3dc6a10c2da3336a236f01a17",
+          "byteLength": 20019
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-100",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:6abde33e5b4c09e7612f6cbf9a82b8b84e953e3402e3b639fe04f2d1a7471fcd",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-100.left.svg",
+          "sha256": "sha256:62d2b8adb979b4305b14a6416ab81a48d116049666c23f4de55913adf4f24276",
+          "byteLength": 6994
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-100.left.png",
+          "sha256": "sha256:8acbd4dc20c37aa1b6430f51856240d6eda720dc2bb553e9dc8128ee408a5b50",
+          "byteLength": 17102
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:12c5eeec245937e394cdd748daa11bc2a9fb7a117c669e2838e03f540a59371f",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-100.right.svg",
+          "sha256": "sha256:924981758ee06e68a4b20ad26762f43ade72a75b446b8341075f555ff105e8f0",
+          "byteLength": 54201
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-100.right.png",
+          "sha256": "sha256:460a38cc947d09255426de48e62c8b2f1a4470123afc9109e0927b3fc720186e",
+          "byteLength": 22071
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-101",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:26ed18480d0f1fff11ce014c5fe002475bfcb7c63b43db1d167aa31da068cf5e",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-101.left.svg",
+          "sha256": "sha256:4f74ecf1c077d88f84fb7489e211880490d8e5a4db3d80231cbc66ffe296a205",
+          "byteLength": 3342
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-101.left.png",
+          "sha256": "sha256:7d7a3394d8eec05c61ec4030fe7ac4b995df4152e6c012e8a610618e8ce2e250",
+          "byteLength": 17447
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:d810046b7507ddbf072f3ebb99d7e05de81aaef6bb5c85bf2bf26d2631ef500f",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-101.right.svg",
+          "sha256": "sha256:5cf140400331df4e5b676872bcd24fcb704a313880af6d1dee0152110804e549",
+          "byteLength": 4676
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-101.right.png",
+          "sha256": "sha256:869043cd6b51ad3540f563eb070f31f60d9477957753cb3814991d7217effa7f",
+          "byteLength": 22256
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-102",
+      "evaluatedLanguages": [
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:f500d56ca04c13910d5819dc8ef732353738602815eb70d5d41a60f9e4167576",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-102.left.svg",
+          "sha256": "sha256:6f136b34b38f4db7c43a4e623894178e32b27f52222cd2a57aae96b1b2d2ddff",
+          "byteLength": 3104
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-102.left.png",
+          "sha256": "sha256:69bb7d7fa2e8c7fc16f20d3342c965a7ae49e3eace2838c78b6ab0619ea0367f",
+          "byteLength": 21236
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:87600cc101e9c95c13cd971960c3c338d42732b574c5f6ae6b2a0ce62f549adb",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-102.right.svg",
+          "sha256": "sha256:af9f865be8bc72b7d0bab8910bb28c3cfa03684773b149adc120e2dae37a81b9",
+          "byteLength": 3118
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-102.right.png",
+          "sha256": "sha256:e4083de828ea65ad80b338b931e53b1261a9d280f324f0985a102b321971058e",
+          "byteLength": 14890
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-103",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:59b999351ed765c9f6c2d6cb4bd090b7335995b917aa9baa7de60aff29f4e35b",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-103.left.svg",
+          "sha256": "sha256:6c77ca1b01ab83810f3b9930c5d628256229669fadd8acdc309ead0fe22f0226",
+          "byteLength": 11221
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-103.left.png",
+          "sha256": "sha256:64fa0a44ffe8b5a1927adae30f03b1ecc3f8a075436d5e7b8b0abdfb91a8c91b",
+          "byteLength": 17060
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:dae961e32451348d2c6bf30021848d8034aabfe577bf899cd44b97a423841a84",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-103.right.svg",
+          "sha256": "sha256:f8785009ef1bb5f2a9aab3543bc673550c156bab112875e89c84526bfd1e58e1",
+          "byteLength": 7006
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-103.right.png",
+          "sha256": "sha256:1c76d29eb5f583a7b1b01a26b6fef62380c212d1a39ac71aa5e288b22ffb88d3",
+          "byteLength": 21683
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-104",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:d5959871b657632b7830a1375223d4b664e08eca84ef975e7e75267de51d7374",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-104.left.svg",
+          "sha256": "sha256:ebf897f54f501e81673d1f74126014634cbb84405f8637e6a330538a1bff4b4d",
+          "byteLength": 30955
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-104.left.png",
+          "sha256": "sha256:16ebf430f3ea7e36baa5c1325d4feabebbeca27360e9c343da99c0c1fb444647",
+          "byteLength": 19921
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:07c5f06050d71f8aba2399c9eb8d8b2040a5046f4d2139960858225a478855e4",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-104.right.svg",
+          "sha256": "sha256:0326bc873a09377f9d6339dd23385f99dcdfcacfd240d09b15facac623ff23e2",
+          "byteLength": 5777
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-104.right.png",
+          "sha256": "sha256:f169fd994b05ff78d9d13bfa1a9fc7b70eccf910b54de05be26f748a5cdf4b40",
+          "byteLength": 18586
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-105",
+      "evaluatedLanguages": [
+        "en",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:9036aa7e4166fd5fe1cd7917077c3d1ac1385d4dbcb4f94eea6786a6c9220105",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-105.left.svg",
+          "sha256": "sha256:48e54a3c25545e7b86a4c1101e50a2bbe54c587dadc3428261f882c1c4827cd8",
+          "byteLength": 2919
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-105.left.png",
+          "sha256": "sha256:28e735ac0cf27a65529f79a6a36164ee18b34dbbc086de45ef8965df0644b86b",
+          "byteLength": 19824
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:7c29e7cde06e5b32198da8ee885a6dbba306e060d15c18d30f65f169dd84102b",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-105.right.svg",
+          "sha256": "sha256:22649d23b6efe4dd0e5bc8121e008be98cda4b3ab2dfe0c93e455b368132bc33",
+          "byteLength": 4837
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-105.right.png",
+          "sha256": "sha256:3d220adc69658a3990edf7843588af57746b6267c9d6b27f27ae8a98e9076e7e",
+          "byteLength": 19025
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-106",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:17ece249b6a65c7ee080546b55bdd1927f7e2189481e942937b69925db5aee0a",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-106.left.svg",
+          "sha256": "sha256:c6b6f99b947da646da387747e1bc78070f67b46d964a83f924f4101a361cd543",
+          "byteLength": 53493
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-106.left.png",
+          "sha256": "sha256:c9befa3bea355660e1bf3e7071dacc877be62c2ffa5de0f39b7f8e6ad9e70c29",
+          "byteLength": 24383
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:358d218441d016885d417abc5aebeb798c1567344a27f51bee8b747326e21b6e",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-106.right.svg",
+          "sha256": "sha256:fc2a203f20532d9f3365e38aa1dcb1860ba29156bccc97051a13a7a132460c2a",
+          "byteLength": 2736
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-106.right.png",
+          "sha256": "sha256:596986165d9268fea3e10ed85b594bc4fb18e8cf8e7d2d6e7174ae79304c7456",
+          "byteLength": 15753
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-107",
+      "evaluatedLanguages": [
+        "en",
+        "ko"
+      ],
+      "left": {
+        "fingerprint": "sha256:973ac9401f690a33920970de04c822fd2947857c3c326dd55b98e75a8191afe0",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-107.left.svg",
+          "sha256": "sha256:c28a36ade212b35e2f837efc3389138e4864e7e9f531a2f385c09dc3307d7381",
+          "byteLength": 5363
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-107.left.png",
+          "sha256": "sha256:d9ea62d0983250544fa16bcc6d6f877f0d260cb027c73674d0535a6e27362636",
+          "byteLength": 18675
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:ae882eb5db97c2c7f4c0c29ce8db033c735bb45ead3feecb349e627483e5792d",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-107.right.svg",
+          "sha256": "sha256:5cfdfebeec9fde3df0454e9024bac55afde60d9d617d8f432aaf7aeb3543b6a6",
+          "byteLength": 2820
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-107.right.png",
+          "sha256": "sha256:1cb1068e8b5b6726fabf90c81b632a0a585a64acb109117f35952536b5b2c04c",
+          "byteLength": 30796
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-108",
+      "evaluatedLanguages": [
+        "en"
+      ],
+      "left": {
+        "fingerprint": "sha256:6834f1f255a944e6a7506d14ee6614482101e7ef0ed2bd6378501893dcdc37c5",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-108.left.svg",
+          "sha256": "sha256:83d530d4e955d6f2726623992c61bf8588e392bf8fc117c796535ab7cd95186e",
+          "byteLength": 14579
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-108.left.png",
+          "sha256": "sha256:4bbedd1b069419748dd789db141c61c7a7634cd63f7150b83b1f46a3d30935bd",
+          "byteLength": 20788
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:de13307c246d8a01c68b3717e9956181a7dc996610f1086bcb9db0fdeac94193",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-108.right.svg",
+          "sha256": "sha256:1c1f1b617a4fa9659a8bd33946f97e5907deb54a555ddc6deaf2bd0c13992020",
+          "byteLength": 2058
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-108.right.png",
+          "sha256": "sha256:4cbdd6409202f87c42dfc5d8341fdb63282d4e4664989e2920fdce2a7d61714f",
+          "byteLength": 23038
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-109",
+      "evaluatedLanguages": [
+        "en",
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:07018b12f3e32a31c6fa9f2e53f0c7ef05de2fd7a3b0dd081f587fa04a057744",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-109.left.svg",
+          "sha256": "sha256:54bc66c502776c52c7c61b28c40673c3baa7f6d1cdae27f0daeb3a76318bd948",
+          "byteLength": 14784
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-109.left.png",
+          "sha256": "sha256:8d281d478b487c6769366c955891b8b897936054d09eebf5a3c0ebfb6d9b0f07",
+          "byteLength": 13385
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:fb0184aa1fd5370ac5fef1af5d4cddcc611cabd2f9c7ba6539b376720888cae6",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-109.right.svg",
+          "sha256": "sha256:e1ebf49d46c7881be65bcff0d9fafc1d2ac8d44cd458ee0751a665325b4e0ea5",
+          "byteLength": 11154
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-109.right.png",
+          "sha256": "sha256:9a1adf6161b220a4b5a242b374ea81fec5c3c3eaecc550889e74a388695dba27",
+          "byteLength": 20306
+        }
+      }
+    },
+    {
+      "fixtureId": "blind-110",
+      "evaluatedLanguages": [
+        "en",
+        "ko",
+        "zh"
+      ],
+      "left": {
+        "fingerprint": "sha256:ac5d0bd4d5e4a5dba328d6adb6a93a6eef927070eed8083cc1e58bf5b32fdc2d",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-110.left.svg",
+          "sha256": "sha256:321b6167191cc624e9151fbb184f3d78134e8284a961194ea6a3d7cd0c94a4c8",
+          "byteLength": 2913
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-110.left.png",
+          "sha256": "sha256:328ba4ed8048b91004b337dd5b01bb0298a8e36f576f36ef1c213b15cc30fd6d",
+          "byteLength": 24731
+        }
+      },
+      "right": {
+        "fingerprint": "sha256:8038f88feb15161cf6eac9b66ff54cff6020e22d68bd572661e118b2a3570fd6",
+        "svg": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-110.right.svg",
+          "sha256": "sha256:32e2b975a9a7608673886a72b8271a8b0a31d0f3104579efd42825761e3a6d98",
+          "byteLength": 4885
+        },
+        "png": {
+          "path": "web/micro-graphic-generator/tests/artifacts/blind/v1/blind-110.right.png",
+          "sha256": "sha256:a5d04ba3f14d68fc4f96473d9b556c182e7d02a4603aaa16b83ed04dafb617b0",
+          "byteLength": 17555
+        }
+      }
+    }
+  ]
+}

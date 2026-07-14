@@ -1,0 +1,1977 @@
+{
+  "schemaVersion": 1,
+  "corpusId": "blind-evaluation:v1:e5e4298b45e1512177",
+  "corpusSha256": "sha256:e550b8b60f578fc0ffbfc6f0574f9ab324c7fe51370dfb6e214d179b62f56dc9",
+  "translationErrorLedgerRevision": "sha256:fcf74fed5b6ac4dd7124998b0d06733357ea1cb63df0055fef87694638b4268e",
+  "evaluationTooling": {
+    "schemaVersion": 1,
+    "profile": "blind-evaluation-v1",
+    "sourceByteHashes": [
+      {
+        "path": "web/micro-graphic-generator/fonts/GlowSansSC-Bold.woff2",
+        "sha256Hex": "25d83e57dad713cd491fe57fce2659aa6115624fffbf90f81d72188fa39503eb"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/GlowSansSC-Heavy.woff2",
+        "sha256Hex": "bf15e6e7c7cefdc672919c65ec24a27a7db1c9e0ca5d2d8d1b514347dd342edb"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/GlowSansSC-Regular.woff2",
+        "sha256Hex": "117809b0816beb4f0ad83c4e91180445298a65ad5b92ae344bcaf35605fdca46"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/NotoSans-Black.ttf",
+        "sha256Hex": "a01579f3792f3f0bda40dfa60087a3e1065217da576fdd27e13c9b6dda1c24cb"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/NotoSans-Bold.ttf",
+        "sha256Hex": "9f0ce911354e554bbac00c399dcea71c785962cebfd86e965656f0bd011dfca9"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/NotoSans-ExtraBold.ttf",
+        "sha256Hex": "e8afb13f9dbbe99ee02775c71bdf1c4a37f72f14b99fb4fa57924071b3e91000"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/NotoSans-Regular.ttf",
+        "sha256Hex": "5be701a9511117e73603bdab95947feef4f18bd1851dbddc30659370b26c69f1"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/NotoSansKR-Black.ttf",
+        "sha256Hex": "d549866491cb53ed44ecf0657bb6816bae863ea5d335307f24ec1f8d37d559e7"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/NotoSansKR-Bold.ttf",
+        "sha256Hex": "5ebb0def0fe9e7c853253eca8ec9c1066adc479f2e248533b412ed0c6a663abc"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/NotoSansKR-ExtraBold.ttf",
+        "sha256Hex": "fba5c18774ae2a68fb553f544353c91559901f804aedd58b113eb2a404e68962"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/NotoSansKR-Regular.ttf",
+        "sha256Hex": "c733940a7dc687142848b30a491e97138ed58dc58c4cae33c44e3ee52da411cb"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/NotoSansMono-Black.ttf",
+        "sha256Hex": "830f371d8e2a874b612a36af6df3c6d38f5f76434eca1bed57c474c601cc551d"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/NotoSansMono-Bold.ttf",
+        "sha256Hex": "120dec836c18233686683990401f3c0cd42003d505a8dd8db978eba4e6a69c5f"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/NotoSansMono-ExtraBold.ttf",
+        "sha256Hex": "aa57ac0c378359d0d0af8df9fc29140bb1fc828d4573a5ab7ea3d7e8b6c8c3e5"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/NotoSansMono-Regular.ttf",
+        "sha256Hex": "bc58118562112a4c876e2771199b0f35aae07000e5fe1f4ac6d03496900981f4"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/NotoSansSC-Black.ttf",
+        "sha256Hex": "0fb45339b0ef3514d5114a1ca98c768f010009a06245a6e5f5233b96c652d22b"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/NotoSansSC-Bold.ttf",
+        "sha256Hex": "ee8b7bbd4b080fd9030a5fb8ecbe2adbd7c2213d7bf2959ed00e54a01c5920c5"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/NotoSansSC-ExtraBold.ttf",
+        "sha256Hex": "ba2f7eba1ef6568234cc047170205dc6f3d8d238a7be998c45c83cfa693ec618"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/NotoSansSC-Regular.ttf",
+        "sha256Hex": "932f2f80371d02f95ebbe6da9fb0110ed9fc01cf34e9387df01b944da610f44a"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/SUIT-Bold.woff2",
+        "sha256Hex": "044e7df5d44e38ea371e9d808165fdec8d05257589bdad21da8f3b79ad4000de"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/SUIT-Heavy.woff2",
+        "sha256Hex": "cfba840e912b94b72d6c7ea371036ead7944c31f78651318a7efe88e4de629dc"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/SUIT-Regular.woff2",
+        "sha256Hex": "7a1971b4e54d6d797f105f2d8ad2fc5f5d6fd532195f582d74f4403177e83185"
+      },
+      {
+        "path": "web/micro-graphic-generator/fonts/fonts.css",
+        "sha256Hex": "9e65c65f8179ba3549cdefb8fb1745d10f99bbccbd68121111cce717a5a9a716"
+      },
+      {
+        "path": "web/micro-graphic-generator/scripts/blind-evaluation-corpus-lib.mjs",
+        "sha256Hex": "f833c7594d6aa965f475ee4fc8197e5676d889ba4c24780683017ced4c6bf64a"
+      },
+      {
+        "path": "web/micro-graphic-generator/scripts/composition-owner-manifest-lib.mjs",
+        "sha256Hex": "7ec0588df00deda8195965abbc98e623b31fa873e634450b70357977b5d71034"
+      },
+      {
+        "path": "web/micro-graphic-generator/scripts/evaluation-model.mjs",
+        "sha256Hex": "31cc932a8254ce20c779a7f9650b591bf8d8ffae38c49bd3a5817c8148c01f00"
+      },
+      {
+        "path": "web/micro-graphic-generator/scripts/evaluation-tooling-evidence.mjs",
+        "sha256Hex": "0f7baa1ff8e588a713f39139126b866f3bb3d907eedeafe0c1a17281fb30f135"
+      },
+      {
+        "path": "web/micro-graphic-generator/scripts/generate-blind-evaluation-corpus.mjs",
+        "sha256Hex": "80bbe8bacb55d402858f3914063b4bf447ca93a3e7bf4e17dca766ec261c603d"
+      },
+      {
+        "path": "web/micro-graphic-generator/scripts/owned-test-server.mjs",
+        "sha256Hex": "0c86da58277a7ea36a45dc6a6c70b9f60fff385cfd921f70aed7cc7fa9075bec"
+      },
+      {
+        "path": "web/micro-graphic-generator/scripts/record-blind-review-result.mjs",
+        "sha256Hex": "65c351263e1709746e57aa5f2c5ee675e85cd07ec8728e0879c90bc4620b9756"
+      },
+      {
+        "path": "web/micro-graphic-generator/scripts/static-module-specifiers.mjs",
+        "sha256Hex": "af6dfb7042110df82d369732842671722b421d39016a213867978b9530fd1bf1"
+      },
+      {
+        "path": "web/micro-graphic-generator/src/canonical-hash.js",
+        "sha256Hex": "0f5eced0d5292111d3ed1e1f85b04c7352a2ad6723c1041933a16154bc74c017"
+      },
+      {
+        "path": "web/micro-graphic-generator/src/composition-model.js",
+        "sha256Hex": "434e2f4a488bfebb68641b1eaff1b9e3a576aa20c7a9f5790af20e30172029a7"
+      },
+      {
+        "path": "web/micro-graphic-generator/src/composition-owner-snapshot.js",
+        "sha256Hex": "36bf669db0b4336bb9e6f311a0d5cc897813bf9f22dea782108836a8da4b0317"
+      },
+      {
+        "path": "web/micro-graphic-generator/src/composition-recipes.js",
+        "sha256Hex": "2130ee6e5c08fbb141bfca0b6a9e8a54128ffdeb35d8332f0a2a2b3cbf4b61a9"
+      },
+      {
+        "path": "web/micro-graphic-generator/src/config.js",
+        "sha256Hex": "75949a6450d9c435f95b3891f78e644dedfed9005f24774e4159b8d1cf1c1628"
+      },
+      {
+        "path": "web/micro-graphic-generator/src/motifs.js",
+        "sha256Hex": "367edd64bdb54563ff491d104c61630f669c1448b847993e3b27cfc93d331889"
+      },
+      {
+        "path": "web/micro-graphic-generator/src/svg-structural.js",
+        "sha256Hex": "2e62b6561bf1c94c7c0db1cb9fc7d30d0a2dcca15f8b2d84d43e9fe8d6cf2fde"
+      },
+      {
+        "path": "web/micro-graphic-generator/src/svg.js",
+        "sha256Hex": "dcf326bfd6aa8b011b0495af0058c25483a8db0e447fff2b8e3973197f71f6af"
+      },
+      {
+        "path": "web/micro-graphic-generator/src/token-model.js",
+        "sha256Hex": "93abc9109495897eefeea1073802fc99b72ca9b6d0aa67d17cc49ad8306c0201"
+      },
+      {
+        "path": "web/micro-graphic-generator/src/typography.js",
+        "sha256Hex": "67521157a7660c294b98aad86080f6f317c7a40cba923d197021305a13ad4a70"
+      },
+      {
+        "path": "web/micro-graphic-generator/src/vendor/sha256.js",
+        "sha256Hex": "92872244347172ea4360b1d042d53fac7226f795b51d2960b0180ca8355b2a50"
+      },
+      {
+        "path": "web/micro-graphic-generator/src/vocabulary.js",
+        "sha256Hex": "643647db64552bea7d46946e1d5cf0fbc4288b5e4948b13b710144d0656e48fd"
+      },
+      {
+        "path": "web/micro-graphic-generator/tests/blind-review-server.mjs",
+        "sha256Hex": "ca1039636ef3e08df64acbd21aa97cecbcabf80dd028a7cf80a11209d10ef58f"
+      },
+      {
+        "path": "web/micro-graphic-generator/tests/blind-review/index.html",
+        "sha256Hex": "4c3d15aac444b9d0aaf35913c3b0bd69e62dc98b081e4d9ba9b1f3a5685be0b5"
+      },
+      {
+        "path": "web/micro-graphic-generator/tests/blind-review/review.js",
+        "sha256Hex": "0bd869860d39a570960fbe186616c6caee7433015ea5cfb1481e0919d587dace"
+      },
+      {
+        "path": "web/micro-graphic-generator/tests/blind-review/styles.css",
+        "sha256Hex": "7be8b88814a153cb545ead972c2c688d86c40e38bbe3dd521ab670251087b7fe"
+      },
+      {
+        "path": "web/micro-graphic-generator/tests/runtime-conformance.mjs",
+        "sha256Hex": "f81cad1ce2acb7629cf916fc86cbf13b40ff0824f5f0861df692612956655d61"
+      },
+      {
+        "path": "web/micro-graphic-generator/tests/static-server.mjs",
+        "sha256Hex": "a0407edc484920e8328ab5fda7381889982ed03f2e2195ba7047905a42da3f7c"
+      }
+    ],
+    "revision": "sha256:8ee20ed62b43a50c6bc760c1a1cf70d9d952e7b817b831dfa76e2c3bcaea9cdd"
+  },
+  "pairCount": 110,
+  "reviewResultCount": 0,
+  "observationCount": 0,
+  "corpusCoverage": {
+    "pairCount": 110,
+    "minimumPairCountPass": true,
+    "presentationRuns": {
+      "maximumGroupRun": 2,
+      "maximumStratumRun": 2
+    },
+    "strata": [
+      {
+        "id": "command/en/latin",
+        "pairCount": 10
+      },
+      {
+        "id": "command/ko/hangul",
+        "pairCount": 10
+      },
+      {
+        "id": "command/zh/han",
+        "pairCount": 10
+      },
+      {
+        "id": "status/en/latin",
+        "pairCount": 20
+      },
+      {
+        "id": "status/ko/hangul",
+        "pairCount": 40
+      },
+      {
+        "id": "status/zh/han",
+        "pairCount": 20
+      }
+    ],
+    "visualHierarchyCells": [
+      {
+        "id": "motif.barcode/requested",
+        "pairCount": 10
+      },
+      {
+        "id": "motif.barcode/downshifted",
+        "pairCount": 10
+      },
+      {
+        "id": "motif.pseudo-qr/requested",
+        "pairCount": 10
+      },
+      {
+        "id": "motif.pseudo-qr/downshifted",
+        "pairCount": 10
+      },
+      {
+        "id": "motif.table/requested",
+        "pairCount": 10
+      },
+      {
+        "id": "motif.table/downshifted",
+        "pairCount": 10
+      },
+      {
+        "id": "motif.wave/requested",
+        "pairCount": 10
+      },
+      {
+        "id": "motif.wave/downshifted",
+        "pairCount": 10
+      }
+    ],
+    "linguisticCoveragePass": true,
+    "visualHierarchyCoveragePass": true
+  },
+  "counterbalance": {
+    "overall": {
+      "id": "overall",
+      "pairCount": 110,
+      "leftCount": 55,
+      "rightCount": 55,
+      "difference": 0,
+      "pass": true
+    },
+    "ratios": [
+      {
+        "id": "1:1",
+        "pairCount": 13,
+        "leftCount": 6,
+        "rightCount": 7,
+        "difference": 1,
+        "pass": true
+      },
+      {
+        "id": "2:3",
+        "pairCount": 15,
+        "leftCount": 7,
+        "rightCount": 8,
+        "difference": 1,
+        "pass": true
+      },
+      {
+        "id": "2:5",
+        "pairCount": 22,
+        "leftCount": 11,
+        "rightCount": 11,
+        "difference": 0,
+        "pass": true
+      },
+      {
+        "id": "3:2",
+        "pairCount": 14,
+        "leftCount": 7,
+        "rightCount": 7,
+        "difference": 0,
+        "pass": true
+      },
+      {
+        "id": "3:4",
+        "pairCount": 19,
+        "leftCount": 10,
+        "rightCount": 9,
+        "difference": 1,
+        "pass": true
+      },
+      {
+        "id": "4:3",
+        "pairCount": 14,
+        "leftCount": 7,
+        "rightCount": 7,
+        "difference": 0,
+        "pass": true
+      },
+      {
+        "id": "5:2",
+        "pairCount": 13,
+        "leftCount": 7,
+        "rightCount": 6,
+        "difference": 1,
+        "pass": true
+      }
+    ],
+    "strata": [
+      {
+        "id": "command/en/latin",
+        "pairCount": 10,
+        "leftCount": 5,
+        "rightCount": 5,
+        "difference": 0,
+        "pass": true
+      },
+      {
+        "id": "command/ko/hangul",
+        "pairCount": 10,
+        "leftCount": 5,
+        "rightCount": 5,
+        "difference": 0,
+        "pass": true
+      },
+      {
+        "id": "command/zh/han",
+        "pairCount": 10,
+        "leftCount": 5,
+        "rightCount": 5,
+        "difference": 0,
+        "pass": true
+      },
+      {
+        "id": "status/en/latin",
+        "pairCount": 20,
+        "leftCount": 10,
+        "rightCount": 10,
+        "difference": 0,
+        "pass": true
+      },
+      {
+        "id": "status/ko/hangul",
+        "pairCount": 40,
+        "leftCount": 20,
+        "rightCount": 20,
+        "difference": 0,
+        "pass": true
+      },
+      {
+        "id": "status/zh/han",
+        "pairCount": 20,
+        "leftCount": 10,
+        "rightCount": 10,
+        "difference": 0,
+        "pass": true
+      }
+    ],
+    "visualHierarchyCells": [
+      {
+        "id": "motif.barcode/requested",
+        "pairCount": 10,
+        "leftCount": 5,
+        "rightCount": 5,
+        "difference": 0,
+        "pass": true
+      },
+      {
+        "id": "motif.barcode/downshifted",
+        "pairCount": 10,
+        "leftCount": 5,
+        "rightCount": 5,
+        "difference": 0,
+        "pass": true
+      },
+      {
+        "id": "motif.pseudo-qr/requested",
+        "pairCount": 10,
+        "leftCount": 5,
+        "rightCount": 5,
+        "difference": 0,
+        "pass": true
+      },
+      {
+        "id": "motif.pseudo-qr/downshifted",
+        "pairCount": 10,
+        "leftCount": 5,
+        "rightCount": 5,
+        "difference": 0,
+        "pass": true
+      },
+      {
+        "id": "motif.table/requested",
+        "pairCount": 10,
+        "leftCount": 5,
+        "rightCount": 5,
+        "difference": 0,
+        "pass": true
+      },
+      {
+        "id": "motif.table/downshifted",
+        "pairCount": 10,
+        "leftCount": 5,
+        "rightCount": 5,
+        "difference": 0,
+        "pass": true
+      },
+      {
+        "id": "motif.wave/requested",
+        "pairCount": 10,
+        "leftCount": 5,
+        "rightCount": 5,
+        "difference": 0,
+        "pass": true
+      },
+      {
+        "id": "motif.wave/downshifted",
+        "pairCount": 10,
+        "leftCount": 5,
+        "rightCount": 5,
+        "difference": 0,
+        "pass": true
+      }
+    ],
+    "pass": true
+  },
+  "reviewerCoverage": [
+    {
+      "fixtureId": "blind-001",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-002",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-003",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-004",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-005",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-006",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-007",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-008",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-009",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-010",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-011",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-012",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-013",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-014",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-015",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-016",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-017",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-018",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-019",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-020",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-021",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-022",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-023",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-024",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-025",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-026",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-027",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-028",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-029",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-030",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-031",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-032",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-033",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-034",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-035",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-036",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-037",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-038",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-039",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-040",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-041",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-042",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-043",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-044",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-045",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-046",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-047",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-048",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-049",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-050",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-051",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-052",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-053",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-054",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-055",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-056",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-057",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-058",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-059",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-060",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-061",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-062",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-063",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-064",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-065",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-066",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-067",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-068",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-069",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-070",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-071",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-072",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-073",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-074",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-075",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-076",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-077",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-078",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-079",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-080",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-081",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-082",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-083",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-084",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-085",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-086",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-087",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-088",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-089",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-090",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-091",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-092",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-093",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-094",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-095",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-096",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-097",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-098",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-099",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-100",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-101",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-102",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-103",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-104",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-105",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-106",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-107",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-108",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-109",
+      "reviewerCount": 0,
+      "pass": false
+    },
+    {
+      "fixtureId": "blind-110",
+      "reviewerCount": 0,
+      "pass": false
+    }
+  ],
+  "stratumFirstRead": [
+    {
+      "id": "command/en/latin",
+      "observationCount": 0,
+      "heroFirstReadMatchCount": 0,
+      "heroFirstReadMatchRate": 0,
+      "pass": false
+    },
+    {
+      "id": "command/ko/hangul",
+      "observationCount": 0,
+      "heroFirstReadMatchCount": 0,
+      "heroFirstReadMatchRate": 0,
+      "pass": false
+    },
+    {
+      "id": "command/zh/han",
+      "observationCount": 0,
+      "heroFirstReadMatchCount": 0,
+      "heroFirstReadMatchRate": 0,
+      "pass": false
+    },
+    {
+      "id": "status/en/latin",
+      "observationCount": 0,
+      "heroFirstReadMatchCount": 0,
+      "heroFirstReadMatchRate": 0,
+      "pass": false
+    },
+    {
+      "id": "status/ko/hangul",
+      "observationCount": 0,
+      "heroFirstReadMatchCount": 0,
+      "heroFirstReadMatchRate": 0,
+      "pass": false
+    },
+    {
+      "id": "status/zh/han",
+      "observationCount": 0,
+      "heroFirstReadMatchCount": 0,
+      "heroFirstReadMatchRate": 0,
+      "pass": false
+    }
+  ],
+  "visualCellFirstRead": [
+    {
+      "id": "motif.barcode/requested",
+      "observationCount": 0,
+      "heroFirstReadMatchCount": 0,
+      "heroFirstReadMatchRate": 0,
+      "pass": false
+    },
+    {
+      "id": "motif.barcode/downshifted",
+      "observationCount": 0,
+      "heroFirstReadMatchCount": 0,
+      "heroFirstReadMatchRate": 0,
+      "pass": false
+    },
+    {
+      "id": "motif.pseudo-qr/requested",
+      "observationCount": 0,
+      "heroFirstReadMatchCount": 0,
+      "heroFirstReadMatchRate": 0,
+      "pass": false
+    },
+    {
+      "id": "motif.pseudo-qr/downshifted",
+      "observationCount": 0,
+      "heroFirstReadMatchCount": 0,
+      "heroFirstReadMatchRate": 0,
+      "pass": false
+    },
+    {
+      "id": "motif.table/requested",
+      "observationCount": 0,
+      "heroFirstReadMatchCount": 0,
+      "heroFirstReadMatchRate": 0,
+      "pass": false
+    },
+    {
+      "id": "motif.table/downshifted",
+      "observationCount": 0,
+      "heroFirstReadMatchCount": 0,
+      "heroFirstReadMatchRate": 0,
+      "pass": false
+    },
+    {
+      "id": "motif.wave/requested",
+      "observationCount": 0,
+      "heroFirstReadMatchCount": 0,
+      "heroFirstReadMatchRate": 0,
+      "pass": false
+    },
+    {
+      "id": "motif.wave/downshifted",
+      "observationCount": 0,
+      "heroFirstReadMatchCount": 0,
+      "heroFirstReadMatchRate": 0,
+      "pass": false
+    }
+  ],
+  "incoherence": {
+    "incoherentCount": 0,
+    "observationCount": 0,
+    "rate": 1
+  },
+  "preference": {
+    "candidate": 0,
+    "baseline": 0,
+    "tie": 0,
+    "nonTieDenominator": 0,
+    "candidateSelectionRate": 0
+  },
+  "stratumLegibility": [
+    {
+      "id": "command/en/latin",
+      "observationCount": 0,
+      "candidateMean": null,
+      "baselineMean": null,
+      "pass": false
+    },
+    {
+      "id": "command/ko/hangul",
+      "observationCount": 0,
+      "candidateMean": null,
+      "baselineMean": null,
+      "pass": false
+    },
+    {
+      "id": "command/zh/han",
+      "observationCount": 0,
+      "candidateMean": null,
+      "baselineMean": null,
+      "pass": false
+    },
+    {
+      "id": "status/en/latin",
+      "observationCount": 0,
+      "candidateMean": null,
+      "baselineMean": null,
+      "pass": false
+    },
+    {
+      "id": "status/ko/hangul",
+      "observationCount": 0,
+      "candidateMean": null,
+      "baselineMean": null,
+      "pass": false
+    },
+    {
+      "id": "status/zh/han",
+      "observationCount": 0,
+      "candidateMean": null,
+      "baselineMean": null,
+      "pass": false
+    }
+  ],
+  "visualCellLegibility": [
+    {
+      "id": "motif.barcode/requested",
+      "observationCount": 0,
+      "candidateMean": null,
+      "baselineMean": null,
+      "pass": false
+    },
+    {
+      "id": "motif.barcode/downshifted",
+      "observationCount": 0,
+      "candidateMean": null,
+      "baselineMean": null,
+      "pass": false
+    },
+    {
+      "id": "motif.pseudo-qr/requested",
+      "observationCount": 0,
+      "candidateMean": null,
+      "baselineMean": null,
+      "pass": false
+    },
+    {
+      "id": "motif.pseudo-qr/downshifted",
+      "observationCount": 0,
+      "candidateMean": null,
+      "baselineMean": null,
+      "pass": false
+    },
+    {
+      "id": "motif.table/requested",
+      "observationCount": 0,
+      "candidateMean": null,
+      "baselineMean": null,
+      "pass": false
+    },
+    {
+      "id": "motif.table/downshifted",
+      "observationCount": 0,
+      "candidateMean": null,
+      "baselineMean": null,
+      "pass": false
+    },
+    {
+      "id": "motif.wave/requested",
+      "observationCount": 0,
+      "candidateMean": null,
+      "baselineMean": null,
+      "pass": false
+    },
+    {
+      "id": "motif.wave/downshifted",
+      "observationCount": 0,
+      "candidateMean": null,
+      "baselineMean": null,
+      "pass": false
+    }
+  ],
+  "languageNaturalness": [
+    {
+      "language": "en",
+      "observationCount": 0,
+      "candidateMean": null,
+      "baselineMean": null,
+      "pass": false
+    },
+    {
+      "language": "ko",
+      "observationCount": 0,
+      "candidateMean": null,
+      "baselineMean": null,
+      "pass": false
+    },
+    {
+      "language": "zh",
+      "observationCount": 0,
+      "candidateMean": null,
+      "baselineMean": null,
+      "pass": false
+    }
+  ],
+  "reviewerDisagreement": [
+    {
+      "fixtureId": "blind-001",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-002",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-003",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-004",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-005",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-006",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-007",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-008",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-009",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-010",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-011",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-012",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-013",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-014",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-015",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-016",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-017",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-018",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-019",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-020",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-021",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-022",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-023",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-024",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-025",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-026",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-027",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-028",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-029",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-030",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-031",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-032",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-033",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-034",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-035",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-036",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-037",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-038",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-039",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-040",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-041",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-042",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-043",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-044",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-045",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-046",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-047",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-048",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-049",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-050",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-051",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-052",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-053",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-054",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-055",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-056",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-057",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-058",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-059",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-060",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-061",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-062",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-063",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-064",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-065",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-066",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-067",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-068",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-069",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-070",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-071",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-072",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-073",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-074",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-075",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-076",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-077",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-078",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-079",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-080",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-081",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-082",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-083",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-084",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-085",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-086",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-087",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-088",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-089",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-090",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-091",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-092",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-093",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-094",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-095",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-096",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-097",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-098",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-099",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-100",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-101",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-102",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-103",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-104",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-105",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-106",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-107",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-108",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-109",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    },
+    {
+      "fixtureId": "blind-110",
+      "preferenceDisagreement": false,
+      "firstAttentionDisagreement": false,
+      "candidateHeroFirstReadDisagreement": false
+    }
+  ],
+  "openTranslationErrors": [],
+  "translationLedgerQualifications": [
+    {
+      "ledgerRecordId": "translation-error:break-ko-001",
+      "language": "ko",
+      "adjudicatorIds": [
+        "reviewer-ko-01",
+        "reviewer-ko-02"
+      ],
+      "missingQualifiedReviewerIds": [
+        "reviewer-ko-01",
+        "reviewer-ko-02"
+      ],
+      "pass": false
+    },
+    {
+      "ledgerRecordId": "translation-error:snap-zh-001",
+      "language": "zh",
+      "adjudicatorIds": [
+        "reviewer-zh-01",
+        "reviewer-zh-02"
+      ],
+      "missingQualifiedReviewerIds": [
+        "reviewer-zh-01",
+        "reviewer-zh-02"
+      ],
+      "pass": false
+    },
+    {
+      "ledgerRecordId": "translation-error:leave-ko-001",
+      "language": "ko",
+      "adjudicatorIds": [
+        "reviewer-ko-01",
+        "reviewer-ko-02"
+      ],
+      "missingQualifiedReviewerIds": [
+        "reviewer-ko-01",
+        "reviewer-ko-02"
+      ],
+      "pass": false
+    }
+  ],
+  "acceptance": {
+    "corpusCoveragePass": true,
+    "counterbalancePass": true,
+    "reviewerCoveragePass": false,
+    "stratumFirstReadPass": false,
+    "visualCellFirstReadPass": false,
+    "incoherentRatePass": false,
+    "candidatePreferencePass": false,
+    "stratumLegibilityPass": false,
+    "visualCellLegibilityPass": false,
+    "languageNaturalnessPass": false,
+    "openTranslationErrorCount": 0,
+    "translationLedgerQualificationPass": false,
+    "pass": false
+  }
+}

@@ -4,12 +4,15 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=18"
+    "node": "22.12.0"
   },
   "scripts": {
     "test:generator:install": "playwright install chromium",
     "test:generator": "node web/micro-graphic-generator/tests/run-tests.mjs",
-    "test:generator:soak": "node web/micro-graphic-generator/tests/run-tests.mjs --soak"
+    "test:generator:soak": "node web/micro-graphic-generator/tests/run-tests.mjs --soak",
+    "test:generator:acceptance": "node web/micro-graphic-generator/tests/run-tests.mjs --require-acceptance",
+    "test:generator:expressive": "node web/micro-graphic-generator/scripts/generate-expressive-range-report.mjs",
+    "test:generator:blind": "node web/micro-graphic-generator/scripts/generate-blind-evaluation-corpus.mjs"
   },
   "dependencies": {
     "three": "^0.172.0"

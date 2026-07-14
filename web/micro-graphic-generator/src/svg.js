@@ -1,4 +1,9 @@
 import { FONT_WEIGHTS, SVG_NS } from "./config.js";
+import { sha256Hex, utf8Bytes } from "./canonical-hash.js";
+export {
+  deriveSvgStructuralProjection,
+  svgStructuralFingerprint
+} from "./svg-structural.js";
 import {
   fontWeightForToken,
   fontWeightValueForToken,
@@ -14,6 +19,7 @@ import {
   resolveTextAlignment,
   resolveTypeface
 } from "./typography.js";
+import { svgStructuralFingerprint } from "./svg-structural.js";
 
 export function make(tag, attrs = {}, children = []) {
   const element = document.createElementNS(SVG_NS, tag);
@@ -109,4 +115,9 @@ export function polyline(points, attrs = {}) {
     "stroke-dasharray": attrs.dash || "",
     opacity: attrs.opacity ?? 1
   });
+}
+
+export function artifactByteDigest(value) {
+  const bytes = typeof value === "string" ? utf8Bytes(value) : value;
+  return `sha256:${sha256Hex(bytes)}`;
 }
