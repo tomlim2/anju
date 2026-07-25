@@ -249,9 +249,9 @@ semantic production generator는 61개 command 번역 세트 중 정확히 1개�
 
 HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를 `sign / status-code` 보조 typography로 사용한다. `small 8px`와 `medium 16px`에 분산하고 일반 block의 sign 후보로만 조합한다. `STATUS` 역시 `medium / sign / status`로만 사용하며 hero 후보에는 넣지 않는다.
 
-웹에서 보기 위해 SUIT 2.0.5의 Regular/Bold/Heavy, Glow Sans SC 0.93 Normal 폭의 Regular/Bold/Heavy 서브셋, 그리고 `Noto Sans`, `Noto Sans KR`, `Noto Sans SC`, `Noto Sans Mono`를 `fonts/` 안에 로컬 파일로 번들한다. SUIT와 Glow Sans SC는 SIL Open Font License 1.1이며 라이선스 원문을 각각 `fonts/SUIT-OFL.txt`, `fonts/GlowSansSC-OFL.txt`에 함께 둔다. Glow Sans SC 서브셋은 현재 중국어 action token, 인사말, 날짜·숫자 문자와 `林`을 포함한다. HTML은 `./fonts/fonts.css`를 import하고, SVG export도 같은 CSS 파일을 절대 URL로 넣는다. 외부 폰트 요청을 기다리지 않도록 하기 위한 결정이며, 앱은 로컬 폰트의 400/700/900 weight가 붙은 뒤 첫 렌더가 되도록 `document.fonts.load()`와 `document.fonts.ready`를 짧게 기다린다.
+웹에서 보기 위해 SUIT 2.0.5의 Regular/Bold/Heavy, Glow Sans SC 0.93 Normal 폭의 Regular/Bold/Heavy 서브셋, 그리고 `Noto Sans`, `Noto Sans KR`, `Noto Sans SC`, `Noto Sans Mono`를 `fonts/` 안에 로컬 파일로 번들한다. SUIT와 Glow Sans SC는 SIL Open Font License 1.1이며 라이선스 원문을 각각 `fonts/SUIT-OFL.txt`, `fonts/GlowSansSC-OFL.txt`에 함께 둔다. Glow Sans SC 서브셋은 소스가 실제로 쓰는 CJK 141자(중국어 token, 인사말, 날짜·숫자 문자, `林`, `〇` 포함) 전체를 담아 폴백 없이 그린다. HTML은 `./fonts/fonts.css`를 import하고, SVG export도 같은 CSS 파일을 절대 URL로 넣는다. 외부 폰트 요청을 기다리지 않도록 하기 위한 결정이며, 앱은 로컬 폰트의 400/700/900 weight가 붙은 뒤 첫 렌더가 되도록 `document.fonts.load()`와 `document.fonts.ready`를 짧게 기다린다.
 
-중국어/한자 glyph가 Glow Sans SC 서브셋에 없으면 `Noto Sans SC`, `Noto Sans KR` 순서로 fallback한다. 현재 vocabulary를 늘릴 때는 Glow Sans SC 서브셋의 문자 범위도 함께 갱신한다.
+중국어/한자 glyph가 Glow Sans SC 서브셋에 없으면 `Noto Sans SC`, `Noto Sans KR` 순서로 fallback한다. vocabulary를 늘리면 Glow Sans SC 서브셋의 문자 범위도 함께 갱신해야 한다. 서브셋은 `welai/glow-sans` v0.93 Normal 폭 원본(Regular/Bold/Heavy)에서 소스의 CJK 문자 집합으로 재생성한다.
 
 ### Date And Refresh Time Typography
 
@@ -537,3 +537,4 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-12: 같은 component의 `3x1` 또는 `1x3` typography가 서로 다른 크기로 fallback되면 footprint별 가장 작은 실제 size로 일괄 통일하고, `3x1`·`1x3`·`3x2`·`2x3` block 안의 `xlarge` content만 900 weight를 사용하도록 변경.
 - 2026-07-11: `3x2`, `2x3` block의 xxxlarge token anchor를 center/middle로 고정.
 - 2026-07-12: 제공된 action text에서 62개 고유 표현을 추출하고 한글·영어·중국어 대응 token을 large, xxlarge, xxxlarge display 후보에 추가.
+- 2026-07-25: Glow Sans SC 서브셋에 `系统`·`拒绝访问`·`网络` 등 20자가 빠져 시스템 폰트로 폴백되며 두께가 불균일하던 문제를, v0.93 Normal 원본에서 소스 CJK 141자 전체로 재서브셋해 해결.
