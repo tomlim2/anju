@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "fontMetricsVersion": 1,
+  "cases": [
+    {
+      "id": "metric-1",
+      "input": {
+        "text": "UPGRADE",
+        "typeface": "english",
+        "fontWeight": 400,
+        "size": "large",
+        "lineHeight": 1,
+        "orientationMode": "none"
+      },
+      "expected": { "width": 125.44, "height": 32 }
+    },
+    {
+      "id": "metric-2",
+      "input": {
+        "text": "UPGRADE",
+        "typeface": "english",
+        "fontWeight": 900,
+        "size": "xxlarge",
+        "lineHeight": 1,
+        "orientationMode": "none"
+      },
+      "expected": { "width": 555.52, "height": 128 }
+    },
+    {
+      "id": "metric-3",
+      "input": {
+        "text": "업그레이드",
+        "typeface": "korean",
+        "fontWeight": 700,
+        "size": "xlarge",
+        "lineHeight": 1,
+        "orientationMode": "none"
+      },
+      "expected": { "width": 313.6, "height": 64 }
+    },
+    {
+      "id": "metric-4",
+      "input": {
+        "text": "升级",
+        "typeface": "chinese",
+        "fontWeight": 900,
+        "size": "xxxlarge",
+        "lineHeight": 1,
+        "orientationMode": "none"
+      },
+      "expected": { "width": 512, "height": 256 }
+    },
+    {
+      "id": "metric-5",
+      "input": {
+        "text": "UPDATE",
+        "typeface": "english",
+        "fontWeight": 900,
+        "size": "xxlarge",
+        "lineHeight": 1,
+        "orientationMode": "whole-rotate"
+      },
+      "expected": { "width": 128, "height": 476.16 }
+    },
+    {
+      "id": "metric-6",
+      "input": {
+        "text": "검증",
+        "typeface": "korean",
+        "fontWeight": 900,
+        "size": "xxlarge",
+        "lineHeight": 1,
+        "orientationMode": "glyph-sideways-stack"
+      },
+      "expected": { "width": 128, "height": 256 }
+    }
+  ]
+}

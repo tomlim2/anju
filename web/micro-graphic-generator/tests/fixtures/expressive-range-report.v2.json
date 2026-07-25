@@ -1,0 +1,3372 @@
+{
+  "schemaVersion": 2,
+  "reportSeriesId": "expressive-range:v2:a1eb5849cec1",
+  "inputFixtureSha256": "sha256:68a8d3c799d67e3f178c6d66140d1501ed1be6641a0906acef2bb63927d2a1fd",
+  "inputCount": 10000,
+  "versionTuple": {
+    "vocabularyVersion": 2,
+    "recipeVersion": 4,
+    "motifVersion": 1,
+    "configVersion": 1,
+    "compositionEngineVersion": 5,
+    "fontMetricsVersion": 1,
+    "fontAssetRevision": "sha256:20c6c693a221b7a0665ed39e5c9c8b1c5ffe8c83362035eac2e15dc64ae77d64",
+    "ownerSnapshotRevision": "sha256:a1eb5849cec1d9be995e07933f0af01708d40b6208a526ba7a7cf5a60ce2bde9"
+  },
+  "eventArtifact": {
+    "path": "web/micro-graphic-generator/tests/fixtures/expressive-range-events.v2.jsonl",
+    "sha256": "sha256:47762fec2a424decce90708bbdead37d743ea00bc0acb67791e9d08b7d04b6f3",
+    "recordCount": 30000
+  },
+  "evaluationTooling": {
+    "schemaVersion": 1,
+    "profile": "expressive-range-v2",
+    "sourceByteHashes": [
+      {
+        "path": "web/micro-graphic-generator/scripts/blind-evaluation-corpus-lib.mjs",
+        "sha256Hex": "f833c7594d6aa965f475ee4fc8197e5676d889ba4c24780683017ced4c6bf64a"
+      },
+      {
+        "path": "web/micro-graphic-generator/scripts/composition-owner-manifest-lib.mjs",
+        "sha256Hex": "7ec0588df00deda8195965abbc98e623b31fa873e634450b70357977b5d71034"
+      },
+      {
+        "path": "web/micro-graphic-generator/scripts/evaluation-model.mjs",
+        "sha256Hex": "850551354577e2e16476cb6bb243c9fb4687d7a9e7bfe7093c00926df5e54d16"
+      },
+      {
+        "path": "web/micro-graphic-generator/scripts/evaluation-tooling-evidence.mjs",
+        "sha256Hex": "4a7dcc9abcd7b9d4ed412d32f811a369a97fc27e0a9f094772e47c3f5c88d7cf"
+      },
+      {
+        "path": "web/micro-graphic-generator/scripts/generate-expressive-range-report.mjs",
+        "sha256Hex": "28716d2ea40f6f9462a4af05f3234daddfc4dd40a6d42f566fccee21fbc5a3f0"
+      },
+      {
+        "path": "web/micro-graphic-generator/scripts/owned-test-server.mjs",
+        "sha256Hex": "0c86da58277a7ea36a45dc6a6c70b9f60fff385cfd921f70aed7cc7fa9075bec"
+      },
+      {
+        "path": "web/micro-graphic-generator/scripts/static-module-specifiers.mjs",
+        "sha256Hex": "af6dfb7042110df82d369732842671722b421d39016a213867978b9530fd1bf1"
+      },
+      {
+        "path": "web/micro-graphic-generator/src/canonical-hash.js",
+        "sha256Hex": "0f5eced0d5292111d3ed1e1f85b04c7352a2ad6723c1041933a16154bc74c017"
+      },
+      {
+        "path": "web/micro-graphic-generator/src/composition-model.js",
+        "sha256Hex": "6f6f47652d2b705d0eb9eb06642f38914c25e4a6bcc647d05e6f329131660bc8"
+      },
+      {
+        "path": "web/micro-graphic-generator/src/composition-owner-snapshot.js",
+        "sha256Hex": "70ee4de01b63d702f422f974ddeb0721d9cee1db38e956f1bb6fcdfdb0e708ff"
+      },
+      {
+        "path": "web/micro-graphic-generator/src/config.js",
+        "sha256Hex": "75949a6450d9c435f95b3891f78e644dedfed9005f24774e4159b8d1cf1c1628"
+      },
+      {
+        "path": "web/micro-graphic-generator/src/vendor/sha256.js",
+        "sha256Hex": "92872244347172ea4360b1d042d53fac7226f795b51d2960b0180ca8355b2a50"
+      },
+      {
+        "path": "web/micro-graphic-generator/tests/runtime-conformance.mjs",
+        "sha256Hex": "f81cad1ce2acb7629cf916fc86cbf13b40ff0824f5f0861df692612956655d61"
+      },
+      {
+        "path": "web/micro-graphic-generator/tests/static-server.mjs",
+        "sha256Hex": "a0407edc484920e8328ab5fda7381889982ed03f2e2195ba7047905a42da3f7c"
+      }
+    ],
+    "revision": "sha256:55a88043bb46e661c66e29c49a7c219b7425e118d2455b124dc26d01d83c521a"
+  },
+  "curationReviewerDirectoryRevision": "sha256:c6df38a8752b694667ea1d69c0c12807b1031ffa7704a6d139f46f159e2b03c7",
+  "successorReportSetRevision": "sha256:0a64ae47cd855f3ef8b395ae96d0487c2746a09e9b1e99ce1a020e070fd97ec7",
+  "populationCounts": {
+    "initial-selection": 10000,
+    "attempt": 10000,
+    "accepted-output": 10000,
+    "terminal-failure": 0
+  },
+  "implementationDistribution": {
+    "selectedInputCount": 10000,
+    "noCandidateInputCount": 0,
+    "heroes": [
+      {
+        "heroLexicalUseId": "access-denied.status.en",
+        "expectedCount": 332,
+        "observedCount": 332,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "access-denied.status.ko",
+        "expectedCount": 350,
+        "observedCount": 350,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "access-denied.status.zh",
+        "expectedCount": 321,
+        "observedCount": 321,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "break.command.en",
+        "expectedCount": 32,
+        "observedCount": 32,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "break.command.ko",
+        "expectedCount": 35,
+        "observedCount": 35,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "break.command.zh",
+        "expectedCount": 26,
+        "observedCount": 26,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "bring.command.en",
+        "expectedCount": 26,
+        "observedCount": 26,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "bring.command.ko",
+        "expectedCount": 24,
+        "observedCount": 24,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "bring.command.zh",
+        "expectedCount": 37,
+        "observedCount": 37,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "burn.command.en",
+        "expectedCount": 24,
+        "observedCount": 24,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "burn.command.ko",
+        "expectedCount": 36,
+        "observedCount": 36,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "burn.command.zh",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "buy.command.en",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "buy.command.ko",
+        "expectedCount": 13,
+        "observedCount": 13,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "buy.command.zh",
+        "expectedCount": 29,
+        "observedCount": 29,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "call.command.en",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "call.command.ko",
+        "expectedCount": 30,
+        "observedCount": 30,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "call.command.zh",
+        "expectedCount": 24,
+        "observedCount": 24,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "change.command.en",
+        "expectedCount": 33,
+        "observedCount": 33,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "change.command.ko",
+        "expectedCount": 29,
+        "observedCount": 29,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "change.command.zh",
+        "expectedCount": 23,
+        "observedCount": 23,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "charge.command.en",
+        "expectedCount": 23,
+        "observedCount": 23,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "charge.command.ko",
+        "expectedCount": 24,
+        "observedCount": 24,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "charge.command.zh",
+        "expectedCount": 18,
+        "observedCount": 18,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "check.command.en",
+        "expectedCount": 26,
+        "observedCount": 26,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "check.command.ko",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "check.command.zh",
+        "expectedCount": 24,
+        "observedCount": 24,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "click.command.en",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "click.command.ko",
+        "expectedCount": 25,
+        "observedCount": 25,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "click.command.zh",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "code.command.en",
+        "expectedCount": 19,
+        "observedCount": 19,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "code.command.ko",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "code.command.zh",
+        "expectedCount": 24,
+        "observedCount": 24,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "crack.command.en",
+        "expectedCount": 36,
+        "observedCount": 36,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "crack.command.ko",
+        "expectedCount": 37,
+        "observedCount": 37,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "crack.command.zh",
+        "expectedCount": 21,
+        "observedCount": 21,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "cross.command.en",
+        "expectedCount": 32,
+        "observedCount": 32,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "cross.command.ko",
+        "expectedCount": 33,
+        "observedCount": 33,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "cross.command.zh",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "cut.command.en",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "cut.command.ko",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "cut.command.zh",
+        "expectedCount": 25,
+        "observedCount": 25,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "drag-and-drop.command.en",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "drag-and-drop.command.ko",
+        "expectedCount": 20,
+        "observedCount": 20,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "drag-and-drop.command.zh",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "erase.command.en",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "erase.command.ko",
+        "expectedCount": 40,
+        "observedCount": 40,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "erase.command.zh",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "fax.command.en",
+        "expectedCount": 26,
+        "observedCount": 26,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "fax.command.ko",
+        "expectedCount": 36,
+        "observedCount": 36,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "fax.command.zh",
+        "expectedCount": 25,
+        "observedCount": 25,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "fill.command.en",
+        "expectedCount": 29,
+        "observedCount": 29,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "fill.command.ko",
+        "expectedCount": 29,
+        "observedCount": 29,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "fill.command.zh",
+        "expectedCount": 34,
+        "observedCount": 34,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "find.command.en",
+        "expectedCount": 23,
+        "observedCount": 23,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "find.command.ko",
+        "expectedCount": 26,
+        "observedCount": 26,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "find.command.zh",
+        "expectedCount": 35,
+        "observedCount": 35,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "fix.command.en",
+        "expectedCount": 25,
+        "observedCount": 25,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "fix.command.ko",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "fix.command.zh",
+        "expectedCount": 34,
+        "observedCount": 34,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "format.command.en",
+        "expectedCount": 36,
+        "observedCount": 36,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "format.command.ko",
+        "expectedCount": 23,
+        "observedCount": 23,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "format.command.zh",
+        "expectedCount": 23,
+        "observedCount": 23,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "jam.command.en",
+        "expectedCount": 25,
+        "observedCount": 25,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "jam.command.ko",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "jam.command.zh",
+        "expectedCount": 22,
+        "observedCount": 22,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "leave.command.en",
+        "expectedCount": 24,
+        "observedCount": 24,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "leave.command.ko",
+        "expectedCount": 29,
+        "observedCount": 29,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "leave.command.zh",
+        "expectedCount": 24,
+        "observedCount": 24,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "load.command.en",
+        "expectedCount": 24,
+        "observedCount": 24,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "load.command.ko",
+        "expectedCount": 35,
+        "observedCount": 35,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "load.command.zh",
+        "expectedCount": 30,
+        "observedCount": 30,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "lock.command.en",
+        "expectedCount": 29,
+        "observedCount": 29,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "lock.command.ko",
+        "expectedCount": 36,
+        "observedCount": 36,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "lock.command.zh",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "locked.status.en",
+        "expectedCount": 335,
+        "observedCount": 335,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "locked.status.ko",
+        "expectedCount": 323,
+        "observedCount": 323,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "locked.status.zh",
+        "expectedCount": 351,
+        "observedCount": 351,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "mail.command.en",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "mail.command.ko",
+        "expectedCount": 23,
+        "observedCount": 23,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "mail.command.zh",
+        "expectedCount": 25,
+        "observedCount": 25,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "name.command.en",
+        "expectedCount": 29,
+        "observedCount": 29,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "name.command.ko",
+        "expectedCount": 32,
+        "observedCount": 32,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "name.command.zh",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "paste.command.en",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "paste.command.ko",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "paste.command.zh",
+        "expectedCount": 21,
+        "observedCount": 21,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "pause.command.en",
+        "expectedCount": 29,
+        "observedCount": 29,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "pause.command.ko",
+        "expectedCount": 20,
+        "observedCount": 20,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "pause.command.zh",
+        "expectedCount": 26,
+        "observedCount": 26,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "pay.command.en",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "pay.command.ko",
+        "expectedCount": 32,
+        "observedCount": 32,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "pay.command.zh",
+        "expectedCount": 21,
+        "observedCount": 21,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "play.command.en",
+        "expectedCount": 29,
+        "observedCount": 29,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "play.command.ko",
+        "expectedCount": 38,
+        "observedCount": 38,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "play.command.zh",
+        "expectedCount": 25,
+        "observedCount": 25,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "plug.command.en",
+        "expectedCount": 40,
+        "observedCount": 40,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "plug.command.ko",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "plug.command.zh",
+        "expectedCount": 29,
+        "observedCount": 29,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "point.command.en",
+        "expectedCount": 30,
+        "observedCount": 30,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "point.command.ko",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "point.command.zh",
+        "expectedCount": 22,
+        "observedCount": 22,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "press.command.en",
+        "expectedCount": 22,
+        "observedCount": 22,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "press.command.ko",
+        "expectedCount": 39,
+        "observedCount": 39,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "press.command.zh",
+        "expectedCount": 23,
+        "observedCount": 23,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "print.command.en",
+        "expectedCount": 25,
+        "observedCount": 25,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "print.command.ko",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "print.command.zh",
+        "expectedCount": 25,
+        "observedCount": 25,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "read.command.en",
+        "expectedCount": 30,
+        "observedCount": 30,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "read.command.ko",
+        "expectedCount": 21,
+        "observedCount": 21,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "read.command.zh",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "rename.command.en",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "rename.command.ko",
+        "expectedCount": 26,
+        "observedCount": 26,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "rename.command.zh",
+        "expectedCount": 30,
+        "observedCount": 30,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "rewrite.command.en",
+        "expectedCount": 33,
+        "observedCount": 33,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "rewrite.command.ko",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "rewrite.command.zh",
+        "expectedCount": 34,
+        "observedCount": 34,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "rip.command.en",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "rip.command.ko",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "rip.command.zh",
+        "expectedCount": 24,
+        "observedCount": 24,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "running.status.en",
+        "expectedCount": 334,
+        "observedCount": 334,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "running.status.ko",
+        "expectedCount": 346,
+        "observedCount": 346,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "running.status.zh",
+        "expectedCount": 309,
+        "observedCount": 309,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "save.command.en",
+        "expectedCount": 30,
+        "observedCount": 30,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "save.command.ko",
+        "expectedCount": 20,
+        "observedCount": 20,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "save.command.zh",
+        "expectedCount": 29,
+        "observedCount": 29,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "scan.command.en",
+        "expectedCount": 32,
+        "observedCount": 32,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "scan.command.ko",
+        "expectedCount": 15,
+        "observedCount": 15,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "scan.command.zh",
+        "expectedCount": 24,
+        "observedCount": 24,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "scroll.command.en",
+        "expectedCount": 25,
+        "observedCount": 25,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "scroll.command.ko",
+        "expectedCount": 25,
+        "observedCount": 25,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "scroll.command.zh",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "send.command.en",
+        "expectedCount": 24,
+        "observedCount": 24,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "send.command.ko",
+        "expectedCount": 30,
+        "observedCount": 30,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "send.command.zh",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "snap.command.en",
+        "expectedCount": 25,
+        "observedCount": 25,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "snap.command.ko",
+        "expectedCount": 26,
+        "observedCount": 26,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "snap.command.zh",
+        "expectedCount": 33,
+        "observedCount": 33,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "standby.status.en",
+        "expectedCount": 326,
+        "observedCount": 326,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "standby.status.ko",
+        "expectedCount": 321,
+        "observedCount": 321,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "standby.status.zh",
+        "expectedCount": 322,
+        "observedCount": 322,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "start.command.en",
+        "expectedCount": 36,
+        "observedCount": 36,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "start.command.ko",
+        "expectedCount": 29,
+        "observedCount": 29,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "start.command.zh",
+        "expectedCount": 23,
+        "observedCount": 23,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "surf.command.en",
+        "expectedCount": 26,
+        "observedCount": 26,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "surf.command.ko",
+        "expectedCount": 23,
+        "observedCount": 23,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "surf.command.zh",
+        "expectedCount": 25,
+        "observedCount": 25,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "switch.command.en",
+        "expectedCount": 22,
+        "observedCount": 22,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "switch.command.ko",
+        "expectedCount": 31,
+        "observedCount": 31,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "switch.command.zh",
+        "expectedCount": 30,
+        "observedCount": 30,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "touch.command.en",
+        "expectedCount": 31,
+        "observedCount": 31,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "touch.command.ko",
+        "expectedCount": 29,
+        "observedCount": 29,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "touch.command.zh",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "trash.command.en",
+        "expectedCount": 40,
+        "observedCount": 40,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "trash.command.ko",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "trash.command.zh",
+        "expectedCount": 32,
+        "observedCount": 32,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "tune.command.en",
+        "expectedCount": 33,
+        "observedCount": 33,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "tune.command.ko",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "tune.command.zh",
+        "expectedCount": 30,
+        "observedCount": 30,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "turn.command.en",
+        "expectedCount": 34,
+        "observedCount": 34,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "turn.command.ko",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "turn.command.zh",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "unlock.command.en",
+        "expectedCount": 20,
+        "observedCount": 20,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "unlock.command.ko",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "unlock.command.zh",
+        "expectedCount": 17,
+        "observedCount": 17,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "unzip.command.en",
+        "expectedCount": 33,
+        "observedCount": 33,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "unzip.command.ko",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "unzip.command.zh",
+        "expectedCount": 26,
+        "observedCount": 26,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "update.command.en",
+        "expectedCount": 30,
+        "observedCount": 30,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "update.command.ko",
+        "expectedCount": 26,
+        "observedCount": 26,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "update.command.zh",
+        "expectedCount": 24,
+        "observedCount": 24,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "upgrade.command.en",
+        "expectedCount": 30,
+        "observedCount": 30,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "upgrade.command.ko",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "upgrade.command.zh",
+        "expectedCount": 32,
+        "observedCount": 32,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "use.command.en",
+        "expectedCount": 25,
+        "observedCount": 25,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "use.command.ko",
+        "expectedCount": 29,
+        "observedCount": 29,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "use.command.zh",
+        "expectedCount": 24,
+        "observedCount": 24,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "verified.status.en",
+        "expectedCount": 330,
+        "observedCount": 330,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "verified.status.ko",
+        "expectedCount": 328,
+        "observedCount": 328,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "verified.status.zh",
+        "expectedCount": 355,
+        "observedCount": 355,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "view.command.en",
+        "expectedCount": 21,
+        "observedCount": 21,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "view.command.ko",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "view.command.zh",
+        "expectedCount": 17,
+        "observedCount": 17,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "watch.command.en",
+        "expectedCount": 36,
+        "observedCount": 36,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "watch.command.ko",
+        "expectedCount": 24,
+        "observedCount": 24,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "watch.command.zh",
+        "expectedCount": 22,
+        "observedCount": 22,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "work.command.en",
+        "expectedCount": 36,
+        "observedCount": 36,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "work.command.ko",
+        "expectedCount": 23,
+        "observedCount": 23,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "work.command.zh",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "write.command.en",
+        "expectedCount": 25,
+        "observedCount": 25,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "write.command.ko",
+        "expectedCount": 27,
+        "observedCount": 27,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "write.command.zh",
+        "expectedCount": 22,
+        "observedCount": 22,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "zip.command.en",
+        "expectedCount": 35,
+        "observedCount": 35,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "zip.command.ko",
+        "expectedCount": 22,
+        "observedCount": 22,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "zip.command.zh",
+        "expectedCount": 23,
+        "observedCount": 23,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "zoom.command.en",
+        "expectedCount": 28,
+        "observedCount": 28,
+        "observedExpectedRatio": 1,
+        "eligible": true,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "zoom.command.ko",
+        "expectedCount": 22,
+        "observedCount": 22,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      },
+      {
+        "heroLexicalUseId": "zoom.command.zh",
+        "expectedCount": 15,
+        "observedCount": 15,
+        "observedExpectedRatio": 1,
+        "eligible": false,
+        "pass": true
+      }
+    ],
+    "failures": []
+  },
+  "mountedOutcomeDistribution": {
+    "attemptCount": 10000,
+    "acceptedCount": 10000,
+    "rejectedCount": 0,
+    "acceptanceRate": 1,
+    "rejectionRate": 0,
+    "inputCounts": {
+      "withMountedAttempt": 10000,
+      "withMountedRejection": 0,
+      "withKnownGoodAttempt": 0
+    },
+    "ranked": {
+      "attemptCount": 10000,
+      "acceptedCount": 10000,
+      "rejectedCount": 0,
+      "acceptanceRate": 1,
+      "rejectionRate": 0
+    },
+    "knownGood": {
+      "attemptCount": 0,
+      "acceptedCount": 0,
+      "rejectedCount": 0,
+      "acceptanceRate": 0,
+      "rejectionRate": 0,
+      "fallbackTriggers": []
+    },
+    "rejectionReasons": [],
+    "denominatorsPass": true
+  },
+  "editorialConcentration": {
+    "acceptedOutputCount": 10000,
+    "strata": [
+      {
+        "id": "command/en",
+        "recipeId": "command",
+        "language": "en",
+        "acceptedOutputCount": 1739,
+        "nonZeroMedianCount": 28,
+        "nonZeroMedianRate": 0.016101208,
+        "topShare": 0.023001725,
+        "hhi": 0.016831006
+      },
+      {
+        "id": "command/ko",
+        "recipeId": "command",
+        "language": "ko",
+        "acceptedOutputCount": 1687,
+        "nonZeroMedianCount": 27,
+        "nonZeroMedianRate": 0.016004742,
+        "topShare": 0.023710729,
+        "hhi": 0.016993509
+      },
+      {
+        "id": "command/zh",
+        "recipeId": "command",
+        "language": "zh",
+        "acceptedOutputCount": 1591,
+        "nonZeroMedianCount": 26,
+        "nonZeroMedianRate": 0.016341923,
+        "topShare": 0.023255814,
+        "hhi": 0.016873275
+      },
+      {
+        "id": "status/en",
+        "recipeId": "status",
+        "language": "en",
+        "acceptedOutputCount": 1657,
+        "nonZeroMedianCount": 332,
+        "nonZeroMedianRate": 0.2003621,
+        "topShare": 0.202172601,
+        "hhi": 0.200018648
+      },
+      {
+        "id": "status/ko",
+        "recipeId": "status",
+        "language": "ko",
+        "acceptedOutputCount": 1668,
+        "nonZeroMedianCount": 328,
+        "nonZeroMedianRate": 0.196642686,
+        "topShare": 0.209832134,
+        "hhi": 0.200260655
+      },
+      {
+        "id": "status/zh",
+        "recipeId": "status",
+        "language": "zh",
+        "acceptedOutputCount": 1658,
+        "nonZeroMedianCount": 322,
+        "nonZeroMedianRate": 0.194209891,
+        "topShare": 0.21411339,
+        "hhi": 0.200596297
+      }
+    ],
+    "heroes": [
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "plug.command.en",
+        "observedCount": 40,
+        "observedRate": 0.023001725,
+        "medianMultiple": 1.428571429,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "trash.command.en",
+        "observedCount": 40,
+        "observedRate": 0.023001725,
+        "medianMultiple": 1.428571429,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "crack.command.en",
+        "observedCount": 36,
+        "observedRate": 0.020701553,
+        "medianMultiple": 1.285714286,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "format.command.en",
+        "observedCount": 36,
+        "observedRate": 0.020701553,
+        "medianMultiple": 1.285714286,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "start.command.en",
+        "observedCount": 36,
+        "observedRate": 0.020701553,
+        "medianMultiple": 1.285714286,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "watch.command.en",
+        "observedCount": 36,
+        "observedRate": 0.020701553,
+        "medianMultiple": 1.285714286,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "work.command.en",
+        "observedCount": 36,
+        "observedRate": 0.020701553,
+        "medianMultiple": 1.285714286,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "zip.command.en",
+        "observedCount": 35,
+        "observedRate": 0.020126509,
+        "medianMultiple": 1.25,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "turn.command.en",
+        "observedCount": 34,
+        "observedRate": 0.019551466,
+        "medianMultiple": 1.214285714,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "change.command.en",
+        "observedCount": 33,
+        "observedRate": 0.018976423,
+        "medianMultiple": 1.178571429,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "rewrite.command.en",
+        "observedCount": 33,
+        "observedRate": 0.018976423,
+        "medianMultiple": 1.178571429,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "tune.command.en",
+        "observedCount": 33,
+        "observedRate": 0.018976423,
+        "medianMultiple": 1.178571429,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "unzip.command.en",
+        "observedCount": 33,
+        "observedRate": 0.018976423,
+        "medianMultiple": 1.178571429,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "break.command.en",
+        "observedCount": 32,
+        "observedRate": 0.01840138,
+        "medianMultiple": 1.142857143,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "cross.command.en",
+        "observedCount": 32,
+        "observedRate": 0.01840138,
+        "medianMultiple": 1.142857143,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "scan.command.en",
+        "observedCount": 32,
+        "observedRate": 0.01840138,
+        "medianMultiple": 1.142857143,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "touch.command.en",
+        "observedCount": 31,
+        "observedRate": 0.017826337,
+        "medianMultiple": 1.107142857,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "point.command.en",
+        "observedCount": 30,
+        "observedRate": 0.017251294,
+        "medianMultiple": 1.071428571,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "read.command.en",
+        "observedCount": 30,
+        "observedRate": 0.017251294,
+        "medianMultiple": 1.071428571,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "save.command.en",
+        "observedCount": 30,
+        "observedRate": 0.017251294,
+        "medianMultiple": 1.071428571,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "update.command.en",
+        "observedCount": 30,
+        "observedRate": 0.017251294,
+        "medianMultiple": 1.071428571,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "upgrade.command.en",
+        "observedCount": 30,
+        "observedRate": 0.017251294,
+        "medianMultiple": 1.071428571,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "fill.command.en",
+        "observedCount": 29,
+        "observedRate": 0.016676251,
+        "medianMultiple": 1.035714286,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "lock.command.en",
+        "observedCount": 29,
+        "observedRate": 0.016676251,
+        "medianMultiple": 1.035714286,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "name.command.en",
+        "observedCount": 29,
+        "observedRate": 0.016676251,
+        "medianMultiple": 1.035714286,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "pause.command.en",
+        "observedCount": 29,
+        "observedRate": 0.016676251,
+        "medianMultiple": 1.035714286,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "play.command.en",
+        "observedCount": 29,
+        "observedRate": 0.016676251,
+        "medianMultiple": 1.035714286,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "call.command.en",
+        "observedCount": 28,
+        "observedRate": 0.016101208,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "click.command.en",
+        "observedCount": 28,
+        "observedRate": 0.016101208,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "drag-and-drop.command.en",
+        "observedCount": 28,
+        "observedRate": 0.016101208,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "mail.command.en",
+        "observedCount": 28,
+        "observedRate": 0.016101208,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "paste.command.en",
+        "observedCount": 28,
+        "observedRate": 0.016101208,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "rip.command.en",
+        "observedCount": 28,
+        "observedRate": 0.016101208,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "zoom.command.en",
+        "observedCount": 28,
+        "observedRate": 0.016101208,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "buy.command.en",
+        "observedCount": 27,
+        "observedRate": 0.015526164,
+        "medianMultiple": 0.964285714,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "cut.command.en",
+        "observedCount": 27,
+        "observedRate": 0.015526164,
+        "medianMultiple": 0.964285714,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "erase.command.en",
+        "observedCount": 27,
+        "observedRate": 0.015526164,
+        "medianMultiple": 0.964285714,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "pay.command.en",
+        "observedCount": 27,
+        "observedRate": 0.015526164,
+        "medianMultiple": 0.964285714,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "rename.command.en",
+        "observedCount": 27,
+        "observedRate": 0.015526164,
+        "medianMultiple": 0.964285714,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "bring.command.en",
+        "observedCount": 26,
+        "observedRate": 0.014951121,
+        "medianMultiple": 0.928571429,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "check.command.en",
+        "observedCount": 26,
+        "observedRate": 0.014951121,
+        "medianMultiple": 0.928571429,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "fax.command.en",
+        "observedCount": 26,
+        "observedRate": 0.014951121,
+        "medianMultiple": 0.928571429,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "surf.command.en",
+        "observedCount": 26,
+        "observedRate": 0.014951121,
+        "medianMultiple": 0.928571429,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "fix.command.en",
+        "observedCount": 25,
+        "observedRate": 0.014376078,
+        "medianMultiple": 0.892857143,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "jam.command.en",
+        "observedCount": 25,
+        "observedRate": 0.014376078,
+        "medianMultiple": 0.892857143,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "print.command.en",
+        "observedCount": 25,
+        "observedRate": 0.014376078,
+        "medianMultiple": 0.892857143,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "scroll.command.en",
+        "observedCount": 25,
+        "observedRate": 0.014376078,
+        "medianMultiple": 0.892857143,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "snap.command.en",
+        "observedCount": 25,
+        "observedRate": 0.014376078,
+        "medianMultiple": 0.892857143,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "use.command.en",
+        "observedCount": 25,
+        "observedRate": 0.014376078,
+        "medianMultiple": 0.892857143,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "write.command.en",
+        "observedCount": 25,
+        "observedRate": 0.014376078,
+        "medianMultiple": 0.892857143,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "burn.command.en",
+        "observedCount": 24,
+        "observedRate": 0.013801035,
+        "medianMultiple": 0.857142857,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "leave.command.en",
+        "observedCount": 24,
+        "observedRate": 0.013801035,
+        "medianMultiple": 0.857142857,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "load.command.en",
+        "observedCount": 24,
+        "observedRate": 0.013801035,
+        "medianMultiple": 0.857142857,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "send.command.en",
+        "observedCount": 24,
+        "observedRate": 0.013801035,
+        "medianMultiple": 0.857142857,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "charge.command.en",
+        "observedCount": 23,
+        "observedRate": 0.013225992,
+        "medianMultiple": 0.821428571,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "find.command.en",
+        "observedCount": 23,
+        "observedRate": 0.013225992,
+        "medianMultiple": 0.821428571,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "press.command.en",
+        "observedCount": 22,
+        "observedRate": 0.012650949,
+        "medianMultiple": 0.785714286,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "switch.command.en",
+        "observedCount": 22,
+        "observedRate": 0.012650949,
+        "medianMultiple": 0.785714286,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "view.command.en",
+        "observedCount": 21,
+        "observedRate": 0.012075906,
+        "medianMultiple": 0.75,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "unlock.command.en",
+        "observedCount": 20,
+        "observedRate": 0.011500863,
+        "medianMultiple": 0.714285714,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/en",
+        "heroLexicalUseId": "code.command.en",
+        "observedCount": 19,
+        "observedRate": 0.010925819,
+        "medianMultiple": 0.678571429,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "erase.command.ko",
+        "observedCount": 40,
+        "observedRate": 0.023710729,
+        "medianMultiple": 1.481481481,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "press.command.ko",
+        "observedCount": 39,
+        "observedRate": 0.023117961,
+        "medianMultiple": 1.444444444,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "play.command.ko",
+        "observedCount": 38,
+        "observedRate": 0.022525193,
+        "medianMultiple": 1.407407407,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "crack.command.ko",
+        "observedCount": 37,
+        "observedRate": 0.021932424,
+        "medianMultiple": 1.37037037,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "burn.command.ko",
+        "observedCount": 36,
+        "observedRate": 0.021339656,
+        "medianMultiple": 1.333333333,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "fax.command.ko",
+        "observedCount": 36,
+        "observedRate": 0.021339656,
+        "medianMultiple": 1.333333333,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "lock.command.ko",
+        "observedCount": 36,
+        "observedRate": 0.021339656,
+        "medianMultiple": 1.333333333,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "break.command.ko",
+        "observedCount": 35,
+        "observedRate": 0.020746888,
+        "medianMultiple": 1.296296296,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "load.command.ko",
+        "observedCount": 35,
+        "observedRate": 0.020746888,
+        "medianMultiple": 1.296296296,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "cross.command.ko",
+        "observedCount": 33,
+        "observedRate": 0.019561352,
+        "medianMultiple": 1.222222222,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "name.command.ko",
+        "observedCount": 32,
+        "observedRate": 0.018968583,
+        "medianMultiple": 1.185185185,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "pay.command.ko",
+        "observedCount": 32,
+        "observedRate": 0.018968583,
+        "medianMultiple": 1.185185185,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "switch.command.ko",
+        "observedCount": 31,
+        "observedRate": 0.018375815,
+        "medianMultiple": 1.148148148,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "call.command.ko",
+        "observedCount": 30,
+        "observedRate": 0.017783047,
+        "medianMultiple": 1.111111111,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "send.command.ko",
+        "observedCount": 30,
+        "observedRate": 0.017783047,
+        "medianMultiple": 1.111111111,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "change.command.ko",
+        "observedCount": 29,
+        "observedRate": 0.017190279,
+        "medianMultiple": 1.074074074,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "fill.command.ko",
+        "observedCount": 29,
+        "observedRate": 0.017190279,
+        "medianMultiple": 1.074074074,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "leave.command.ko",
+        "observedCount": 29,
+        "observedRate": 0.017190279,
+        "medianMultiple": 1.074074074,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "start.command.ko",
+        "observedCount": 29,
+        "observedRate": 0.017190279,
+        "medianMultiple": 1.074074074,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "touch.command.ko",
+        "observedCount": 29,
+        "observedRate": 0.017190279,
+        "medianMultiple": 1.074074074,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "use.command.ko",
+        "observedCount": 29,
+        "observedRate": 0.017190279,
+        "medianMultiple": 1.074074074,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "cut.command.ko",
+        "observedCount": 28,
+        "observedRate": 0.01659751,
+        "medianMultiple": 1.037037037,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "jam.command.ko",
+        "observedCount": 28,
+        "observedRate": 0.01659751,
+        "medianMultiple": 1.037037037,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "plug.command.ko",
+        "observedCount": 28,
+        "observedRate": 0.01659751,
+        "medianMultiple": 1.037037037,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "print.command.ko",
+        "observedCount": 28,
+        "observedRate": 0.01659751,
+        "medianMultiple": 1.037037037,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "rewrite.command.ko",
+        "observedCount": 28,
+        "observedRate": 0.01659751,
+        "medianMultiple": 1.037037037,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "tune.command.ko",
+        "observedCount": 28,
+        "observedRate": 0.01659751,
+        "medianMultiple": 1.037037037,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "turn.command.ko",
+        "observedCount": 28,
+        "observedRate": 0.01659751,
+        "medianMultiple": 1.037037037,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "unlock.command.ko",
+        "observedCount": 28,
+        "observedRate": 0.01659751,
+        "medianMultiple": 1.037037037,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "upgrade.command.ko",
+        "observedCount": 28,
+        "observedRate": 0.01659751,
+        "medianMultiple": 1.037037037,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "check.command.ko",
+        "observedCount": 27,
+        "observedRate": 0.016004742,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "code.command.ko",
+        "observedCount": 27,
+        "observedRate": 0.016004742,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "fix.command.ko",
+        "observedCount": 27,
+        "observedRate": 0.016004742,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "paste.command.ko",
+        "observedCount": 27,
+        "observedRate": 0.016004742,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "point.command.ko",
+        "observedCount": 27,
+        "observedRate": 0.016004742,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "rip.command.ko",
+        "observedCount": 27,
+        "observedRate": 0.016004742,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "trash.command.ko",
+        "observedCount": 27,
+        "observedRate": 0.016004742,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "unzip.command.ko",
+        "observedCount": 27,
+        "observedRate": 0.016004742,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "view.command.ko",
+        "observedCount": 27,
+        "observedRate": 0.016004742,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "write.command.ko",
+        "observedCount": 27,
+        "observedRate": 0.016004742,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "find.command.ko",
+        "observedCount": 26,
+        "observedRate": 0.015411974,
+        "medianMultiple": 0.962962963,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "rename.command.ko",
+        "observedCount": 26,
+        "observedRate": 0.015411974,
+        "medianMultiple": 0.962962963,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "snap.command.ko",
+        "observedCount": 26,
+        "observedRate": 0.015411974,
+        "medianMultiple": 0.962962963,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "update.command.ko",
+        "observedCount": 26,
+        "observedRate": 0.015411974,
+        "medianMultiple": 0.962962963,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "click.command.ko",
+        "observedCount": 25,
+        "observedRate": 0.014819206,
+        "medianMultiple": 0.925925926,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "scroll.command.ko",
+        "observedCount": 25,
+        "observedRate": 0.014819206,
+        "medianMultiple": 0.925925926,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "bring.command.ko",
+        "observedCount": 24,
+        "observedRate": 0.014226437,
+        "medianMultiple": 0.888888889,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "charge.command.ko",
+        "observedCount": 24,
+        "observedRate": 0.014226437,
+        "medianMultiple": 0.888888889,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "watch.command.ko",
+        "observedCount": 24,
+        "observedRate": 0.014226437,
+        "medianMultiple": 0.888888889,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "format.command.ko",
+        "observedCount": 23,
+        "observedRate": 0.013633669,
+        "medianMultiple": 0.851851852,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "mail.command.ko",
+        "observedCount": 23,
+        "observedRate": 0.013633669,
+        "medianMultiple": 0.851851852,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "surf.command.ko",
+        "observedCount": 23,
+        "observedRate": 0.013633669,
+        "medianMultiple": 0.851851852,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "work.command.ko",
+        "observedCount": 23,
+        "observedRate": 0.013633669,
+        "medianMultiple": 0.851851852,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "zip.command.ko",
+        "observedCount": 22,
+        "observedRate": 0.013040901,
+        "medianMultiple": 0.814814815,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "zoom.command.ko",
+        "observedCount": 22,
+        "observedRate": 0.013040901,
+        "medianMultiple": 0.814814815,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "read.command.ko",
+        "observedCount": 21,
+        "observedRate": 0.012448133,
+        "medianMultiple": 0.777777778,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "drag-and-drop.command.ko",
+        "observedCount": 20,
+        "observedRate": 0.011855365,
+        "medianMultiple": 0.740740741,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "pause.command.ko",
+        "observedCount": 20,
+        "observedRate": 0.011855365,
+        "medianMultiple": 0.740740741,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "save.command.ko",
+        "observedCount": 20,
+        "observedRate": 0.011855365,
+        "medianMultiple": 0.740740741,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "scan.command.ko",
+        "observedCount": 15,
+        "observedRate": 0.008891523,
+        "medianMultiple": 0.555555556,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/ko",
+        "heroLexicalUseId": "buy.command.ko",
+        "observedCount": 13,
+        "observedRate": 0.007705987,
+        "medianMultiple": 0.481481481,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "bring.command.zh",
+        "observedCount": 37,
+        "observedRate": 0.023255814,
+        "medianMultiple": 1.423076923,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "find.command.zh",
+        "observedCount": 35,
+        "observedRate": 0.021998743,
+        "medianMultiple": 1.346153846,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "fill.command.zh",
+        "observedCount": 34,
+        "observedRate": 0.021370207,
+        "medianMultiple": 1.307692308,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "fix.command.zh",
+        "observedCount": 34,
+        "observedRate": 0.021370207,
+        "medianMultiple": 1.307692308,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "rewrite.command.zh",
+        "observedCount": 34,
+        "observedRate": 0.021370207,
+        "medianMultiple": 1.307692308,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "snap.command.zh",
+        "observedCount": 33,
+        "observedRate": 0.020741672,
+        "medianMultiple": 1.269230769,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "trash.command.zh",
+        "observedCount": 32,
+        "observedRate": 0.020113136,
+        "medianMultiple": 1.230769231,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "upgrade.command.zh",
+        "observedCount": 32,
+        "observedRate": 0.020113136,
+        "medianMultiple": 1.230769231,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "load.command.zh",
+        "observedCount": 30,
+        "observedRate": 0.018856065,
+        "medianMultiple": 1.153846154,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "rename.command.zh",
+        "observedCount": 30,
+        "observedRate": 0.018856065,
+        "medianMultiple": 1.153846154,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "switch.command.zh",
+        "observedCount": 30,
+        "observedRate": 0.018856065,
+        "medianMultiple": 1.153846154,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "tune.command.zh",
+        "observedCount": 30,
+        "observedRate": 0.018856065,
+        "medianMultiple": 1.153846154,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "buy.command.zh",
+        "observedCount": 29,
+        "observedRate": 0.01822753,
+        "medianMultiple": 1.115384615,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "plug.command.zh",
+        "observedCount": 29,
+        "observedRate": 0.01822753,
+        "medianMultiple": 1.115384615,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "save.command.zh",
+        "observedCount": 29,
+        "observedRate": 0.01822753,
+        "medianMultiple": 1.115384615,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "burn.command.zh",
+        "observedCount": 28,
+        "observedRate": 0.017598994,
+        "medianMultiple": 1.076923077,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "click.command.zh",
+        "observedCount": 28,
+        "observedRate": 0.017598994,
+        "medianMultiple": 1.076923077,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "cross.command.zh",
+        "observedCount": 28,
+        "observedRate": 0.017598994,
+        "medianMultiple": 1.076923077,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "drag-and-drop.command.zh",
+        "observedCount": 28,
+        "observedRate": 0.017598994,
+        "medianMultiple": 1.076923077,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "erase.command.zh",
+        "observedCount": 28,
+        "observedRate": 0.017598994,
+        "medianMultiple": 1.076923077,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "lock.command.zh",
+        "observedCount": 28,
+        "observedRate": 0.017598994,
+        "medianMultiple": 1.076923077,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "name.command.zh",
+        "observedCount": 28,
+        "observedRate": 0.017598994,
+        "medianMultiple": 1.076923077,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "read.command.zh",
+        "observedCount": 28,
+        "observedRate": 0.017598994,
+        "medianMultiple": 1.076923077,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "scroll.command.zh",
+        "observedCount": 28,
+        "observedRate": 0.017598994,
+        "medianMultiple": 1.076923077,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "send.command.zh",
+        "observedCount": 27,
+        "observedRate": 0.016970459,
+        "medianMultiple": 1.038461538,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "touch.command.zh",
+        "observedCount": 27,
+        "observedRate": 0.016970459,
+        "medianMultiple": 1.038461538,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "turn.command.zh",
+        "observedCount": 27,
+        "observedRate": 0.016970459,
+        "medianMultiple": 1.038461538,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "work.command.zh",
+        "observedCount": 27,
+        "observedRate": 0.016970459,
+        "medianMultiple": 1.038461538,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "break.command.zh",
+        "observedCount": 26,
+        "observedRate": 0.016341923,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "pause.command.zh",
+        "observedCount": 26,
+        "observedRate": 0.016341923,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "unzip.command.zh",
+        "observedCount": 26,
+        "observedRate": 0.016341923,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "cut.command.zh",
+        "observedCount": 25,
+        "observedRate": 0.015713388,
+        "medianMultiple": 0.961538462,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "fax.command.zh",
+        "observedCount": 25,
+        "observedRate": 0.015713388,
+        "medianMultiple": 0.961538462,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "mail.command.zh",
+        "observedCount": 25,
+        "observedRate": 0.015713388,
+        "medianMultiple": 0.961538462,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "play.command.zh",
+        "observedCount": 25,
+        "observedRate": 0.015713388,
+        "medianMultiple": 0.961538462,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "print.command.zh",
+        "observedCount": 25,
+        "observedRate": 0.015713388,
+        "medianMultiple": 0.961538462,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "surf.command.zh",
+        "observedCount": 25,
+        "observedRate": 0.015713388,
+        "medianMultiple": 0.961538462,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "call.command.zh",
+        "observedCount": 24,
+        "observedRate": 0.015084852,
+        "medianMultiple": 0.923076923,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "check.command.zh",
+        "observedCount": 24,
+        "observedRate": 0.015084852,
+        "medianMultiple": 0.923076923,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "code.command.zh",
+        "observedCount": 24,
+        "observedRate": 0.015084852,
+        "medianMultiple": 0.923076923,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "leave.command.zh",
+        "observedCount": 24,
+        "observedRate": 0.015084852,
+        "medianMultiple": 0.923076923,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "rip.command.zh",
+        "observedCount": 24,
+        "observedRate": 0.015084852,
+        "medianMultiple": 0.923076923,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "scan.command.zh",
+        "observedCount": 24,
+        "observedRate": 0.015084852,
+        "medianMultiple": 0.923076923,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "update.command.zh",
+        "observedCount": 24,
+        "observedRate": 0.015084852,
+        "medianMultiple": 0.923076923,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "use.command.zh",
+        "observedCount": 24,
+        "observedRate": 0.015084852,
+        "medianMultiple": 0.923076923,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "change.command.zh",
+        "observedCount": 23,
+        "observedRate": 0.014456317,
+        "medianMultiple": 0.884615385,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "format.command.zh",
+        "observedCount": 23,
+        "observedRate": 0.014456317,
+        "medianMultiple": 0.884615385,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "press.command.zh",
+        "observedCount": 23,
+        "observedRate": 0.014456317,
+        "medianMultiple": 0.884615385,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "start.command.zh",
+        "observedCount": 23,
+        "observedRate": 0.014456317,
+        "medianMultiple": 0.884615385,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "zip.command.zh",
+        "observedCount": 23,
+        "observedRate": 0.014456317,
+        "medianMultiple": 0.884615385,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "jam.command.zh",
+        "observedCount": 22,
+        "observedRate": 0.013827781,
+        "medianMultiple": 0.846153846,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "point.command.zh",
+        "observedCount": 22,
+        "observedRate": 0.013827781,
+        "medianMultiple": 0.846153846,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "watch.command.zh",
+        "observedCount": 22,
+        "observedRate": 0.013827781,
+        "medianMultiple": 0.846153846,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "write.command.zh",
+        "observedCount": 22,
+        "observedRate": 0.013827781,
+        "medianMultiple": 0.846153846,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "crack.command.zh",
+        "observedCount": 21,
+        "observedRate": 0.013199246,
+        "medianMultiple": 0.807692308,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "paste.command.zh",
+        "observedCount": 21,
+        "observedRate": 0.013199246,
+        "medianMultiple": 0.807692308,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "pay.command.zh",
+        "observedCount": 21,
+        "observedRate": 0.013199246,
+        "medianMultiple": 0.807692308,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "charge.command.zh",
+        "observedCount": 18,
+        "observedRate": 0.011313639,
+        "medianMultiple": 0.692307692,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "unlock.command.zh",
+        "observedCount": 17,
+        "observedRate": 0.010685104,
+        "medianMultiple": 0.653846154,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "view.command.zh",
+        "observedCount": 17,
+        "observedRate": 0.010685104,
+        "medianMultiple": 0.653846154,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "command/zh",
+        "heroLexicalUseId": "zoom.command.zh",
+        "observedCount": 15,
+        "observedRate": 0.009428033,
+        "medianMultiple": 0.576923077,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "status/en",
+        "heroLexicalUseId": "locked.status.en",
+        "observedCount": 335,
+        "observedRate": 0.202172601,
+        "medianMultiple": 1.009036145,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "status/en",
+        "heroLexicalUseId": "running.status.en",
+        "observedCount": 334,
+        "observedRate": 0.201569101,
+        "medianMultiple": 1.006024096,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "status/en",
+        "heroLexicalUseId": "access-denied.status.en",
+        "observedCount": 332,
+        "observedRate": 0.2003621,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "status/en",
+        "heroLexicalUseId": "verified.status.en",
+        "observedCount": 330,
+        "observedRate": 0.1991551,
+        "medianMultiple": 0.993975904,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "status/en",
+        "heroLexicalUseId": "standby.status.en",
+        "observedCount": 326,
+        "observedRate": 0.196741098,
+        "medianMultiple": 0.981927711,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "status/ko",
+        "heroLexicalUseId": "access-denied.status.ko",
+        "observedCount": 350,
+        "observedRate": 0.209832134,
+        "medianMultiple": 1.067073171,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "status/ko",
+        "heroLexicalUseId": "running.status.ko",
+        "observedCount": 346,
+        "observedRate": 0.207434053,
+        "medianMultiple": 1.054878049,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "status/ko",
+        "heroLexicalUseId": "verified.status.ko",
+        "observedCount": 328,
+        "observedRate": 0.196642686,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "status/ko",
+        "heroLexicalUseId": "locked.status.ko",
+        "observedCount": 323,
+        "observedRate": 0.193645084,
+        "medianMultiple": 0.984756098,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "status/ko",
+        "heroLexicalUseId": "standby.status.ko",
+        "observedCount": 321,
+        "observedRate": 0.192446043,
+        "medianMultiple": 0.978658537,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "status/zh",
+        "heroLexicalUseId": "verified.status.zh",
+        "observedCount": 355,
+        "observedRate": 0.21411339,
+        "medianMultiple": 1.102484472,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "status/zh",
+        "heroLexicalUseId": "locked.status.zh",
+        "observedCount": 351,
+        "observedRate": 0.211700844,
+        "medianMultiple": 1.090062112,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "status/zh",
+        "heroLexicalUseId": "standby.status.zh",
+        "observedCount": 322,
+        "observedRate": 0.194209891,
+        "medianMultiple": 1,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "status/zh",
+        "heroLexicalUseId": "access-denied.status.zh",
+        "observedCount": 321,
+        "observedRate": 0.193606755,
+        "medianMultiple": 0.99689441,
+        "concentrationTriggered": false
+      },
+      {
+        "stratumId": "status/zh",
+        "heroLexicalUseId": "running.status.zh",
+        "observedCount": 309,
+        "observedRate": 0.186369119,
+        "medianMultiple": 0.959627329,
+        "concentrationTriggered": false
+      }
+    ]
+  },
+  "concentrationReviews": [],
+  "acceptance": {
+    "inputCountPass": true,
+    "telemetryDenominatorsPass": true,
+    "implementationDistributionPass": true,
+    "mountedOutcomeDenominatorsPass": true,
+    "openConcentrationReviewCount": 0,
+    "pass": true
+  }
+}

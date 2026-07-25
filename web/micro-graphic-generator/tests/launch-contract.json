@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "mode": "localhost-only",
+  "http": {
+    "required": true,
+    "url": "http://127.0.0.1:4191/web/micro-graphic-generator/"
+  },
+  "directFile": {
+    "required": false,
+    "observedBeforeModules": true
+  },
+  "reason": "The generator is developed and reviewed through localhost; native ES module extraction may rely on HTTP loading semantics."
+}

@@ -1,5 +1,6 @@
 node_modules/
 .next/
+test-results/
 .DS_Store
 __pycache__/
 

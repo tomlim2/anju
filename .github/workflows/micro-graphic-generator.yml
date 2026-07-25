@@ -1,0 +1,53 @@
+name: Micro Graphic Generator
+
+on:
+  push:
+    paths:
+      - ".github/workflows/micro-graphic-generator.yml"
+      - ".node-version"
+      - "package.json"
+      - "package-lock.json"
+      - "web/micro-graphic-generator/**"
+  pull_request:
+    paths:
+      - ".github/workflows/micro-graphic-generator.yml"
+      - ".node-version"
+      - "package.json"
+      - "package-lock.json"
+      - "web/micro-graphic-generator/**"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Verify composition owner trust root
+        env:
+          TRUSTED_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          test -n "$TRUSTED_BASE_REF"
+          git rev-parse --verify "$TRUSTED_BASE_REF^{commit}"
+          trusted_bootstrap_root="$(mktemp -d -t composition-owner-bootstrap.XXXXXX)"
+          trap 'rm -rf "$trusted_bootstrap_root"' EXIT
+          trusted_bootstrap_paths=(
+            web/micro-graphic-generator/scripts/bootstrap-verify-composition-owner-snapshot.mjs
+            web/micro-graphic-generator/scripts/static-module-specifiers.mjs
+          )
+          for trusted_path in "${trusted_bootstrap_paths[@]}"; do
+            mkdir -p "$trusted_bootstrap_root/$(dirname "$trusted_path")"
+            git show "$TRUSTED_BASE_REF:$trusted_path" > "$trusted_bootstrap_root/$trusted_path"
+          done
+          node "$trusted_bootstrap_root/web/micro-graphic-generator/scripts/bootstrap-verify-composition-owner-snapshot.mjs" \
+            --repo-root "$PWD" --candidate-root "$PWD" --base-ref "$TRUSTED_BASE_REF"
+      - run: npm ci
+      - run: npm run test:generator:install
+      - run: npm run test:generator

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "vectors": [
+    {
+      "id": "ascii-order",
+      "input": { "b": 2, "a": "x" },
+      "canonical": "{\"a\":\"x\",\"b\":2}",
+      "utf8Hex": "7b2261223a2278222c2262223a327d",
+      "sha256": "768ca668c0f84dd39bf269e25c9a3f0af4812e41026b6fead9a2666078ef16f6"
+    },
+    {
+      "id": "korean",
+      "input": { "word": "한글" },
+      "canonical": "{\"word\":\"한글\"}",
+      "utf8Hex": "7b22776f7264223a22ed959ceab880227d",
+      "sha256": "d3ce8e55b5b47273e9185bb972a48041467b6acde6f8b02d13690339209a7c49"
+    },
+    {
+      "id": "chinese",
+      "input": ["中文", "信号"],
+      "canonical": "[\"中文\",\"信号\"]",
+      "utf8Hex": "5b22e4b8ade69687222c22e4bfa1e58fb7225d",
+      "sha256": "39cfb29dee4970342ca82edd2a74c1e9f448ab1185f2efdc879fe382303d9bbf"
+    },
+    {
+      "id": "escaped",
+      "input": { "text": "line\n\"quoted\"" },
+      "canonical": "{\"text\":\"line\\n\\\"quoted\\\"\"}",
+      "utf8Hex": "7b2274657874223a226c696e655c6e5c2271756f7465645c22227d",
+      "sha256": "57c740178cd56ae45a3a8c1c72308767009b57ace51cdc400721cee5c5a4d43f"
+    },
+    {
+      "id": "astral",
+      "input": { "emoji": "😀" },
+      "canonical": "{\"emoji\":\"😀\"}",
+      "utf8Hex": "7b22656d6f6a69223a22f09f9880227d",
+      "sha256": "4525cb52c6a0122eacc150bacd11eb4a1d4615485ca8a5639c28d70f1c240193"
+    },
+    {
+      "id": "nested",
+      "input": { "z": { "b": 2, "a": 1 }, "a": [3, 2, 1] },
+      "canonical": "{\"a\":[3,2,1],\"z\":{\"a\":1,\"b\":2}}",
+      "utf8Hex": "7b2261223a5b332c322c315d2c227a223a7b2261223a312c2262223a327d7d",
+      "sha256": "f613a572f53e0e577f557af7e41633d7c30546ae97e1e20b8ad0dbea7118d7a6"
+    },
+    {
+      "id": "numbers",
+      "input": { "fraction": 0.125, "exponent": 1e+30, "negativeZero": 0 },
+      "canonical": "{\"exponent\":1e+30,\"fraction\":0.125,\"negativeZero\":0}",
+      "utf8Hex": "7b226578706f6e656e74223a31652b33302c226672616374696f6e223a302e3132352c226e656761746976655a65726f223a307d",
+      "sha256": "722a046d92732f8e2a045d1ead972f3c87c63ed5671d3c267f4ad1aa94c95dda"
+    }
+  ]
+}

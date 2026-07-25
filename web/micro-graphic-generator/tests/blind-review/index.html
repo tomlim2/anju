@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blind Composition Review</title>
+  <link rel="stylesheet" href="../../fonts/fonts.css">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="toolbar">
+    <h1>Blind Composition Review</h1>
+    <div class="fixture-nav">
+      <button id="previous" type="button" aria-label="Previous fixture" title="Previous fixture">&lt;</button>
+      <output id="fixtureIndex">0 / 0</output>
+      <button id="next" type="button" aria-label="Next fixture" title="Next fixture">&gt;</button>
+    </div>
+    <label class="reviewer-field">
+      Reviewer
+      <select id="reviewer"></select>
+    </label>
+    <output id="status" role="status"></output>
+  </header>
+
+  <main id="reviewSurface" hidden>
+    <section class="comparison" aria-label="Blind artifact comparison">
+      <article class="side" data-side="left">
+        <header><h2>Left</h2><output class="first-read" data-first-read="left">No node selected</output></header>
+        <div id="leftArtifact" class="artifact-frame" aria-label="Left composition"></div>
+        <div class="ratings" data-ratings="left"></div>
+      </article>
+      <article class="side" data-side="right">
+        <header><h2>Right</h2><output class="first-read" data-first-read="right">No node selected</output></header>
+        <div id="rightArtifact" class="artifact-frame" aria-label="Right composition"></div>
+        <div class="ratings" data-ratings="right"></div>
+      </article>
+    </section>
+
+    <section class="pair-rating" aria-label="Pair rating">
+      <fieldset data-choice="firstAttentionSide">
+        <legend>First attention</legend>
+        <label><input type="radio" name="firstAttentionSide" value="left"> Left</label>
+        <label><input type="radio" name="firstAttentionSide" value="right"> Right</label>
+        <label><input type="radio" name="firstAttentionSide" value="tie"> Tie</label>
+      </fieldset>
+      <fieldset data-choice="preferenceSide">
+        <legend>Overall preference</legend>
+        <label><input type="radio" name="preferenceSide" value="left"> Left</label>
+        <label><input type="radio" name="preferenceSide" value="right"> Right</label>
+        <label><input type="radio" name="preferenceSide" value="tie"> Tie</label>
+      </fieldset>
+      <label class="notes-field">Notes<textarea id="notes" rows="3"></textarea></label>
+      <button id="submit" type="button">Export Review</button>
+    </section>
+  </main>
+
+  <script type="module" src="./review.js"></script>
+</body>
+</html>

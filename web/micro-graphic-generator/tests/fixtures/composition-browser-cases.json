@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "ownerSnapshotRevision": "sha256:a1eb5849cec1d9be995e07933f0af01708d40b6208a526ba7a7cf5a60ce2bde9",
+  "generationTimestamp": "2026-07-14T12:00:00+09:00",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "ratios": [
+    {
+      "ratio": "1:1",
+      "seed": 6
+    },
+    {
+      "ratio": "2:3",
+      "seed": 11
+    },
+    {
+      "ratio": "2:5",
+      "seed": 1
+    },
+    {
+      "ratio": "3:2",
+      "seed": 0
+    },
+    {
+      "ratio": "5:2",
+      "seed": 2
+    },
+    {
+      "ratio": "4:3",
+      "seed": 19
+    },
+    {
+      "ratio": "3:4",
+      "seed": 14
+    }
+  ],
+  "recipes": [
+    {
+      "recipeId": "command",
+      "ratio": "5:2",
+      "seed": 2
+    },
+    {
+      "recipeId": "status",
+      "ratio": "3:2",
+      "seed": 0
+    }
+  ],
+  "motifs": [
+    {
+      "motifId": "motif.barcode",
+      "ratio": "1:1",
+      "seed": 17,
+      "heroFinalizationClass": "downshifted"
+    },
+    {
+      "motifId": "motif.pseudo-qr",
+      "ratio": "2:3",
+      "seed": 67,
+      "heroFinalizationClass": "downshifted"
+    },
+    {
+      "motifId": "motif.table",
+      "ratio": "2:3",
+      "seed": 11,
+      "heroFinalizationClass": "downshifted"
+    },
+    {
+      "motifId": "motif.wave",
+      "ratio": "1:1",
+      "seed": 51,
+      "heroFinalizationClass": "downshifted"
+    }
+  ],
+  "retry": {
+    "seed": 0
+  },
+  "visual": {
+    "desktopCommandSeed": 2,
+    "portraitMotifSeed": 15,
+    "portraitMotifId": "motif.table",
+    "mobileComposeSeed": 6
+  }
+}

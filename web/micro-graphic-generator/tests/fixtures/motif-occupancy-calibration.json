@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "browserProfile": "playwright-1.61.1/chromium-http",
+  "browserRevision": "149.0.7827.55",
+  "canvas": {
+    "width": 512,
+    "height": 512,
+    "background": "transparent"
+  },
+  "font": {
+    "family": "Noto Sans Mono",
+    "weight": 400,
+    "assetRevision": "sha256:20c6c693a221b7a0665ed39e5c9c8b1c5ffe8c83362035eac2e15dc64ae77d64"
+  },
+  "motifVersion": 1,
+  "variants": [
+    {
+      "candidateId": "motif.barcode:medium",
+      "motifId": "motif.barcode",
+      "size": "medium",
+      "renderParamsHash": "sha256:9834f8f9e8bca21cabfd9d4c9f4130fe79f26458d2bb549816b402301ccf6151",
+      "opacityWeightedCoverage": 0.151690943,
+      "paintedPixelCoverage": 0.171543121,
+      "primitiveCount": 51,
+      "density": 0.526315789
+    },
+    {
+      "candidateId": "motif.barcode:large",
+      "motifId": "motif.barcode",
+      "size": "large",
+      "renderParamsHash": "sha256:60d2b5c07377ae155ddc4bd5624645c8a386962ed249b1f14c8dc77de4700895",
+      "opacityWeightedCoverage": 0.146078955,
+      "paintedPixelCoverage": 0.166858673,
+      "primitiveCount": 46,
+      "density": 0.473684211
+    },
+    {
+      "candidateId": "motif.pseudo-qr:medium",
+      "motifId": "motif.pseudo-qr",
+      "size": "medium",
+      "renderParamsHash": "sha256:050b6bedf11c77731a24bfd7be55ada42f492d2c0d18c5b1741c2e53f78de9ba",
+      "opacityWeightedCoverage": 0.508943146,
+      "paintedPixelCoverage": 0.553974152,
+      "primitiveCount": 277,
+      "density": 0.628117914
+    },
+    {
+      "candidateId": "motif.pseudo-qr:large",
+      "motifId": "motif.pseudo-qr",
+      "size": "large",
+      "renderParamsHash": "sha256:f97ee234331bbb7fcd6c0629de34eb631156fecbb624a1ef08d3ddc390a27a3b",
+      "opacityWeightedCoverage": 0.499755635,
+      "paintedPixelCoverage": 0.543796539,
+      "primitiveCount": 272,
+      "density": 0.616780045
+    },
+    {
+      "candidateId": "motif.table:medium",
+      "motifId": "motif.table",
+      "size": "medium",
+      "renderParamsHash": "sha256:251d2b5ad476a7a2375b601dd2a01be0661a212cec43d394ff25982ab5220520",
+      "opacityWeightedCoverage": 0.097302785,
+      "paintedPixelCoverage": 0.117431641,
+      "primitiveCount": 12,
+      "density": 0.416666667
+    },
+    {
+      "candidateId": "motif.table:large",
+      "motifId": "motif.table",
+      "size": "large",
+      "renderParamsHash": "sha256:fd93486df60457982610dd0240e1a6e8331afcede2c8118dfd35217fb297fbb1",
+      "opacityWeightedCoverage": 0.08243112,
+      "paintedPixelCoverage": 0.105621338,
+      "primitiveCount": 15,
+      "density": 0.666666667
+    },
+    {
+      "candidateId": "motif.wave:medium",
+      "motifId": "motif.wave",
+      "size": "medium",
+      "renderParamsHash": "sha256:c35d1201a6a038ba7a06ad2ae49f96a3331a73ab970acfb2cea5f389bf2e8a39",
+      "opacityWeightedCoverage": 0.029670865,
+      "paintedPixelCoverage": 0.04479599,
+      "primitiveCount": 15,
+      "density": 0.18
+    },
+    {
+      "candidateId": "motif.wave:large",
+      "motifId": "motif.wave",
+      "size": "large",
+      "renderParamsHash": "sha256:1bc68d49ec175743d2fc367e99fb46c1b75f4f132e2f9b4536115b56afaaa963",
+      "opacityWeightedCoverage": 0.026017507,
+      "paintedPixelCoverage": 0.040462494,
+      "primitiveCount": 15,
+      "density": 0.18
+    }
+  ],
+  "families": [
+    {
+      "motifId": "motif.barcode",
+      "declaredVariantCount": 2,
+      "p95Coverage": 0.151690943,
+      "occupancySafetyFactor": 1.2,
+      "occupancyCalibrationRevision": "sha256:d9441c48832d4388be6dd671c2bba8fe25e6d2b71f5d6e585cbfaa8f253cdc76",
+      "reviewerIds": [
+        "typography-01",
+        "product-01"
+      ]
+    },
+    {
+      "motifId": "motif.pseudo-qr",
+      "declaredVariantCount": 2,
+      "p95Coverage": 0.508943146,
+      "occupancySafetyFactor": 1.35,
+      "occupancyCalibrationRevision": "sha256:2b1bda61f6b91dc30914b53f48214206f5b4f9bd2f46f2362301343138b4ff07",
+      "reviewerIds": [
+        "typography-01",
+        "product-01"
+      ]
+    },
+    {
+      "motifId": "motif.table",
+      "declaredVariantCount": 2,
+      "p95Coverage": 0.097302785,
+      "occupancySafetyFactor": 0.75,
+      "occupancyCalibrationRevision": "sha256:106826123037f4a6cbd8fcd08c10105800ff6fd8fa8c30b0c161a09221a83ae3",
+      "reviewerIds": [
+        "typography-01",
+        "product-01"
+      ]
+    },
+    {
+      "motifId": "motif.wave",
+      "declaredVariantCount": 2,
+      "p95Coverage": 0.029670865,
+      "occupancySafetyFactor": 0.65,
+      "occupancyCalibrationRevision": "sha256:b8b5ee10ad04920cb61a3d5844f146f67653c5289e51523ccd81dd036f653760",
+      "reviewerIds": [
+        "typography-01",
+        "product-01"
+      ]
+    }
+  ]
+}
