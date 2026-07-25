@@ -60,6 +60,7 @@ import {
   MOTIF_REGISTRY_VERSION,
   validateMotifRenderParams
 } from "./motifs.js";
+import { renderMockupGallery } from "./mockup-gallery.js";
 import { createRandomSource, deriveSeed, keyedValue } from "./random.js";
 import { line, make, rect, svgStructuralFingerprint, textNode } from "./svg.js";
 import {
@@ -83,6 +84,7 @@ const controls = {
   random: document.querySelector("#random"),
   ratio: document.querySelector("#ratio"),
   mode: document.querySelector("#mode"),
+  mockup: document.querySelector("#mockup"),
   grid: document.querySelector("#grid"),
   png: document.querySelector("#png"),
   svg: document.querySelector("#svg"),
@@ -188,7 +190,7 @@ const artworkExporter = createArtworkExporter({
   cssVariable: cssVar,
   filenameSlug: seedSlug,
   getExportState: () => {
-    if (appMode === "composable-tokens") return { exportEligible: true, planId: null };
+    if (appMode === "composable-tokens" || appMode === "mockup") return { exportEligible: true, planId: null };
     const mounted = art.querySelector("svg[data-component]");
     const planId = mounted?.getAttribute("data-plan-id") || null;
     return {
@@ -809,14 +811,14 @@ function exportTargetAvailable() {
 }
 
 function syncRatioAvailability() {
-  const disabled = fontRuntimeState !== "ready" || appMode === "composable-tokens";
+  const disabled = fontRuntimeState !== "ready" || appMode === "composable-tokens" || appMode === "mockup";
   controls.ratio.disabled = disabled;
   controls.ratio.setAttribute("aria-disabled", String(disabled));
 }
 
 function syncGenerationAvailability() {
   const disabled = fontRuntimeState !== "ready";
-  for (const control of [controls.random, controls.mode]) {
+  for (const control of [controls.random, controls.mode, controls.mockup]) {
     control.disabled = disabled;
     control.setAttribute("aria-disabled", String(disabled));
   }
@@ -846,6 +848,17 @@ function renderCatalog(width, height) {
   seedLabel.textContent = `MODE COMPOSABLE CATEGORIES / SEED ${seedHex()}`;
 }
 
+function renderMockup(width, height) {
+  art.replaceChildren(backgroundNode(width, height));
+  art.appendChild(renderMockupGallery(width, height, seed));
+  activeComponentRatio = "mockup";
+  activeBorderMode = "mockup";
+  activeBlockLayout = "mockup";
+  art.setAttribute("data-rule-violations", "0");
+  art.setAttribute("data-rule-violation-list", "");
+  seedLabel.textContent = `MODE MOCKUP / MANGA-TERMINAL / SEED ${seedHex()}`;
+}
+
 function render(nextSeed = seed, { newGeneration = false } = {}) {
   if (fontRuntimeState !== "ready") {
     syncGenerationAvailability();
@@ -863,7 +876,9 @@ function render(nextSeed = seed, { newGeneration = false } = {}) {
   art.setAttribute("data-grid-outlines", blockOutlinesVisible ? "visible" : "hidden");
   document.body.classList.toggle("is-dark", dark);
 
-  if (appMode === "composable-tokens") {
+  if (appMode === "mockup") {
+    renderMockup(width, height);
+  } else if (appMode === "composable-tokens") {
     renderCatalog(width, height);
   } else {
     const previous = art.querySelector("svg[data-component]") || activeComponent;
@@ -901,6 +916,16 @@ function bindEvents() {
     appMode = appMode === "random" ? "composable-tokens" : "random";
     controls.mode.textContent = appMode === "composable-tokens" ? "Generator" : "Compose";
     controls.mode.setAttribute("aria-pressed", String(appMode === "composable-tokens"));
+    controls.mockup.setAttribute("aria-pressed", "false");
+    syncRatioAvailability();
+    render(seed);
+  });
+  controls.mockup.addEventListener("click", () => {
+    if (fontRuntimeState !== "ready") return;
+    appMode = appMode === "mockup" ? "random" : "mockup";
+    controls.mockup.setAttribute("aria-pressed", String(appMode === "mockup"));
+    controls.mode.textContent = "Compose";
+    controls.mode.setAttribute("aria-pressed", "false");
     syncRatioAvailability();
     render(seed);
   });
