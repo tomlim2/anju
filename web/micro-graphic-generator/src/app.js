@@ -81,6 +81,7 @@ const art = document.querySelector("#art");
 const seedLabel = document.querySelector("#seedLabel");
 const controls = {
   random: document.querySelector("#random"),
+  ratio: document.querySelector("#ratio"),
   mode: document.querySelector("#mode"),
   grid: document.querySelector("#grid"),
   png: document.querySelector("#png"),
@@ -118,6 +119,7 @@ let activeComponentRatio = "";
 let activeBorderMode = "";
 let activeBlockLayout = "";
 let blockOutlinesVisible = true;
+let forcedRatio = urlParameters.get("ratio") || "";
 let appMode = "random";
 let dark = false;
 let renderVersion = 0;
@@ -302,7 +304,10 @@ function createGenerationContext(width, height) {
     ownerSnapshotRevision: OWNER_SNAPSHOT_REVISION
   });
   const layoutSeed = deriveSeed(layoutSeedInput, "app-layout");
-  const template = keyedPick(componentTemplates, layoutSeed, "ratio");
+  const forcedTemplate = forcedRatio
+    ? componentTemplates.find(candidate => candidate.ratio === forcedRatio)
+    : null;
+  const template = forcedTemplate || keyedPick(componentTemplates, layoutSeed, "ratio");
   const borderMode = keyedPick(componentBorderModes, layoutSeed, "borderMode");
   const canonicalSize = canonicalComponentSize(template);
   const safeBox = canonicalSafeBox(canonicalSize.width, canonicalSize.height);
@@ -805,7 +810,7 @@ function exportTargetAvailable() {
 
 function syncGenerationAvailability() {
   const disabled = fontRuntimeState !== "ready";
-  for (const control of [controls.random, controls.mode]) {
+  for (const control of [controls.random, controls.ratio, controls.mode]) {
     control.disabled = disabled;
     control.setAttribute("aria-disabled", String(disabled));
   }
@@ -875,6 +880,15 @@ function syncBlockOutlineVisibility() {
 
 function bindEvents() {
   controls.random.addEventListener("click", () => render(randomSeed(), { newGeneration: true }));
+  controls.ratio.value = forcedRatio;
+  forcedRatio = controls.ratio.value;
+  controls.ratio.addEventListener("change", () => {
+    if (fontRuntimeState !== "ready") return;
+    forcedRatio = componentTemplates.some(template => template.ratio === controls.ratio.value)
+      ? controls.ratio.value
+      : "";
+    render(seed);
+  });
   controls.mode.addEventListener("click", () => {
     if (fontRuntimeState !== "ready") return;
     appMode = appMode === "random" ? "composable-tokens" : "random";

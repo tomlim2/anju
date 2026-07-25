@@ -57,7 +57,8 @@ main {
   background: var(--panel);
 }
 
-button {
+button,
+select {
   appearance: none;
   min-width: 42px;
   height: 32px;
@@ -71,12 +72,30 @@ button {
   cursor: pointer;
 }
 
+select {
+  padding: 0 6px;
+  text-align: center;
+  text-align-last: center;
+}
+
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
 button:hover,
 button:focus-visible,
-button[aria-pressed="true"] {
+button[aria-pressed="true"],
+select:hover,
+select:focus-visible {
   background: var(--ink);
   color: var(--bg);
   outline: none;
+}
+
+select option {
+  background: var(--panel);
+  color: var(--ink);
 }
 
 .seed {
@@ -97,12 +116,13 @@ button[aria-pressed="true"] {
     right: 12px;
     bottom: 12px;
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 4px;
     padding: 5px;
   }
 
-  button {
+  button,
+  select {
     width: 100%;
     min-width: 0;
     height: 30px;
