@@ -808,12 +808,19 @@ function exportTargetAvailable() {
   return Boolean(exportEligible && activePlan && mounted && mounted === activeComponent);
 }
 
+function syncRatioAvailability() {
+  const disabled = fontRuntimeState !== "ready" || appMode === "composable-tokens";
+  controls.ratio.disabled = disabled;
+  controls.ratio.setAttribute("aria-disabled", String(disabled));
+}
+
 function syncGenerationAvailability() {
   const disabled = fontRuntimeState !== "ready";
-  for (const control of [controls.random, controls.ratio, controls.mode]) {
+  for (const control of [controls.random, controls.mode]) {
     control.disabled = disabled;
     control.setAttribute("aria-disabled", String(disabled));
   }
+  syncRatioAvailability();
 }
 
 function syncExportAvailability() {
@@ -894,6 +901,7 @@ function bindEvents() {
     appMode = appMode === "random" ? "composable-tokens" : "random";
     controls.mode.textContent = appMode === "composable-tokens" ? "Generator" : "Compose";
     controls.mode.setAttribute("aria-pressed", String(appMode === "composable-tokens"));
+    syncRatioAvailability();
     render(seed);
   });
   controls.grid.addEventListener("click", () => {
