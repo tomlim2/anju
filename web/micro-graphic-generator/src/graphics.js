@@ -452,16 +452,18 @@ const MOTIF_PATTERN_DRAWERS = {
     }
   },
   perspective(group, width, height) {
-    const vpx = width / 2;
-    const vpy = height * 0.14;
-    const bottom = height;
-    const cols = 8;
-    const rows = 7;
-    for (let i = 0; i <= cols; i += 1) group.appendChild(line((i / cols) * width, bottom, vpx, vpy));
-    for (let j = 1; j <= rows; j += 1) {
-      const ly = vpy + (bottom - vpy) * Math.pow(j / rows, 1.9);
-      const p = (bottom - ly) / (bottom - vpy);
-      group.appendChild(line(p * vpx, ly, width + p * (vpx - width), ly));
+    // one-point tunnel: reaches all four corners so it fills the grid cell
+    const vx = width / 2;
+    const vy = height / 2;
+    const anchors = [
+      [0, 0], [width, 0], [width, height], [0, height],
+      [width / 2, 0], [width, height / 2], [width / 2, height], [0, height / 2]
+    ];
+    anchors.forEach(point => group.appendChild(line(point[0], point[1], vx, vy)));
+    const depth = 6;
+    for (let i = 1; i < depth; i += 1) {
+      const t = i / depth;
+      group.appendChild(rect(vx * t, vy * t, width * (1 - t), height * (1 - t), { strokeWeight: "thin" }));
     }
   },
   "focus-lines"(group, width, height, random) {
