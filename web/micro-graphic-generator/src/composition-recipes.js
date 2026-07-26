@@ -31,7 +31,7 @@ export const compositionRecipes = Object.freeze([
       slot("modifier", "support", 0, 1, "lexical", ["modifier"], "secondary", 0.25),
       slot("subject", "support", 1, 1, "lexical", ["topic", "identity"], "secondary"),
       slot("meta", "metadata", 0, 2, "lexical", ["reference", "value"], "tertiary"),
-      slot("motif", "motif", 0, 1, "graphic", null, "secondary")
+      slot("motif", "motif", 0, 1, "graphic", null, "secondary", 0.7)
     ]),
     requiredRelations: Object.freeze([
       Object.freeze({ fromSlot: "hero", relations: Object.freeze(["actsOn"]), toSlot: "subject" }),
@@ -73,7 +73,7 @@ export const compositionRecipes = Object.freeze([
       slot("subject", "support", 1, 1, "lexical", ["topic", "identity"], "secondary"),
       slot("recovery", "support", 0, 1, "lexical", ["action"], "secondary"),
       slot("meta", "metadata", 0, 1, "lexical", ["reference", "value"], "tertiary"),
-      slot("motif", "motif", 0, 1, "graphic", null, "secondary")
+      slot("motif", "motif", 0, 1, "graphic", null, "secondary", 0.7)
     ]),
     requiredRelations: Object.freeze([
       Object.freeze({ fromSlot: "hero", relations: Object.freeze(["stateOf", "resultOf"]), toSlot: "subject" }),

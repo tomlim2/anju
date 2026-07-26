@@ -3,6 +3,7 @@ import { alignedTextX, clamp, marginSize, normalizeTokenAlign } from "./layout.j
 import { line, make, polyline, rect, textNode } from "./svg.js";
 import {
   normalizeDesignTokenSize,
+  strokeTokenAttrs,
   tokenSizeAttrs,
   tokenTaxonomyAttrs
 } from "./token-model.js";
@@ -363,7 +364,7 @@ export function renderCompositionMotif(group, intrinsicBounds, renderParams) {
     const maxRadius = Math.min(width, height) / 2 * 0.95;
     const rings = Math.max(3, renderParams.pointCount >> 1);
     for (let index = 1; index <= rings; index += 1) {
-      group.appendChild(make("circle", { cx: centerX, cy: centerY, r: (maxRadius * index) / rings, fill: "none", stroke: "currentColor", "stroke-width": index % 2 ? 1 : 1.8 }));
+      group.appendChild(make("circle", { cx: centerX, cy: centerY, r: (maxRadius * index) / rings, fill: "none", stroke: "currentColor", ...strokeTokenAttrs("thin") }));
     }
   } else {
     throw new Error(`Unknown composition motif: ${renderParams.graphicType}`);
