@@ -1,6 +1,6 @@
-// Standalone preview of the proposed "Manga-Terminal" graphic set.
-// Direction: pure monochrome pattern / line / screentone / radial-effect
-// graphics only (no text bubbles, no typography, no object glyphs).
+// Standalone preview of the proposed "Manga-Terminal" graphic set +
+// an ink-snap alignment demo. Direction: pure monochrome pattern / line /
+// screentone / radial-effect graphics (no text bubbles / typography / glyphs).
 // Does NOT touch the locked composition pipeline. See GRAPHIC_REDESIGN_PLAN.md.
 
 import { line, make, rect } from "./svg.js";
@@ -60,7 +60,6 @@ function path(d, opts = {}) {
   });
 }
 
-// ray from center to the perimeter of a box centered at (cx,cy)
 function rayToBox(cx, cy, angle, hw, hh) {
   const dx = Math.cos(angle);
   const dy = Math.sin(angle);
@@ -72,9 +71,8 @@ function rayToBox(cx, cy, angle, hw, hh) {
 
 const inBox = (px, py, x, y, w, h) => px >= x && px <= x + w && py >= y && py <= y + h;
 
-// ---- motif renderers: each draws into group g within box (x,y,w,h) ----
+// =================== graphic motifs (pure pattern) ===================
 
-// dot screentone with a linear density ramp; encodes a value in the caption
 function halftoneMeter(g, x, y, w, h, r) {
   const cols = 14;
   const rows = 7;
@@ -92,7 +90,6 @@ function halftoneMeter(g, x, y, w, h, r) {
   g.appendChild(txt(x + w, y - 6, `${Math.round(level * 100)}%`, { anchor: "end", size: 12 }));
 }
 
-// dots on concentric rings, growing outward — radial screentone
 function radialHalftone(g, x, y, w, h) {
   const cx = x + w / 2;
   const cy = y + h / 2;
@@ -112,7 +109,6 @@ function radialHalftone(g, x, y, w, h) {
   }
 }
 
-// random stipple with a left->right density gradient
 function stippleGradient(g, x, y, w, h, r) {
   const n = 520;
   for (let i = 0; i < n; i += 1) {
@@ -123,7 +119,6 @@ function stippleGradient(g, x, y, w, h, r) {
   }
 }
 
-// grid of filled/empty squares
 function dotMatrixField(g, x, y, w, h, r) {
   const cols = 10;
   const rows = 6;
@@ -142,7 +137,6 @@ function dotMatrixField(g, x, y, w, h, r) {
   }
 }
 
-// uniform 45deg hatch
 function hatchField(g, x, y, w, h, r) {
   const gap = 7 + Math.floor(r() * 4);
   for (let o = 0; o <= w + h; o += gap) {
@@ -153,7 +147,6 @@ function hatchField(g, x, y, w, h, r) {
   g.appendChild(rect(x, y, w, h, { strokeWeight: "hairline" }));
 }
 
-// parallel bars whose thickness ramps across the box — line-screen tone
 function lineScreen(g, x, y, w, h) {
   const n = 26;
   const step = w / n;
@@ -163,7 +156,6 @@ function lineScreen(g, x, y, w, h) {
   }
 }
 
-// horizontal raster lines with irregular band density
 function scanlines(g, x, y, w, h, r) {
   let cy = y;
   while (cy < y + h) {
@@ -173,7 +165,6 @@ function scanlines(g, x, y, w, h, r) {
   }
 }
 
-// horizontal motion streaks of varying length
 function speedLines(g, x, y, w, h, r) {
   const count = 12;
   for (let i = 0; i < count; i += 1) {
@@ -186,7 +177,6 @@ function speedLines(g, x, y, w, h, r) {
   }
 }
 
-// rows of chevrons — directional motion field
 function chevronStream(g, x, y, w, h) {
   const rows = 6;
   const rh = h / rows;
@@ -199,7 +189,6 @@ function chevronStream(g, x, y, w, h) {
   }
 }
 
-// vanishing-point floor grid
 function perspectiveGrid(g, x, y, w, h) {
   const vpx = x + w / 2;
   const vpy = y + h * 0.14;
@@ -218,7 +207,6 @@ function perspectiveGrid(g, x, y, w, h) {
   }
 }
 
-// nested rings — ripple / target
 function concentricRings(g, x, y, w, h, r) {
   const cx = x + w / 2;
   const cy = y + h / 2;
@@ -230,7 +218,6 @@ function concentricRings(g, x, y, w, h, r) {
   }
 }
 
-// radial lines converging to an off-center focus — 集中線
 function focusLines(g, x, y, w, h, r) {
   const cx = x + w * (0.4 + r() * 0.2);
   const cy = y + h * (0.4 + r() * 0.2);
@@ -249,7 +236,6 @@ function focusLines(g, x, y, w, h, r) {
   }
 }
 
-// filled radial burst — ベタフラッシュ
 function betaFlash(g, x, y, w, h, r) {
   const cx = x + w / 2;
   const cy = y + h / 2;
@@ -269,7 +255,6 @@ function betaFlash(g, x, y, w, h, r) {
   g.appendChild(make("circle", { cx, cy, r: innerR * 0.9, fill: "var(--bg)", stroke: "none" }));
 }
 
-// concentric jagged rings — shockwave
 function burstRings(g, x, y, w, h, r) {
   const cx = x + w / 2;
   const cy = y + h / 2;
@@ -305,90 +290,6 @@ const MOTIFS = [
   { id: "burst-rings", note: "shock", draw: burstRings }
 ];
 
-// ---- alignment demo: naive baseline placement vs getBBox ink-snap ----
-
-function alignText(value, tx, ty, h, v, size, snap) {
-  const anchor = h === "left" ? "start" : h === "right" ? "end" : "middle";
-  const baseline = v === "top" ? "hanging" : v === "bottom" ? "alphabetic" : "central";
-  const node = make("text", {
-    x: tx, y: ty, fill: "currentColor",
-    "font-family": DISPLAY, "font-size": size, "font-weight": 900,
-    "text-anchor": snap ? "start" : anchor,
-    "dominant-baseline": snap ? "alphabetic" : baseline
-  });
-  node.textContent = value;
-  if (snap) {
-    node.setAttribute("data-ink-snap", "1");
-    node.setAttribute("data-tx", tx);
-    node.setAttribute("data-ty", ty);
-    node.setAttribute("data-h", h);
-    node.setAttribute("data-v", v);
-  }
-  return node;
-}
-
-const ALIGN_TARGETS = [
-  { key: "top-left", h: "left", v: "top", token: "系统" },
-  { key: "top-right", h: "right", v: "top", token: "OK" },
-  { key: "center", h: "center", v: "middle", token: "출력" },
-  { key: "bottom-left", h: "left", v: "bottom", token: "2026" },
-  { key: "bottom-right", h: "right", v: "bottom", token: "林" }
-];
-
-function alignPanel(g, x, y, w, h, label, snap) {
-  g.appendChild(txt(x, y - 10, label, { size: 13, weight: 900, family: DISPLAY }));
-  g.appendChild(rect(x, y, w, h, { strokeWeight: "hairline", opacity: 0.5 }));
-  g.appendChild(line(x + w / 2, y, x + w / 2, y + h, { strokeWeight: "hairline", opacity: 0.16 }));
-  g.appendChild(line(x, y + h / 2, x + w, y + h / 2, { strokeWeight: "hairline", opacity: 0.16 }));
-  const inset = Math.min(w, h) * 0.15;
-  const size = Math.min(w, h) * 0.09;
-  ALIGN_TARGETS.forEach(t => {
-    const tx = t.h === "left" ? x + inset : t.h === "right" ? x + w - inset : x + w / 2;
-    const ty = t.v === "top" ? y + inset : t.v === "bottom" ? y + h - inset : y + h / 2;
-    // ground-truth target crosshair
-    g.appendChild(line(tx - 7, ty, tx + 7, ty, { strokeWeight: "hairline", opacity: 0.7 }));
-    g.appendChild(line(tx, ty - 7, tx, ty + 7, { strokeWeight: "hairline", opacity: 0.7 }));
-    g.appendChild(alignText(t.token, tx, ty, t.h, t.v, size, snap));
-  });
-}
-
-export function applyInkSnap(root) {
-  root.querySelectorAll("[data-ink-snap]").forEach(node => {
-    const tx = Number(node.getAttribute("data-tx"));
-    const ty = Number(node.getAttribute("data-ty"));
-    const h = node.getAttribute("data-h");
-    const v = node.getAttribute("data-v");
-    const b = node.getBBox();
-    const desiredX = h === "left" ? tx : h === "right" ? tx - b.width : tx - b.width / 2;
-    const desiredY = v === "top" ? ty : v === "bottom" ? ty - b.height : ty - b.height / 2;
-    node.setAttribute("transform", `translate(${(desiredX - b.x).toFixed(2)} ${(desiredY - b.y).toFixed(2)})`);
-  });
-}
-
-export function renderAlignmentDemo(width, height) {
-  const board = make("g", { "data-mockup": "alignment" });
-  const margin = Math.max(28, Math.min(56, width * 0.03));
-  const titleH = 66;
-  board.appendChild(txt(margin, 40, "ALIGNMENT — baseline placement vs ink-snap", { size: 18, weight: 900, family: DISPLAY }));
-  board.appendChild(txt(width - margin, 40, "십자=목표 / 잉크 코너가 맞아야 함", { size: 12, anchor: "end", family: DISPLAY }));
-  board.appendChild(line(margin, 52, width - margin, 52, { strokeWeight: "hairline" }));
-
-  const gap = 26;
-  const stacked = width < 780;
-  if (stacked) {
-    const panelW = width - margin * 2;
-    const panelH = (height - titleH - margin - gap) / 2 - 24;
-    alignPanel(board, margin, titleH + 24, panelW, panelH, "NAIVE — dominant-baseline/anchor", false);
-    alignPanel(board, margin, titleH + 24 + panelH + gap + 24, panelW, panelH, "INK-SNAP — getBBox", true);
-  } else {
-    const panelW = (width - margin * 2 - gap) / 2;
-    const panelH = height - titleH - margin - 34;
-    alignPanel(board, margin, titleH + 24, panelW, panelH, "NAIVE — dominant-baseline/anchor", false);
-    alignPanel(board, margin + panelW + gap, titleH + 24, panelW, panelH, "INK-SNAP — getBBox", true);
-  }
-  return board;
-}
-
 export function renderMockupGallery(width, height, seed) {
   const board = make("g", { "data-mockup": "manga-terminal" });
   const margin = Math.max(28, Math.min(56, width * 0.03));
@@ -418,6 +319,184 @@ export function renderMockupGallery(width, height, seed) {
     cell.appendChild(inner);
     cell.appendChild(txt(cx, cy + cellH - 8, motif.id, { size: 11 }));
     cell.appendChild(txt(cx + cellW, cy + cellH - 8, motif.note, { size: 11, anchor: "end", opacity: 0.6 }));
+    board.appendChild(cell);
+  });
+  return board;
+}
+
+// =================== alignment: ink-snap cases (getBBox) ===================
+
+// Snap the element's rendered ink bbox to a target, optionally scaling to fit
+// and spinning about the target. Runs after the node is attached to the DOM.
+export function applyInkSnap(root) {
+  root.querySelectorAll("[data-ink-snap]").forEach(node => {
+    const tx = Number(node.getAttribute("data-tx"));
+    const ty = Number(node.getAttribute("data-ty"));
+    const h = node.getAttribute("data-h");
+    const v = node.getAttribute("data-v");
+    const spin = Number(node.getAttribute("data-spin") || 0);
+    const fitW = node.getAttribute("data-fit-w");
+    const fitH = node.getAttribute("data-fit-h");
+    const b = node.getBBox();
+    if (!b.width || !b.height) return;
+    const s = (fitW && fitH) ? Math.min(Number(fitW) / b.width, Number(fitH) / b.height) : 1;
+    const bx = b.x * s;
+    const by = b.y * s;
+    const bw = b.width * s;
+    const bh = b.height * s;
+    const desiredX = h === "left" ? tx : h === "right" ? tx - bw : tx - bw / 2;
+    const desiredY = v === "top" ? ty : v === "bottom" ? ty - bh : ty - bh / 2;
+    let tr = `translate(${(desiredX - bx).toFixed(2)} ${(desiredY - by).toFixed(2)})`;
+    if (s !== 1) tr += ` scale(${s.toFixed(4)})`;
+    if (spin) tr = `rotate(${spin} ${tx} ${ty}) ${tr}`;
+    node.setAttribute("transform", tr);
+  });
+}
+
+function glyph(value, size, opts = {}) {
+  const node = make("text", {
+    x: 0, y: 0, fill: "currentColor",
+    "font-family": opts.family || DISPLAY, "font-size": size, "font-weight": opts.weight || 900,
+    "text-anchor": "start", "dominant-baseline": "alphabetic"
+  });
+  node.textContent = value;
+  return node;
+}
+
+function snap(node, tx, ty, h, v, opts = {}) {
+  node.setAttribute("data-ink-snap", "1");
+  node.setAttribute("data-tx", tx);
+  node.setAttribute("data-ty", ty);
+  node.setAttribute("data-h", h);
+  node.setAttribute("data-v", v);
+  if (opts.spin) node.setAttribute("data-spin", opts.spin);
+  if (opts.fitW) node.setAttribute("data-fit-w", opts.fitW);
+  if (opts.fitH) node.setAttribute("data-fit-h", opts.fitH);
+  return node;
+}
+
+function cross(g, x, y, s = 7, op = 0.7) {
+  g.appendChild(line(x - s, y, x + s, y, { strokeWeight: "hairline", opacity: op }));
+  g.appendChild(line(x, y - s, x, y + s, { strokeWeight: "hairline", opacity: op }));
+}
+
+// case 1: five anchors — corners + center, mixed scripts
+function caseCorners(g, x, y, w, h) {
+  const inset = Math.min(w, h) * 0.18;
+  const size = Math.min(w, h) * 0.14;
+  const pts = [
+    { h: "left", v: "top", t: "系统" },
+    { h: "right", v: "top", t: "OK" },
+    { h: "center", v: "middle", t: "출력" },
+    { h: "left", v: "bottom", t: "2026" },
+    { h: "right", v: "bottom", t: "林" }
+  ];
+  pts.forEach(p => {
+    const tx = p.h === "left" ? x + inset : p.h === "right" ? x + w - inset : x + w / 2;
+    const ty = p.v === "top" ? y + inset : p.v === "bottom" ? y + h - inset : y + h / 2;
+    cross(g, tx, ty);
+    g.appendChild(snap(glyph(p.t, size), tx, ty, p.h, p.v));
+  });
+}
+
+// case 2: mixed scripts sharing one visual top-line
+function caseTopline(g, x, y, w, h) {
+  const size = Math.min(w * 0.15, h * 0.34);
+  const ty = y + h * 0.34;
+  g.appendChild(line(x + w * 0.04, ty, x + w * 0.96, ty, { strokeWeight: "hairline", opacity: 0.6 }));
+  const toks = ["系", "가", "A", "7", "林"];
+  const inset = w * 0.1;
+  const step = (w - inset * 2) / toks.length;
+  toks.forEach((t, i) => {
+    g.appendChild(snap(glyph(t, size), x + inset + step * i, ty, "left", "top"));
+  });
+}
+
+// case 3: center align, then spin about the center
+function caseSpin(g, x, y, w, h) {
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  cross(g, cx, cy, 9);
+  g.appendChild(snap(glyph("系统", Math.min(w, h) * 0.2), cx, cy, "center", "middle", { spin: -12 }));
+}
+
+// case 4: vertical stack snapped to top-center as one group
+function caseVertical(g, x, y, w, h) {
+  const cx = x + w / 2;
+  const top = y + h * 0.16;
+  const size = Math.min(w, h) * 0.2;
+  g.appendChild(line(cx, y + h * 0.08, cx, y + h * 0.92, { strokeWeight: "hairline", opacity: 0.3 }));
+  g.appendChild(line(x + w * 0.2, top, x + w * 0.8, top, { strokeWeight: "hairline", opacity: 0.6 }));
+  const col = make("g", {});
+  ["시", "스", "템"].forEach((ch, i) => {
+    const t = glyph(ch, size);
+    t.setAttribute("y", i * size * 1.02);
+    col.appendChild(t);
+  });
+  g.appendChild(snap(col, cx, top, "center", "top"));
+}
+
+// case 5: labels aligned to the corners of a graphic frame
+function caseFrame(g, x, y, w, h) {
+  const fx = x + w * 0.14;
+  const fy = y + h * 0.18;
+  const fw = w * 0.72;
+  const fh = h * 0.6;
+  g.appendChild(rect(fx, fy, fw, fh, { strokeWeight: "thin" }));
+  const pad = Math.min(fw, fh) * 0.12;
+  cross(g, fx + pad, fy + pad, 5, 0.4);
+  cross(g, fx + fw - pad, fy + fh - pad, 5, 0.4);
+  g.appendChild(snap(glyph("MODULE", Math.min(fw, fh) * 0.13, { family: MONO, weight: 700 }), fx + pad, fy + pad, "left", "top"));
+  g.appendChild(snap(glyph("系统", Math.min(fw, fh) * 0.34), fx + fw / 2, fy + fh / 2, "center", "middle"));
+  g.appendChild(snap(glyph("REV 07", Math.min(fw, fh) * 0.11, { family: MONO, weight: 700 }), fx + fw - pad, fy + fh - pad, "right", "bottom"));
+}
+
+// case 6: fit a long word to a box, then center by ink
+function caseFit(g, x, y, w, h) {
+  const bx = x + w * 0.12;
+  const by = y + h * 0.32;
+  const bw = w * 0.76;
+  const bh = h * 0.36;
+  g.appendChild(line(bx, by, bx, by + bh, { strokeWeight: "hairline", opacity: 0.55 }));
+  g.appendChild(line(bx + bw, by, bx + bw, by + bh, { strokeWeight: "hairline", opacity: 0.55 }));
+  g.appendChild(line(bx, by + bh / 2, bx + bw, by + bh / 2, { strokeWeight: "hairline", opacity: 0.16 }));
+  g.appendChild(snap(glyph("RUNNING", 120, { weight: 900 }), bx + bw / 2, by + bh / 2, "center", "middle", { fitW: bw, fitH: bh }));
+}
+
+const ALIGN_CASES = [
+  { id: "corners", cap: "5-anchor 코너+중앙", draw: caseCorners },
+  { id: "shared-topline", cap: "혼합 스크립트 상단선", draw: caseTopline },
+  { id: "center-spin", cap: "중앙 정렬 + 회전", draw: caseSpin },
+  { id: "vertical-stack", cap: "세로 조판 그룹", draw: caseVertical },
+  { id: "in-frame", cap: "그래픽 프레임 내부", draw: caseFrame },
+  { id: "fit-to-box", cap: "박스 맞춤 + 중앙", draw: caseFit }
+];
+
+export function renderAlignmentDemo(width, height) {
+  const board = make("g", { "data-mockup": "alignment" });
+  const margin = Math.max(28, Math.min(56, width * 0.03));
+  const titleH = 66;
+  board.appendChild(txt(margin, 40, "ALIGNMENT — ink-snap cases (getBBox)", { size: 18, weight: 900, family: DISPLAY }));
+  board.appendChild(txt(width - margin, 40, "가이드=목표 / 잉크가 맞아야 함", { size: 12, anchor: "end", family: DISPLAY }));
+  board.appendChild(line(margin, 52, width - margin, 52, { strokeWeight: "hairline" }));
+
+  const cols = width > 1000 ? 3 : 2;
+  const rows = Math.ceil(ALIGN_CASES.length / cols);
+  const gap = 18;
+  const captionH = 26;
+  const cellW = (width - margin * 2 - (cols - 1) * gap) / cols;
+  const cellH = (height - titleH - margin - (rows - 1) * gap) / rows;
+
+  ALIGN_CASES.forEach((c, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const cx = margin + col * (cellW + gap);
+    const cy = titleH + row * (cellH + gap);
+    const cell = make("g", { "data-align-case": c.id });
+    cell.appendChild(rect(cx, cy, cellW, cellH - captionH, { strokeWeight: "hairline", opacity: 0.5 }));
+    c.draw(cell, cx, cy, cellW, cellH - captionH);
+    cell.appendChild(txt(cx, cy + cellH - 8, c.id, { size: 11 }));
+    cell.appendChild(txt(cx + cellW, cy + cellH - 8, c.cap, { size: 10, anchor: "end", opacity: 0.55, family: DISPLAY }));
     board.appendChild(cell);
   });
   return board;
