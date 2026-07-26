@@ -331,81 +331,40 @@ export function renderCompositionMotif(group, intrinsicBounds, renderParams) {
   group.appendChild(rect(0, 0, width, height, { fill: "transparent", stroke: false, opacity: 0 }));
 
   if (renderParams.graphicType === "barcode") {
-    const captionHeight = TYPOGRAPHY_INTRINSIC_FONT_SIZES.small + 2;
-    const barHeight = Math.max(1, height - captionHeight);
-    const quiet = width * 0.04;
-    const moduleWidth = (width - quiet * 2) / renderParams.barPattern.length;
-    [...renderParams.barPattern].forEach((bit, index) => {
-      if (bit !== "1") return;
-      group.appendChild(rect(
-        quiet + index * moduleWidth,
-        0,
-        Math.max(0.5, moduleWidth),
-        barHeight,
-        { fill: "currentColor", stroke: false }
-      ));
-    });
-    group.appendChild(textNode(width / 2, height, renderParams.value, {
-      size: TYPOGRAPHY_INTRINSIC_FONT_SIZES.small,
-      tokenSize: "small",
-      tokenFunction: "data",
-      tokenRole: "barcode-caption",
-      tokenContext: "primitive-detail",
-      typeface: "mono",
-      align: "center",
-      fontWeightOverride: 400
-    }));
+    // line-screen: vertical bars with per-bit thickness
+    const bars = Math.max(10, Math.round(width / 6));
+    const step = width / bars;
+    for (let index = 0; index < bars; index += 1) {
+      const thickness = step * (bitAt(renderParams.barPattern, index) ? 0.82 : 0.34);
+      group.appendChild(rect(index * step + (step - thickness) / 2, 0, Math.max(0.5, thickness), height, { fill: "currentColor", stroke: false }));
+    }
   } else if (renderParams.graphicType === "pseudo-qr") {
-    const stepX = width / renderParams.moduleCount;
-    const stepY = height / renderParams.moduleCount;
-    for (let row = 0; row < renderParams.moduleCount; row += 1) {
-      for (let column = 0; column < renderParams.moduleCount; column += 1) {
-        const index = row * renderParams.moduleCount + column;
-        if (!finderModule(row, column, renderParams.moduleCount) && !bitAt(renderParams.payloadBits, index)) continue;
-        group.appendChild(rect(
-          column * stepX,
-          row * stepY,
-          Math.max(0.5, stepX * 0.9),
-          Math.max(0.5, stepY * 0.9),
-          { fill: "currentColor", stroke: false }
-        ));
+    // dot-matrix field from payload bits
+    const modules = renderParams.moduleCount;
+    const stepX = width / modules;
+    const stepY = height / modules;
+    for (let row = 0; row < modules; row += 1) {
+      for (let column = 0; column < modules; column += 1) {
+        if (!bitAt(renderParams.payloadBits, row * modules + column)) continue;
+        group.appendChild(rect(column * stepX, row * stepY, Math.max(0.5, stepX * 0.82), Math.max(0.5, stepY * 0.82), { fill: "currentColor", stroke: false }));
       }
     }
   } else if (renderParams.graphicType === "table") {
-    const cellWidth = width / renderParams.columns;
-    const cellHeight = height / renderParams.rows;
+    // diagonal hatch field
+    const gap = Math.max(5, Math.min(width, height) / 8);
+    for (let offset = 0; offset <= width + height; offset += gap) {
+      group.appendChild(line(Math.min(offset, width), Math.max(0, offset - width), Math.max(0, offset - height), Math.min(offset, height)));
+    }
     group.appendChild(rect(0, 0, width, height));
-    for (let column = 1; column < renderParams.columns; column += 1) {
-      group.appendChild(line(column * cellWidth, 0, column * cellWidth, height));
-    }
-    for (let row = 1; row < renderParams.rows; row += 1) {
-      group.appendChild(line(0, row * cellHeight, width, row * cellHeight));
-    }
-    for (let row = 0; row < renderParams.rows; row += 1) {
-      for (let column = 0; column < renderParams.columns; column += 1) {
-        const index = row * renderParams.columns + column;
-        if (!bitAt(renderParams.densityKey, index)) continue;
-        group.appendChild(rect(
-          column * cellWidth + cellWidth * 0.18,
-          row * cellHeight + cellHeight * 0.28,
-          cellWidth * 0.52,
-          Math.max(1, cellHeight * 0.16),
-          { fill: "currentColor", stroke: false }
-        ));
-      }
-    }
   } else if (renderParams.graphicType === "wave") {
-    const points = [];
-    for (let index = 0; index < renderParams.pointCount; index += 1) {
-      const fraction = renderParams.pointCount === 1 ? 0 : index / (renderParams.pointCount - 1);
-      const sample = Number.parseInt(renderParams.amplitudeKey.slice((index * 2) % renderParams.amplitudeKey.length, ((index * 2) % renderParams.amplitudeKey.length) + 2).padEnd(2, "0"), 2) / 3;
-      const signed = sample * 2 - 1;
-      points.push([fraction * width, height * (0.5 + signed * 0.34)]);
+    // concentric rings (radial signal)
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const maxRadius = Math.min(width, height) / 2 * 0.95;
+    const rings = Math.max(3, renderParams.pointCount >> 1);
+    for (let index = 1; index <= rings; index += 1) {
+      group.appendChild(make("circle", { cx: centerX, cy: centerY, r: (maxRadius * index) / rings, fill: "none", stroke: "currentColor", "stroke-width": index % 2 ? 1 : 1.8 }));
     }
-    for (let index = 1; index < 4; index += 1) {
-      group.appendChild(line(0, height * index / 4, width, height * index / 4, { dash: "2 8", opacity: 0.25 }));
-    }
-    group.appendChild(polyline(points));
   } else {
     throw new Error(`Unknown composition motif: ${renderParams.graphicType}`);
   }
