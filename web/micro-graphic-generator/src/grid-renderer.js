@@ -10,6 +10,7 @@ import { renderCompositionMotif } from "./graphics.js";
 import { projectCompositionPlan } from "./grid-selection.js";
 import { make, rect, textNode } from "./svg.js";
 import { tokenSizeAttrs, tokenTaxonomyAttrs } from "./token-model.js";
+import { TYPOGRAPHY_METRIC_DATA } from "./typography-metrics-data.js";
 
 function numberText(value) {
   const rounded = Math.round(value * 1_000_000) / 1_000_000;
@@ -147,11 +148,14 @@ export function createGridRenderer() {
       footprint
     });
     const fontSize = TYPOGRAPHY_INTRINSIC_FONT_SIZES[size];
+    const inkMetrics = TYPOGRAPHY_METRIC_DATA[typeface]?.[fontWeight];
+    const inkTop = inkMetrics ? inkMetrics.inkTop : 0.82;
+    const inkBottom = inkMetrics ? inkMetrics.inkBottom : -0.18;
     const baseline = verticalAlignment === "top"
-      ? fontSize * 0.82
+      ? fontSize * inkTop
       : verticalAlignment === "bottom"
-        ? -fontSize * 0.18
-        : fontSize * 0.32;
+        ? fontSize * inkBottom
+        : fontSize * (inkTop + inkBottom) / 2;
     const glyphStack = orientationMode === "glyph-sideways-stack";
     const node = textNode(0, glyphStack ? 0 : baseline, text, {
       size: fontSize,
