@@ -1,11 +1,14 @@
 // Zero-dependency static dev server for Micro Graphic Generator.
 // Forwards CLI args: --port <n>, --host <addr>
+// Appends ?v=<server-start-id> to every relative module/style URL it serves so a
+// restart guarantees browsers refetch fresh code instead of reusing cached ES modules.
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
+const BUILD = String(Date.now());
 
 function argValue(flag, fallback) {
   const i = process.argv.indexOf(flag);
@@ -31,6 +34,19 @@ const MIME = {
   ".md": "text/markdown; charset=utf-8",
 };
 
+const versioned = specifier => (specifier.includes("?") ? specifier : `${specifier}?v=${BUILD}`);
+
+function rewriteJs(text) {
+  // relative import specifiers: from "./x.js", import "./x.js", import("../x.mjs")
+  return text.replace(/(["'])(\.\.?\/[^"']+?\.m?js)(["'])/g, (_, a, spec, b) => `${a}${versioned(spec)}${b}`);
+}
+
+function rewriteHtml(text) {
+  return text
+    .replace(/(\ssrc=")(\.\.?\/[^"]+?\.m?js)(")/g, (_, a, spec, b) => `${a}${versioned(spec)}${b}`)
+    .replace(/(\shref=")(\.\.?\/[^"]+?\.css)(")/g, (_, a, spec, b) => `${a}${versioned(spec)}${b}`);
+}
+
 createServer(async (req, res) => {
   try {
     let path = decodeURIComponent(new URL(req.url, "http://x").pathname);
@@ -41,14 +57,18 @@ createServer(async (req, res) => {
       return;
     }
     const body = await readFile(file);
+    const ext = extname(file);
+    let out = body;
+    if (ext === ".js" || ext === ".mjs") out = Buffer.from(rewriteJs(body.toString("utf8")), "utf8");
+    else if (ext === ".html") out = Buffer.from(rewriteHtml(body.toString("utf8")), "utf8");
     res.writeHead(200, {
-      "Content-Type": MIME[extname(file)] || "application/octet-stream",
+      "Content-Type": MIME[ext] || "application/octet-stream",
       "Cache-Control": "no-store, no-cache, must-revalidate",
     });
-    res.end(body);
+    res.end(out);
   } catch {
     res.writeHead(404).end("Not found");
   }
 }).listen(port, host, () => {
-  console.log(`micro-graphic-generator → http://${host}:${port}/`);
+  console.log(`micro-graphic-generator → http://${host}:${port}/ (build ${BUILD})`);
 });
