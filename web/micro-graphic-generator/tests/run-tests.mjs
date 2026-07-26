@@ -22,7 +22,7 @@ function run(command, args, env = process.env) {
 run(process.execPath, [
   "--test",
   `--test-name-pattern=${smokePureTest}`,
-  "web/micro-graphic-generator/tests/pure.test.mjs"
+  "web/micro-graphic-generator/tests/smoke.test.mjs"
 ]);
 
 run(process.execPath, [
