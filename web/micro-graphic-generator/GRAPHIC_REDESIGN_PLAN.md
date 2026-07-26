@@ -5,6 +5,10 @@
 
 > **개정 (2026-07-26): 방향 축소.** 말풍선(speech/shout)·사고구름·효과마크(汗/💢)·의성어(描き文字)·impact-burst는 **폐기**한다. 텍스트·컨테이너·오브젝트 글리프가 들어가는 표현은 이 도구가 잘 만들지 못한다. 남기는 방향은 **순수 흑백 패턴 / 선 / 스크린톤 / 방사 효과**뿐이다. Mockup 모드(`src/mockup-gallery.js`)의 현재 14종이 확정 후보다: `halftone-meter`, `radial-halftone`, `stipple-gradient`, `dot-matrix-field`, `hatch-field`, `line-screen`, `scanlines`, `speed-lines`, `chevron-stream`, `perspective-grid`, `concentric-rings`, `focus-lines`, `beta-flash`, `burst-rings`. 아래 3장 카탈로그의 C·D·E(컨테이너/마크/타이포) 그룹은 폐기로 간주한다.
 
+> **용어 (2026-07-26): "그래픽 토큰 (graphic token)".** composition에 들어가는 그래픽 motif/패턴을 통칭 **"그래픽 토큰"** 으로 부른다. 코드 식별자는 `motif`(`motifId`, `motifRegistry`, `src/motifs.js`, `sourceKind: "motif"`)를 유지하되, 문서·대화·UI 표현은 "그래픽 토큰"으로 통일한다. 코드에도 `data-grid-token-kind="graphic"`, `form: "graphic"` 어휘가 이미 있다.
+
+> **구현 (2026-07-26): 파이프라인 반영 완료.** 아래 14종 그래픽 토큰을 `src/motifs.js` 레지스트리 + `src/graphics.js`의 `renderCompositionMotif`에 편입했다: `barcode`(line-screen), `table`(hatch), `wave`(concentric-rings), `halftone-meter`, `dot-matrix`, `radial-halftone`, `stipple`, `scanlines`, `speed-lines`, `chevron`, `perspective`, `focus-lines`, `beta-flash`, `burst-rings`. QR(`pseudo-qr`)은 제거. 각 토큰은 블록 비율에 맞춰 셀(outer box)을 여백 없이 채우고(grid-finalizer/validation은 motif을 outer box 기준으로 검사), motif 슬롯 `optionalPresenceRate 0.7`로 출현 빈도를 높였다(실측 ~48%). 타이포 배치는 per-role 잉크 메트릭(`TYPOGRAPHY_METRIC_DATA`의 `inkTop/inkBottom`) 기반으로 전환했다.
+
 ## 1. 왜 갈아엎나
 
 - 현재 블록 motif는 `barcode`, `pseudo-qr`, `table`, `wave` 4종뿐이고 전부 "machine-readable / data-look" 계열이라 시각 어휘가 단조롭다.

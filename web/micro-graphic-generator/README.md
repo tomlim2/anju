@@ -77,6 +77,7 @@ npm run test:generator
 - `Aspect ratio`: Component의 가로:세로 비율. 현재 `1:1`, `2:3`, `2:5`, `3:2`, `5:2`, `4:3`, `3:4`를 쓰며, 이 비율에 따라 3×3 cell 크기가 달라진다.
 - `Stroke`: Component 외곽선 방식. 현재 `stroke`, `no-stroke`, `corner-stroke` 세 가지를 쓴다.
 - `Graphic primitive`: Component를 구성하는 작은 그래픽 재료. barcode, pseudo-QR, mini table, wave graph, label, badge, symbol 등이 여기에 속한다.
+- `그래픽 토큰 (graphic token)`: composition의 grid block에 들어가는 그래픽 motif/패턴의 **통칭**. 현재 14종(`line-screen`, `hatch`, `concentric-rings`, `halftone-meter`, `dot-matrix`, `radial-halftone`, `stipple`, `scanlines`, `speed-lines`, `chevron`, `perspective`, `focus-lines`, `beta-flash`, `burst-rings`)이며 각 토큰은 블록 비율에 맞춰 셀을 채운다. 코드 식별자는 `motif`(`motifs.js`, `sourceKind: "motif"`)를 유지하되 문서·UI 표현은 "그래픽 토큰"으로 통일한다.
 - `Display keyword`: `REPORT`, `STATUS`, `MODULE`, `ACCESS`처럼 제목이나 상태 문구처럼 읽히는 영어 keyword다. data value가 아니며 SUIT English role을 쓴다.
 - `Layout grid`: Component safe area를 가로 3열, 세로 3행으로 나눈 보이지 않는 좌표계다.
 - `Grid block`: 3×3 cell 중 하나 이상의 직사각형 영역을 점유하고 token 하나를 소유하는 단위다.
