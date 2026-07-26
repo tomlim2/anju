@@ -3,6 +3,8 @@
 > 상태: **준비(draft)**. 코드·파이프라인 미반영. 방향 확정용 문서.
 > 목표: 현재 4개 motif(barcode / pseudo-qr / table / wave)를 전면 교체해, "데이터/터미널" 뼈대 위에 **일본 만화적 표현**을 입힌 새 그래픽 언어를 만든다.
 
+> **개정 (2026-07-26): 방향 축소.** 말풍선(speech/shout)·사고구름·효과마크(汗/💢)·의성어(描き文字)·impact-burst는 **폐기**한다. 텍스트·컨테이너·오브젝트 글리프가 들어가는 표현은 이 도구가 잘 만들지 못한다. 남기는 방향은 **순수 흑백 패턴 / 선 / 스크린톤 / 방사 효과**뿐이다. Mockup 모드(`src/mockup-gallery.js`)의 현재 14종이 확정 후보다: `halftone-meter`, `radial-halftone`, `stipple-gradient`, `dot-matrix-field`, `hatch-field`, `line-screen`, `scanlines`, `speed-lines`, `chevron-stream`, `perspective-grid`, `concentric-rings`, `focus-lines`, `beta-flash`, `burst-rings`. 아래 3장 카탈로그의 C·D·E(컨테이너/마크/타이포) 그룹은 폐기로 간주한다.
+
 ## 1. 왜 갈아엎나
 
 - 현재 블록 motif는 `barcode`, `pseudo-qr`, `table`, `wave` 4종뿐이고 전부 "machine-readable / data-look" 계열이라 시각 어휘가 단조롭다.
