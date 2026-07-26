@@ -43,7 +43,7 @@ createServer(async (req, res) => {
     const body = await readFile(file);
     res.writeHead(200, {
       "Content-Type": MIME[extname(file)] || "application/octet-stream",
-      "Cache-Control": "no-cache",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
     });
     res.end(body);
   } catch {
