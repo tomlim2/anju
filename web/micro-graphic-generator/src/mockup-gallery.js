@@ -305,6 +305,90 @@ const MOTIFS = [
   { id: "burst-rings", note: "shock", draw: burstRings }
 ];
 
+// ---- alignment demo: naive baseline placement vs getBBox ink-snap ----
+
+function alignText(value, tx, ty, h, v, size, snap) {
+  const anchor = h === "left" ? "start" : h === "right" ? "end" : "middle";
+  const baseline = v === "top" ? "hanging" : v === "bottom" ? "alphabetic" : "central";
+  const node = make("text", {
+    x: tx, y: ty, fill: "currentColor",
+    "font-family": DISPLAY, "font-size": size, "font-weight": 900,
+    "text-anchor": snap ? "start" : anchor,
+    "dominant-baseline": snap ? "alphabetic" : baseline
+  });
+  node.textContent = value;
+  if (snap) {
+    node.setAttribute("data-ink-snap", "1");
+    node.setAttribute("data-tx", tx);
+    node.setAttribute("data-ty", ty);
+    node.setAttribute("data-h", h);
+    node.setAttribute("data-v", v);
+  }
+  return node;
+}
+
+const ALIGN_TARGETS = [
+  { key: "top-left", h: "left", v: "top", token: "系统" },
+  { key: "top-right", h: "right", v: "top", token: "OK" },
+  { key: "center", h: "center", v: "middle", token: "출력" },
+  { key: "bottom-left", h: "left", v: "bottom", token: "2026" },
+  { key: "bottom-right", h: "right", v: "bottom", token: "林" }
+];
+
+function alignPanel(g, x, y, w, h, label, snap) {
+  g.appendChild(txt(x, y - 10, label, { size: 13, weight: 900, family: DISPLAY }));
+  g.appendChild(rect(x, y, w, h, { strokeWeight: "hairline", opacity: 0.5 }));
+  g.appendChild(line(x + w / 2, y, x + w / 2, y + h, { strokeWeight: "hairline", opacity: 0.16 }));
+  g.appendChild(line(x, y + h / 2, x + w, y + h / 2, { strokeWeight: "hairline", opacity: 0.16 }));
+  const inset = Math.min(w, h) * 0.15;
+  const size = Math.min(w, h) * 0.09;
+  ALIGN_TARGETS.forEach(t => {
+    const tx = t.h === "left" ? x + inset : t.h === "right" ? x + w - inset : x + w / 2;
+    const ty = t.v === "top" ? y + inset : t.v === "bottom" ? y + h - inset : y + h / 2;
+    // ground-truth target crosshair
+    g.appendChild(line(tx - 7, ty, tx + 7, ty, { strokeWeight: "hairline", opacity: 0.7 }));
+    g.appendChild(line(tx, ty - 7, tx, ty + 7, { strokeWeight: "hairline", opacity: 0.7 }));
+    g.appendChild(alignText(t.token, tx, ty, t.h, t.v, size, snap));
+  });
+}
+
+export function applyInkSnap(root) {
+  root.querySelectorAll("[data-ink-snap]").forEach(node => {
+    const tx = Number(node.getAttribute("data-tx"));
+    const ty = Number(node.getAttribute("data-ty"));
+    const h = node.getAttribute("data-h");
+    const v = node.getAttribute("data-v");
+    const b = node.getBBox();
+    const desiredX = h === "left" ? tx : h === "right" ? tx - b.width : tx - b.width / 2;
+    const desiredY = v === "top" ? ty : v === "bottom" ? ty - b.height : ty - b.height / 2;
+    node.setAttribute("transform", `translate(${(desiredX - b.x).toFixed(2)} ${(desiredY - b.y).toFixed(2)})`);
+  });
+}
+
+export function renderAlignmentDemo(width, height) {
+  const board = make("g", { "data-mockup": "alignment" });
+  const margin = Math.max(28, Math.min(56, width * 0.03));
+  const titleH = 66;
+  board.appendChild(txt(margin, 40, "ALIGNMENT — baseline placement vs ink-snap", { size: 18, weight: 900, family: DISPLAY }));
+  board.appendChild(txt(width - margin, 40, "십자=목표 / 잉크 코너가 맞아야 함", { size: 12, anchor: "end", family: DISPLAY }));
+  board.appendChild(line(margin, 52, width - margin, 52, { strokeWeight: "hairline" }));
+
+  const gap = 26;
+  const stacked = width < 780;
+  if (stacked) {
+    const panelW = width - margin * 2;
+    const panelH = (height - titleH - margin - gap) / 2 - 24;
+    alignPanel(board, margin, titleH + 24, panelW, panelH, "NAIVE — dominant-baseline/anchor", false);
+    alignPanel(board, margin, titleH + 24 + panelH + gap + 24, panelW, panelH, "INK-SNAP — getBBox", true);
+  } else {
+    const panelW = (width - margin * 2 - gap) / 2;
+    const panelH = height - titleH - margin - 34;
+    alignPanel(board, margin, titleH + 24, panelW, panelH, "NAIVE — dominant-baseline/anchor", false);
+    alignPanel(board, margin + panelW + gap, titleH + 24, panelW, panelH, "INK-SNAP — getBBox", true);
+  }
+  return board;
+}
+
 export function renderMockupGallery(width, height, seed) {
   const board = make("g", { "data-mockup": "manga-terminal" });
   const margin = Math.max(28, Math.min(56, width * 0.03));

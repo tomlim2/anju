@@ -60,7 +60,7 @@ import {
   MOTIF_REGISTRY_VERSION,
   validateMotifRenderParams
 } from "./motifs.js";
-import { renderMockupGallery } from "./mockup-gallery.js";
+import { applyInkSnap, renderAlignmentDemo, renderMockupGallery } from "./mockup-gallery.js";
 import { createRandomSource, deriveSeed, keyedValue } from "./random.js";
 import { line, make, rect, svgStructuralFingerprint, textNode } from "./svg.js";
 import {
@@ -123,6 +123,7 @@ let activeBlockLayout = "";
 let blockOutlinesVisible = true;
 let forcedRatio = urlParameters.get("ratio") || "";
 let appMode = "random";
+let mockupPage = 0;
 let dark = false;
 let renderVersion = 0;
 let activePlan = null;
@@ -850,13 +851,18 @@ function renderCatalog(width, height) {
 
 function renderMockup(width, height) {
   art.replaceChildren(backgroundNode(width, height));
-  art.appendChild(renderMockupGallery(width, height, seed));
+  const board = mockupPage === 0
+    ? renderMockupGallery(width, height, seed)
+    : renderAlignmentDemo(width, height, seed);
+  art.appendChild(board);
+  if (mockupPage === 1) applyInkSnap(art);
   activeComponentRatio = "mockup";
   activeBorderMode = "mockup";
   activeBlockLayout = "mockup";
   art.setAttribute("data-rule-violations", "0");
   art.setAttribute("data-rule-violation-list", "");
-  seedLabel.textContent = `MODE MOCKUP / MANGA-TERMINAL / SEED ${seedHex()}`;
+  const page = mockupPage === 0 ? "GRAPHIC SET" : "ALIGNMENT";
+  seedLabel.textContent = `MODE MOCKUP ${mockupPage + 1}/2 / ${page} / SEED ${seedHex()}`;
 }
 
 function render(nextSeed = seed, { newGeneration = false } = {}) {
@@ -922,7 +928,14 @@ function bindEvents() {
   });
   controls.mockup.addEventListener("click", () => {
     if (fontRuntimeState !== "ready") return;
-    appMode = appMode === "mockup" ? "random" : "mockup";
+    if (appMode !== "mockup") {
+      appMode = "mockup";
+      mockupPage = 0;
+    } else if (mockupPage < 1) {
+      mockupPage += 1;
+    } else {
+      appMode = "random";
+    }
     controls.mockup.setAttribute("aria-pressed", String(appMode === "mockup"));
     controls.mode.textContent = "Compose";
     controls.mode.setAttribute("aria-pressed", "false");
