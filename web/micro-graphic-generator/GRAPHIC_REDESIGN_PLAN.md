@@ -136,6 +136,56 @@
 5. **회색 금지 원칙 유지** 여부(순수 흑백 도트 톤만).
 6. **폐기 motif 처리** — 완전 삭제 vs 당분간 비활성 유지.
 
+## 8b. Typography 잉크 정렬 파이프라인 편입 (approach B)
+
+ALIGN 목업에서 검증한 **오프라인 잉크 메트릭** 방식을 실제 composition에 편입한다.
+
+### 근본 원인 (실측)
+
+`grid-renderer.js`가 토큰 baseline을 **모든 폰트·스크립트에 동일한 하드코딩 상수**로 잡는다:
+
+```js
+const baseline = verticalAlignment === "top" ? fontSize * 0.82
+  : verticalAlignment === "bottom" ? -fontSize * 0.18 : fontSize * 0.32;
+```
+
+하지만 role별 실제 잉크는 다르다(`scripts/extract-role-ink-metrics.py`, @900):
+
+| role | inkTop | inkBottom |
+|---|---|---|
+| english | 0.837 | -0.134 |
+| korean | 0.827 | -0.093 |
+| mono | 0.726 | -0.18 |
+| chinese/hanja | 0.873 | -0.119 |
+
+`0.82`는 mono(0.726)·chinese(0.873)에 안 맞아 스크립트마다 상단/중앙/하단이 어긋난다.
+
+### 데이터 모델
+
+`TYPOGRAPHY_METRIC_DATA[role][weight]`에 `inkTop`, `inkBottom`을 추가한다(em 정규화, baseline=0, 위 양수). 역할 글자셋 전체에 대한 max top / min bottom 집계이므로 그 role의 모든 글리프를 감싼다. 값은 `scripts/extract-role-ink-metrics.py`로 재생성한다.
+
+### 코드 변경
+
+- `grid-renderer.js`: 하드코딩 baseline을 metric 기반으로 교체.
+  - top: `inkTop * fontSize`
+  - bottom: `inkBottom * fontSize`
+  - middle: `(inkTop + inkBottom) / 2 * fontSize`
+- `typography-metrics.js`의 `measureTypography`: height를 `capHeight`가 아니라 `(inkTop - inkBottom) * fontSize`(잉크 높이)로 바꿔 planner와 renderer가 같은 박스를 쓰게 한다.
+- 필요 시 `1x3` glyph-sideways-stack 세로 조판에도 동일 규칙 적용.
+
+### 버전 범프 & re-freeze (큰 캐스케이드)
+
+- `FONT_METRICS_VERSION` 1 → 2 (`typography-metrics.js`).
+- measure 출력과 렌더 좌표가 바뀌므로 골든 fixture 재동결: `tests/fixtures/typography-metrics.json`, `baseline.json`, `composition-browser-cases.json`, `expressive-range-*`, `blind-evaluation-*`, `primitive-baseline.json`, `export-baseline.json`.
+- `emit-composition-owner-snapshot.mjs`로 owner snapshot + ledger 재생성.
+- **선행 블로커**: CI 삭제로 `composition-owner-manifest-lib.mjs`가 없는 워크플로 파일을 참조 → emit 실패. 이 참조부터 제거해야 하며, 그 툴링 수정이 `compositionEngineVersion` 범프를 유발한다.
+
+### 진행 상태
+
+- [x] 증분 1: `scripts/extract-role-ink-metrics.py` 추가, `TYPOGRAPHY_METRIC_DATA`에 `inkTop/inkBottom` 필드 추가(아직 미사용, 렌더 무변경, 테스트 초록).
+- [ ] 증분 2: `grid-renderer.js`·`measureTypography` 배선 + `FONT_METRICS_VERSION` 범프.
+- [ ] 증분 3: 골든 fixture re-freeze + owner snapshot 재생성(+ CI-ref 블로커 정리).
+
 ## 9. 다음 액션
 
 - 위 오픈 질문 확정 → 신규 motif 2~3개(예: `halftone-meter`, `focus-lines`, `speech-balloon`)를 SVG 목업으로 시각화 → 확정되면 6장 단계대로 파이프라인 편입.
