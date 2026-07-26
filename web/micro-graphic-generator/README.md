@@ -41,21 +41,11 @@
 npm install
 npm run test:generator:install
 npm run test:generator
-npm run test:generator:soak
-npm run test:generator:acceptance
 ```
 
-`test:generator`는 pure/architecture contract, owner snapshot과 planning oracle, 고정 seed fixture, UI interaction, SVG/PNG export, 3개 visual reference, Random 100회, frozen expressive-range/blind-evaluation artifact의 무결성을 검사한다. `test:generator:soak`는 browser Random 검사를 1,000회로 확장한다. `test:generator:acceptance`는 여기에 expressive open review 0과 qualified blind human review 완료를 필수 gate로 추가한다. 기본 회귀 테스트의 성공을 전체 acceptance 성공으로 표현하지 않는다. 브라우저 lifecycle과 port `4191`은 Playwright가 소유하므로 테스트 중 별도 서버를 실행하지 않는다.
+`test:generator`는 스모크 2개만 검사한다: pure canonical layout(`tests/smoke.test.mjs`)와 모든 ratio가 하나의 typography-first Component로 mount되는지(`tests/generator.spec.mjs`, browser). 공식 실행 계약은 localhost-only이며 정적 HTTP 서버로 서빙한다(`tests/launch-contract.json`).
 
-## Typography-First Pilot Checkpoint
-
-2026-07-14 기준으로 `SEMANTIC_GENERATION_SPEC.md`의 command/status pilot runtime과 모든 locally implementable Phase A-E surface를 구현했다. 현재 자동 gate는 pure `53/53`, browser `25/25`, Random soak `1,000/1,000`, expressive-range `10,000` input/`10,000` accepted output/terminal failure `0`으로 통과한다. Blind corpus `blind-evaluation:v1:3a4aebc13cbd1c8d54`는 60,000 candidate seed와 10,696 baseline-eligible row에서 80개 counterbalanced pair를 고정했으며 linguistic 6개 stratum과 motif requested/downshifted 8개 cell coverage를 충족한다.
-
-전체 acceptance는 의도적으로 pending이다. Frozen blind pair마다 자격을 갖춘 서로 다른 reviewer 2명의 실제 평가가 필요하고, owner trust foundation은 merge-base에서 실행되는 별도 reviewed commit으로 먼저 활성화해야 한다. 로컬 candidate verifier는 `node web/micro-graphic-generator/scripts/verify-composition-owner-snapshot.mjs --allow-local`로 통과하며, human 결과가 없는 상태를 임의 점수로 채우거나 trust-root commit을 가장하지 않는다. 리뷰 UI만 변경했을 때는 frozen scan/artifact를 다시 만들지 않고 `node web/micro-graphic-generator/scripts/generate-blind-evaluation-corpus.mjs --refresh-report`로 모든 frozen identity를 검증한 뒤 tooling evidence report만 갱신한다. Corpus identity를 새로 만들 때 기존 review collection이 정확히 비어 있는 경우만 새 identity로 재기반하며, 실제 review가 한 건이라도 있으면 자동 이관을 중단한다.
-
-## 리팩터링 체크포인트
-
-Phase 0~7의 리팩터링과 필수 gate가 완료됐다. 현재 완료 범위, 검증 수치, checkpoint commit은 `REFACTORING_PLAN.md`의 `구현 체크포인트`를 source of truth로 사용한다.
+> 참고: 실험 단계라 owner-snapshot/version-tuple/ledger, expressive-range, blind-evaluation 등 무거운 결정론 gate는 제거했다. 코드 변경 시 스모크 2개만 통과하면 되고 버전 범프·골든 재동결은 필요 없다.
 
 ## Architecture
 
