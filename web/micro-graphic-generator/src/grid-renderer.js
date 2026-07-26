@@ -213,15 +213,11 @@ export function createGridRenderer() {
   }
 
   function renderMotifToken(block, slot, candidate, geometry) {
-    // Fill the block's content box (with a small safe padding) so the motif
-    // reads as a full graphic panel instead of a tiny intrinsic-sized mark.
+    // Fill the block's whole content box (no padding) so the motif is drawn to
+    // the block's aspect ratio, not scaled — a full graphic panel.
     const box = geometry.contentBox;
-    const pad = Math.min(box.width, box.height) * 0.08;
-    const fillBounds = {
-      width: Math.max(1, box.width - pad * 2),
-      height: Math.max(1, box.height - pad * 2)
-    };
-    const position = { x: box.x + pad, y: box.y + pad };
+    const fillBounds = { width: Math.max(1, box.width), height: Math.max(1, box.height) };
+    const position = { x: box.x, y: box.y };
     const baseTransform = `translate(${numberText(position.x)} ${numberText(position.y)})`;
     const token = make("g", {
       ...commonTokenMetadata(block, slot, candidate),

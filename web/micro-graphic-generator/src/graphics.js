@@ -358,13 +358,20 @@ export function renderCompositionMotif(group, intrinsicBounds, renderParams) {
     }
     group.appendChild(rect(0, 0, width, height));
   } else if (renderParams.graphicType === "wave") {
-    // concentric rings (radial signal)
+    // concentric rings drawn to the block ratio (ellipses fill the whole box)
     const centerX = width / 2;
     const centerY = height / 2;
-    const maxRadius = Math.min(width, height) / 2 * 0.95;
     const rings = Math.max(3, renderParams.pointCount >> 1);
     for (let index = 1; index <= rings; index += 1) {
-      group.appendChild(make("circle", { cx: centerX, cy: centerY, r: (maxRadius * index) / rings, fill: "none", stroke: "currentColor", ...strokeTokenAttrs("thin") }));
+      group.appendChild(make("ellipse", {
+        cx: centerX,
+        cy: centerY,
+        rx: (width / 2) * index / rings,
+        ry: (height / 2) * index / rings,
+        fill: "none",
+        stroke: "currentColor",
+        ...strokeTokenAttrs("thin")
+      }));
     }
   } else {
     throw new Error(`Unknown composition motif: ${renderParams.graphicType}`);
