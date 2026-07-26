@@ -213,9 +213,9 @@ export function createGridRenderer() {
   }
 
   function renderMotifToken(block, slot, candidate, geometry) {
-    // Fill the block's whole content box (no padding) so the motif is drawn to
-    // the block's aspect ratio, not scaled — a full graphic panel.
-    const box = geometry.contentBox;
+    // Fill the block's whole grid cell (outer box, no safe-area inset) so the
+    // motif is drawn to the block's aspect ratio and reaches the grid lines.
+    const box = geometry.outerBox;
     const fillBounds = { width: Math.max(1, box.width), height: Math.max(1, box.height) };
     const position = { x: box.x, y: box.y };
     const baseTransform = `translate(${numberText(position.x)} ${numberText(position.y)})`;

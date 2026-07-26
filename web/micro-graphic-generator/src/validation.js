@@ -256,7 +256,10 @@ function validatePhysicalBlockGeometry(component, plan, context, report) {
       || !nearlyEqualAttribute(outline, "width", geometry.outerBox.width)
       || !nearlyEqualAttribute(outline, "height", geometry.outerBox.height)
       || !token
-      || !boundsInside(tokenBounds, geometry.contentBox)
+      || !boundsInside(
+        tokenBounds,
+        token.getAttribute("data-token-source-kind") === "motif" ? geometry.outerBox : geometry.contentBox
+      )
       || (blockReport && (
         Math.abs(tokenBounds.width - blockReport.renderedBounds.width) > 0.25
         || Math.abs(tokenBounds.height - blockReport.renderedBounds.height) > 0.25

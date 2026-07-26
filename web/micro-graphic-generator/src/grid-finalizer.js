@@ -97,6 +97,18 @@ function contentBox(blockNode) {
     : null;
 }
 
+function outerBox(blockNode) {
+  const box = {
+    x: Number(blockNode.getAttribute("data-grid-block-x")),
+    y: Number(blockNode.getAttribute("data-grid-block-y")),
+    width: Number(blockNode.getAttribute("data-grid-block-width")),
+    height: Number(blockNode.getAttribute("data-grid-block-height"))
+  };
+  return Object.values(box).every(Number.isFinite) && finitePositive(box.width) && finitePositive(box.height)
+    ? box
+    : null;
+}
+
 function boundsFit(bounds, box) {
   return Boolean(bounds && box)
     && bounds.x >= box.x - BOUNDARY_TOLERANCE
@@ -217,7 +229,9 @@ export function createGridFinalizer({ renderTypographyAtSize, setTokenNudge }) {
       sourceKind: slot?.sourceKind || null,
       blockNode,
       token,
-      contentBox: blockNode ? contentBox(blockNode) : null,
+      contentBox: blockNode
+        ? (slot?.sourceKind === "motif" ? outerBox(blockNode) : contentBox(blockNode))
+        : null,
       actualSize: slot?.sourceKind === "motif" ? block.requestedSize : null,
       actualWeight: null,
       actualFontWeight: null,
