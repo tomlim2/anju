@@ -320,8 +320,183 @@ export function motifRenderTelemetry(renderParams) {
   if (renderParams.graphicType === "wave") {
     return Object.freeze({ primitiveCount: renderParams.pointCount + 3, density: 0.18 });
   }
+  if (renderParams.seedBits) {
+    return Object.freeze({ primitiveCount: 16, density: 0.2 });
+  }
   throw new Error(`Unknown composition motif: ${renderParams.graphicType}`);
 }
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function next() {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function seedFromBits(bits) {
+  let hash = 2166136261 >>> 0;
+  for (let index = 0; index < bits.length; index += 1) {
+    hash ^= bits.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function motifDot(cx, cy, radius) {
+  return make("circle", { cx, cy, r: radius, fill: "currentColor", stroke: "none" });
+}
+
+function fillPolygon(points) {
+  return make("polygon", {
+    points: points.map(point => `${point[0].toFixed(2)},${point[1].toFixed(2)}`).join(" "),
+    fill: "currentColor",
+    stroke: "none"
+  });
+}
+
+function rayEdge(cx, cy, angle, width, height) {
+  const dx = Math.cos(angle);
+  const dy = Math.sin(angle);
+  let t = Infinity;
+  if (dx > 1e-9) t = Math.min(t, (width - cx) / dx);
+  else if (dx < -1e-9) t = Math.min(t, (0 - cx) / dx);
+  if (dy > 1e-9) t = Math.min(t, (height - cy) / dy);
+  else if (dy < -1e-9) t = Math.min(t, (0 - cy) / dy);
+  return [cx + dx * t, cy + dy * t];
+}
+
+// Manga-terminal pattern drawers; each fills the (0,0,width,height) block box.
+const MOTIF_PATTERN_DRAWERS = {
+  "halftone-meter"(group, width, height) {
+    const cols = Math.max(8, Math.round(width / 22));
+    const rows = Math.max(4, Math.round(height / 22));
+    const cw = width / cols;
+    const ch = height / rows;
+    const base = Math.min(cw, ch) * 0.5;
+    for (let cx = 0; cx < cols; cx += 1) {
+      const density = cols === 1 ? 1 : cx / (cols - 1);
+      for (let cy = 0; cy < rows; cy += 1) {
+        group.appendChild(motifDot(cx * cw + cw / 2, cy * ch + ch / 2, base * (0.15 + density * 0.85)));
+      }
+    }
+  },
+  "radial-halftone"(group, width, height) {
+    const cx = width / 2;
+    const cy = height / 2;
+    const rings = 9;
+    const step = Math.min(width, height) / 2 / rings;
+    for (let ri = 1; ri <= rings; ri += 1) {
+      const rx = (width / 2) * ri / rings;
+      const ry = (height / 2) * ri / rings;
+      const count = Math.max(6, Math.round((2 * Math.PI * Math.max(rx, ry)) / step));
+      const radius = step * 0.5 * (0.22 + ri / rings * 0.82);
+      for (let k = 0; k < count; k += 1) {
+        const a = k / count * Math.PI * 2 + ri * 0.2;
+        group.appendChild(motifDot(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry, radius));
+      }
+    }
+  },
+  stipple(group, width, height, random) {
+    const count = Math.round(width * height / 190);
+    for (let i = 0; i < count; i += 1) {
+      const px = random() * width;
+      const py = random() * height;
+      if (random() < (px / width) * 0.9 + 0.05) group.appendChild(motifDot(px, py, 0.7 + random() * 1.5));
+    }
+  },
+  scanlines(group, width, height, random) {
+    let cy = 0;
+    while (cy < height) {
+      const thickness = 0.6 + random() * 2.6;
+      group.appendChild(rect(0, cy, width, thickness, { fill: "currentColor", stroke: false }));
+      cy += thickness + 1.4 + random() * 3.2;
+    }
+  },
+  "speed-lines"(group, width, height, random) {
+    const count = Math.max(8, Math.round(height / 14));
+    for (let i = 0; i < count; i += 1) {
+      const ly = (i + 0.5) * (height / count) + (random() - 0.5) * 4;
+      const length = width * (0.35 + random() * 0.6);
+      const fromRight = random() < 0.5;
+      group.appendChild(line(fromRight ? width - length : 0, ly, fromRight ? width : length, ly));
+    }
+  },
+  chevron(group, width, height) {
+    const rows = Math.max(4, Math.round(height / 28));
+    const rh = height / rows;
+    const cw = Math.max(14, width / 12);
+    for (let ri = 0; ri < rows; ri += 1) {
+      const cy = ri * rh + rh / 2;
+      for (let cx = 0; cx < width - cw; cx += cw * 0.9) {
+        group.appendChild(polyline([[cx, cy + rh * 0.26], [cx + cw / 2, cy - rh * 0.26], [cx + cw, cy + rh * 0.26]]));
+      }
+    }
+  },
+  perspective(group, width, height) {
+    const vpx = width / 2;
+    const vpy = height * 0.14;
+    const bottom = height;
+    const cols = 8;
+    const rows = 7;
+    for (let i = 0; i <= cols; i += 1) group.appendChild(line((i / cols) * width, bottom, vpx, vpy));
+    for (let j = 1; j <= rows; j += 1) {
+      const ly = vpy + (bottom - vpy) * Math.pow(j / rows, 1.9);
+      const p = (bottom - ly) / (bottom - vpy);
+      group.appendChild(line(p * vpx, ly, width + p * (vpx - width), ly));
+    }
+  },
+  "focus-lines"(group, width, height, random) {
+    const cx = width * (0.4 + random() * 0.2);
+    const cy = height * (0.4 + random() * 0.2);
+    const count = 34;
+    const clear = Math.min(width, height) * 0.1;
+    for (let i = 0; i < count; i += 1) {
+      const a = i / count * Math.PI * 2 + (random() - 0.5) * 0.12;
+      const edge = rayEdge(cx, cy, a, width, height);
+      group.appendChild(line(cx + Math.cos(a) * clear, cy + Math.sin(a) * clear, edge[0], edge[1]));
+    }
+  },
+  "beta-flash"(group, width, height, random) {
+    const cx = width / 2;
+    const cy = height / 2;
+    const spikes = 22;
+    const innerR = Math.min(width, height) * 0.08;
+    for (let i = 0; i < spikes; i += 1) {
+      const a = i / spikes * Math.PI * 2;
+      const reach = 0.6 + (i % 2 ? 0.4 : 0.12) + random() * 0.05;
+      const edge = rayEdge(cx, cy, a, width, height);
+      const ex = cx + (edge[0] - cx) * reach;
+      const ey = cy + (edge[1] - cy) * reach;
+      const e = 0.06;
+      group.appendChild(fillPolygon([
+        [cx + Math.cos(a - e) * innerR, cy + Math.sin(a - e) * innerR],
+        [ex, ey],
+        [cx + Math.cos(a + e) * innerR, cy + Math.sin(a + e) * innerR]
+      ]));
+    }
+  },
+  "burst-rings"(group, width, height, random) {
+    const cx = width / 2;
+    const cy = height / 2;
+    const rings = 4;
+    for (let i = 1; i <= rings; i += 1) {
+      const rx = (width / 2) * i / rings;
+      const ry = (height / 2) * i / rings;
+      const spikes = 16 + i * 4;
+      const points = [];
+      for (let k = 0; k < spikes; k += 1) {
+        const a = k / spikes * Math.PI * 2;
+        const scale = (k % 2 ? 1 : 0.85) * (1 + (random() - 0.5) * 0.05);
+        points.push([cx + Math.cos(a) * rx * scale, cy + Math.sin(a) * ry * scale]);
+      }
+      points.push(points[0]);
+      group.appendChild(polyline(points));
+    }
+  }
+};
 
 export function renderCompositionMotif(group, intrinsicBounds, renderParams) {
   const width = intrinsicBounds.width;
@@ -373,6 +548,8 @@ export function renderCompositionMotif(group, intrinsicBounds, renderParams) {
         ...strokeTokenAttrs("thin")
       }));
     }
+  } else if (MOTIF_PATTERN_DRAWERS[renderParams.graphicType]) {
+    MOTIF_PATTERN_DRAWERS[renderParams.graphicType](group, width, height, mulberry32(seedFromBits(renderParams.seedBits)));
   } else {
     throw new Error(`Unknown composition motif: ${renderParams.graphicType}`);
   }

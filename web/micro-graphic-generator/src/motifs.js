@@ -3,15 +3,31 @@ import { ACTIVE_STROKE_WEIGHTS } from "./config.js";
 
 export const MOTIF_REGISTRY_VERSION = 1;
 
+// Manga-terminal pattern motifs. Uniform seedBits renderParams; each is drawn
+// to fill the block ratio in graphics.js renderCompositionMotif.
+const PATTERN_MOTIFS = [
+  { id: "motif.halftone-meter", graphicType: "halftone-meter", tag: "data-table-look", factor: 0.7 },
+  { id: "motif.radial-halftone", graphicType: "radial-halftone", tag: "signal-plot-look", factor: 0.7 },
+  { id: "motif.stipple", graphicType: "stipple", tag: "data-table-look", factor: 0.7 },
+  { id: "motif.scanlines", graphicType: "scanlines", tag: "signal-plot-look", factor: 0.7 },
+  { id: "motif.speed-lines", graphicType: "speed-lines", tag: "signal-plot-look", factor: 0.65 },
+  { id: "motif.chevron", graphicType: "chevron", tag: "signal-plot-look", factor: 0.65 },
+  { id: "motif.perspective", graphicType: "perspective", tag: "machine-readable-mark", factor: 0.7 },
+  { id: "motif.focus-lines", graphicType: "focus-lines", tag: "signal-plot-look", factor: 0.75 },
+  { id: "motif.beta-flash", graphicType: "beta-flash", tag: "machine-readable-mark", factor: 0.8 },
+  { id: "motif.burst-rings", graphicType: "burst-rings", tag: "signal-plot-look", factor: 0.7 }
+];
+const PATTERN_TYPES = new Set(PATTERN_MOTIFS.map(motif => motif.graphicType));
+
 export const motifCalibration = Object.freeze({
+  ...Object.fromEntries(PATTERN_MOTIFS.map(motif => [motif.id, {
+    p95Coverage: 0.3,
+    factor: motif.factor,
+    reviewerIds: ["typography-01", "product-01"]
+  }])),
   "motif.barcode": Object.freeze({
     p95Coverage: 0.151690943,
     factor: 1.2,
-    reviewerIds: Object.freeze(["typography-01", "product-01"])
-  }),
-  "motif.pseudo-qr": Object.freeze({
-    p95Coverage: 0.508943146,
-    factor: 1.35,
     reviewerIds: Object.freeze(["typography-01", "product-01"])
   }),
   "motif.table": Object.freeze({
@@ -60,14 +76,6 @@ export const motifRegistry = Object.freeze([
     intrinsicBySize: { medium: { width: 96, height: 38 }, large: { width: 144, height: 57 } }
   }),
   motifRecord({
-    id: "motif.pseudo-qr",
-    graphicType: "pseudo-qr",
-    role: "pseudo-qr",
-    motifTags: ["machine-readable-mark"],
-    occupancySafetyFactor: 1.35,
-    intrinsicBySize: { medium: { width: 48, height: 48 }, large: { width: 72, height: 72 } }
-  }),
-  motifRecord({
     id: "motif.table",
     graphicType: "table",
     role: "table",
@@ -82,7 +90,15 @@ export const motifRegistry = Object.freeze([
     motifTags: ["signal-plot-look"],
     occupancySafetyFactor: 0.65,
     intrinsicBySize: { medium: { width: 84, height: 42 }, large: { width: 126, height: 63 } }
-  })
+  }),
+  ...PATTERN_MOTIFS.map(motif => motifRecord({
+    id: motif.id,
+    graphicType: motif.graphicType,
+    role: motif.graphicType,
+    motifTags: [motif.tag],
+    occupancySafetyFactor: motif.factor,
+    intrinsicBySize: { medium: { width: 96, height: 48 }, large: { width: 144, height: 72 } }
+  }))
 ]);
 
 export const motifById = new Map(motifRegistry.map(record => [record.id, record]));
@@ -108,7 +124,10 @@ function renderParamsFor(record, size, materializationKey) {
   if (record.graphicType === "table") {
     return Object.freeze({ ...shared, columns: 3, rows: 4, densityKey: deterministicBits(materializationKey, 12) });
   }
-  return Object.freeze({ ...shared, pointCount: 12, amplitudeKey: deterministicBits(materializationKey, 24) });
+  if (record.graphicType === "wave") {
+    return Object.freeze({ ...shared, pointCount: 12, amplitudeKey: deterministicBits(materializationKey, 24) });
+  }
+  return Object.freeze({ ...shared, seedBits: deterministicBits(materializationKey, 48) });
 }
 
 export function materializeMotifCandidates({
@@ -173,12 +192,14 @@ export function createMotifCandidateValidator({
     if (renderParams?.graphicType !== record.graphicType || !record.intrinsicBySize[renderParams?.size]) {
       throw new Error(`invalid render params for ${motifId}`);
     }
-    const renderParamKeys = {
-      barcode: ["graphicType", "size", "stroke", "value", "barPattern"],
-      "pseudo-qr": ["graphicType", "size", "stroke", "moduleCount", "payloadBits"],
-      table: ["graphicType", "size", "stroke", "columns", "rows", "densityKey"],
-      wave: ["graphicType", "size", "stroke", "pointCount", "amplitudeKey"]
-    }[record.graphicType];
+    const renderParamKeys = PATTERN_TYPES.has(record.graphicType)
+      ? ["graphicType", "size", "stroke", "seedBits"]
+      : {
+          barcode: ["graphicType", "size", "stroke", "value", "barPattern"],
+          "pseudo-qr": ["graphicType", "size", "stroke", "moduleCount", "payloadBits"],
+          table: ["graphicType", "size", "stroke", "columns", "rows", "densityKey"],
+          wave: ["graphicType", "size", "stroke", "pointCount", "amplitudeKey"]
+        }[record.graphicType];
     if (!renderParamKeys) throw new Error(`unsupported motif graphic type ${record.graphicType}`);
     if (canonicalJson(Object.keys(renderParams).sort()) !== canonicalJson([...renderParamKeys].sort())) {
       throw new Error(`motif render params schema mismatch for ${motifId}`);
