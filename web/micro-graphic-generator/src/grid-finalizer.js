@@ -229,9 +229,7 @@ export function createGridFinalizer({ renderTypographyAtSize, setTokenNudge }) {
       sourceKind: slot?.sourceKind || null,
       blockNode,
       token,
-      contentBox: blockNode
-        ? (slot?.sourceKind === "motif" ? outerBox(blockNode) : contentBox(blockNode))
-        : null,
+      contentBox: blockNode ? outerBox(blockNode) : null,
       actualSize: slot?.sourceKind === "motif" ? block.requestedSize : null,
       actualWeight: null,
       actualFontWeight: null,

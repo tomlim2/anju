@@ -184,7 +184,9 @@ export function createGridRenderer() {
   }
 
   function renderLexicalToken(block, slot, candidate, geometry) {
-    const anchor = anchorPoint(geometry.contentBox, block.alignment, block.verticalAlignment);
+    // Anchor text ink to the grid cell (outer box) so edge-anchored tokens
+    // (top-right, bottom-left, bottom, …) touch the grid boundary.
+    const anchor = anchorPoint(geometry.outerBox, block.alignment, block.verticalAlignment);
     const rotation = block.orientationMode === "whole-rotate" ? " rotate(90)" : "";
     const baseTransform = `translate(${numberText(anchor.x)} ${numberText(anchor.y)})${rotation}`;
     const token = make("g", {
