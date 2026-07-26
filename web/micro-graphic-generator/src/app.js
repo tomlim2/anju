@@ -85,6 +85,7 @@ const controls = {
   ratio: document.querySelector("#ratio"),
   mode: document.querySelector("#mode"),
   mockup: document.querySelector("#mockup"),
+  align: document.querySelector("#align"),
   grid: document.querySelector("#grid"),
   png: document.querySelector("#png"),
   svg: document.querySelector("#svg"),
@@ -123,7 +124,6 @@ let activeBlockLayout = "";
 let blockOutlinesVisible = true;
 let forcedRatio = urlParameters.get("ratio") || "";
 let appMode = "random";
-let mockupPage = 0;
 let dark = false;
 let renderVersion = 0;
 let activePlan = null;
@@ -191,7 +191,7 @@ const artworkExporter = createArtworkExporter({
   cssVariable: cssVar,
   filenameSlug: seedSlug,
   getExportState: () => {
-    if (appMode === "composable-tokens" || appMode === "mockup") return { exportEligible: true, planId: null };
+    if (appMode === "composable-tokens" || appMode === "mockup" || appMode === "align") return { exportEligible: true, planId: null };
     const mounted = art.querySelector("svg[data-component]");
     const planId = mounted?.getAttribute("data-plan-id") || null;
     return {
@@ -806,20 +806,27 @@ function executeCompositionGeneration(createGeneration) {
 
 function exportTargetAvailable() {
   if (fontRuntimeState !== "ready") return false;
-  if (appMode === "composable-tokens") return true;
+  if (appMode === "composable-tokens" || appMode === "mockup" || appMode === "align") return true;
   const mounted = art.querySelector("svg[data-component]");
   return Boolean(exportEligible && activePlan && mounted && mounted === activeComponent);
 }
 
+function syncModeButtons() {
+  controls.mockup.setAttribute("aria-pressed", String(appMode === "mockup"));
+  controls.align.setAttribute("aria-pressed", String(appMode === "align"));
+  controls.mode.setAttribute("aria-pressed", String(appMode === "composable-tokens"));
+  controls.mode.textContent = appMode === "composable-tokens" ? "Generator" : "Compose";
+}
+
 function syncRatioAvailability() {
-  const disabled = fontRuntimeState !== "ready" || appMode === "composable-tokens" || appMode === "mockup";
+  const disabled = fontRuntimeState !== "ready" || appMode === "composable-tokens" || appMode === "mockup" || appMode === "align";
   controls.ratio.disabled = disabled;
   controls.ratio.setAttribute("aria-disabled", String(disabled));
 }
 
 function syncGenerationAvailability() {
   const disabled = fontRuntimeState !== "ready";
-  for (const control of [controls.random, controls.mode, controls.mockup]) {
+  for (const control of [controls.random, controls.mode, controls.mockup, controls.align]) {
     control.disabled = disabled;
     control.setAttribute("aria-disabled", String(disabled));
   }
@@ -849,20 +856,27 @@ function renderCatalog(width, height) {
   seedLabel.textContent = `MODE COMPOSABLE CATEGORIES / SEED ${seedHex()}`;
 }
 
-function renderMockup(width, height) {
-  art.replaceChildren(backgroundNode(width, height));
-  const board = mockupPage === 0
-    ? renderMockupGallery(width, height, seed)
-    : renderAlignmentDemo(width, height, seed);
-  art.appendChild(board);
-  if (mockupPage === 1) applyInkSnap(art);
+function markPreviewState() {
   activeComponentRatio = "mockup";
   activeBorderMode = "mockup";
   activeBlockLayout = "mockup";
   art.setAttribute("data-rule-violations", "0");
   art.setAttribute("data-rule-violation-list", "");
-  const page = mockupPage === 0 ? "GRAPHIC SET" : "ALIGNMENT";
-  seedLabel.textContent = `MODE MOCKUP ${mockupPage + 1}/2 / ${page} / SEED ${seedHex()}`;
+}
+
+function renderMockup(width, height) {
+  art.replaceChildren(backgroundNode(width, height));
+  art.appendChild(renderMockupGallery(width, height, seed));
+  markPreviewState();
+  seedLabel.textContent = `MODE MOCKUP / MANGA-TERMINAL / SEED ${seedHex()}`;
+}
+
+function renderAlign(width, height) {
+  art.replaceChildren(backgroundNode(width, height));
+  art.appendChild(renderAlignmentDemo(width, height, seed));
+  applyInkSnap(art);
+  markPreviewState();
+  seedLabel.textContent = `MODE ALIGN / INK-SNAP CASES / SEED ${seedHex()}`;
 }
 
 function render(nextSeed = seed, { newGeneration = false } = {}) {
@@ -884,6 +898,8 @@ function render(nextSeed = seed, { newGeneration = false } = {}) {
 
   if (appMode === "mockup") {
     renderMockup(width, height);
+  } else if (appMode === "align") {
+    renderAlign(width, height);
   } else if (appMode === "composable-tokens") {
     renderCatalog(width, height);
   } else {
@@ -919,26 +935,22 @@ function bindEvents() {
   });
   controls.mode.addEventListener("click", () => {
     if (fontRuntimeState !== "ready") return;
-    appMode = appMode === "random" ? "composable-tokens" : "random";
-    controls.mode.textContent = appMode === "composable-tokens" ? "Generator" : "Compose";
-    controls.mode.setAttribute("aria-pressed", String(appMode === "composable-tokens"));
-    controls.mockup.setAttribute("aria-pressed", "false");
+    appMode = appMode === "composable-tokens" ? "random" : "composable-tokens";
+    syncModeButtons();
     syncRatioAvailability();
     render(seed);
   });
   controls.mockup.addEventListener("click", () => {
     if (fontRuntimeState !== "ready") return;
-    if (appMode !== "mockup") {
-      appMode = "mockup";
-      mockupPage = 0;
-    } else if (mockupPage < 1) {
-      mockupPage += 1;
-    } else {
-      appMode = "random";
-    }
-    controls.mockup.setAttribute("aria-pressed", String(appMode === "mockup"));
-    controls.mode.textContent = "Compose";
-    controls.mode.setAttribute("aria-pressed", "false");
+    appMode = appMode === "mockup" ? "random" : "mockup";
+    syncModeButtons();
+    syncRatioAvailability();
+    render(seed);
+  });
+  controls.align.addEventListener("click", () => {
+    if (fontRuntimeState !== "ready") return;
+    appMode = appMode === "align" ? "random" : "align";
+    syncModeButtons();
     syncRatioAvailability();
     render(seed);
   });
