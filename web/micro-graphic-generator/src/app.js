@@ -60,7 +60,7 @@ import {
   MOTIF_REGISTRY_VERSION,
   validateMotifRenderParams
 } from "./motifs.js";
-import { applyInkSnap, renderAlignmentDemo, renderMockupGallery } from "./mockup-gallery.js";
+import { applyAnalyticSnap, renderAlignmentDemo, renderMockupGallery } from "./mockup-gallery.js";
 import { createRandomSource, deriveSeed, keyedValue } from "./random.js";
 import { line, make, rect, svgStructuralFingerprint, textNode } from "./svg.js";
 import {
@@ -874,9 +874,9 @@ function renderMockup(width, height) {
 function renderAlign(width, height) {
   art.replaceChildren(backgroundNode(width, height));
   art.appendChild(renderAlignmentDemo(width, height, seed));
-  applyInkSnap(art);
+  applyAnalyticSnap(art);
   markPreviewState();
-  seedLabel.textContent = `MODE ALIGN / INK-SNAP CASES / SEED ${seedHex()}`;
+  seedLabel.textContent = `MODE ALIGN / INK-METRIC (offline, no getBBox) / SEED ${seedHex()}`;
 }
 
 function render(nextSeed = seed, { newGeneration = false } = {}) {

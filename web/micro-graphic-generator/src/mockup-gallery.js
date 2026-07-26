@@ -4,6 +4,7 @@
 // Does NOT touch the locked composition pipeline. See GRAPHIC_REDESIGN_PLAN.md.
 
 import { line, make, rect } from "./svg.js";
+import { MOCKUP_METRICS } from "./mockup-metrics-data.js";
 
 const MONO = '"Noto Sans Mono", monospace';
 const DISPLAY = '"SUIT", "Glow Sans SC", sans-serif';
@@ -324,12 +325,57 @@ export function renderMockupGallery(width, height, seed) {
   return board;
 }
 
-// =================== alignment: ink-snap cases (getBBox) ===================
+// ============ alignment: ink-metric cases (offline, no getBBox) ============
+// Approach B: position tokens using per-glyph ink metrics extracted offline
+// (MOCKUP_METRICS via scripts/extract-mockup-metrics.py). No runtime getBBox —
+// fully deterministic. (Chromium getBBox returns the advance/line box, not tight
+// ink, so these analytic metrics give strictly tighter ink alignment.)
 
-// Snap the element's rendered ink bbox to a target, optionally scaling to fit
-// and spinning about the target. Runs after the node is attached to the DOM.
-export function applyInkSnap(root) {
-  root.querySelectorAll("[data-ink-snap]").forEach(node => {
+const isCjk = ch => /[㐀-鿿豈-﫿]/.test(ch);
+
+// analytic ink bbox of a string, in local px (baseline at y=0, start at x=0)
+function glyphInk(text, familyMode, weightKey, size) {
+  let cursor = 0;
+  let l = Infinity;
+  let r = -Infinity;
+  let t = -Infinity;
+  let b = Infinity;
+  for (const ch of [...text]) {
+    const fam = familyMode === "MONO" ? "Mono" : (isCjk(ch) ? "Glow" : "SUIT");
+    const m = MOCKUP_METRICS[fam]?.[weightKey]?.[ch] || { adv: 0.6, l: 0.05, r: 0.55, t: 0.72, b: 0 };
+    l = Math.min(l, cursor + m.l);
+    r = Math.max(r, cursor + m.r);
+    t = Math.max(t, m.t);
+    b = Math.min(b, m.b);
+    cursor += m.adv;
+  }
+  return { x: l * size, y: -t * size, width: (r - l) * size, height: (t - b) * size };
+}
+
+// analytic ink bbox of a node (single token, or a group of stacked tokens)
+function nodeInk(node) {
+  if (node.hasAttribute("data-text")) {
+    return glyphInk(node.getAttribute("data-text"), node.getAttribute("data-fam"), node.getAttribute("data-wt"), Number(node.getAttribute("data-size")));
+  }
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  node.querySelectorAll("text[data-text]").forEach(child => {
+    const bb = glyphInk(child.getAttribute("data-text"), child.getAttribute("data-fam"), child.getAttribute("data-wt"), Number(child.getAttribute("data-size")));
+    const ox = Number(child.getAttribute("x") || 0);
+    const oy = Number(child.getAttribute("y") || 0);
+    x0 = Math.min(x0, ox + bb.x);
+    y0 = Math.min(y0, oy + bb.y);
+    x1 = Math.max(x1, ox + bb.x + bb.width);
+    y1 = Math.max(y1, oy + bb.y + bb.height);
+  });
+  return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+}
+
+// place every tagged token by its precomputed ink box (no getBBox)
+export function applyAnalyticSnap(root) {
+  root.querySelectorAll("[data-asnap]").forEach(node => {
     const tx = Number(node.getAttribute("data-tx"));
     const ty = Number(node.getAttribute("data-ty"));
     const h = node.getAttribute("data-h");
@@ -337,7 +383,7 @@ export function applyInkSnap(root) {
     const spin = Number(node.getAttribute("data-spin") || 0);
     const fitW = node.getAttribute("data-fit-w");
     const fitH = node.getAttribute("data-fit-h");
-    const b = node.getBBox();
+    const b = nodeInk(node);
     if (!b.width || !b.height) return;
     const s = (fitW && fitH) ? Math.min(Number(fitW) / b.width, Number(fitH) / b.height) : 1;
     const bx = b.x * s;
@@ -354,17 +400,23 @@ export function applyInkSnap(root) {
 }
 
 function glyph(value, size, opts = {}) {
+  const familyMode = opts.family === MONO ? "MONO" : "DISPLAY";
+  const weight = opts.weight || 900;
   const node = make("text", {
     x: 0, y: 0, fill: "currentColor",
-    "font-family": opts.family || DISPLAY, "font-size": size, "font-weight": opts.weight || 900,
+    "font-family": opts.family || DISPLAY, "font-size": size, "font-weight": weight,
     "text-anchor": "start", "dominant-baseline": "alphabetic"
   });
   node.textContent = value;
+  node.setAttribute("data-text", value);
+  node.setAttribute("data-fam", familyMode);
+  node.setAttribute("data-wt", String(weight));
+  node.setAttribute("data-size", size);
   return node;
 }
 
 function snap(node, tx, ty, h, v, opts = {}) {
-  node.setAttribute("data-ink-snap", "1");
+  node.setAttribute("data-asnap", "1");
   node.setAttribute("data-tx", tx);
   node.setAttribute("data-ty", ty);
   node.setAttribute("data-h", h);
@@ -476,7 +528,7 @@ export function renderAlignmentDemo(width, height) {
   const board = make("g", { "data-mockup": "alignment" });
   const margin = Math.max(28, Math.min(56, width * 0.03));
   const titleH = 66;
-  board.appendChild(txt(margin, 40, "ALIGNMENT — ink-snap cases (getBBox)", { size: 18, weight: 900, family: DISPLAY }));
+  board.appendChild(txt(margin, 40, "ALIGNMENT — ink-metric (offline, no getBBox)", { size: 18, weight: 900, family: DISPLAY }));
   board.appendChild(txt(width - margin, 40, "가이드=목표 / 잉크가 맞아야 함", { size: 12, anchor: "end", family: DISPLAY }));
   board.appendChild(line(margin, 52, width - margin, 52, { strokeWeight: "hairline" }));
 
