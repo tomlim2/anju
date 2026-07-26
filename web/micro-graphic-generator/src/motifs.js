@@ -7,6 +7,7 @@ export const MOTIF_REGISTRY_VERSION = 1;
 // to fill the block ratio in graphics.js renderCompositionMotif.
 const PATTERN_MOTIFS = [
   { id: "motif.halftone-meter", graphicType: "halftone-meter", tag: "data-table-look", factor: 0.7 },
+  { id: "motif.dot-matrix", graphicType: "dot-matrix", tag: "data-table-look", factor: 0.7 },
   { id: "motif.radial-halftone", graphicType: "radial-halftone", tag: "signal-plot-look", factor: 0.7 },
   { id: "motif.stipple", graphicType: "stipple", tag: "data-table-look", factor: 0.7 },
   { id: "motif.scanlines", graphicType: "scanlines", tag: "signal-plot-look", factor: 0.7 },

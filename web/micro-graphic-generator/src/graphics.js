@@ -399,6 +399,22 @@ const MOTIF_PATTERN_DRAWERS = {
       }
     }
   },
+  "dot-matrix"(group, width, height, random) {
+    const cols = Math.max(6, Math.round(width / 26));
+    const rows = Math.max(4, Math.round(height / 26));
+    const cw = width / cols;
+    const ch = height / rows;
+    const s = Math.min(cw, ch) * 0.6;
+    for (let cx = 0; cx < cols; cx += 1) {
+      for (let cy = 0; cy < rows; cy += 1) {
+        const px = cx * cw + (cw - s) / 2;
+        const py = cy * ch + (ch - s) / 2;
+        group.appendChild(random() < 0.5
+          ? rect(px, py, s, s, { fill: "currentColor", stroke: false })
+          : rect(px, py, s, s, { strokeWeight: "thin" }));
+      }
+    }
+  },
   stipple(group, width, height, random) {
     const count = Math.round(width * height / 190);
     for (let i = 0; i < count; i += 1) {
