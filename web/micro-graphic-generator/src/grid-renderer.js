@@ -213,12 +213,15 @@ export function createGridRenderer() {
   }
 
   function renderMotifToken(block, slot, candidate, geometry) {
-    const position = intrinsicTopLeft(
-      geometry.contentBox,
-      block.alignment,
-      block.verticalAlignment,
-      candidate.intrinsicBounds
-    );
+    // Fill the block's content box (with a small safe padding) so the motif
+    // reads as a full graphic panel instead of a tiny intrinsic-sized mark.
+    const box = geometry.contentBox;
+    const pad = Math.min(box.width, box.height) * 0.08;
+    const fillBounds = {
+      width: Math.max(1, box.width - pad * 2),
+      height: Math.max(1, box.height - pad * 2)
+    };
+    const position = { x: box.x + pad, y: box.y + pad };
     const baseTransform = `translate(${numberText(position.x)} ${numberText(position.y)})`;
     const token = make("g", {
       ...commonTokenMetadata(block, slot, candidate),
@@ -236,15 +239,15 @@ export function createGridRenderer() {
       "data-occupancy-safety-factor": slot.occupancySafetyFactor,
       "data-occupancy-calibration-revision": slot.occupancyCalibrationRevision,
       "data-motif-factual": "false",
-      "data-token-intrinsic-width": candidate.intrinsicBounds.width,
-      "data-token-intrinsic-height": candidate.intrinsicBounds.height,
+      "data-token-intrinsic-width": fillBounds.width,
+      "data-token-intrinsic-height": fillBounds.height,
       "data-token-base-transform": baseTransform,
       "data-token-nudge-x": 0,
       "data-token-nudge-y": 0,
       "data-token-actual-size": block.requestedSize,
       transform: baseTransform
     });
-    renderCompositionMotif(token, candidate.intrinsicBounds, slot.renderParams);
+    renderCompositionMotif(token, fillBounds, slot.renderParams);
     return token;
   }
 
