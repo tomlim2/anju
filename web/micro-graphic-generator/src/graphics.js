@@ -388,9 +388,13 @@ const MOTIF_PATTERN_DRAWERS = {
     const cy = height / 2;
     const rings = 9;
     const step = Math.min(width, height) / 2 / rings;
+    // outermost dot edge must land on the block boundary, not its centre
+    const outerDotRadius = step * 0.5 * 1.04;
+    const spanX = Math.max(step, width / 2 - outerDotRadius);
+    const spanY = Math.max(step, height / 2 - outerDotRadius);
     for (let ri = 1; ri <= rings; ri += 1) {
-      const rx = (width / 2) * ri / rings;
-      const ry = (height / 2) * ri / rings;
+      const rx = spanX * ri / rings;
+      const ry = spanY * ri / rings;
       const count = Math.max(6, Math.round((2 * Math.PI * Math.max(rx, ry)) / step));
       const radius = step * 0.5 * (0.22 + ri / rings * 0.82);
       for (let k = 0; k < count; k += 1) {
@@ -420,14 +424,23 @@ const MOTIF_PATTERN_DRAWERS = {
     for (let i = 0; i < count; i += 1) {
       const px = random() * width;
       const py = random() * height;
-      if (random() < (px / width) * 0.9 + 0.05) group.appendChild(motifDot(px, py, 0.7 + random() * 1.5));
+      if (random() < (px / width) * 0.9 + 0.05) {
+        const radius = 0.7 + random() * 1.5;
+        group.appendChild(motifDot(
+          clamp(px, radius, width - radius),
+          clamp(py, radius, height - radius),
+          radius
+        ));
+      }
     }
   },
   scanlines(group, width, height, random) {
     let cy = 0;
     while (cy < height) {
       const thickness = 0.6 + random() * 2.6;
-      group.appendChild(rect(0, cy, width, thickness, { fill: "currentColor", stroke: false }));
+      // the trailing band is cropped at the boundary instead of spilling past it
+      const drawn = Math.min(thickness, height - cy);
+      if (drawn > 0.05) group.appendChild(rect(0, cy, width, drawn, { fill: "currentColor", stroke: false }));
       cy += thickness + 1.4 + random() * 3.2;
     }
   },
@@ -484,7 +497,7 @@ const MOTIF_PATTERN_DRAWERS = {
     const innerR = Math.min(width, height) * 0.08;
     for (let i = 0; i < spikes; i += 1) {
       const a = i / spikes * Math.PI * 2;
-      const reach = 0.6 + (i % 2 ? 0.4 : 0.12) + random() * 0.05;
+      const reach = Math.min(1, 0.6 + (i % 2 ? 0.4 : 0.12) + random() * 0.05);
       const edge = rayEdge(cx, cy, a, width, height);
       const ex = cx + (edge[0] - cx) * reach;
       const ey = cy + (edge[1] - cy) * reach;
@@ -507,7 +520,7 @@ const MOTIF_PATTERN_DRAWERS = {
       const points = [];
       for (let k = 0; k < spikes; k += 1) {
         const a = k / spikes * Math.PI * 2;
-        const scale = (k % 2 ? 1 : 0.85) * (1 + (random() - 0.5) * 0.05);
+        const scale = Math.min(1, (k % 2 ? 1 : 0.85) * (1 + (random() - 0.5) * 0.05));
         points.push([cx + Math.cos(a) * rx * scale, cy + Math.sin(a) * ry * scale]);
       }
       points.push(points[0]);

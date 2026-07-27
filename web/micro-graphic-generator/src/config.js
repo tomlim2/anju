@@ -31,10 +31,10 @@ export const GRID_BLOCK_POLICIES = [
   { footprint: "2x2", width: 2, height: 2, candidatePolicy: "oversized-typography", requestedSizes: ["xxlarge", "xxxlarge"], allowGraphic: false, align: "edge-derived", verticalAlign: "edge-derived", rotation: 0, orientationModes: ["none"], sizeSyncScope: null, xlargeWeight: null },
   { footprint: "1x2", width: 1, height: 2, candidatePolicy: "mixed", requestedSizes: null, allowGraphic: true, align: "edge-derived", verticalAlign: "edge-derived", rotation: 0, orientationModes: ["none"], sizeSyncScope: null, xlargeWeight: null },
   { footprint: "1x3", width: 1, height: 3, candidatePolicy: "centered-hero", requestedSizes: ["xxlarge"], allowGraphic: false, align: "center", verticalAlign: "middle", rotation: 90, orientationModes: ["whole-rotate"], cjkOrientationModes: ["glyph-sideways-stack"], englishOrientationModes: ["whole-rotate"], sizeSyncScope: "footprint:1x3", xlargeWeight: 900 },
-  { footprint: "2x3", width: 2, height: 3, candidatePolicy: "maximum-typography", requestedSizes: ["xxxlarge"], allowGraphic: false, align: "center", verticalAlign: "middle", rotation: 0, orientationModes: ["none"], sizeSyncScope: null, xlargeWeight: 900 },
+  { footprint: "2x3", width: 2, height: 3, candidatePolicy: "maximum-typography", requestedSizes: ["xxxlarge"], allowGraphic: false, align: "edge-derived", verticalAlign: "edge-derived", rotation: 0, orientationModes: ["none"], sizeSyncScope: null, xlargeWeight: 900 },
   { footprint: "2x1", width: 2, height: 1, candidatePolicy: "mixed", requestedSizes: null, allowGraphic: true, align: "edge-derived", verticalAlign: "edge-derived", rotation: 0, orientationModes: ["none"], sizeSyncScope: null, xlargeWeight: null },
-  { footprint: "3x1", width: 3, height: 1, candidatePolicy: "centered-hero", requestedSizes: ["xxlarge"], allowGraphic: false, align: "center", verticalAlign: "middle", rotation: 0, orientationModes: ["none"], sizeSyncScope: "footprint:3x1", xlargeWeight: 900 },
-  { footprint: "3x2", width: 3, height: 2, candidatePolicy: "maximum-typography", requestedSizes: ["xxxlarge"], allowGraphic: false, align: "center", verticalAlign: "middle", rotation: 0, orientationModes: ["none"], sizeSyncScope: null, xlargeWeight: 900 }
+  { footprint: "3x1", width: 3, height: 1, candidatePolicy: "centered-hero", requestedSizes: ["xxlarge"], allowGraphic: false, align: "edge-derived", verticalAlign: "edge-derived", rotation: 0, orientationModes: ["none"], sizeSyncScope: "footprint:3x1", xlargeWeight: 900 },
+  { footprint: "3x2", width: 3, height: 2, candidatePolicy: "maximum-typography", requestedSizes: ["xxxlarge"], allowGraphic: false, align: "edge-derived", verticalAlign: "edge-derived", rotation: 0, orientationModes: ["none"], sizeSyncScope: null, xlargeWeight: 900 }
 ];
 export const GRID_BLOCK_POLICY_BY_FOOTPRINT = new Map(
   GRID_BLOCK_POLICIES.map(policy => [policy.footprint, policy])
@@ -88,8 +88,8 @@ export const COMPOSITION_RULE_GROUPS = [
       "GRID  3X3 / RECT BLOCK PACKING",
       "BLOCK  1X1 TO 3X2 / 1 TOKEN EACH",
       "2X2  XXL / XXXL START",
-      "3X1 / 1X3  CENTER MIDDLE / XXL / CJK STACK / LATIN ROTATE",
-      "2X3 / 3X2  CENTER MIDDLE / XXXL START",
+      "3X1  EDGE ANCHORED / 1X3  CENTER MIDDLE / XXL / CJK STACK / LATIN ROTATE",
+      "2X3 / 3X2  EDGE ANCHORED / XXXL START",
       "OVERFLOW  NEXT SMALLER SIZE / SCALE 1",
       "SMALLEST FAIL  REPLAN / KNOWN-GOOD",
       "TOKEN  POSITION ONLY / INTRINSIC SIZE",
