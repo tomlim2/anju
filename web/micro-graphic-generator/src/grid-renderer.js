@@ -11,6 +11,7 @@ import { projectCompositionPlan } from "./grid-selection.js";
 import { make, rect, textNode } from "./svg.js";
 import { tokenSizeAttrs, tokenTaxonomyAttrs } from "./token-model.js";
 import { TYPOGRAPHY_METRIC_DATA } from "./typography-metrics-data.js";
+import { clearInkBounds, measureTextInk, setInkBounds } from "./text-ink.js";
 
 function numberText(value) {
   const rounded = Math.round(value * 1_000_000) / 1_000_000;
@@ -45,6 +46,48 @@ function intrinsicTopLeft(contentBox, alignment, verticalAlignment, intrinsic) {
         ? contentBox.y + contentBox.height - intrinsic.height
         : contentBox.y + (contentBox.height - intrinsic.height) / 2
   };
+}
+
+// Seat the glyph ink itself against the anchor. text-anchor aligns the advance
+// box, so an edge-anchored token would otherwise stop a side bearing short of
+// the grid line; the recorded ink box then keeps fitting and validation from
+// measuring the taller line box and nudging the ink back off the boundary.
+function placeTextInk(token, node, {
+  text, fontSize, fontWeight, typeface, alignment, verticalAlignment, glyphStack
+}) {
+  const ink = glyphStack ? null : measureTextInk({
+    text,
+    fontFamily: node.getAttribute("font-family"),
+    fontSize: Number(node.getAttribute("font-size")) || fontSize,
+    fontWeight
+  });
+  if (!ink) {
+    const metrics = TYPOGRAPHY_METRIC_DATA[typeface]?.[fontWeight];
+    const inkTop = metrics ? metrics.inkTop : 0.82;
+    const inkBottom = metrics ? metrics.inkBottom : -0.18;
+    const baseline = verticalAlignment === "top"
+      ? fontSize * inkTop
+      : verticalAlignment === "bottom"
+        ? fontSize * inkBottom
+        : fontSize * (inkTop + inkBottom) / 2;
+    node.setAttribute("y", numberText(glyphStack ? 0 : baseline));
+    clearInkBounds(token);
+    return;
+  }
+  const x = alignment === "left"
+    ? -ink.left
+    : alignment === "right"
+      ? -ink.right
+      : -(ink.left + ink.right) / 2;
+  const y = verticalAlignment === "top"
+    ? -ink.top
+    : verticalAlignment === "bottom"
+      ? -ink.bottom
+      : -(ink.top + ink.bottom) / 2;
+  node.setAttribute("text-anchor", "start");
+  node.setAttribute("x", numberText(x));
+  node.setAttribute("y", numberText(y));
+  setInkBounds(token, { x: x + ink.left, y: y + ink.top, width: ink.width, height: ink.height });
 }
 
 function rootMetadata(plan, context) {
@@ -148,16 +191,8 @@ export function createGridRenderer() {
       footprint
     });
     const fontSize = TYPOGRAPHY_INTRINSIC_FONT_SIZES[size];
-    const inkMetrics = TYPOGRAPHY_METRIC_DATA[typeface]?.[fontWeight];
-    const inkTop = inkMetrics ? inkMetrics.inkTop : 0.82;
-    const inkBottom = inkMetrics ? inkMetrics.inkBottom : -0.18;
-    const baseline = verticalAlignment === "top"
-      ? fontSize * inkTop
-      : verticalAlignment === "bottom"
-        ? fontSize * inkBottom
-        : fontSize * (inkTop + inkBottom) / 2;
     const glyphStack = orientationMode === "glyph-sideways-stack";
-    const node = textNode(0, glyphStack ? 0 : baseline, text, {
+    const node = textNode(0, 0, text, {
       size: fontSize,
       tokenSize: size,
       tokenFunction,
@@ -173,6 +208,7 @@ export function createGridRenderer() {
     node.setAttribute("data-token-weight", tokenWeight);
     node.setAttribute("data-message-slot", token.getAttribute("data-message-slot"));
     node.setAttribute("data-lexical-use", token.getAttribute("data-lexical-use"));
+    placeTextInk(token, node, { text, fontSize, fontWeight, typeface, alignment, verticalAlignment, glyphStack });
     token.replaceChildren(node);
     Object.entries(tokenSizeAttrs(size)).forEach(([key, value]) => token.setAttribute(key, value));
     token.setAttribute("data-token-weight", tokenWeight);

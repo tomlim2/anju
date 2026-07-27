@@ -8,6 +8,7 @@ import {
   validateAttemptEnvelope,
   validateFinalizationReport
 } from "./composition-model.js";
+import { inkBounds } from "./text-ink.js";
 
 const SIZE_RANK = new Map(DESIGN_TOKEN_SIZE_ORDER.map((size, index) => [size, index]));
 const BOUNDARY_TOLERANCE = 0.25;
@@ -54,9 +55,8 @@ function matrixPoint(component, matrix, x, y) {
   return point.matrixTransform(matrix);
 }
 
-export function transformedBoundsInComponent(node, component) {
+function projectBounds(node, component, bounds) {
   try {
-    const bounds = node.getBBox();
     const nodeMatrix = node.getScreenCTM();
     const componentMatrix = component.getScreenCTM();
     if (!nodeMatrix || !componentMatrix) return null;
@@ -80,6 +80,27 @@ export function transformedBoundsInComponent(node, component) {
       && finitePositive(result.height)
       ? result
       : null;
+  } catch {
+    return null;
+  }
+}
+
+// Geometry: the glyph ink itself, so anchoring, fitting and validation all
+// agree on where the token actually starts and stops.
+export function transformedBoundsInComponent(node, component) {
+  try {
+    return projectBounds(node, component, inkBounds(node) || node.getBBox());
+  } catch {
+    return null;
+  }
+}
+
+// Visual weight: the advance/line box a token claims in the layout. Occupancy
+// compares text against cell-filling graphics, so it has to measure the space
+// each one takes up rather than how much of it the glyphs happen to blacken.
+export function layoutBoundsInComponent(node, component) {
+  try {
+    return projectBounds(node, component, node.getBBox());
   } catch {
     return null;
   }
@@ -308,9 +329,13 @@ export function createGridFinalizer({ renderTypographyAtSize, setTokenNudge }) {
         : { width: 0.000001, height: 0.000001 };
       const factor = state.sourceKind === "motif" ? state.slot.occupancySafetyFactor : 1;
       const revision = state.sourceKind === "motif" ? state.slot.occupancyCalibrationRevision : null;
+      const layout = state.token ? layoutBoundsInComponent(state.token, component) : null;
+      const occupancyBounds = layout
+        ? { width: round6(layout.width), height: round6(layout.height) }
+        : renderedBounds;
       const occupancy = deriveMountedOccupancy({
         sourceKind: state.sourceKind || "lexical",
-        renderedBounds,
+        renderedBounds: occupancyBounds,
         safeBox: plan.generationInput.safeBox,
         occupancySafetyFactor: factor
       });
@@ -328,6 +353,7 @@ export function createGridFinalizer({ renderTypographyAtSize, setTokenNudge }) {
         actualFontWeight: state.sourceKind === "motif" ? null : (state.actualFontWeight || 400),
         fallbackTier: state.sourceKind === "motif" ? 0 : Math.max(0, requestedIndex - actualIndex),
         renderedBounds,
+        occupancyBounds,
         occupancySafetyFactor: factor,
         occupancyCalibrationRevision: revision,
         mountedOccupancyScore: occupancy.mountedOccupancyScore,

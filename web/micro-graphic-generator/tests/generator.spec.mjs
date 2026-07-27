@@ -119,8 +119,8 @@ function expectAcceptedComposition(state, expectedRatio) {
   const safeBox = state.generationInput.safeBox;
   for (const report of state.acceptedAttempt.finalizationReport.blocks) {
     const normalizedArea = round6(
-      (report.renderedBounds.width / safeBox.width)
-      * (report.renderedBounds.height / safeBox.height)
+      (report.occupancyBounds.width / safeBox.width)
+      * (report.occupancyBounds.height / safeBox.height)
     );
     expect(report.mountedOccupancyScore).toBe(round6(normalizedArea * report.occupancySafetyFactor));
     expect(report.fits).toBe(true);

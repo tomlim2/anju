@@ -417,7 +417,7 @@ function validateFinalizationBlock(block, path) {
   const shared = [
     "blockId", "slotInstanceId", "sourceKind", "requestedSize", "requestedWeight",
     "requestedFontWeight", "actualSize", "actualWeight", "actualFontWeight", "fallbackTier",
-    "renderedBounds", "occupancySafetyFactor", "occupancyCalibrationRevision",
+    "renderedBounds", "occupancyBounds", "occupancySafetyFactor", "occupancyCalibrationRevision",
     "mountedOccupancyScore", "fits"
   ];
   assertExactKeys(block, shared, [], path);
@@ -428,6 +428,7 @@ function validateFinalizationBlock(block, path) {
   assertEnum(block.actualSize, COMPOSITION_MODEL_ENUMS.sizes, `${path}.actualSize`);
   assertIntegerRange(block.fallbackTier, 0, COMPOSITION_MODEL_ENUMS.sizes.length - 1, `${path}.fallbackTier`);
   validateRenderedBounds(block.renderedBounds, `${path}.renderedBounds`);
+  validateRenderedBounds(block.occupancyBounds, `${path}.occupancyBounds`);
   assertPositiveFinite(block.occupancySafetyFactor, `${path}.occupancySafetyFactor`);
   if (!Number.isFinite(block.mountedOccupancyScore) || block.mountedOccupancyScore < 0) {
     fail(`${path}.mountedOccupancyScore`, "expected finite non-negative number");
