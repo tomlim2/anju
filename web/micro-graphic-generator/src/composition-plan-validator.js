@@ -207,7 +207,6 @@ function buildPlanningContext({
   relationEdges,
   candidates,
   rankedCandidateIds,
-  certificateByRecipeId,
   blockPolicyByFootprint,
   enumerateCanonicalLayouts,
   compositionBlockGeometry,
@@ -226,7 +225,6 @@ function buildPlanningContext({
     translationSetByLexicalUseId: readonlyMap(translationSetByLexicalUseId),
     recipeById: readonlyMap(recipeById),
     activeRecipeIds: Object.freeze([...activeRecipeIds]),
-    planningComplexityCertificateByRecipeId: readonlyMap(certificateByRecipeId),
     relationEdges: deepFreeze(cloneData(relationEdges)),
     blockPolicyByFootprint: readonlyMap(blockPolicyByFootprint),
     enumerateCanonicalLayouts,
@@ -284,51 +282,6 @@ export function createPlanValidationContext({
     validateMotifRenderParams
   });
 
-  const certificates = ownerSnapshotManifest.planningComplexityCertificates || [];
-  const certificateKeys = [
-    "recipeId", "oracleRevision", "fixtureRevision", "maxCanonicalPrefixVisits",
-    "maxLayoutDecisionExpansions", "maxRetainedViableDecisionsPerTuple", "maxRankedPlans"
-  ].sort();
-  const certificateBounds = {
-    maxCanonicalPrefixVisits: MAX_CANONICAL_PREFIX_VISITS_PER_RECIPE,
-    maxLayoutDecisionExpansions: MAX_LAYOUT_DECISION_EXPANSIONS_PER_RECIPE,
-    maxRetainedViableDecisionsPerTuple: MAX_RETAINED_VIABLE_DECISIONS_PER_TUPLE,
-    maxRankedPlans: MAX_RANKED_PLANS_PER_RECIPE
-  };
-  if (certificates.length !== activeRecipeIds.length) {
-    throw new Error("planning certificate count mismatch");
-  }
-  const certificateByRecipeId = new Map();
-  for (let index = 0; index < certificates.length; index += 1) {
-    const certificate = certificates[index];
-    if (canonicalJson(Object.keys(certificate).sort()) !== canonicalJson(certificateKeys)) {
-      throw new Error(`planning certificate schema mismatch at ${index}`);
-    }
-    if (certificate.recipeId !== activeRecipeIds[index]) {
-      throw new Error("planning certificate order mismatch");
-    }
-    for (const revisionField of ["oracleRevision", "fixtureRevision"]) {
-      if (!/^sha256:[0-9a-f]{64}$/.test(certificate[revisionField])) {
-        throw new Error(`planning certificate ${revisionField} mismatch`);
-      }
-    }
-    for (const [field, bound] of Object.entries(certificateBounds)) {
-      if (!Number.isInteger(certificate[field]) || certificate[field] < 0 || certificate[field] > bound) {
-        throw new Error(`planning certificate ${field} exceeds config bound`);
-      }
-    }
-    if (certificateByRecipeId.has(certificate.recipeId)) {
-      throw new Error(`duplicate planning certificate ${certificate.recipeId}`);
-    }
-    certificateByRecipeId.set(certificate.recipeId, certificate);
-  }
-  if (
-    activeRecipeIds.length !== certificateByRecipeId.size
-    || activeRecipeIds.some(id => !certificateByRecipeId.has(id))
-  ) {
-    throw new Error("planning certificate active recipe mismatch");
-  }
-
   return buildPlanningContext({
     generationInput,
     ownerSnapshotManifest,
@@ -340,7 +293,6 @@ export function createPlanValidationContext({
     relationEdges,
     candidates,
     rankedCandidateIds,
-    certificateByRecipeId,
     blockPolicyByFootprint,
     enumerateCanonicalLayouts,
     compositionBlockGeometry,
@@ -404,7 +356,6 @@ export function createPlanningObservationContext({
     relationEdges,
     candidates,
     rankedCandidateIds,
-    certificateByRecipeId: new Map(),
     blockPolicyByFootprint,
     enumerateCanonicalLayouts,
     compositionBlockGeometry,
@@ -1335,18 +1286,6 @@ function assertPlanningCounters(recipeId, counters, context) {
   };
   for (const [field, limit] of Object.entries(limits)) {
     if (counters[field] > limit) throw new Error(`planning-complexity:${recipeId}:${field}`);
-  }
-  const certificate = context.planningComplexityCertificateByRecipeId.get(recipeId);
-  const certificateFields = {
-    canonicalPrefixVisits: "maxCanonicalPrefixVisits",
-    layoutDecisionExpansions: "maxLayoutDecisionExpansions",
-    retainedViableDecisions: "maxRetainedViableDecisionsPerTuple",
-    rankedPlans: "maxRankedPlans"
-  };
-  for (const [field, certificateField] of Object.entries(certificateFields)) {
-    if (!Number.isInteger(certificate[certificateField]) || counters[field] > certificate[certificateField]) {
-      throw new Error(`planning-certificate:${recipeId}:${field}`);
-    }
   }
 }
 
