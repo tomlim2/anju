@@ -121,7 +121,7 @@ let generationTimestamp = generationDate().toISOString();
 let activeComponentRatio = "";
 let activeBorderMode = "";
 let activeBlockLayout = "";
-let blockOutlinesVisible = true;
+let blockOutlinesVisible = false;
 let forcedRatio = urlParameters.get("ratio") || "";
 let appMode = "random";
 let dark = false;
@@ -922,6 +922,10 @@ function syncBlockOutlineVisibility() {
   controls.grid.setAttribute("aria-pressed", String(blockOutlinesVisible));
 }
 
+function syncToneButton() {
+  controls.tone.setAttribute("aria-pressed", String(dark));
+}
+
 function bindEvents() {
   controls.random.addEventListener("click", () => render(randomSeed(), { newGeneration: true }));
   controls.ratio.value = forcedRatio;
@@ -969,6 +973,7 @@ function bindEvents() {
   controls.tone.addEventListener("click", () => {
     dark = !dark;
     document.body.classList.toggle("is-dark", dark);
+    syncToneButton();
   });
   art.addEventListener("click", () => render(randomSeed(), { newGeneration: true }));
   window.addEventListener("resize", () => render(seed));
@@ -1067,6 +1072,9 @@ async function loadTypefaces() {
 async function start() {
   syncGenerationAvailability();
   bindEvents();
+  syncModeButtons();
+  syncBlockOutlineVisibility();
+  syncToneButton();
   syncExportAvailability();
   try {
     await loadTypefaces();

@@ -78,6 +78,63 @@ select {
   text-align-last: center;
 }
 
+/* Dropdown: the shell carries the caret so the select keeps its own hover fill. */
+.select-shell {
+  position: relative;
+  display: inline-flex;
+  color: var(--ink);
+}
+
+.select-shell select {
+  width: 100%;
+  padding-right: 18px;
+}
+
+.select-shell::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  width: 0;
+  height: 0;
+  border-top: 4px solid currentColor;
+  border-right: 3px solid transparent;
+  border-left: 3px solid transparent;
+  transform: translateY(-2px);
+  pointer-events: none;
+}
+
+.select-shell:hover,
+.select-shell:focus-within {
+  color: var(--bg);
+}
+
+.select-shell:has(select:disabled) {
+  color: var(--ink);
+  opacity: 0.4;
+}
+
+/* Toggle: a checkbox marks pressed state so it never reads as hover-only. */
+button.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 8px;
+}
+
+button.toggle::before {
+  content: "";
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border: 1px solid currentColor;
+}
+
+button.toggle[aria-pressed="true"]::before {
+  box-shadow: inset 0 0 0 3px currentColor;
+}
+
 select:disabled {
   cursor: not-allowed;
   opacity: 0.4;
@@ -128,6 +185,32 @@ select option {
     height: 30px;
     padding: 0 2px;
     font-size: 8px;
+  }
+
+  .select-shell {
+    width: 100%;
+  }
+
+  .select-shell select {
+    padding-right: 13px;
+  }
+
+  .select-shell::after {
+    right: 4px;
+  }
+
+  button.toggle {
+    gap: 3px;
+    padding: 0 2px;
+  }
+
+  button.toggle::before {
+    width: 7px;
+    height: 7px;
+  }
+
+  button.toggle[aria-pressed="true"]::before {
+    box-shadow: inset 0 0 0 2px currentColor;
   }
 
   .seed {

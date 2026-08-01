@@ -13,23 +13,25 @@
   </main>
   <div class="controls" aria-label="Generator controls">
     <button id="random" type="button">Random</button>
-    <select id="ratio" title="Force aspect ratio" aria-label="Aspect ratio">
-      <option value="">Auto</option>
-      <option value="1:1">1:1</option>
-      <option value="2:3">2:3</option>
-      <option value="2:5">2:5</option>
-      <option value="3:2">3:2</option>
-      <option value="5:2">5:2</option>
-      <option value="4:3">4:3</option>
-      <option value="3:4">3:4</option>
-    </select>
-    <button id="mode" type="button" aria-pressed="false">Compose</button>
-    <button id="mockup" type="button" aria-pressed="false" title="Preview proposed manga-terminal graphic set">Mockup</button>
-    <button id="align" type="button" aria-pressed="false" title="Preview typography ink-snap alignment cases">Align</button>
-    <button id="grid" type="button" aria-pressed="true" title="Toggle block grid outlines">Grid</button>
+    <span class="select-shell">
+      <select id="ratio" title="Force aspect ratio" aria-label="Aspect ratio">
+        <option value="">Auto</option>
+        <option value="1:1">1:1</option>
+        <option value="2:3">2:3</option>
+        <option value="2:5">2:5</option>
+        <option value="3:2">3:2</option>
+        <option value="5:2">5:2</option>
+        <option value="4:3">4:3</option>
+        <option value="3:4">3:4</option>
+      </select>
+    </span>
+    <button id="mode" class="toggle" type="button" aria-pressed="false">Compose</button>
+    <button id="mockup" class="toggle" type="button" aria-pressed="false" title="Preview proposed manga-terminal graphic set">Mockup</button>
+    <button id="align" class="toggle" type="button" aria-pressed="false" title="Preview typography ink-snap alignment cases">Align</button>
+    <button id="grid" class="toggle" type="button" aria-pressed="false" title="Toggle block grid outlines">Grid</button>
     <button id="png" type="button">PNG</button>
     <button id="svg" type="button">SVG</button>
-    <button id="tone" type="button">Tone</button>
+    <button id="tone" class="toggle" type="button" aria-pressed="false" title="Toggle dark tone">Tone</button>
   </div>
   <div class="seed" id="seedLabel"></div>
   <script type="module" src="./src/app.js"></script>
