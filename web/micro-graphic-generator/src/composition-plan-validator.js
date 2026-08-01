@@ -1099,6 +1099,7 @@ function touchesCorner(cells) {
 export function derivePlanRankFacts({
   tuple,
   blocks,
+  internalBlocks = null,
   minNormalizedFitMargin,
   maxCellCountBySlotInstanceId,
   context
@@ -1126,12 +1127,35 @@ export function derivePlanRankFacts({
       if (matched) layoutPreferenceMatches.push(`${slotDefinitionId}:${preference}`);
     }
   }
+  // Rank on the size a block will actually render at, not the one it asked for:
+  // ranking on the request alone rewards over-optimistic plans that finalization
+  // then downgrades, which flattens the scale contrast the composition depends on.
+  const predictedSizeBySlotInstanceId = new Map(
+    (internalBlocks || []).map(block => [block.slotInstanceId, block.predictedActualSize])
+  );
+  const achievedSize = block =>
+    predictedSizeBySlotInstanceId.get(block.slotInstanceId) || block.requestedSize;
+  const downgradeSteps = blocks.reduce((total, block) => {
+    const requested = SIZE_RANK.get(block.requestedSize);
+    const achieved = SIZE_RANK.get(achievedSize(block));
+    return Number.isFinite(requested) && Number.isFinite(achieved)
+      ? total + Math.max(0, requested - achieved)
+      : total;
+  }, 0);
+  // Hero dominance is measured against the largest block in this same composition
+  // rather than as a raw cell count, so layouts built from equal-sized blocks are
+  // not permanently outranked by layouts that happen to allow a bigger hero.
+  const maxCellsInDecision = Math.max(...blocks.map(block => block.cells.length));
+  const heroDominance = maxCellsInDecision > 0
+    ? heroBlock.cells.length / maxCellsInDecision
+    : 0;
   const rankKey = Object.freeze([
     preferRuleMatchIds.length,
     optionalPresencePreferenceMatchIds.length,
-    SIZE_RANK.get(heroBlock.requestedSize),
+    SIZE_RANK.get(achievedSize(heroBlock)),
+    -downgradeSteps,
     WEIGHT_RANK.get(heroBlock.requestedFontWeight),
-    heroBlock.cells.length,
+    round6(heroDominance),
     round6(minNormalizedFitMargin),
     layoutPreferenceMatches.length
   ]);
@@ -1178,6 +1202,7 @@ export function deriveTupleLayoutFacts(tuple, context, instrumentation = null) {
     const rankFacts = derivePlanRankFacts({
       tuple,
       blocks,
+      internalBlocks: decision.blocks,
       minNormalizedFitMargin: decision.minNormalizedFitMargin,
       maxCellCountBySlotInstanceId,
       context

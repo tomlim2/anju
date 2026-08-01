@@ -358,8 +358,8 @@ export function validatePlannerResultShape(result, path = "plannerResult") {
     if (!selection.recipeOrder.includes(selection.selectedRecipeId)) {
       fail(`${path}.initialSelection.selectedRecipeId`, "selected recipe is outside recipe order");
     }
-    if (!Array.isArray(selection.topRankKey) || selection.topRankKey.length !== 7) {
-      fail(`${path}.initialSelection.topRankKey`, "expected seven-number rank key");
+    if (!Array.isArray(selection.topRankKey) || selection.topRankKey.length !== 8) {
+      fail(`${path}.initialSelection.topRankKey`, "expected eight-number rank key");
     }
     selection.topRankKey.forEach((value, index) => {
       if (!Number.isFinite(value)) fail(`${path}.initialSelection.topRankKey[${index}]`, "expected finite number");
