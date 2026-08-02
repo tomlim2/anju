@@ -259,6 +259,19 @@ function canonicalSafeBox(width, height) {
   return { x: box.x, y: box.y, width: box.width, height: box.height };
 }
 
+// The controls bar is position:fixed and sits at the top on desktop but the
+// bottom on narrow viewports, so the reserved band is derived from its actual
+// rect rather than hardcoding either layout.
+function controlsObstructionInsets(viewportHeight) {
+  const bar = document.querySelector(".controls");
+  const rect = bar?.getBoundingClientRect();
+  if (!rect || rect.height === 0) return { top: 0, bottom: 0 };
+  const clearance = 14;
+  return rect.top < viewportHeight / 2
+    ? { top: Math.max(0, rect.bottom + clearance), bottom: 0 }
+    : { top: 0, bottom: Math.max(0, viewportHeight - rect.top + clearance) };
+}
+
 function renderComponentBorder(width, height, mode) {
   const group = make("g", { "data-border": mode });
   if (mode === "no-stroke") return group;
@@ -314,12 +327,17 @@ function createGenerationContext(width, height) {
   const borderMode = keyedPick(componentBorderModes, layoutSeed, "borderMode");
   const canonicalSize = canonicalComponentSize(template);
   const safeBox = canonicalSafeBox(canonicalSize.width, canonicalSize.height);
+  // Display placement only — the fixed controls bar overlays the canvas, so the
+  // component is centered in the unobstructed band. Plan geometry (safeBox) is
+  // canonical and must not depend on the viewport chrome.
+  const obstruction = controlsObstructionInsets(height);
   const displayBox = fitComponentBox(
     width,
-    height,
+    height - obstruction.top - obstruction.bottom,
     { width: template.width, height: template.height },
     template.scale
   );
+  displayBox.y += obstruction.top;
   const generationInput = createGenerationInput({
     schemaVersion: 1,
     seed,
