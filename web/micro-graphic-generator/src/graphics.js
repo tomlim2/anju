@@ -384,22 +384,22 @@ const MOTIF_PATTERN_DRAWERS = {
     }
   },
   "radial-halftone"(group, width, height) {
+    // Circular motifs keep a true circle centred in the block: the ring span
+    // follows the short side only, never stretching to the block's aspect.
     const cx = width / 2;
     const cy = height / 2;
     const rings = 9;
     const step = Math.min(width, height) / 2 / rings;
-    // outermost dot edge must land on the block boundary, not its centre
+    // outermost dot edge must land on the short-side boundary, not its centre
     const outerDotRadius = step * 0.5 * 1.04;
-    const spanX = Math.max(step, width / 2 - outerDotRadius);
-    const spanY = Math.max(step, height / 2 - outerDotRadius);
+    const span = Math.max(step, Math.min(width, height) / 2 - outerDotRadius);
     for (let ri = 1; ri <= rings; ri += 1) {
-      const rx = spanX * ri / rings;
-      const ry = spanY * ri / rings;
-      const count = Math.max(6, Math.round((2 * Math.PI * Math.max(rx, ry)) / step));
+      const ringRadius = span * ri / rings;
+      const count = Math.max(6, Math.round((2 * Math.PI * ringRadius) / step));
       const radius = step * 0.5 * (0.22 + ri / rings * 0.82);
       for (let k = 0; k < count; k += 1) {
         const a = k / count * Math.PI * 2 + ri * 0.2;
-        group.appendChild(motifDot(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry, radius));
+        group.appendChild(motifDot(cx + Math.cos(a) * ringRadius, cy + Math.sin(a) * ringRadius, radius));
       }
     }
   },
@@ -510,21 +510,22 @@ const MOTIF_PATTERN_DRAWERS = {
     }
   },
   "burst-rings"(group, width, height, random) {
+    // Rings stay true circles centred in the block, sized by the short side.
     const cx = width / 2;
     const cy = height / 2;
     const rings = 4;
+    const maxRadius = Math.min(width, height) / 2;
     for (let i = 1; i <= rings; i += 1) {
-      const rx = (width / 2) * i / rings;
-      const ry = (height / 2) * i / rings;
+      const ringRadius = maxRadius * i / rings;
       const spikes = 16 + i * 4;
       const points = [];
       for (let k = 0; k < spikes; k += 1) {
         const a = k / spikes * Math.PI * 2;
         const scale = Math.min(1, (k % 2 ? 1 : 0.85) * (1 + (random() - 0.5) * 0.05));
-        points.push([cx + Math.cos(a) * rx * scale, cy + Math.sin(a) * ry * scale]);
+        points.push([cx + Math.cos(a) * ringRadius * scale, cy + Math.sin(a) * ringRadius * scale]);
       }
       points.push(points[0]);
-      group.appendChild(polyline(points));
+      group.appendChild(polyline(points, { strokeWeight: "thick" }));
     }
   }
 };
