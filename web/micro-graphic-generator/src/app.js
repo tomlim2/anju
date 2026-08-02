@@ -908,7 +908,7 @@ function renderV11(width, height) {
     width,
     height: height - obstruction.top - obstruction.bottom
   });
-  seedLabel.textContent = `SEED ${seedHex()} / V1.1 PLATE / ${summary.ratio} / ${summary.cellCount} CELLS`;
+  seedLabel.textContent = `SEED ${seedHex()} / V1.1 / ${summary.label}`;
 }
 
 function render(nextSeed = seed, { newGeneration = false } = {}) {
