@@ -2,7 +2,10 @@ export const SVG_NS = "http://www.w3.org/2000/svg";
 export const COMPOSITION_POLICY_VERSION = 1;
 export const NODE_CONFORMANCE_RUNTIME = "v22.12.0";
 export const BROWSER_CONFORMANCE_PROFILE = "playwright-1.61.1/chromium-http";
-export const MAX_MOUNTED_RANKED_ATTEMPTS = 8;
+// 16 gives the mounted-attempt walker enough room to escape hierarchy dead ends:
+// the golden-ratio ladder narrows inter-size gaps, so a hero that collapses to
+// the bottom rank rejects every support token in that plan and burns an attempt.
+export const MAX_MOUNTED_RANKED_ATTEMPTS = 16;
 export const MAX_CANONICAL_PREFIX_VISITS_PER_RECIPE = 50_000;
 export const MAX_LAYOUT_DECISION_EXPANSIONS_PER_RECIPE = 200_000;
 export const MAX_RETAINED_VIABLE_DECISIONS_PER_TUPLE = 1_024;
@@ -50,7 +53,13 @@ export const DESIGN_TOKEN_SIZES = {
   xxxlarge: { rowMode: "exclusive", maxPerRow: 1 }
 };
 export const DESIGN_TOKEN_SIZE_ORDER = Object.keys(DESIGN_TOKEN_SIZES);
-export const TYPOGRAPHY_INTRINSIC_FONT_SIZES = { small: 8, medium: 16, large: 32, xlarge: 64, xxlarge: 128, xxxlarge: 256 };
+// Golden-ratio ladder anchored at the top: each step is the next divided by
+// φ (1.618), rounded. Anchoring 256 keeps the hero scale the system's drama
+// depends on; anchoring the bottom instead would cap the ladder at ~133 and
+// halve every hero. small sits below the φ progression as a caption floor —
+// at the φ value (23) fine print stops fitting its 1x1 blocks and finalization
+// burns mounted attempts on doomed plans.
+export const TYPOGRAPHY_INTRINSIC_FONT_SIZES = { small: 16, medium: 37, large: 60, xlarge: 98, xxlarge: 158, xxxlarge: 256 };
 export const GRAPHIC_TOKEN_SIZES = ["medium", "large"];
 export const GRAPHIC_SIZE_SCALE = { medium: 1, large: 1.5 };
 export const MAJOR_TOKEN_RULES = { minSize: "large", maxPerLayout: 1 };
