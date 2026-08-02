@@ -62,6 +62,7 @@ import {
 } from "./motifs.js";
 import { applyAnalyticSnap, renderAlignmentDemo, renderMockupGallery } from "./mockup-gallery.js";
 import { createRandomSource, deriveSeed, keyedValue } from "./random.js";
+import { renderRandomV11 } from "./random-v11.js";
 import { line, make, rect, svgStructuralFingerprint, textNode } from "./svg.js";
 import {
   createCompositionCandidateInventory,
@@ -82,6 +83,7 @@ const art = document.querySelector("#art");
 const seedLabel = document.querySelector("#seedLabel");
 const controls = {
   random: document.querySelector("#random"),
+  randomV11: document.querySelector("#randomV11"),
   ratio: document.querySelector("#ratio"),
   mode: document.querySelector("#mode"),
   mockup: document.querySelector("#mockup"),
@@ -834,17 +836,18 @@ function syncModeButtons() {
   controls.align.setAttribute("aria-pressed", String(appMode === "align"));
   controls.mode.setAttribute("aria-pressed", String(appMode === "composable-tokens"));
   controls.mode.textContent = appMode === "composable-tokens" ? "Generator" : "Compose";
+  controls.randomV11.setAttribute("aria-pressed", String(appMode === "v11"));
 }
 
 function syncRatioAvailability() {
-  const disabled = fontRuntimeState !== "ready" || appMode === "composable-tokens" || appMode === "mockup" || appMode === "align";
+  const disabled = fontRuntimeState !== "ready" || appMode === "composable-tokens" || appMode === "mockup" || appMode === "align" || appMode === "v11";
   controls.ratio.disabled = disabled;
   controls.ratio.setAttribute("aria-disabled", String(disabled));
 }
 
 function syncGenerationAvailability() {
   const disabled = fontRuntimeState !== "ready";
-  for (const control of [controls.random, controls.mode, controls.mockup, controls.align]) {
+  for (const control of [controls.random, controls.randomV11, controls.mode, controls.mockup, controls.align]) {
     control.disabled = disabled;
     control.setAttribute("aria-disabled", String(disabled));
   }
@@ -897,6 +900,17 @@ function renderAlign(width, height) {
   seedLabel.textContent = `MODE ALIGN / INK-METRIC (offline, no getBBox) / SEED ${seedHex()}`;
 }
 
+function renderV11(width, height) {
+  const obstruction = controlsObstructionInsets(height);
+  const summary = renderRandomV11(art, seed, {
+    x: 0,
+    y: obstruction.top,
+    width,
+    height: height - obstruction.top - obstruction.bottom
+  });
+  seedLabel.textContent = `SEED ${seedHex()} / V1.1 PLATE / ${summary.ratio} / ${summary.cellCount} CELLS`;
+}
+
 function render(nextSeed = seed, { newGeneration = false } = {}) {
   if (fontRuntimeState !== "ready") {
     syncGenerationAvailability();
@@ -914,7 +928,9 @@ function render(nextSeed = seed, { newGeneration = false } = {}) {
   art.setAttribute("data-grid-outlines", blockOutlinesVisible ? "visible" : "hidden");
   document.body.classList.toggle("is-dark", dark);
 
-  if (appMode === "mockup") {
+  if (appMode === "v11") {
+    renderV11(width, height);
+  } else if (appMode === "mockup") {
     renderMockup(width, height);
   } else if (appMode === "align") {
     renderAlign(width, height);
@@ -945,7 +961,21 @@ function syncToneButton() {
 }
 
 function bindEvents() {
-  controls.random.addEventListener("click", () => render(randomSeed(), { newGeneration: true }));
+  controls.random.addEventListener("click", () => {
+    if (appMode === "v11") {
+      appMode = "random";
+      syncModeButtons();
+      syncRatioAvailability();
+    }
+    render(randomSeed(), { newGeneration: true });
+  });
+  controls.randomV11.addEventListener("click", () => {
+    if (fontRuntimeState !== "ready") return;
+    appMode = "v11";
+    syncModeButtons();
+    syncRatioAvailability();
+    render(randomSeed(), { newGeneration: true });
+  });
   controls.ratio.value = forcedRatio;
   forcedRatio = controls.ratio.value;
   controls.ratio.addEventListener("change", () => {
