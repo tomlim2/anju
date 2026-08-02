@@ -277,7 +277,7 @@ export function createGraphicPrimitives({ randomSource, visualTokens }) {
     for (let index = 1; index < 4; index += 1) {
       target.appendChild(line(x, y + height * (index / 4), x + width, y + height * (index / 4), { dash: "2 9", opacity: 0.45 }));
     }
-    target.appendChild(polyline(points));
+    target.appendChild(polyline(points, { strokeWeight: "thick" }));
   }
 
   return { label, microBadgeWidth, microBadge, barcode, pseudoQr, miniTable, wave };
@@ -450,7 +450,7 @@ const MOTIF_PATTERN_DRAWERS = {
       const ly = (i + 0.5) * (height / count) + (random() - 0.5) * 4;
       const length = width * (0.35 + random() * 0.6);
       const fromRight = random() < 0.5;
-      group.appendChild(line(fromRight ? width - length : 0, ly, fromRight ? width : length, ly));
+      group.appendChild(line(fromRight ? width - length : 0, ly, fromRight ? width : length, ly, { strokeWeight: "thick" }));
     }
   },
   chevron(group, width, height) {
@@ -460,7 +460,7 @@ const MOTIF_PATTERN_DRAWERS = {
     for (let ri = 0; ri < rows; ri += 1) {
       const cy = ri * rh + rh / 2;
       for (let cx = 0; cx < width - cw; cx += cw * 0.9) {
-        group.appendChild(polyline([[cx, cy + rh * 0.26], [cx + cw / 2, cy - rh * 0.26], [cx + cw, cy + rh * 0.26]]));
+        group.appendChild(polyline([[cx, cy + rh * 0.26], [cx + cw / 2, cy - rh * 0.26], [cx + cw, cy + rh * 0.26]], { strokeWeight: "thick" }));
       }
     }
   },
@@ -472,7 +472,7 @@ const MOTIF_PATTERN_DRAWERS = {
       [0, 0], [width, 0], [width, height], [0, height],
       [width / 2, 0], [width, height / 2], [width / 2, height], [0, height / 2]
     ];
-    anchors.forEach(point => group.appendChild(line(point[0], point[1], vx, vy)));
+    anchors.forEach(point => group.appendChild(line(point[0], point[1], vx, vy, { strokeWeight: "thick" })));
     const depth = 6;
     for (let i = 1; i < depth; i += 1) {
       const t = i / depth;
@@ -487,7 +487,7 @@ const MOTIF_PATTERN_DRAWERS = {
     for (let i = 0; i < count; i += 1) {
       const a = i / count * Math.PI * 2 + (random() - 0.5) * 0.12;
       const edge = rayEdge(cx, cy, a, width, height);
-      group.appendChild(line(cx + Math.cos(a) * clear, cy + Math.sin(a) * clear, edge[0], edge[1]));
+      group.appendChild(line(cx + Math.cos(a) * clear, cy + Math.sin(a) * clear, edge[0], edge[1], { strokeWeight: "thick" }));
     }
   },
   "beta-flash"(group, width, height, random) {

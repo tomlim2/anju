@@ -62,7 +62,9 @@ export const FONT_WEIGHTS = { normal: 400, bold: 700 };
 export const BOLD_TOKEN_SIZES = ["large", "xlarge", "xxlarge", "xxxlarge"];
 export const HEAVY_TOKEN_SIZES = ["xxlarge", "xxxlarge"];
 export const STROKE_WEIGHTS = { thin: 1.2, thick: 2.4 };
-export const ACTIVE_STROKE_WEIGHTS = ["thin"];
+// thick is active so line-built motifs can carry ink weight comparable to
+// typography; hairline-only motifs read as faint texture next to black type.
+export const ACTIVE_STROKE_WEIGHTS = ["thin", "thick"];
 export const TOKEN_CATALOG_SECTION_TITLE = { size: 12, height: 32 };
 export const COMPOSITION_RULE_GROUPS = [
   {
