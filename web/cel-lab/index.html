@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CEL LAB — 안주 셀 셰이딩 놀이터</title>
+<meta name="description" content="브라우저에서 도는 실시간 셀 셰이딩 랩. 밴드 라이팅, 스크린톤 하프톤, 인버티드 헐 아웃라인.">
+<link rel="stylesheet" href="./styles.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<canvas id="stage" aria-label="셀 셰이딩 미리보기"></canvas>
+
+<header class="bar">
+  <span class="mark">CEL LAB</span>
+  <span class="sub">ANJU / TOON SHADING PLAYGROUND</span>
+  <span class="status" id="status">BOOT</span>
+</header>
+
+<aside class="deck" id="deck">
+
+  <section class="card">
+    <h2>MODEL</h2>
+    <div class="row seg" id="modelSeg" role="group" aria-label="모델 선택">
+      <button data-model="knot" class="on">KNOT</button>
+      <button data-model="sphere">SPHERE</button>
+      <button data-model="capsule">CAPSULE</button>
+      <button data-model="torus">TORUS</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>LIGHTING</h2>
+    <label class="row">
+      <span>BANDS <em id="v-bands">3</em></span>
+      <input id="u-bands" type="range" min="1" max="6" step="1" value="3">
+    </label>
+    <label class="row">
+      <span>SHADOW SENSITIVITY <em id="v-threshold">0.08</em></span>
+      <input id="u-threshold" type="range" min="-0.5" max="0.5" step="0.01" value="0.08">
+    </label>
+    <label class="row">
+      <span>FLAT WEIGHT <em id="v-flat">0.35</em></span>
+      <input id="u-flat" type="range" min="0" max="1" step="0.01" value="0.35">
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>SCREENTONE</h2>
+    <label class="row">
+      <span>DOT SCALE <em id="v-tone">140</em></span>
+      <input id="u-tone" type="range" min="40" max="320" step="1" value="140">
+    </label>
+    <label class="row">
+      <span>COVERAGE <em id="v-cover">0.55</em></span>
+      <input id="u-cover" type="range" min="0" max="1" step="0.01" value="0.55">
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>SURFACE</h2>
+    <label class="row">
+      <span>SPECULAR <em id="v-spec">0.5</em></span>
+      <input id="u-spec" type="range" min="0" max="1" step="0.01" value="0.5">
+    </label>
+    <label class="row">
+      <span>RIM <em id="v-rim">0.45</em></span>
+      <input id="u-rim" type="range" min="0" max="1" step="0.01" value="0.45">
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>LINE</h2>
+    <label class="row">
+      <span>OUTLINE <em id="v-line">0.02</em></span>
+      <input id="u-line" type="range" min="0" max="0.06" step="0.001" value="0.02">
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>INK</h2>
+    <div class="row seg" id="paletteSeg" role="group" aria-label="팔레트 선택">
+      <button data-palette="manga" class="on">MANGA</button>
+      <button data-palette="sunset">SUNSET</button>
+      <button data-palette="mint">MINT</button>
+    </div>
+  </section>
+
+  <p class="hint">드래그로 회전 · 휠로 줌 · 라이트는 자동 순회</p>
+</aside>
+
+<noscript><p class="noscript">이 페이지는 WebGL과 자바스크립트가 필요합니다.</p></noscript>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+/* Control-deck shell. The render owns the screen; the deck floats over it. */
+
+:root {
+  --paper: #f2f3ef;
+  --ink: #16181a;
+  --ink-soft: #6d716f;
+  --rule: rgba(22, 24, 26, 0.16);
+  --card: rgba(242, 243, 239, 0.86);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "SUIT", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  font-size: 14px;
+  overflow: hidden;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+.bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 clamp(16px, 3vw, 40px);
+  border-bottom: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--paper) 70%, transparent);
+  backdrop-filter: blur(6px);
+  z-index: 2;
+}
+
+.mark { font-weight: 800; letter-spacing: 0.18em; font-size: 13px; }
+.sub { font-size: 10px; letter-spacing: 0.16em; color: var(--ink-soft); }
+.status {
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.deck {
+  position: fixed;
+  top: 72px;
+  right: clamp(12px, 2.4vw, 32px);
+  width: 250px;
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 2;
+  scrollbar-width: thin;
+}
+
+.card {
+  border: 1px solid var(--rule);
+  background: var(--card);
+  backdrop-filter: blur(8px);
+  padding: 12px 14px 14px;
+}
+
+.card h2 {
+  margin: 0 0 10px;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+.row { display: block; }
+.row + .row { margin-top: 10px; }
+
+.row span {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  margin-bottom: 5px;
+}
+.row em {
+  font-style: normal;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--ink);
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -5px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 0;
+}
+input[type="range"]::-moz-range-track { height: 2px; background: var(--ink); }
+input[type="range"]::-moz-range-thumb {
+  width: 8px;
+  height: 8px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 0;
+}
+
+.seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+}
+.seg button {
+  padding: 8px 0;
+  border: 0;
+  background: var(--paper);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+}
+.seg button.on {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.hint {
+  margin: 2px 2px 0;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+}
+
+.noscript {
+  position: fixed;
+  inset: auto 0 50% 0;
+  text-align: center;
+  z-index: 3;
+}
+
+@media (max-width: 760px) {
+  .deck {
+    top: auto;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 44vh;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 10px 12px;
+    background: color-mix(in srgb, var(--paper) 82%, transparent);
+    border-top: 1px solid var(--rule);
+  }
+  .card { min-width: 200px; flex: 0 0 auto; }
+  .sub { display: none; }
+}
