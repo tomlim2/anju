@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TYPE TAPE — 안주 타이포 리본</title>
+<meta name="description" content="입력한 문장이 3D 리본을 타고 흐른다. 밴드·뫼비우스·코일, 셀 셰이딩과 스크린톤.">
+<link rel="stylesheet" href="./styles.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<canvas id="stage" aria-label="타이포 리본 미리보기"></canvas>
+
+<header class="bar">
+  <span class="mark">TYPE TAPE</span>
+  <span class="sub">ANJU / TYPOGRAPHY RIBBON</span>
+  <span class="status" id="status">BOOT</span>
+</header>
+
+<aside class="deck" id="deck">
+
+  <section class="card">
+    <h2>TEXT</h2>
+    <input id="u-text" class="text" type="text" value="안주 · 活字 · TYPE" maxlength="40"
+      autocomplete="off" spellcheck="false" aria-label="리본에 흐를 문장">
+    <div class="row seg" id="weightSeg" role="group" aria-label="굵기">
+      <button data-weight="900" class="on">HEAVY</button>
+      <button data-weight="400">REGULAR</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>SURFACE</h2>
+    <div class="row seg" id="surfaceSeg" role="group" aria-label="곡면 선택">
+      <button data-surface="band" class="on">BAND</button>
+      <button data-surface="mobius">MÖBIUS</button>
+      <button data-surface="coil">COIL</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>MOTION</h2>
+    <label class="row">
+      <span>FLOW <em id="v-flow">0.06</em></span>
+      <input id="u-flow" type="range" min="-0.2" max="0.2" step="0.005" value="0.06">
+    </label>
+    <label class="row">
+      <span>SPIN <em id="v-spin">0.10</em></span>
+      <input id="u-spin" type="range" min="0" max="0.5" step="0.01" value="0.10">
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>PRINT</h2>
+    <label class="row">
+      <span>REPEAT <em id="v-repeat">2</em></span>
+      <input id="u-repeat" type="range" min="1" max="6" step="1" value="2">
+    </label>
+    <label class="row">
+      <span>TONE <em id="v-tone">0.5</em></span>
+      <input id="u-tone" type="range" min="0" max="1" step="0.01" value="0.5">
+    </label>
+    <label class="row">
+      <span>EDGE RULE <em id="v-edge">0.04</em></span>
+      <input id="u-edge" type="range" min="0" max="0.12" step="0.005" value="0.04">
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>INK</h2>
+    <div class="row seg" id="paletteSeg" role="group" aria-label="팔레트">
+      <button data-palette="manga" class="on">MANGA</button>
+      <button data-palette="reverse">REVERSE</button>
+      <button data-palette="rubine">RUBINE</button>
+    </div>
+  </section>
+
+  <p class="hint">드래그로 회전 · 휠로 줌 · 문장을 바꿔보세요</p>
+</aside>
+
+<noscript><p class="noscript">이 페이지는 WebGL과 자바스크립트가 필요합니다.</p></noscript>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
