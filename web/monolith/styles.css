@@ -1,0 +1,258 @@
+/* Monochrome type-lab shell. Two ink values, one paper value, nothing else. */
+
+:root {
+  --paper: #f2f3ef;
+  --ink: #16181a;
+  --ink-soft: #6d716f;
+  --rule: rgba(22, 24, 26, 0.14);
+  --bar: 56px;
+  --gutter: clamp(20px, 4.5vw, 72px);
+  --measure: 34ch;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "SUIT", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The canvas sits behind everything and never scrolls with the copy. */
+#stage {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 0;
+  touch-action: pan-y;
+}
+
+/* Halftone tooth over the render, so the 3D reads as printed rather than lit. */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(22, 24, 26, 0.06) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply;
+}
+
+.bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--bar);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 var(--gutter);
+  border-bottom: 1px solid var(--rule);
+  backdrop-filter: blur(6px);
+  background: color-mix(in srgb, var(--paper) 72%, transparent);
+}
+
+.mark {
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-decoration: none;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.nav {
+  display: flex;
+  gap: clamp(12px, 2.4vw, 32px);
+}
+
+.nav a,
+.status {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.nav a { transition: color 160ms ease; }
+.nav a:hover,
+.nav a:focus-visible { color: var(--ink); }
+
+.status::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  vertical-align: 1px;
+  background: var(--ink);
+  border-radius: 50%;
+}
+.status[data-state="live"]::before { animation: pulse 2.4s ease-in-out infinite; }
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+main {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Each panel is one viewport; copy hugs a column so the type field stays legible. */
+.panel {
+  min-height: 100svh;
+  padding: calc(var(--bar) + clamp(48px, 12vh, 140px)) var(--gutter) clamp(64px, 14vh, 160px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 560px;
+}
+
+.panel > * { pointer-events: auto; }
+
+.kicker {
+  margin: 0 0 22px;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--ink-soft);
+}
+
+h1, h2 {
+  margin: 0 0 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.06;
+  text-wrap: balance;
+}
+
+h1 { font-size: clamp(40px, 7.4vw, 88px); }
+h2 { font-size: clamp(28px, 4.4vw, 52px); }
+
+.lede {
+  margin: 0;
+  max-width: var(--measure);
+  color: var(--ink-soft);
+  font-size: clamp(14px, 1.15vw, 16px);
+}
+
+.scrollcue {
+  margin: 56px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  color: var(--ink-soft);
+}
+.scrollcue::after {
+  content: "";
+  display: block;
+  width: 1px;
+  height: 40px;
+  margin-top: 12px;
+  background: linear-gradient(var(--ink), transparent);
+}
+
+.specs {
+  margin: 40px 0 0;
+  display: grid;
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  max-width: 420px;
+}
+.specs > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  background: var(--paper);
+}
+.specs dt,
+.specs dd {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+}
+.specs dt { color: var(--ink-soft); }
+.specs dd { font-variant-numeric: tabular-nums; }
+
+.steps {
+  margin: 36px 0 0;
+  padding: 0;
+  list-style: none;
+  max-width: 420px;
+}
+.steps li {
+  display: flex;
+  gap: 16px;
+  padding: 11px 0;
+  border-top: 1px solid var(--rule);
+  font-size: 13px;
+}
+.steps li:last-child { border-bottom: 1px solid var(--rule); }
+.steps span {
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+}
+
+.cta {
+  margin-top: 36px;
+  align-self: flex-start;
+  padding: 14px 22px;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  transition: background 180ms ease, color 180ms ease;
+}
+.cta:hover,
+.cta:focus-visible {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.foot {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px var(--gutter);
+  border-top: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--paper) 72%, transparent);
+  backdrop-filter: blur(6px);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--ink-soft);
+}
+
+.noscript {
+  position: fixed;
+  inset: auto 0 50% 0;
+  z-index: 4;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .hint { display: none; }
+  .panel { max-width: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .status[data-state="live"]::before { animation: none; }
+}

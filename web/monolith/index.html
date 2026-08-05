@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONOLITH — 안주 3D 타입 랩</title>
+<meta name="description" content="모노크롬 복셀 타이포그래피. 한글·영문·한자를 3D 격자로 재구성하는 실험.">
+<link rel="stylesheet" href="./styles.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<canvas id="stage" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="bar">
+  <a class="mark" href="#top">MONOLITH</a>
+  <nav class="nav">
+    <a href="#work">WORK</a>
+    <a href="#process">PROCESS</a>
+    <a href="#contact">CONTACT</a>
+  </nav>
+  <span class="status" id="status">BOOTING</span>
+</header>
+
+<main>
+
+  <section class="panel hero" id="top" data-word="안주" data-latin="ANJU">
+    <p class="kicker">3D TYPE LAB / 001</p>
+    <h1>글자를<br>입체로<br>다시 짓다</h1>
+    <p class="lede">
+      한글·영문·한자를 픽셀로 분해한 뒤, 수천 개의 큐브 격자로 다시 세웁니다.
+      폰트 파일도 빌드 단계도 없이, 브라우저가 가진 글꼴 그대로.
+    </p>
+    <p class="scrollcue">SCROLL</p>
+  </section>
+
+  <section class="panel" id="work" data-word="격자" data-latin="GRID">
+    <p class="kicker">01 — WORK</p>
+    <h2>격자는 제약이 아니라 문법이다</h2>
+    <p class="lede">
+      3×3 셀 위에서 자소가 자리를 잡습니다. 잉크가 경계선에 정확히 닿을 때
+      비로소 타이포그래피는 구조가 됩니다.
+    </p>
+    <dl class="specs">
+      <div><dt>SAMPLING</dt><dd>캔버스 픽셀 → 인스턴스 격자</dd></div>
+      <div><dt>INSTANCES</dt><dd id="specCount">—</dd></div>
+      <div><dt>PALETTE</dt><dd>모노크롬 2색</dd></div>
+    </dl>
+  </section>
+
+  <section class="panel" id="process" data-word="系统" data-latin="SYSTEM">
+    <p class="kicker">02 — PROCESS</p>
+    <h2>측정하지 않은 것은<br>정렬되지 않는다</h2>
+    <p class="lede">
+      글리프의 실제 잉크 범위를 재고, 그 박스를 격자에 앉힙니다.
+      어드밴스 폭이 아니라 잉크가 기준입니다.
+    </p>
+    <ol class="steps">
+      <li><span>01</span> 오프스크린 캔버스에 글자를 그린다</li>
+      <li><span>02</span> 알파 채널을 훑어 점을 추출한다</li>
+      <li><span>03</span> 점을 인스턴스 큐브로 치환한다</li>
+      <li><span>04</span> 다음 단어로 좌표를 보간한다</li>
+    </ol>
+  </section>
+
+  <section class="panel" id="contact" data-word="接続" data-latin="CONNECT">
+    <p class="kicker">03 — CONTACT</p>
+    <h2>같이 만들까요</h2>
+    <p class="lede">실험 단계의 코드입니다. 마음껏 뜯어 쓰세요.</p>
+    <a class="cta" href="https://github.com/tomlim2/anju" target="_blank" rel="noreferrer noopener">
+      GITHUB / TOMLIM2 · ANJU
+    </a>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <span>ANJU · WEB / MONOLITH</span>
+  <span class="hint">드래그로 회전 · 스크롤로 전환</span>
+</footer>
+
+<noscript>
+  <p class="noscript">이 페이지는 WebGL과 자바스크립트가 필요합니다.</p>
+</noscript>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
