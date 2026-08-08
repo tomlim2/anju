@@ -238,6 +238,18 @@ grid token은 `data-token-placement="position-only"`, `data-token-scale="1"`을 
 
 캘리브레이션 주의: `barcode`(0.152), `table`(0.097), `wave`(0.030)의 `p95Coverage`는 실측값이지만, 패턴 계열은 전부 0.3 균일 플레이스홀더다. 실측 도구(`scripts/generate-motif-calibration.mjs`)는 f4ee7bd에서 삭제되어 현재 재캘리브레이션이 불가능하다.
 
+### 신규 그래픽 토큰 체크리스트
+
+새 motif를 만들 때 반복해서 밟았던 함정들이다. drawer를 추가하기 전에 확인한다.
+
+- **원형은 절대 늘리지 않는다.** 원·링·방사형 도형은 block 종횡비를 따라 타원이 되면 안 된다. 반경은 `Math.min(width, height)` 기준 정원으로 잡고, 남는 공간은 `anchoredCircleCenter(width, height, maxRadius, anchor)`로 block 정렬을 따른다. 이 규칙을 놓친 사례가 세 번 있었다(radial-halftone, burst-rings, wave 링 — wave는 별도 렌더 분기라 첫 수정에서 누락).
+- **주 획은 `thick`(2.4)을 쓴다.** 헤어라인(1.2)만으로 그린 선 motif는 900 weight typography 옆에서 옅은 텍스처로 읽힌다. 보조선·안내선만 `thin`으로 남긴다. stroke는 반드시 `line()`/`polyline()`/`strokeTokenAttrs()` 헬퍼로 만들어야 `ACTIVE_STROKE_WEIGHTS` 전역 검증을 통과한다.
+- **최소 블록(1x1)에서 읽히는지 확인한다.** motif는 component 축소까지 겹쳐 실표시가 원본의 절반 이하가 된다. 촘촘한 반복 무늬는 step에 px 바닥을 두어 회색 덩어리로 뭉개지지 않게 한다(graph-paper가 step 바닥 없이 들어갔다가 18px 바닥을 추가한 사례). 성긴 점·가는 스파이크(stipple, beta-flash류)는 축소에서 소멸하기 쉬운 약체 구조다.
+- **풀블리드 선과 장식 요소를 같은 축에 두지 않는다.** crosshair의 사분점 틱을 십자선 축 위에 두면 십자선에 먹혀 보이지 않는다 — 대각선으로 옮겨 해결했다. block을 관통하는 선이 있으면 다른 요소는 그 축을 피해 배치한다.
+- **무늬는 seedBits에서만 뽑는다.** drawer의 4번째 인자 random은 `mulberry32(seedBits)`다. `Math.random()`이나 시간 기반 값을 쓰면 같은 candidate가 렌더마다 다른 무늬를 그려 finalizer의 재측정과 어긋난다.
+- **배경 모드와 시각 어휘가 겹치면 배타를 등록한다.** motif가 배경 모드와 같은 무늬 계열이면(격자↔graph, 주사선↔scanlines) 같은 component에서 겹쳤을 때 레이어가 아니라 렌더 오류처럼 읽힌다. `BACKGROUND_MOTIF_CONFLICTS`에 쌍을 추가한다.
+- **등록은 `PATTERN_MOTIFS` 한 줄이면 끝난다.** id·graphicType·tag(세 계열 중 하나)·factor를 채우면 캘리브레이션(0.3 플레이스홀더), 후보 생성, 검증이 자동으로 따라온다. drawer 서명은 `(group, width, height, random, anchor)`이며 anchor는 원형 계열만 쓴다.
+
 ## Background Token System
 
 배경 토큰은 component 안에서 종이 위, block layout 아래에 깔리는 저밀도 레이어다. `background-tokens.js`가 정의하고 `mountAttempt()`가 `backgroundNode` 옵션으로 주입한다. 배경은 component 전체가 아니라 block grid가 앉는 safe box 안에만 그려서, 괘선이 frame이나 corner mark 밖으로 나가지 않는다.
