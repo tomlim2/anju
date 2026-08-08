@@ -160,9 +160,13 @@ margin은 Component, grid block, primitive 내부 요소 사이의 거리다. pa
 - `small`: 조직명, revision badge, serial, barcode caption, table cell, port/code caption처럼 보조 정보다. 한 행에 최대 두 개까지 올 수 있고, 기본 조합은 `left` + `right`다. 작은 토큰이 하나만 있을 때는 `left`, `center`, `right` 중 하나에 단독 배치할 수 있다.
 - `medium`: `STATUS`, `REPORT`, section label, subtitle, short command처럼 중간 위계의 정보다. 한 행에 하나만 둔다. 좌/중/우 정렬은 가능하지만 같은 행에서 다른 토큰과 나란히 놓지 않는다.
 - `large`: main display word, 큰 숫자, date/time display처럼 한 component에서 시선을 먼저 받는 정보다. 무조건 한 행에 하나만 두고, medium과 명확히 구분되도록 크게 운용한다. 큰 토큰 행에는 small badge나 caption을 얹지 않는다.
-- `xlarge`: 64px 특대 토큰이다. greeting과 `STATUS`처럼 강한 display typography에 쓴다.
-- `xxlarge`: 128px 초대형 토큰이다. 짧은 한글 hero, `ACCESS`, `OUTPUT`, 독립 한자처럼 화면을 장악해야 하는 typography에만 쓴다.
+- `xlarge`: 98px 특대 토큰이다. greeting과 `STATUS`처럼 강한 display typography에 쓴다.
+- `xxlarge`: 158px 초대형 토큰이다. 짧은 한글 hero, `ACCESS`, `OUTPUT`, 독립 한자처럼 화면을 장악해야 하는 typography에만 쓴다.
 - `xxxlarge`: 256px 최대 typography 토큰이다. `2x3`, `3x2` block 전용이며 기존 xxlarge hero token의 크기 변형만 사용하고 새 문자를 만들지 않는다.
+
+실제 px 사다리는 황금비 기반이다. 256을 앵커로 각 단계를 φ(1.618)로 나눠 `medium 37`, `large 60`, `xlarge 98`, `xxlarge 158`, `xxxlarge 256`을 얻는다. `small 16`만 φ 진행에서 분리한 캡션 바닥인데, φ값(23)에서는 미세 텍스트가 1x1 block에 들어가지 못해 mounted attempt를 소모하기 때문이다. 코드에서는 `TYPOGRAPHY_INTRINSIC_FONT_SIZES`가 이 값을 정의한다.
+
+function이 `sign`인 typography(state/result/greeting 태그)는 크기 상한이 `medium`이다. 후보의 `supportedSizes`가 large 이상을 포함하지 않으며, block의 시작 크기가 상한보다 크면 `lexicalBlockDecision`이 거부 대신 상한으로 클램프한다. 따라서 상태어가 hero block에 앉아도 medium으로 렌더되고, STATUS recipe는 "medium hero + small support"의 저밀도 구성이 된다. finalizer의 크기 fallback도 같은 상한을 적용한다.
 
 작은 요소만 같은 행에서 왼쪽 정렬과 오른쪽 정렬을 동시에 가질 수 있다. 중간/큰/특대/초대형 요소는 행을 독점한다.
 
@@ -210,6 +214,39 @@ block origin과 footprint가 alignment를 결정한다. 왼쪽·오른쪽 경계
 
 grid token은 `data-token-placement="position-only"`, `data-token-scale="1"`을 유지하며 `scale()` transform을 사용하지 않는다. `1x3` typography에서 한글·한자는 글자별 `glyph-sideways-stack`만 사용하고, 영문과 숫자형 fallback만 `whole-rotate`를 사용한다.
 
+## Graphic Token System
+
+그래픽 토큰(motif)은 `motifs.js`의 `motifRegistry`에 18종을 등록하고, `motifTags`로 세 계열로 묶는다.
+
+- `signal-plot-look` (8): `wave`(동심 링), `radial-halftone`, `scanlines`, `speed-lines`, `chevron`, `focus-lines`, `burst-rings`, `tick-ring`. 신호·에너지 계열.
+- `data-table-look` (5): `table`(해치), `halftone-meter`, `dot-matrix`, `stipple`, `graph-paper`. 데이터 질감 계열.
+- `machine-readable-mark` (5): `barcode`, `perspective`, `beta-flash`, `crosshair`, `dimension`. 기계 판독·제도 계열.
+
+`crosshair`, `dimension`, `graph-paper`, `tick-ring` 4종은 제도(製圖) 계열로, `REV-A`·`CFG-01` 어휘의 기술문서 톤과 맞춘다.
+
+배치 규칙:
+
+- recipe당 motif slot은 1개이며 `optionalPresenceRate: 0.7`로 존재를 결정한다.
+- `allowGraphic: true`인 `1x1`, `1x2`, `2x1` block에만 앉고, 6셀 이상 block은 금지한다.
+- 렌더된 점유율(`mountedOccupancyScore`)이 hero보다 낮아야 하며, 같은 component 안에서 같은 motif는 1회만 쓴다(`uniqueWithinComponent`).
+- 크기는 `medium`, `large` 2단이고 function은 전부 `data`, prominence 상한은 `secondary`다.
+- 무늬는 `seedBits`에서 결정되므로 같은 candidate는 항상 같은 무늬를 그린다.
+
+원형 규칙: 원 모양 motif(`wave` 링, `radial-halftone`, `burst-rings`, `crosshair`, `tick-ring`)는 block 종횡비를 따라 늘어나지 않는다. 반경은 항상 짧은 변 기준의 정원이고, 남는 공간에서는 block의 edge-derived 정렬(`alignment`/`verticalAlignment`)을 따라 앵커된다. `dimension`의 행 스택도 같은 세로 정렬을 따른다. 비원형 패턴은 block 전체를 채운다.
+
+잉크 무게: 선으로 그리는 motif(`speed-lines`, `chevron`, `focus-lines`, `perspective` 방사선, `wave` 링, `burst-rings`, `crosshair` 원, `tick-ring` major)는 `thick`(2.4)을 쓴다. 헤어라인만으로는 검정 typography 옆에서 옅은 텍스처로 읽히기 때문이다. `ACTIVE_STROKE_WEIGHTS`는 `thin`, `thick` 두 단계다.
+
+캘리브레이션 주의: `barcode`(0.152), `table`(0.097), `wave`(0.030)의 `p95Coverage`는 실측값이지만, 패턴 계열은 전부 0.3 균일 플레이스홀더다. 실측 도구(`scripts/generate-motif-calibration.mjs`)는 f4ee7bd에서 삭제되어 현재 재캘리브레이션이 불가능하다.
+
+## Background Token System
+
+배경 토큰은 component 안에서 종이 위, block layout 아래에 깔리는 저밀도 레이어다. `background-tokens.js`가 정의하고 `mountAttempt()`가 `backgroundNode` 옵션으로 주입한다. 배경은 component 전체가 아니라 block grid가 앉는 safe box 안에만 그려서, 괘선이 frame이나 corner mark 밖으로 나가지 않는다.
+
+- 모드는 `none`, `graph`(성긴 격자), `dot-grid`(점 격자), `scanlines`(0.45 불투명 주사선), `golden-rules`(양축 황금분할 괘선 2쌍) 5종이다. `componentBackgroundModes` 배열의 반복 횟수가 가중치이며 `none`이 3/7으로 가장 무겁다.
+- 선택은 `layoutSeed`에서 `keyedPick`으로 결정한다. 같은 seed는 같은 배경을 갖지만, `generationInput`에는 포함되지 않는 display 레이어이므로 plan 정체성(planId)에는 영향을 주지 않는다.
+- 밀도는 전경 motif보다 한참 낮게 유지한다. typography가 항상 위에 오고, 렌더는 공유 svg 헬퍼만 사용해 전역 stroke 검증을 통과한다. `currentColor` 기반이라 dark tone에 자동 대응한다.
+- 배경이 mounted motif와 같은 시각 어휘를 반복하면 레이어가 아니라 렌더 오류처럼 읽힌다. `BACKGROUND_MOTIF_CONFLICTS`(`graph`↔`motif.graph-paper`, `scanlines`↔`motif.scanlines`)에 걸리면 배경을 `none`으로 대체한다.
+
 ## Typography System
 
 현재 폰트 시스템은 SUIT를 메인 타입페이스로 두고 영문·한글·generator UI에 사용한다. 한자·중국어에는 Glow Sans SC, mono에는 Noto Sans Mono를 사용한다. 코드에서는 `TYPEFACES`와 `resolveTypeface()`로 관리한다.
@@ -237,9 +274,9 @@ weight token은 `normal`, `bold` 두 개만 허용한다. `bold`는 function이 
 
 semantic production generator는 61개 command 번역 세트 중 정확히 1개를 layout ranking 전에 선택하고, 그 세트의 한글·영어·중국어 표현 중 하나를 action hero로 사용한다. 따라서 글자 길이와 fit margin이 서로 다른 action 의미 사이의 당첨률을 바꾸지 않는다. `QUICK` 1개 세트는 별도 modifier 후보로 활성화되며 단독 hero나 `actsOn` 주체가 될 수 없다. Command의 `optionalPresenceRate: 0.25` support slot에서만 `modifies` 관계를 충족할 때 표시하며, 입력별 deterministic presence decision을 레이아웃 여유 점수보다 먼저 적용한다. 전체 62개 세트는 production-visible이지만 hero command 61개와 support modifier 1개의 역할은 분리한다.
 
-`actionTypographyTokens()`는 세 언어를 모두 `content / action-keyword` typography로 만든다. 일반 display에서는 `large 32px`, `3x1`·`1x3` block에서는 `xxlarge 128px`, `3x2`·`2x3` block에서는 `xxxlarge 256px` 후보로 사용한다. block에는 고유 크기로 들어가는 번역만 선택하며 fitting이나 scale 변형은 하지 않는다.
+`actionTypographyTokens()`는 세 언어를 모두 `content / action-keyword` typography로 만든다. 일반 display에서는 `large 60px`, `3x1`·`1x3` block에서는 `xxlarge 158px`, `3x2`·`2x3` block에서는 `xxxlarge 256px` 후보로 사용한다. block에는 고유 크기로 들어가는 번역만 선택하며 fitting이나 scale 변형은 하지 않는다.
 
-HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를 `sign / status-code` 보조 typography로 사용한다. `small 8px`와 `medium 16px`에 분산하고 일반 block의 sign 후보로만 조합한다. `STATUS` 역시 `medium / sign / status`로만 사용하며 hero 후보에는 넣지 않는다.
+HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를 `sign / status-code` 보조 typography로 사용한다. `small 16px`와 `medium 37px`에 분산하고 일반 block의 sign 후보로만 조합한다. `STATUS` 역시 `medium / sign / status`로만 사용하며 hero 후보에는 넣지 않는다.
 
 웹에서 보기 위해 SUIT 2.0.5의 Regular/Bold/Heavy, Glow Sans SC 0.93 Normal 폭의 Regular/Bold/Heavy 서브셋, 그리고 `Noto Sans`, `Noto Sans KR`, `Noto Sans SC`, `Noto Sans Mono`를 `fonts/` 안에 로컬 파일로 번들한다. SUIT와 Glow Sans SC는 SIL Open Font License 1.1이며 라이선스 원문을 각각 `fonts/SUIT-OFL.txt`, `fonts/GlowSansSC-OFL.txt`에 함께 둔다. Glow Sans SC 서브셋은 소스가 실제로 쓰는 CJK 141자(중국어 token, 인사말, 날짜·숫자 문자, `林`, `〇` 포함) 전체를 담아 폴백 없이 그린다. HTML은 `./fonts/fonts.css`를 import하고, SVG export도 같은 CSS 파일을 절대 URL로 넣는다. 외부 폰트 요청을 기다리지 않도록 하기 위한 결정이며, 앱은 로컬 폰트의 400/700/900 weight가 붙은 뒤 첫 렌더가 되도록 `document.fonts.load()`와 `document.fonts.ready`를 짧게 기다린다.
 
@@ -273,15 +310,15 @@ HTTP 상태 코드는 `200`, `301`, `400`, `403`, `404`, `500`, `503`의 7개를
 - `Random`을 누르면 새 canonical `GenerationInput`으로 recipe, lexical/motif materialization, layout과 plan selection이 deterministic하게 다시 생성된다.
 - Component에는 typography hero가 정확히 하나 있고 primary prominence도 정확히 하나다. graphic motif는 hero/primary가 될 수 없다.
 - duplicate visible text/translation set/motif와 required relation, barcode/pseudo-QR uniqueness는 tuple/plan validator가 mount 전에 검사한다.
-- `2x2` block은 graphic을 허용하지 않고 `xxlarge 128px` 또는 `xxxlarge 256px`에서 시작한다. block의 현재 origin에 따른 left/center/right와 top/middle/bottom anchor 및 inset은 변경하지 않는다. 요청 크기가 넘치면 다음 작은 token size로 단계적으로 내린다.
-- `3x1`, `1x3` block은 graphic을 허용하지 않고 `xxlarge 128px`에서 시작한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor에 배치한다. `1x3` 영문은 단어 전체를 오른쪽 90도로 회전하고, 한글·한자는 각 glyph를 오른쪽으로 돌려 위에서 아래로 쌓는 세로 조판만 사용한다. 같은 component 안에서 동일한 `3x1` 또는 `1x3` token 중 하나가 작은 size로 내려가면 같은 footprint의 나머지도 가장 작은 실제 size로 통일한다.
+- `2x2` block은 graphic을 허용하지 않고 `xxlarge 158px` 또는 `xxxlarge 256px`에서 시작한다. block의 현재 origin에 따른 left/center/right와 top/middle/bottom anchor 및 inset은 변경하지 않는다. 요청 크기가 넘치면 다음 작은 token size로 단계적으로 내린다.
+- `3x1`, `1x3` block은 graphic을 허용하지 않고 `xxlarge 158px`에서 시작한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor에 배치한다. `1x3` 영문은 단어 전체를 오른쪽 90도로 회전하고, 한글·한자는 각 glyph를 오른쪽으로 돌려 위에서 아래로 쌓는 세로 조판만 사용한다. 같은 component 안에서 동일한 `3x1` 또는 `1x3` token 중 하나가 작은 size로 내려가면 같은 footprint의 나머지도 가장 작은 실제 size로 통일한다.
 - `2x3`, `3x2` block은 graphic을 허용하지 않고 `xxxlarge 256px`에서 시작한다. block 위치와 관계없이 horizontal `center`, vertical `middle` anchor를 유지하며, 넘치면 다음 작은 token size로 내린다.
 - block이 3열 전체를 차지하면 가로 center, 왼쪽 경계에 닿으면 left, 오른쪽 경계에 닿으면 right anchor를 사용한다.
 - block이 3행 전체를 차지하면 세로 middle, 위 경계에 닿으면 top, 아래 경계에 닿으면 bottom anchor를 사용한다.
 - block은 token renderer에 `x`, `y`, `align`, `verticalAlign` position만 넘긴다. block 크기로 token geometry를 다시 계산하지 않는다.
 - 각 block 외곽은 현재 조합을 알아볼 수 있도록 `thin` stroke와 낮은 opacity로 표시한다. `Grid` 토글로 outline만 숨길 수 있으며 block과 token 배치는 유지한다.
 - typography token은 `typographyToken()`의 `intrinsic.fontSize`, graphic token은 `token-library.js`의 graphic descriptor가 가진 `intrinsic.width/height`를 그대로 사용한다.
-- typography intrinsic size는 `small 8px`, `medium 16px`, `large 32px`, `xlarge 64px`, `xxlarge 128px`, `xxxlarge 256px`를 사용한다.
+- typography intrinsic size는 `small 16px`, `medium 37px`, `large 60px`, `xlarge 98px`, `xxlarge 158px`, `xxxlarge 256px`를 사용한다. 상단 앵커 φ 사다리이며 `small`만 캡션 바닥으로 분리한다.
 - size별 예외나 개별 font size override는 허용하지 않는다.
 - barcode, pseudo-QR, table, wave를 포함한 graphic token은 `medium` 또는 `large`만 사용한다. `large`는 `medium`의 가로세로를 같은 비율로 1.5배 확장한다.
 - barcode 숫자 typography는 barcode 크기와 관계없이 항상 `small 8px`를 사용한다. 별도 fitting이나 다른 크기는 허용하지 않는다.
@@ -530,3 +567,13 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-11: `3x2`, `2x3` block의 xxxlarge token anchor를 center/middle로 고정.
 - 2026-07-12: 제공된 action text에서 62개 고유 표현을 추출하고 한글·영어·중국어 대응 token을 large, xxlarge, xxxlarge display 후보에 추가.
 - 2026-07-25: Glow Sans SC 서브셋에 `系统`·`拒绝访问`·`网络` 등 20자가 빠져 시스템 폰트로 폴백되며 두께가 불균일하던 문제를, v0.93 Normal 원본에서 소스 CJK 141자 전체로 재서브셋해 해결.
+- 2026-07-30: 플랜 랭킹을 요청 크기 대신 예측 실측 크기(`predictedActualSize`) 기준으로 변경하고 강등 단계 페널티를 추가. 크기 강등 34%→13%, hero xxxlarge 달성률 20%→87%.
+- 2026-07-30: f4ee7bd에서 도구만 삭제되고 런타임에 남아 있던 planning-certificate 게이트를 마저 제거. config의 planning-complexity 한도는 유지.
+- 2026-07-30: 컨트롤 바가 세로 비율에서 상단 block을 가리던 문제를 해결. 바의 실제 rect로 가림 영역을 계산해 displayBox만 조정하며 플랜 기하는 불변.
+- 2026-07-30: typography 크기 사다리를 256 상단 앵커의 φ(1.618) 간격(16/37/60/98/158/256)으로 변경. `small`은 캡션 바닥으로 φ 진행에서 분리하고 `MAX_MOUNTED_RANKED_ATTEMPTS`를 8→16으로 올려 hierarchy 막다른 플랜 연속 시 빈 캔버스를 방지.
+- 2026-07-30: 세로형 `1x2` block에 회전 정책을 부여(라틴 whole-rotate, CJK glyph-sideways-stack).
+- 2026-07-30: 선 기반 motif 주 획에 `thick`(2.4)을 적용하고 `ACTIVE_STROKE_WEIGHTS`에 `thick`을 활성화.
+- 2026-07-30: 원형 motif(`radial-halftone`, `burst-rings`, `wave` 링)를 block 종횡비로 늘리지 않고 짧은 변 기준 정원으로 통일. 남는 공간에서는 block의 edge-derived 정렬을 따라 앵커.
+- 2026-07-30: function `sign`(state/result/greeting) typography에 `medium` 크기 상한을 도입. hero block 시작 크기는 후보 상한으로 클램프해 STATUS recipe를 저밀도 구성으로 유지.
+- 2026-07-30: 제도 계열 motif 4종(`crosshair`, `dimension`, `graph-paper`, `tick-ring`)을 추가해 그래픽 토큰을 18종으로 확장.
+- 2026-07-30: Background Token System 도입. `none`/`graph`/`dot-grid`/`scanlines`/`golden-rules` 5모드를 layoutSeed로 결정하고 종이와 block layout 사이에 렌더. motif와의 시각 어휘 충돌 시 `none`으로 대체.
