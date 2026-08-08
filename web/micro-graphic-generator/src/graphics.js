@@ -383,11 +383,10 @@ const MOTIF_PATTERN_DRAWERS = {
       }
     }
   },
-  "radial-halftone"(group, width, height) {
-    // Circular motifs keep a true circle centred in the block: the ring span
-    // follows the short side only, never stretching to the block's aspect.
-    const cx = width / 2;
-    const cy = height / 2;
+  "radial-halftone"(group, width, height, random, anchor) {
+    // Circular motifs keep a true circle: the ring span follows the short side
+    // only, never stretching to the block's aspect.
+    const { cx, cy } = anchoredCircleCenter(width, height, Math.min(width, height) / 2, anchor);
     const rings = 9;
     const step = Math.min(width, height) / 2 / rings;
     // outermost dot edge must land on the short-side boundary, not its centre
@@ -509,12 +508,11 @@ const MOTIF_PATTERN_DRAWERS = {
       ]));
     }
   },
-  "burst-rings"(group, width, height, random) {
-    // Rings stay true circles centred in the block, sized by the short side.
-    const cx = width / 2;
-    const cy = height / 2;
+  "burst-rings"(group, width, height, random, anchor) {
+    // Rings stay true circles sized by the short side.
     const rings = 4;
     const maxRadius = Math.min(width, height) / 2;
+    const { cx, cy } = anchoredCircleCenter(width, height, maxRadius, anchor);
     for (let i = 1; i <= rings; i += 1) {
       const ringRadius = maxRadius * i / rings;
       const spikes = 16 + i * 4;
@@ -530,7 +528,19 @@ const MOTIF_PATTERN_DRAWERS = {
   }
 };
 
-export function renderCompositionMotif(group, intrinsicBounds, renderParams) {
+// Circular motifs shrink to the block's short side, so in elongated blocks the
+// leftover space matters: the ring center follows the block's edge-derived
+// alignment (same rule typography uses) instead of always floating centered.
+function anchoredCircleCenter(width, height, maxRadius, anchor) {
+  const alignment = anchor?.alignment || "center";
+  const vertical = anchor?.verticalAlignment || "middle";
+  return {
+    cx: alignment === "left" ? maxRadius : alignment === "right" ? width - maxRadius : width / 2,
+    cy: vertical === "top" ? maxRadius : vertical === "bottom" ? height - maxRadius : height / 2
+  };
+}
+
+export function renderCompositionMotif(group, intrinsicBounds, renderParams, anchor = null) {
   const width = intrinsicBounds.width;
   const height = intrinsicBounds.height;
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
@@ -565,23 +575,23 @@ export function renderCompositionMotif(group, intrinsicBounds, renderParams) {
     }
     group.appendChild(rect(0, 0, width, height));
   } else if (renderParams.graphicType === "wave") {
-    // concentric rings drawn to the block ratio (ellipses fill the whole box)
-    const centerX = width / 2;
-    const centerY = height / 2;
+    // Concentric rings stay true circles sized by the short side — circular
+    // motifs never stretch to the block's aspect.
     const rings = Math.max(3, renderParams.pointCount >> 1);
+    const maxRadius = Math.min(width, height) / 2;
+    const { cx, cy } = anchoredCircleCenter(width, height, maxRadius, anchor);
     for (let index = 1; index <= rings; index += 1) {
-      group.appendChild(make("ellipse", {
-        cx: centerX,
-        cy: centerY,
-        rx: (width / 2) * index / rings,
-        ry: (height / 2) * index / rings,
+      group.appendChild(make("circle", {
+        cx,
+        cy,
+        r: maxRadius * index / rings,
         fill: "none",
         stroke: "currentColor",
-        ...strokeTokenAttrs("thin")
+        ...strokeTokenAttrs("thick")
       }));
     }
   } else if (MOTIF_PATTERN_DRAWERS[renderParams.graphicType]) {
-    MOTIF_PATTERN_DRAWERS[renderParams.graphicType](group, width, height, mulberry32(seedFromBits(renderParams.seedBits)));
+    MOTIF_PATTERN_DRAWERS[renderParams.graphicType](group, width, height, mulberry32(seedFromBits(renderParams.seedBits)), anchor);
   } else {
     throw new Error(`Unknown composition motif: ${renderParams.graphicType}`);
   }

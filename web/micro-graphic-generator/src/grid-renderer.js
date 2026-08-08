@@ -281,7 +281,10 @@ export function createGridRenderer() {
       "data-token-actual-size": block.requestedSize,
       transform: baseTransform
     });
-    renderCompositionMotif(token, fillBounds, slot.renderParams);
+    renderCompositionMotif(token, fillBounds, slot.renderParams, {
+      alignment: block.alignment,
+      verticalAlignment: block.verticalAlignment
+    });
     return token;
   }
 
