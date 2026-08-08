@@ -244,6 +244,7 @@ grid token은 `data-token-placement="position-only"`, `data-token-scale="1"`을 
 
 - 모드는 `none`, `graph`(성긴 격자), `dot-grid`(점 격자), `scanlines`(0.45 불투명 주사선), `golden-rules`(양축 황금분할 괘선 2쌍) 5종이다. `componentBackgroundModes` 배열의 반복 횟수가 가중치이며 `none`이 3/7으로 가장 무겁다.
 - 선택은 `layoutSeed`에서 `keyedPick`으로 결정한다. 같은 seed는 같은 배경을 갖지만, `generationInput`에는 포함되지 않는 display 레이어이므로 plan 정체성(planId)에는 영향을 주지 않는다.
+- 무늬 파라미터도 seed로 결정한다. `deriveSeed(…, "background-params")`의 random source가 간격(step ±20~50%)과 위상(phase 0~step)을 뽑고, `dot-grid`는 점 반경(1.3~2.2), `golden-rules`는 참여 축(both/vertical/horizontal, both 2/4 가중)을 뽑는다. φ 분할 위치 자체는 변주하지 않는다 — 그 위치가 모드의 존재 이유다. 변주 범위는 좁게 유지해 레이어가 "반복을 멈추되 시끄러워지지 않게" 한다.
 - 밀도는 전경 motif보다 한참 낮게 유지한다. typography가 항상 위에 오고, 렌더는 공유 svg 헬퍼만 사용해 전역 stroke 검증을 통과한다. `currentColor` 기반이라 dark tone에 자동 대응한다.
 - 배경이 mounted motif와 같은 시각 어휘를 반복하면 레이어가 아니라 렌더 오류처럼 읽힌다. `BACKGROUND_MOTIF_CONFLICTS`(`graph`↔`motif.graph-paper`, `scanlines`↔`motif.scanlines`)에 걸리면 배경을 `none`으로 대체한다.
 
@@ -577,3 +578,4 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-30: function `sign`(state/result/greeting) typography에 `medium` 크기 상한을 도입. hero block 시작 크기는 후보 상한으로 클램프해 STATUS recipe를 저밀도 구성으로 유지.
 - 2026-07-30: 제도 계열 motif 4종(`crosshair`, `dimension`, `graph-paper`, `tick-ring`)을 추가해 그래픽 토큰을 18종으로 확장.
 - 2026-07-30: Background Token System 도입. `none`/`graph`/`dot-grid`/`scanlines`/`golden-rules` 5모드를 layoutSeed로 결정하고 종이와 block layout 사이에 렌더. motif와의 시각 어휘 충돌 시 `none`으로 대체.
+- 2026-07-30: 배경 토큰 무늬를 seed 파라미터화. 간격·위상·점 반경·golden-rules 참여 축을 background-params seed로 변주.

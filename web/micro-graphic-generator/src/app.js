@@ -327,6 +327,7 @@ function createGenerationContext(width, height) {
   const template = forcedTemplate || keyedPick(componentTemplates, layoutSeed, "ratio");
   const borderMode = keyedPick(componentBorderModes, layoutSeed, "borderMode");
   const backgroundMode = keyedPick(componentBackgroundModes, layoutSeed, "backgroundMode");
+  const backgroundSeed = deriveSeed(layoutSeedInput, "background-params");
   const canonicalSize = canonicalComponentSize(template);
   const safeBox = canonicalSafeBox(canonicalSize.width, canonicalSize.height);
   // Display placement only — the fixed controls bar overlays the canvas, so the
@@ -416,6 +417,7 @@ function createGenerationContext(width, height) {
     template,
     borderMode,
     backgroundMode,
+    backgroundSeed,
     canonicalSize: Object.freeze(canonicalSize),
     displayBox: Object.freeze(displayBox),
     generationInput,
@@ -523,7 +525,8 @@ function mountAttempt(plan, envelope, generation) {
     ),
     backgroundNode: renderComponentBackground(
       effectiveBackgroundMode(generation.backgroundMode, plan),
-      generation.generationInput.safeBox
+      generation.generationInput.safeBox,
+      createRandomSource(generation.backgroundSeed)
     )
   });
   art.appendChild(component);
