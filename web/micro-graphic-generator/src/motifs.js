@@ -16,7 +16,12 @@ const PATTERN_MOTIFS = [
   { id: "motif.perspective", graphicType: "perspective", tag: "machine-readable-mark", factor: 0.7 },
   { id: "motif.focus-lines", graphicType: "focus-lines", tag: "signal-plot-look", factor: 0.75 },
   { id: "motif.beta-flash", graphicType: "beta-flash", tag: "machine-readable-mark", factor: 0.8 },
-  { id: "motif.burst-rings", graphicType: "burst-rings", tag: "signal-plot-look", factor: 0.7 }
+  { id: "motif.burst-rings", graphicType: "burst-rings", tag: "signal-plot-look", factor: 0.7 },
+  // technical-drawing family: matches the REV-A / CFG-01 documentation voice
+  { id: "motif.crosshair", graphicType: "crosshair", tag: "machine-readable-mark", factor: 0.7 },
+  { id: "motif.dimension", graphicType: "dimension", tag: "machine-readable-mark", factor: 0.7 },
+  { id: "motif.graph-paper", graphicType: "graph-paper", tag: "data-table-look", factor: 0.7 },
+  { id: "motif.tick-ring", graphicType: "tick-ring", tag: "signal-plot-look", factor: 0.7 }
 ];
 const PATTERN_TYPES = new Set(PATTERN_MOTIFS.map(motif => motif.graphicType));
 

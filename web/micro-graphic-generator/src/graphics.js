@@ -370,6 +370,88 @@ function rayEdge(cx, cy, angle, width, height) {
 
 // Manga-terminal pattern drawers; each fills the (0,0,width,height) block box.
 const MOTIF_PATTERN_DRAWERS = {
+  crosshair(group, width, height, random, anchor) {
+    // registration mark: circle + full-bleed cross + quadrant ticks
+    const maxRadius = Math.min(width, height) / 2;
+    const { cx, cy } = anchoredCircleCenter(width, height, maxRadius, anchor);
+    const radius = maxRadius * 0.82;
+    group.appendChild(make("circle", {
+      cx, cy, r: radius, fill: "none", stroke: "currentColor", ...strokeTokenAttrs("thick")
+    }));
+    group.appendChild(motifDot(cx, cy, Math.max(2, radius * 0.08)));
+    group.appendChild(line(0, cy, width, cy));
+    group.appendChild(line(cx, 0, cx, height));
+    // quadrant ticks sit on the diagonals — on the axes they would be
+    // swallowed by the full-bleed cross lines
+    const diagonal = Math.SQRT1_2;
+    const reach = Math.max(maxRadius - radius, radius * 0.12);
+    for (const [dx, dy] of [[diagonal, diagonal], [diagonal, -diagonal], [-diagonal, diagonal], [-diagonal, -diagonal]]) {
+      group.appendChild(line(
+        cx + dx * radius, cy + dy * radius,
+        cx + dx * (radius + reach), cy + dy * (radius + reach),
+        { strokeWeight: "thick" }
+      ));
+    }
+  },
+  dimension(group, width, height, random, anchor) {
+    // stacked dimension rows: extension ticks, measure line, solid arrowheads.
+    // The stack is an annotation, so it hugs the block's derived vertical
+    // alignment (bottom row of the grid -> bottom of the block) instead of
+    // spreading across the full height.
+    const rows = random() < 0.5 ? 2 : 3;
+    const band = Math.min(height * 0.42, rows * 34);
+    const vertical = anchor?.verticalAlignment || "middle";
+    const bandTop = vertical === "top"
+      ? height * 0.08
+      : vertical === "bottom" ? height - band - height * 0.08 : (height - band) / 2;
+    for (let row = 0; row < rows; row += 1) {
+      const y = bandTop + band * (row + 0.5) / rows;
+      const x0 = width * (0.04 + random() * 0.14);
+      const x1 = width * (0.96 - random() * 0.14);
+      const ext = Math.min(height * 0.09, 12);
+      const barb = Math.min((x1 - x0) * 0.12, 11);
+      group.appendChild(line(x0, y, x1, y));
+      group.appendChild(line(x0, y - ext, x0, y + ext, { strokeWeight: "thick" }));
+      group.appendChild(line(x1, y - ext, x1, y + ext, { strokeWeight: "thick" }));
+      group.appendChild(fillPolygon([[x0, y], [x0 + barb, y - barb * 0.38], [x0 + barb, y + barb * 0.38]]));
+      group.appendChild(fillPolygon([[x1, y], [x1 - barb, y - barb * 0.38], [x1 - barb, y + barb * 0.38]]));
+    }
+  },
+  "graph-paper"(group, width, height) {
+    // grid with a heavier line every fourth step; the step floor keeps small
+    // blocks from collapsing into a grey mass
+    const step = Math.max(18, Math.min(width, height) / 8);
+    let index = 0;
+    for (let x = 0; x <= width + 0.5; x += step, index += 1) {
+      group.appendChild(line(Math.min(x, width), 0, Math.min(x, width), height,
+        { strokeWeight: index % 4 === 0 ? "thick" : "thin" }));
+    }
+    index = 0;
+    for (let y = 0; y <= height + 0.5; y += step, index += 1) {
+      group.appendChild(line(0, Math.min(y, height), width, Math.min(y, height),
+        { strokeWeight: index % 4 === 0 ? "thick" : "thin" }));
+    }
+  },
+  "tick-ring"(group, width, height, random, anchor) {
+    // instrument bezel: radial ticks between two radii, majors every quarter
+    const maxRadius = Math.min(width, height) / 2;
+    const { cx, cy } = anchoredCircleCenter(width, height, maxRadius, anchor);
+    const outer = maxRadius * 0.96;
+    const count = random() < 0.5 ? 36 : 48;
+    group.appendChild(make("circle", {
+      cx, cy, r: outer * 0.7, fill: "none", stroke: "currentColor", ...strokeTokenAttrs("thick")
+    }));
+    for (let tick = 0; tick < count; tick += 1) {
+      const angle = tick / count * Math.PI * 2;
+      const major = tick % (count / 4) === 0;
+      const inner = outer * (major ? 0.74 : 0.85);
+      group.appendChild(line(
+        cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner,
+        cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer,
+        { strokeWeight: major ? "thick" : "thin" }
+      ));
+    }
+  },
   "halftone-meter"(group, width, height) {
     const cols = Math.max(8, Math.round(width / 22));
     const rows = Math.max(4, Math.round(height / 22));
