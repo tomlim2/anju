@@ -61,6 +61,7 @@ import {
   validateMotifRenderParams
 } from "./motifs.js";
 import { applyAnalyticSnap, renderAlignmentDemo, renderMockupGallery } from "./mockup-gallery.js";
+import { componentBackgroundModes, renderComponentBackground } from "./background-tokens.js";
 import { createRandomSource, deriveSeed, keyedValue } from "./random.js";
 import { line, make, rect, svgStructuralFingerprint, textNode } from "./svg.js";
 import {
@@ -325,6 +326,7 @@ function createGenerationContext(width, height) {
     : null;
   const template = forcedTemplate || keyedPick(componentTemplates, layoutSeed, "ratio");
   const borderMode = keyedPick(componentBorderModes, layoutSeed, "borderMode");
+  const backgroundMode = keyedPick(componentBackgroundModes, layoutSeed, "backgroundMode");
   const canonicalSize = canonicalComponentSize(template);
   const safeBox = canonicalSafeBox(canonicalSize.width, canonicalSize.height);
   // Display placement only — the fixed controls bar overlays the canvas, so the
@@ -413,6 +415,7 @@ function createGenerationContext(width, height) {
   return Object.freeze({
     template,
     borderMode,
+    backgroundMode,
     canonicalSize: Object.freeze(canonicalSize),
     displayBox: Object.freeze(displayBox),
     generationInput,
@@ -487,6 +490,21 @@ function backgroundNode(width, height) {
   });
 }
 
+// A background must not repeat the visual vocabulary of a mounted motif —
+// e.g. a graph background behind a graph-paper token reads as a rendering
+// glitch, not a layer. Colliding pairs fall back to a bare plate.
+const BACKGROUND_MOTIF_CONFLICTS = {
+  graph: "motif.graph-paper",
+  scanlines: "motif.scanlines"
+};
+
+function effectiveBackgroundMode(mode, plan) {
+  const conflictingMotifId = BACKGROUND_MOTIF_CONFLICTS[mode];
+  return conflictingMotifId && plan.slots.some(slot => slot.motifId === conflictingMotifId)
+    ? "none"
+    : mode;
+}
+
 function mountAttempt(plan, envelope, generation) {
   const existing = art.querySelector("svg[data-component]");
   if (existing) existing.remove();
@@ -502,6 +520,10 @@ function mountAttempt(plan, envelope, generation) {
       generation.canonicalSize.width,
       generation.canonicalSize.height,
       generation.borderMode
+    ),
+    backgroundNode: renderComponentBackground(
+      effectiveBackgroundMode(generation.backgroundMode, plan),
+      generation.generationInput.safeBox
     )
   });
   art.appendChild(component);

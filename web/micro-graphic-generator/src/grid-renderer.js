@@ -327,6 +327,8 @@ export function createGridRenderer() {
         : renderMotifToken(record.block, record.slot, record.candidate, record.geometry));
       layout.appendChild(group);
     }
+    // background sits under the block layout, border above it
+    if (options.backgroundNode) component.appendChild(options.backgroundNode);
     component.appendChild(layout);
     if (options.borderNode) component.appendChild(options.borderNode);
     return component;
