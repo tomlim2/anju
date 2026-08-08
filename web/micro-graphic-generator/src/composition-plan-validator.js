@@ -813,12 +813,19 @@ function lexicalBlockDecision({
   startSize,
   heroDecision = null
 }) {
-  if (!candidate.supportedSizes.includes(startSize)) return null;
+  // A candidate whose size ceiling sits below the block's start size clamps
+  // down to its own ceiling instead of rejecting — sign words (capped below
+  // large) can still anchor hero blocks, just at their quiet size.
+  const candidateCeiling = candidate.supportedSizes[candidate.supportedSizes.length - 1];
+  const clampedStartSize = SIZE_RANK.get(startSize) > SIZE_RANK.get(candidateCeiling)
+    ? candidateCeiling
+    : startSize;
+  if (!candidate.supportedSizes.includes(clampedStartSize)) return null;
   const orientationMode = orientationFor(candidate, policy);
-  const supportedFallbackSizes = fallbackSizes(startSize, candidate);
+  const supportedFallbackSizes = fallbackSizes(clampedStartSize, candidate);
   if (!supportedFallbackSizes.length) return null;
   const requestedVariant = context.deriveTypographyTokenVariant(candidate, {
-    requestedSize: startSize,
+    requestedSize: clampedStartSize,
     footprint: layoutBlock.footprint,
     compositionRole: slot.definition.compositionRole
   });

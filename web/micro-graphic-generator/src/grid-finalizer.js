@@ -197,7 +197,13 @@ export function createGridFinalizer({ renderTypographyAtSize, setTokenNudge }) {
   }
 
   function fitLexicalState(state, component) {
+    // Sign-function words may never render at large or above; the planner caps
+    // them via candidate.supportedSizes, but this fallback walk starts from the
+    // block's requested size and must apply the same ceiling itself.
+    const signCapped = state.token?.getAttribute("data-token-function") === "sign";
+    const largeIndex = DESIGN_TOKEN_SIZE_ORDER.indexOf("large");
     for (const size of compositionTypographyFallbackSizes(state.block.requestedSize)) {
+      if (signCapped && SIZE_RANK.get(size) >= largeIndex) continue;
       if (renderLexicalStateAt(state, size, component)) return true;
     }
     return false;

@@ -281,6 +281,13 @@ function lexicalCandidateForUse(use, vocabularyVersion, translationSetId) {
   const candidateId = canonicalInstanceKey === null
     ? tokenFamilyId
     : `${tokenFamilyId}:${hashCanonical(canonicalInstanceKey)}`;
+  const tokenFunction = compositionTokenFunction(use);
+  // Sign-function words (state/result/greeting) may never reach large or
+  // above: they speak in a quiet 400 voice, and capping their size keeps a
+  // status word from dominating a composition it cannot carry in weight.
+  const supportedSizes = tokenFunction === "sign"
+    ? DESIGN_TOKEN_SIZE_ORDER.slice(0, DESIGN_TOKEN_SIZE_ORDER.indexOf("large"))
+    : [...DESIGN_TOKEN_SIZE_ORDER];
   return Object.freeze({
     sourceKind: "lexical",
     vocabularyVersion,
@@ -288,7 +295,7 @@ function lexicalCandidateForUse(use, vocabularyVersion, translationSetId) {
     tokenFamilyId,
     materializationOrdinal,
     materializationKey,
-    supportedSizes: Object.freeze([...DESIGN_TOKEN_SIZE_ORDER]),
+    supportedSizes: Object.freeze(supportedSizes),
     visibleText: use.text,
     normalizedVisibleText: normalizedVisibleText(use.text),
     lexicalUseId: use.id,
@@ -297,7 +304,7 @@ function lexicalCandidateForUse(use, vocabularyVersion, translationSetId) {
     language: use.language,
     script: use.script,
     typeface: use.typeface,
-    tokenFunction: compositionTokenFunction(use),
+    tokenFunction,
     tokenRole: compositionTokenRole(use),
     instanceKey: canonicalInstanceKey,
     phrasePackId: use.phrasePackId,
