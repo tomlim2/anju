@@ -15,12 +15,13 @@ export const componentBackgroundModes = Object.freeze([
   "graph", "dot-grid", "scanlines", "golden-rules"
 ]);
 
-// box is the component's safe box: the background stays inside the block
-// grid's bounds instead of bleeding to the component edge, so its lines end
-// where the composition ends. `random` is a seeded source derived from the
-// generation's layout seed — spacing and phase vary per seed, but the same
-// seed always draws the same background. Variation ranges are narrow on
-// purpose: the layer should stop repeating itself, not get louder.
+// box is the full component box, not the block grid's safe box: backgrounds
+// ignore grid padding and bleed to the component edge so they read as the
+// paper's own texture rather than as a composition element. `random` is a
+// seeded source derived from the generation's layout seed — spacing varies
+// per seed, but the same seed always draws the same background. Variation
+// ranges are narrow on purpose: the layer should stop repeating itself, not
+// get louder.
 export function renderComponentBackground(mode, box, random) {
   if (mode === "none") return null;
   const { x: left, y: top, width, height } = box;
@@ -28,25 +29,43 @@ export function renderComponentBackground(mode, box, random) {
   const bottom = top + height;
   const group = make("g", { "data-component-background": mode });
   if (mode === "graph") {
+    // Centre-origin lattice: lines sit symmetrically at ±step/2, ±3·step/2, …
+    // from the component centre, so one grid square is always centred on the
+    // component. Phase variation would break this symmetry, so graph varies
+    // only its step.
     const step = Math.max(44, (Math.min(width, height) / 8) * random.range(0.8, 1.45));
-    const phaseX = random.range(0, step);
-    const phaseY = random.range(0, step);
-    for (let x = left + phaseX; x < right; x += step) group.appendChild(line(x, top, x, bottom));
-    for (let y = top + phaseY; y < bottom; y += step) group.appendChild(line(left, y, right, y));
+    const centerX = left + width / 2;
+    const centerY = top + height / 2;
+    for (let x = centerX - step / 2; x > left; x -= step) group.appendChild(line(x, top, x, bottom));
+    for (let x = centerX + step / 2; x < right; x += step) group.appendChild(line(x, top, x, bottom));
+    for (let y = centerY - step / 2; y > top; y -= step) group.appendChild(line(left, y, right, y));
+    for (let y = centerY + step / 2; y < bottom; y += step) group.appendChild(line(left, y, right, y));
   } else if (mode === "dot-grid") {
+    // Centre-origin like graph: dots sit at ±step/2, ±3·step/2, … so four
+    // dots always frame a square centred on the component.
     const step = Math.max(50, (Math.min(width, height) / 7) * random.range(0.8, 1.5));
-    const phaseX = random.range(0, step);
-    const phaseY = random.range(0, step);
     const radius = random.range(1.3, 2.2);
-    for (let x = left + phaseX; x < right; x += step) {
-      for (let y = top + phaseY; y < bottom; y += step) {
+    const centerX = left + width / 2;
+    const centerY = top + height / 2;
+    const xs = [];
+    for (let x = centerX - step / 2; x > left; x -= step) xs.push(x);
+    for (let x = centerX + step / 2; x < right; x += step) xs.push(x);
+    const ys = [];
+    for (let y = centerY - step / 2; y > top; y -= step) ys.push(y);
+    for (let y = centerY + step / 2; y < bottom; y += step) ys.push(y);
+    for (const x of xs) {
+      for (const y of ys) {
         group.appendChild(make("circle", { cx: x, cy: y, r: radius, fill: "currentColor" }));
       }
     }
   } else if (mode === "scanlines") {
+    // Centre-origin: the middle band straddles the component centre.
     const step = Math.max(32, (height / 14) * random.range(0.75, 1.5));
-    const phase = random.range(0, step);
-    for (let y = top + phase; y < bottom; y += step) {
+    const centerY = top + height / 2;
+    for (let y = centerY - step / 2; y > top; y -= step) {
+      group.appendChild(line(left, y, right, y, { opacity: 0.45 }));
+    }
+    for (let y = centerY + step / 2; y < bottom; y += step) {
       group.appendChild(line(left, y, right, y, { opacity: 0.45 }));
     }
   } else if (mode === "golden-rules") {

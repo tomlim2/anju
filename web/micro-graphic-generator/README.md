@@ -252,11 +252,12 @@ grid token은 `data-token-placement="position-only"`, `data-token-scale="1"`을 
 
 ## Background Token System
 
-배경 토큰은 component 안에서 종이 위, block layout 아래에 깔리는 저밀도 레이어다. `background-tokens.js`가 정의하고 `mountAttempt()`가 `backgroundNode` 옵션으로 주입한다. 배경은 component 전체가 아니라 block grid가 앉는 safe box 안에만 그려서, 괘선이 frame이나 corner mark 밖으로 나가지 않는다.
+배경 토큰은 component 안에서 종이 위, block layout 아래에 깔리는 저밀도 레이어다. `background-tokens.js`가 정의하고 `mountAttempt()`가 `backgroundNode` 옵션으로 주입한다. 모든 모드가 block grid의 padding을 무시하고 component 가장자리까지 풀블리드한다 — 끝까지 가면 구성 요소가 아니라 종이 자체의 결로 읽히기 때문이다. 따라서 배경 렌더는 safe box가 아니라 canonical component box를 기준으로 한다.
 
 - 모드는 `none`, `graph`(성긴 격자), `dot-grid`(점 격자), `scanlines`(0.45 불투명 주사선), `golden-rules`(양축 황금분할 괘선 2쌍) 5종이다. `componentBackgroundModes` 배열의 반복 횟수가 가중치이며 `none`이 3/7으로 가장 무겁다.
 - 선택은 `layoutSeed`에서 `keyedPick`으로 결정한다. 같은 seed는 같은 배경을 갖지만, `generationInput`에는 포함되지 않는 display 레이어이므로 plan 정체성(planId)에는 영향을 주지 않는다.
-- 무늬 파라미터도 seed로 결정한다. `deriveSeed(…, "background-params")`의 random source가 간격(step ±20~50%)과 위상(phase 0~step)을 뽑고, `dot-grid`는 점 반경(1.3~2.2), `golden-rules`는 참여 축(both/vertical/horizontal, both 2/4 가중)을 뽑는다. φ 분할 위치 자체는 변주하지 않는다 — 그 위치가 모드의 존재 이유다. 변주 범위는 좁게 유지해 레이어가 "반복을 멈추되 시끄러워지지 않게" 한다.
+- 무늬 파라미터도 seed로 결정한다. `deriveSeed(…, "background-params")`의 random source가 간격(step ±20~50%)을 뽑고, `dot-grid`는 점 반경(1.3~2.2), `golden-rules`는 참여 축(both/vertical/horizontal, both 2/4 가중)을 뽑는다. φ 분할 위치 자체는 변주하지 않는다 — 그 위치가 모드의 존재 이유다. 변주 범위는 좁게 유지해 레이어가 "반복을 멈추되 시끄러워지지 않게" 한다.
+- 반복 무늬는 전부 중앙 영점이다. `graph`는 격자선을, `dot-grid`는 점을 component 중심에서 ±step/2, ±3·step/2, …로 대칭 배치해 정사각형 셀 하나(점 4개가 만드는 사각형)가 항상 component 중앙에 오고, `scanlines`는 중앙 밴드가 중심선에 걸린다. 위상 변주는 이 대칭과 양립할 수 없어 제거했고 간격만 변주한다. `golden-rules`는 반복 무늬가 아니라 φ 고정 위치라 해당 없다.
 - 밀도는 전경 motif보다 한참 낮게 유지한다. typography가 항상 위에 오고, 렌더는 공유 svg 헬퍼만 사용해 전역 stroke 검증을 통과한다. `currentColor` 기반이라 dark tone에 자동 대응한다.
 - 배경이 mounted motif와 같은 시각 어휘를 반복하면 레이어가 아니라 렌더 오류처럼 읽힌다. `BACKGROUND_MOTIF_CONFLICTS`(`graph`↔`motif.graph-paper`, `scanlines`↔`motif.scanlines`)에 걸리면 배경을 `none`으로 대체한다.
 

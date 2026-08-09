@@ -525,7 +525,7 @@ function mountAttempt(plan, envelope, generation) {
     ),
     backgroundNode: renderComponentBackground(
       effectiveBackgroundMode(generation.backgroundMode, plan),
-      generation.generationInput.safeBox,
+      { x: 0, y: 0, width: generation.canonicalSize.width, height: generation.canonicalSize.height },
       createRandomSource(generation.backgroundSeed)
     )
   });
