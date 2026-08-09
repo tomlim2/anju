@@ -252,7 +252,19 @@ grid token은 `data-token-placement="position-only"`, `data-token-scale="1"`을 
 
 ## Background Token System
 
-배경 토큰은 component 안에서 종이 위, block layout 아래에 깔리는 저밀도 레이어다. `background-tokens.js`가 정의하고 `mountAttempt()`가 `backgroundNode` 옵션으로 주입한다. 모든 모드가 block grid의 padding을 무시하고 component 가장자리까지 풀블리드한다 — 끝까지 가면 구성 요소가 아니라 종이 자체의 결로 읽히기 때문이다. 따라서 배경 렌더는 safe box가 아니라 canonical component box를 기준으로 한다.
+배경 토큰은 종이 위, 콘텐츠 아래에 깔리는 저밀도 레이어다. `background-tokens.js`가 정의하며 scope가 둘이다.
+
+- **component 배경**: plate 전체 뒤에 깔리는 풀블리드 필드다. `mountAttempt()`가 `backgroundNode` 옵션으로 주입하고, block grid의 padding을 무시해 component 가장자리까지 나간다 — 끝까지 가야 구성 요소가 아니라 종이 자체의 결로 읽히기 때문이다. 렌더 기준은 safe box가 아니라 canonical component box다.
+- **grid cell 배경**: block 하나의 cell 안에만 그려지는 필드다. 해당 block의 token 아래에 들어가서, 종이가 아니라 구성의 한 panel이 음영 처리된 것으로 읽힌다. `cellBackgroundFor` 옵션으로 주입한다.
+
+두 scope는 같은 패턴 렌더러를 공유하고 box만 다르다. cell scope는 `scale` 0.5로 그려 작은 box에서도 몇 가닥 선이 아니라 질감으로 읽히게 한다.
+
+cell 배경 규칙:
+
+- 모드는 `none`/`graph`/`dot-grid`/`scanlines`이며 `golden-rules`는 제외한다 — φ 분할은 plate 전체가 있어야 읽힌다. `none`이 5/8로 component scope보다 무겁다. 음영 panel은 강한 액센트라서 드물어야 한다.
+- 한 component에서 최대 한 block만 음영 처리한다. 필드 두 개가 경쟁하면 액센트가 아니라 노이즈가 된다.
+- motif가 들어간 block은 제외한다. 패턴이 그 위의 graphic token과 싸우기 때문이다.
+- 선택은 component 배경과 같은 `background-params` seed에서 뽑으므로, 같은 seed는 항상 같은 panel을 같은 무늬로 음영 처리한다.
 
 - 모드는 `none`, `graph`(성긴 격자), `dot-grid`(점 격자), `scanlines`(0.45 불투명 주사선), `golden-rules`(양축 황금분할 괘선 2쌍) 5종이다. `componentBackgroundModes` 배열의 반복 횟수가 가중치이며 `none`이 3/7으로 가장 무겁다.
 - 선택은 `layoutSeed`에서 `keyedPick`으로 결정한다. 같은 seed는 같은 배경을 갖지만, `generationInput`에는 포함되지 않는 display 레이어이므로 plan 정체성(planId)에는 영향을 주지 않는다.
@@ -592,3 +604,5 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-30: 제도 계열 motif 4종(`crosshair`, `dimension`, `graph-paper`, `tick-ring`)을 추가해 그래픽 토큰을 18종으로 확장.
 - 2026-07-30: Background Token System 도입. `none`/`graph`/`dot-grid`/`scanlines`/`golden-rules` 5모드를 layoutSeed로 결정하고 종이와 block layout 사이에 렌더. motif와의 시각 어휘 충돌 시 `none`으로 대체.
 - 2026-07-30: 배경 토큰 무늬를 seed 파라미터화. 간격·위상·점 반경·golden-rules 참여 축을 background-params seed로 변주.
+- 2026-07-30: 배경 반복 무늬를 중앙 영점으로 바꾸고, 모든 모드가 component padding을 무시하고 풀블리드하도록 변경.
+- 2026-07-30: 배경 토큰을 component scope와 grid cell scope 둘로 분리. cell 배경은 block 하나의 cell만 음영 처리하며 component당 최대 1개, motif block 제외.

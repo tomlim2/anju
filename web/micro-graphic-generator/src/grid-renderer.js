@@ -322,6 +322,8 @@ export function createGridRenderer() {
       outline.setAttribute("data-grid-block-outline", record.block.id);
       outline.setAttribute("data-structural-exclude", "grid-overlay");
       group.appendChild(outline);
+      const cellBackground = options.cellBackgroundFor?.(record.block, record.geometry.outerBox);
+      if (cellBackground) group.appendChild(cellBackground);
       group.appendChild(record.candidate.sourceKind === "lexical"
         ? renderLexicalToken(record.block, record.slot, record.candidate, record.geometry)
         : renderMotifToken(record.block, record.slot, record.candidate, record.geometry));

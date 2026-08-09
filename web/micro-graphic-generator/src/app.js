@@ -61,7 +61,12 @@ import {
   validateMotifRenderParams
 } from "./motifs.js";
 import { applyAnalyticSnap, renderAlignmentDemo, renderMockupGallery } from "./mockup-gallery.js";
-import { componentBackgroundModes, renderComponentBackground } from "./background-tokens.js";
+import {
+  componentBackgroundModes,
+  gridCellBackgroundModes,
+  renderComponentBackground,
+  renderGridCellBackground
+} from "./background-tokens.js";
 import { createRandomSource, deriveSeed, keyedValue } from "./random.js";
 import { line, make, rect, svgStructuralFingerprint, textNode } from "./svg.js";
 import {
@@ -507,6 +512,25 @@ function effectiveBackgroundMode(mode, plan) {
     : mode;
 }
 
+// Cell backgrounds are picked per block from the generation's background
+// seed, so the same seed always shades the same panels. At most one block is
+// shaded: two competing fields read as noise rather than as an accent, and a
+// block already holding a motif is skipped so the pattern does not fight the
+// graphic token sitting on it.
+function cellBackgroundPainter(generation, plan) {
+  const motifSlotIds = new Set(
+    plan.slots.filter(slot => slot.sourceKind === "motif").map(slot => slot.id)
+  );
+  const eligible = plan.blocks.filter(block => !motifSlotIds.has(block.slotInstanceId));
+  if (!eligible.length) return null;
+  const chosen = keyedPick(eligible, generation.backgroundSeed, "cell-background-block");
+  const mode = keyedPick(gridCellBackgroundModes, generation.backgroundSeed, "cell-background-mode");
+  if (mode === "none") return null;
+  return (block, outerBox) => (block.slotInstanceId === chosen.slotInstanceId
+    ? renderGridCellBackground(mode, outerBox, createRandomSource(generation.backgroundSeed))
+    : null);
+}
+
 function mountAttempt(plan, envelope, generation) {
   const existing = art.querySelector("svg[data-component]");
   if (existing) existing.remove();
@@ -527,7 +551,8 @@ function mountAttempt(plan, envelope, generation) {
       effectiveBackgroundMode(generation.backgroundMode, plan),
       { x: 0, y: 0, width: generation.canonicalSize.width, height: generation.canonicalSize.height },
       createRandomSource(generation.backgroundSeed)
-    )
+    ),
+    cellBackgroundFor: cellBackgroundPainter(generation, plan)
   });
   art.appendChild(component);
   const finalizationReport = gridFinalizer.finalizeComposition(component, plan, envelope);
