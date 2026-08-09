@@ -28,6 +28,20 @@ export const gridCellBackgroundModes = Object.freeze([
   "graph", "dot-grid", "scanlines"
 ]);
 
+// Every mode is built from one of two marks. The two scopes must not draw
+// from the same family: dots behind dots (or lines behind lines) reads as one
+// misaligned field rather than as two deliberate layers.
+const BACKGROUND_MODE_FAMILIES = Object.freeze({
+  graph: "lines",
+  scanlines: "lines",
+  "golden-rules": "lines",
+  "dot-grid": "dots"
+});
+
+export function backgroundModeFamily(mode) {
+  return BACKGROUND_MODE_FAMILIES[mode] || null;
+}
+
 // Paints one pattern into `box`. Patterns are centre-origin: rows and columns
 // sit symmetrically at ±step/2, ±3·step/2, … from the box centre, so the box
 // always has a whole cell centred in it. Phase variation would break that
