@@ -22,7 +22,10 @@ const BACKGROUND_MODE_FAMILIES = Object.freeze({
   graph: "lines",
   scanlines: "lines",
   "golden-rules": "lines",
-  "dot-grid": "dots"
+  "dot-grid": "dots",
+  "dot-stagger": "dots",
+  "dot-fade": "dots",
+  "dot-concentric": "dots"
 });
 
 export function backgroundModeFamily(mode) {
@@ -43,15 +46,17 @@ function activeModes(pool) {
 
 // keyedPick draws uniformly, so repetition is the weighting.
 export const componentBackgroundModes = activeModes([
-  "none", "none", "none",
-  "graph", "dot-grid", "scanlines", "golden-rules"
+  "none", "none", "none", "none",
+  "graph", "scanlines", "golden-rules",
+  "dot-grid", "dot-stagger", "dot-fade", "dot-concentric"
 ]);
 
 // Cell scope leans heavier on "none": a shaded panel is a strong accent, and
 // golden-rules is excluded because φ sections need the full plate to read.
 export const gridCellBackgroundModes = activeModes([
-  "none", "none", "none", "none", "none",
-  "graph", "dot-grid", "scanlines"
+  "none", "none", "none", "none", "none", "none",
+  "graph", "scanlines",
+  "dot-grid", "dot-stagger", "dot-fade", "dot-concentric"
 ]);
 
 // Paints one pattern into `box`. Patterns are centre-origin: rows and columns
@@ -88,6 +93,78 @@ function paintBackgroundPattern(group, mode, box, random, scale = 1) {
     for (let y = centerY + step / 2; y < bottom; y += step) ys.push(y);
     for (const x of xs) {
       for (const y of ys) {
+        group.appendChild(make("circle", { cx: x, cy: y, r: radius, fill: "currentColor" }));
+      }
+    }
+  } else if (mode === "dot-stagger") {
+    // Brick lattice: alternate rows shift by half a step. Rows are indexed by
+    // their distance from the centre so mirrored rows share a parity and the
+    // field stays symmetric about the centre.
+    const step = Math.max(50 * scale, (Math.min(width, height) / 7) * random.range(0.8, 1.5));
+    const radius = random.range(1.3, 2.2) * (scale < 1 ? 0.8 : 1);
+    const centerX = left + width / 2;
+    const centerY = top + height / 2;
+    for (let index = 0; ; index += 1) {
+      const up = centerY - (index + 0.5) * step;
+      const down = centerY + (index + 0.5) * step;
+      const rows = [];
+      if (up > top) rows.push(up);
+      if (down < bottom) rows.push(down);
+      if (!rows.length) break;
+      const shift = index % 2 ? step / 2 : 0;
+      for (const y of rows) {
+        for (let x = centerX - step / 2 + shift; x > left; x -= step) {
+          group.appendChild(make("circle", { cx: x, cy: y, r: radius, fill: "currentColor" }));
+        }
+        for (let x = centerX + step / 2 + shift; x < right; x += step) {
+          group.appendChild(make("circle", { cx: x, cy: y, r: radius, fill: "currentColor" }));
+        }
+      }
+    }
+  } else if (mode === "dot-fade") {
+    // Halftone falloff on the centre-origin lattice: dot size ramps with
+    // distance from the centre, inward or outward by seed.
+    const step = Math.max(50 * scale, (Math.min(width, height) / 7) * random.range(0.8, 1.5));
+    const maxRadius = random.range(1.8, 2.8) * (scale < 1 ? 0.8 : 1);
+    const outward = random.chance(0.5);
+    const centerX = left + width / 2;
+    const centerY = top + height / 2;
+    const xs = [];
+    for (let x = centerX - step / 2; x > left; x -= step) xs.push(x);
+    for (let x = centerX + step / 2; x < right; x += step) xs.push(x);
+    const ys = [];
+    for (let y = centerY - step / 2; y > top; y -= step) ys.push(y);
+    for (let y = centerY + step / 2; y < bottom; y += step) ys.push(y);
+    for (const x of xs) {
+      for (const y of ys) {
+        const spread = Math.min(1, Math.hypot(
+          (x - centerX) / (width / 2),
+          (y - centerY) / (height / 2)
+        ) / Math.SQRT2);
+        const strength = outward ? spread : 1 - spread;
+        group.appendChild(make("circle", {
+          cx: x, cy: y, r: maxRadius * (0.18 + strength * 0.82), fill: "currentColor"
+        }));
+      }
+    }
+  } else if (mode === "dot-concentric") {
+    // Rings of dots stepping out from the centre — the centre-origin rule in
+    // polar form. Spacing along each ring matches the ring spacing. The step
+    // runs tighter than the square lattices: outer rings are clipped by the
+    // box corners, so a wide step leaves too few whole rings to read as one.
+    const step = Math.max(34 * scale, (Math.min(width, height) / 11) * random.range(0.85, 1.35));
+    const radius = random.range(1.3, 2.2) * (scale < 1 ? 0.8 : 1);
+    const centerX = left + width / 2;
+    const centerY = top + height / 2;
+    const reach = Math.hypot(width / 2, height / 2);
+    group.appendChild(make("circle", { cx: centerX, cy: centerY, r: radius, fill: "currentColor" }));
+    for (let ring = step / 2; ring < reach; ring += step) {
+      const count = Math.max(6, Math.round((2 * Math.PI * ring) / step));
+      for (let index = 0; index < count; index += 1) {
+        const angle = (index / count) * Math.PI * 2;
+        const x = centerX + Math.cos(angle) * ring;
+        const y = centerY + Math.sin(angle) * ring;
+        if (x < left || x > right || y < top || y > bottom) continue;
         group.appendChild(make("circle", { cx: x, cy: y, r: radius, fill: "currentColor" }));
       }
     }
