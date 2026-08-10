@@ -526,10 +526,14 @@ function cellBackgroundPainter(generation, plan, componentBackgroundMode) {
   );
   const eligible = plan.blocks.filter(block => !motifSlotIds.has(block.slotInstanceId));
   if (!eligible.length) return null;
+  // Only filter when the component actually drew a family. Filtering on a
+  // null family would strip "none" from the pool — the family of "none" is
+  // also null — and force every plate without a component field to carry a
+  // shaded panel.
   const usedFamily = backgroundModeFamily(componentBackgroundMode);
-  const availableModes = gridCellBackgroundModes.filter(
-    mode => backgroundModeFamily(mode) !== usedFamily
-  );
+  const availableModes = usedFamily
+    ? gridCellBackgroundModes.filter(mode => backgroundModeFamily(mode) !== usedFamily)
+    : gridCellBackgroundModes;
   if (!availableModes.length) return null;
   const chosen = keyedPick(eligible, generation.backgroundSeed, "cell-background-block");
   const mode = keyedPick(availableModes, generation.backgroundSeed, "cell-background-mode");

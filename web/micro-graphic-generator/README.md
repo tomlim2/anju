@@ -259,7 +259,9 @@ grid token은 `data-token-placement="position-only"`, `data-token-scale="1"`을 
 
 두 scope는 같은 패턴 렌더러를 공유하고 box만 다르다. cell scope는 `scale` 0.5로 그려 작은 box에서도 몇 가닥 선이 아니라 질감으로 읽히게 한다.
 
-모든 모드는 만들어지는 mark에 따라 두 계열 중 하나에 속한다. `dot-grid`가 `dots`, `graph`·`scanlines`·`golden-rules`가 `lines`다(`backgroundModeFamily()`). **두 scope는 같은 계열을 동시에 쓰지 않는다** — 점 위의 점, 선 위의 선은 의도된 두 레이어가 아니라 어긋난 하나의 필드로 읽히기 때문이다. component 배경이 `lines` 계열이면 cell 후보에서 `lines`를 전부 빼고 `none`/`dot-grid`만 남기며, `dots`면 반대로 거른다. 이때 기준은 raw pick이 아니라 motif 충돌 대체까지 반영한 실제 렌더 모드다 — 충돌로 component 배경이 `none`이 되면 cell은 어떤 계열이든 쓸 수 있다.
+모든 모드는 만들어지는 mark에 따라 두 계열 중 하나에 속한다. `dot-grid`가 `dots`, `graph`·`scanlines`·`golden-rules`가 `lines`다(`backgroundModeFamily()`).
+
+현재 `lines` 계열은 비활성이다. `ACTIVE_BACKGROUND_FAMILIES`가 `dots`만 담고 있어 `graph`·`scanlines`·`golden-rules`는 random pool에서 빠지며, 두 scope 모두 `none` 또는 `dot-grid`만 뽑는다. 렌더러와 계열 맵은 그대로 두었으므로 이 집합에 `"lines"`를 다시 넣으면 복구된다. **두 scope는 같은 계열을 동시에 쓰지 않는다** — 점 위의 점, 선 위의 선은 의도된 두 레이어가 아니라 어긋난 하나의 필드로 읽히기 때문이다. component 배경이 `lines` 계열이면 cell 후보에서 `lines`를 전부 빼고 `none`/`dot-grid`만 남기며, `dots`면 반대로 거른다. 이때 기준은 raw pick이 아니라 motif 충돌 대체까지 반영한 실제 렌더 모드다 — 충돌로 component 배경이 `none`이 되면 cell은 어떤 계열이든 쓸 수 있다.
 
 cell 배경 규칙:
 
@@ -609,3 +611,4 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-30: 배경 반복 무늬를 중앙 영점으로 바꾸고, 모든 모드가 component padding을 무시하고 풀블리드하도록 변경.
 - 2026-07-30: 배경 토큰을 component scope와 grid cell scope 둘로 분리. cell 배경은 block 하나의 cell만 음영 처리하며 component당 최대 1개, motif block 제외.
 - 2026-07-30: 배경 모드를 dots/lines 계열로 분류하고 두 scope가 같은 계열을 동시에 쓰지 않도록 배타 규칙 추가.
+- 2026-07-30: lines 계열 배경(graph·scanlines·golden-rules)을 ACTIVE_BACKGROUND_FAMILIES에서 제외해 random pool에서 비활성화. 계열 필터가 null 계열까지 걸러 component 배경이 none일 때 cell 배경이 항상 나오던 버그도 함께 수정.

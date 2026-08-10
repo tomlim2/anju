@@ -15,19 +15,6 @@ const PHI = (1 + Math.sqrt(5)) / 2;
 // panel of the composition being shaded rather than the sheet itself.
 // Both scopes share the same pattern renderers; only the box differs.
 
-// keyedPick draws uniformly, so repetition is the weighting.
-export const componentBackgroundModes = Object.freeze([
-  "none", "none", "none",
-  "graph", "dot-grid", "scanlines", "golden-rules"
-]);
-
-// Cell scope leans heavier on "none": a shaded panel is a strong accent, and
-// golden-rules is excluded because φ sections need the full plate to read.
-export const gridCellBackgroundModes = Object.freeze([
-  "none", "none", "none", "none", "none",
-  "graph", "dot-grid", "scanlines"
-]);
-
 // Every mode is built from one of two marks. The two scopes must not draw
 // from the same family: dots behind dots (or lines behind lines) reads as one
 // misaligned field rather than as two deliberate layers.
@@ -41,6 +28,31 @@ const BACKGROUND_MODE_FAMILIES = Object.freeze({
 export function backgroundModeFamily(mode) {
   return BACKGROUND_MODE_FAMILIES[mode] || null;
 }
+
+// Families the generator may draw from. The renderers and family map below
+// stay complete so a family can be switched back on by editing this set
+// alone — deactivation only removes modes from the random pools.
+const ACTIVE_BACKGROUND_FAMILIES = new Set(["dots"]);
+
+function activeModes(pool) {
+  return Object.freeze(pool.filter(mode => {
+    const family = backgroundModeFamily(mode);
+    return family === null || ACTIVE_BACKGROUND_FAMILIES.has(family);
+  }));
+}
+
+// keyedPick draws uniformly, so repetition is the weighting.
+export const componentBackgroundModes = activeModes([
+  "none", "none", "none",
+  "graph", "dot-grid", "scanlines", "golden-rules"
+]);
+
+// Cell scope leans heavier on "none": a shaded panel is a strong accent, and
+// golden-rules is excluded because φ sections need the full plate to read.
+export const gridCellBackgroundModes = activeModes([
+  "none", "none", "none", "none", "none",
+  "graph", "dot-grid", "scanlines"
+]);
 
 // Paints one pattern into `box`. Patterns are centre-origin: rows and columns
 // sit symmetrically at ±step/2, ±3·step/2, … from the box centre, so the box
