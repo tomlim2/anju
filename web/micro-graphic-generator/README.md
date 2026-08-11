@@ -618,3 +618,4 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-30: 배경 모드를 dots/lines 계열로 분류하고 두 scope가 같은 계열을 동시에 쓰지 않도록 배타 규칙 추가.
 - 2026-07-30: lines 계열 배경(graph·scanlines·golden-rules)을 ACTIVE_BACKGROUND_FAMILIES에서 제외해 random pool에서 비활성화. 계열 필터가 null 계열까지 걸러 component 배경이 none일 때 cell 배경이 항상 나오던 버그도 함께 수정.
 - 2026-07-30: dots 계열 배경을 4종으로 확장(dot-stagger, dot-fade, dot-concentric 추가). 전부 중앙 영점 규칙을 따른다.
+- 2026-07-30: sign 크기 클램프가 서로 다른 시작 크기를 같은 public block으로 수렴시켜 plan identity collision으로 생성이 통째로 실패하던 버그 수정. 동일 decision fingerprint를 viableDecisions 단계에서 dedupe.

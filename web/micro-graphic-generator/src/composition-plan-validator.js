@@ -1155,8 +1155,21 @@ export function deriveTupleLayoutFacts(tuple, context, instrumentation = null) {
       decision.blocks.find(block => block.slotInstanceId === slot.id)?.cells.length || 0
     ))
   ]));
-  const viableDecisions = preliminary.map(decision => {
+  // Distinct start sizes can land on the same public blocks — a candidate
+  // whose size ceiling sits below the block's start size clamps down, so two
+  // enumerated assignments collapse into one identical decision. Those are
+  // the same plan by definition (planId hashes exactly these blocks), so the
+  // duplicates are dropped here rather than colliding at plan identity.
+  const seenDecisionFingerprints = new Set();
+  const viableDecisions = [];
+  for (const decision of preliminary) {
     const blocks = decision.blocks.map(publicBlock);
+    const decisionFingerprint = hashCanonical({
+      tupleFingerprint: compatibility.tupleFingerprint,
+      blocks
+    });
+    if (seenDecisionFingerprints.has(decisionFingerprint)) continue;
+    seenDecisionFingerprints.add(decisionFingerprint);
     const rankFacts = derivePlanRankFacts({
       tuple,
       blocks,
@@ -1165,12 +1178,8 @@ export function deriveTupleLayoutFacts(tuple, context, instrumentation = null) {
       maxCellCountBySlotInstanceId,
       context
     });
-    return deepFreeze({
-      decisionFingerprint: hashCanonical({ tupleFingerprint: compatibility.tupleFingerprint, blocks }),
-      blocks,
-      rankFacts
-    });
-  });
+    viableDecisions.push(deepFreeze({ decisionFingerprint, blocks, rankFacts }));
+  }
   if (instrumentation) {
     instrumentation.retainedViableDecisions = Math.max(
       instrumentation.retainedViableDecisions,
