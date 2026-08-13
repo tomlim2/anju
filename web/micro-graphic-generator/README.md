@@ -280,6 +280,7 @@ cell 배경 규칙:
 - 무늬 파라미터도 seed로 결정한다. `deriveSeed(…, "background-params")`의 random source가 간격(step ±20~50%)을 뽑고, `dot-grid`는 점 반경(1.3~2.2), `golden-rules`는 참여 축(both/vertical/horizontal, both 2/4 가중)을 뽑는다. φ 분할 위치 자체는 변주하지 않는다 — 그 위치가 모드의 존재 이유다. 변주 범위는 좁게 유지해 레이어가 "반복을 멈추되 시끄러워지지 않게" 한다.
 - 반복 무늬는 전부 중앙 영점이다. `graph`는 격자선을, `dot-grid`는 점을 component 중심에서 ±step/2, ±3·step/2, …로 대칭 배치해 정사각형 셀 하나(점 4개가 만드는 사각형)가 항상 component 중앙에 오고, `scanlines`는 중앙 밴드가 중심선에 걸린다. 위상 변주는 이 대칭과 양립할 수 없어 제거했고 간격만 변주한다. `golden-rules`는 반복 무늬가 아니라 φ 고정 위치라 해당 없다.
 - 밀도는 전경 motif보다 한참 낮게 유지한다. typography가 항상 위에 오고, 렌더는 공유 svg 헬퍼만 사용해 전역 stroke 검증을 통과한다. `currentColor` 기반이라 dark tone에 자동 대응한다.
+- 감쇠는 개별 primitive가 아니라 layer group의 `opacity`가 담당한다. component scope 0.42, cell scope 0.5다. typography와 같은 색의 full-strength mark는 뒤에 깔린 글자와 경쟁한다 — 글자 속공간(counter)으로 비치는 점은 충돌로 읽히지만, 같은 점이 절반 강도면 종이 질감으로 읽힌다. cell scope가 조금 더 진한 것은 종이의 결이 아니라 한 panel에 의도적으로 준 액센트이기 때문이다.
 - 배경이 mounted motif와 같은 시각 어휘를 반복하면 레이어가 아니라 렌더 오류처럼 읽힌다. `BACKGROUND_MOTIF_CONFLICTS`(`graph`↔`motif.graph-paper`, `scanlines`↔`motif.scanlines`)에 걸리면 배경을 `none`으로 대체한다.
 
 ## Typography System
@@ -619,3 +620,4 @@ Change: add more wide Korean/English mixed title options.
 - 2026-07-30: lines 계열 배경(graph·scanlines·golden-rules)을 ACTIVE_BACKGROUND_FAMILIES에서 제외해 random pool에서 비활성화. 계열 필터가 null 계열까지 걸러 component 배경이 none일 때 cell 배경이 항상 나오던 버그도 함께 수정.
 - 2026-07-30: dots 계열 배경을 4종으로 확장(dot-stagger, dot-fade, dot-concentric 추가). 전부 중앙 영점 규칙을 따른다.
 - 2026-07-30: sign 크기 클램프가 서로 다른 시작 크기를 같은 public block으로 수렴시켜 plan identity collision으로 생성이 통째로 실패하던 버그 수정. 동일 decision fingerprint를 viableDecisions 단계에서 dedupe.
+- 2026-07-30: 배경 layer에 group opacity 감쇠 도입(component 0.42, cell 0.5). 배경 mark가 글자 속공간으로 비쳐 충돌로 읽히던 문제 해결.

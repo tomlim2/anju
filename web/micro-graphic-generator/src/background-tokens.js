@@ -9,6 +9,15 @@ import { line, make } from "./svg.js";
 
 const PHI = (1 + Math.sqrt(5)) / 2;
 
+// Backgrounds carry their attenuation on the layer, not on each primitive, so
+// every mode is equally subordinate to the ink above it. Full-strength marks
+// in the same colour as typography compete with the glyphs they sit behind —
+// a dot showing through a counter reads as a collision, the same dot at half
+// strength reads as paper texture. Cell scope runs a touch stronger: it is a
+// deliberate accent on one panel rather than the sheet's own grain.
+const COMPONENT_BACKGROUND_OPACITY = 0.42;
+const CELL_BACKGROUND_OPACITY = 0.5;
+
 // Background tokens come in two scopes. A component background is one
 // full-bleed field behind the whole plate — it reads as the paper's texture.
 // A grid-cell background fills a single block's cell, so it reads as one
@@ -172,10 +181,10 @@ function paintBackgroundPattern(group, mode, box, random, scale = 1) {
     const step = Math.max(32 * scale, (height / 14) * random.range(0.75, 1.5));
     const centerY = top + height / 2;
     for (let y = centerY - step / 2; y > top; y -= step) {
-      group.appendChild(line(left, y, right, y, { opacity: 0.45 }));
+      group.appendChild(line(left, y, right, y));
     }
     for (let y = centerY + step / 2; y < bottom; y += step) {
-      group.appendChild(line(left, y, right, y, { opacity: 0.45 }));
+      group.appendChild(line(left, y, right, y));
     }
   } else if (mode === "golden-rules") {
     // golden-section rules — structure without texture. The seed varies which
@@ -202,7 +211,10 @@ function paintBackgroundPattern(group, mode, box, random, scale = 1) {
 // grid padding so they read as the paper's own texture.
 export function renderComponentBackground(mode, box, random) {
   if (mode === "none") return null;
-  const group = make("g", { "data-component-background": mode });
+  const group = make("g", {
+    "data-component-background": mode,
+    opacity: COMPONENT_BACKGROUND_OPACITY
+  });
   paintBackgroundPattern(group, mode, box, random);
   return group;
 }
@@ -211,7 +223,10 @@ export function renderComponentBackground(mode, box, random) {
 // panel instead of the sheet. Drawn under that block's token.
 export function renderGridCellBackground(mode, box, random) {
   if (mode === "none") return null;
-  const group = make("g", { "data-cell-background": mode });
+  const group = make("g", {
+    "data-cell-background": mode,
+    opacity: CELL_BACKGROUND_OPACITY
+  });
   paintBackgroundPattern(group, mode, box, random, 0.5);
   return group;
 }
