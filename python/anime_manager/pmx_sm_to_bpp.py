@@ -1,4 +1,4 @@
-import unreal;
+import unreal
 
 def get_component_handles(blueprint_asset_path):
     subsystem = unreal.get_engine_subsystem(unreal.SubobjectDataSubsystem)

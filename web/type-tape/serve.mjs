@@ -9,7 +9,7 @@ import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL(".", import.meta.url));
-const PORT = Number(process.argv[2]) || 7200;
+const PORT = Number(process.argv[2]) || 7500;
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -40,5 +40,5 @@ createServer(async (request, response) => {
     response.end("not found");
   }
 }).listen(PORT, () => {
-  console.log(`monolith → http://127.0.0.1:${PORT}`);
+  console.log(`type-tape → http://127.0.0.1:${PORT}`);
 });

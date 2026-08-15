@@ -16,6 +16,5 @@
 
 ## 알려진 문제
 
-- `reset_git.bat` — 내용이 `git resest --hard`로, `reset` 오타 때문에 실행되지 않는다.
 - `config_git.bat` — 빈 파일이다.
 - `redirector_headless.bat` — 엔진·프로젝트 경로(`D:\unreal\base\UE_5.3`, `E:\CINEVStudio`)가 하드코딩돼 있다.

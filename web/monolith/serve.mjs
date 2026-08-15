@@ -9,7 +9,7 @@ import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL(".", import.meta.url));
-const PORT = Number(process.argv[2]) || 7200;
+const PORT = Number(process.argv[2]) || 7400;
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",

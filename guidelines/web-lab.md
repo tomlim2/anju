@@ -48,12 +48,12 @@ three.js는 번들하지 않고 importmap으로 받는다. **버전을 고정한
 | 랩 | 포트 |
 | --- | --- |
 | micro-graphic-generator | 7100 |
-| cel-lab | 7200 ⚠ |
-| monolith | 7200 ⚠ |
-| type-tape | 7200 ⚠ |
+| cel-lab | 7200 |
 | menagerie | 7300 |
+| monolith | 7400 |
+| type-tape | 7500 |
 
-새 랩은 **7400부터** 쓴다. 위 세 개가 겹치는 건 복사하면서 안 고친 것이다.
+새 랩은 **7600부터** 쓴다. 랩을 복사해서 시작했다면 포트와 시작 로그 문구를 반드시 고친다.
 
 ## 실행
 
@@ -84,6 +84,4 @@ importmap의 bare specifier(`three`)에는 붙이지 않는다. 상대 경로(`.
 
 ## 알려진 문제
 
-- `cel-lab`, `monolith`, `type-tape`의 `serve.mjs`가 전부 포트 7200이고, 셋 다 시작 로그에
-  `monolith`를 출력한다. 복사하면서 안 고친 흔적이다
 - `web/index.html`은 랩 목록이 아니다. 어느 랩과도 무관한 Git 브랜치 스위처 스텁이며 동작하지 않는다

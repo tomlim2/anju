@@ -21,6 +21,6 @@ micro-graphic-generator는 실행 계약이 [`micro-graphic-generator/tests/laun
 
 ## 주의
 
-- 각 랩의 `serve.mjs`는 기본 포트가 7200으로 같다(menagerie만 7300). 두 랩을 동시에 띄우려면 포트를 인자로 넘긴다.
+- 랩마다 포트가 다르다. 7100 micro-graphic-generator / 7200 cel-lab / 7300 menagerie / 7400 monolith / 7500 type-tape.
 - micro-graphic-generator의 테스트는 Node **22.12.0** 고정을 요구한다(`assertRuntimeConformance`).
 다른 버전에서는 테스트가 실행 전에 막힌다.

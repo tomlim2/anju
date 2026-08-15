@@ -40,5 +40,5 @@ createServer(async (request, response) => {
     response.end("not found");
   }
 }).listen(PORT, () => {
-  console.log(`monolith → http://127.0.0.1:${PORT}`);
+  console.log(`cel-lab → http://127.0.0.1:${PORT}`);
 });

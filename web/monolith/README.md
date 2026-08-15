@@ -10,7 +10,7 @@
 node web/monolith/serve.mjs
 ```
 
-`http://127.0.0.1:7200`. ES 모듈이라 `index.html`을 파일로 직접 열면 동작하지
+`http://127.0.0.1:7400`. ES 모듈이라 `index.html`을 파일로 직접 열면 동작하지
 않는다. three.js는 importmap으로 CDN에서 받는다 (빌드 단계 없음).
 
 ## 구조
