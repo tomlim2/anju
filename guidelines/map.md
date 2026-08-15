@@ -83,6 +83,9 @@ CINEVStudio 레포의 Git/LFS/브랜치 운영. 같은 용도가 실행 플랫�
 
 - 프로젝트 개요·컨벤션·워크플로는? → [`index.md`](index.md)
 - 폴더 생성·이동·삭제 규칙은? → [`folder-rules.md`](folder-rules.md)
+- UE Python 모듈은 어떻게 쓰나? → [`python.md`](python.md)
+- 새 웹 랩은 어떻게 만드나? → [`web-lab.md`](web-lab.md)
+- 셸 스크립트 규칙은? → [`shell.md`](shell.md)
 - 이 색인은? → [`map.md`](map.md)
 
 ---

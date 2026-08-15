@@ -8,6 +8,9 @@
 | --- | --- |
 | [map.md](map.md) | "X는 어디에 있나" 위치 색인. 파일을 찾을 때는 여기부터 |
 | [folder-rules.md](folder-rules.md) | 폴더 생성·이동·삭제 규칙 |
+| [python.md](python.md) | UE Python 모듈 작성법 |
+| [web-lab.md](web-lab.md) | 새 웹 랩 만드는 법 |
+| [shell.md](shell.md) | bat/ps1/sh 규칙 |
 
 각 최상위 폴더에는 `README.md`가 있고, 첫 줄에 **UE 관련 여부**를 적어 둔다.
 
@@ -69,6 +72,7 @@ guidelines/                   # 작업 규칙 문서
 - **모듈 독립성**: 모듈 간 의존 금지. 각 모듈은 단독 동작
 - **커밋**: `type(scope): message` (예: `feat(creator): add auto source patching`)
 - **폴더**: [folder-rules.md](folder-rules.md) 참조
+- **작성법**: [python.md](python.md) · [web-lab.md](web-lab.md) · [shell.md](shell.md)
 
 ## GUI Work
 
