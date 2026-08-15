@@ -10,4 +10,4 @@
 ## 상태
 
 **폐기 후보.** 마지막 갱신 2024-11-07 이후 아무도 쓰지 않았고, 참조하는 코드도 없다.
-지우려면 [`../guideline/folder-rules.md`](../guideline/folder-rules.md) 6장 절차를 따른다.
+지우려면 [`../guidelines/folder-rules.md`](../guidelines/folder-rules.md) 6장 절차를 따른다.

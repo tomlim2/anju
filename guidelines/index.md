@@ -59,7 +59,7 @@ ae/                           # After Effects 스크립트
 api-test/                     # API 실험 (nz-downloader)
 hackathon/                    # 해커톤 작업
 csv/, parameters/, logs/      # 데이터·산출물
-guideline/                    # 작업 규칙 문서
+guidelines/                   # 작업 규칙 문서
 ```
 
 ## Conventions

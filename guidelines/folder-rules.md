@@ -17,7 +17,7 @@ anju 레포에서 폴더를 만들고, 옮기고, 지우는 규칙. 사람과 �
 | `ae/` | After Effects 스크립트 |
 | `api-test/`, `hackathon/` | 실험·일회성 작업 |
 | `csv/`, `parameters/`, `logs/` | 데이터·산출물 |
-| `guideline/` | 이 문서 같은 규칙 문서 |
+| `guidelines/` | 이 문서 같은 규칙 문서 |
 
 ## 2. 네이밍
 

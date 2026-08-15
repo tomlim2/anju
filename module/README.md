@@ -14,4 +14,4 @@
 ## 작업 규칙
 
 pmx2vrm 변경 시 커밋 순서와 테스트 방법이 정해져 있다.
-[`../guideline/index.md`](../guideline/index.md) § PMX-VRM Converter Workflow 참조.
+[`../guidelines/index.md`](../guidelines/index.md) § PMX-VRM Converter Workflow 참조.

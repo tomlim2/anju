@@ -36,4 +36,4 @@
 ## 주의
 
 - `preset_manager/customize_presets/`에 `.sav` 357개가 추적되고 있다. 레포 전체 파일의 절반 이상이며, 코드가 아니라 UE 세이브 데이터다.
-- 규약: `snake_case`, 모듈 간 의존 금지. [`../guideline/index.md`](../guideline/index.md) 참조.
+- 규약: `snake_case`, 모듈 간 의존 금지. [`../guidelines/index.md`](../guidelines/index.md) 참조.
