@@ -62,6 +62,7 @@ CINEVStudio 레포의 Git/LFS/브랜치 운영. 같은 용도가 실행 플랫�
 - 브라우저 랩 전체는? → [`web/`](../web/README.md)
 - 마이크로 그래픽 제네레이터는? → [`web/micro-graphic-generator/`](../web/micro-graphic-generator/README.md)
 - 절차적 손그림 크리처 그리드는? → [`web/menagerie/`](../web/menagerie/README.md)
+- 그 크리처들이 무엇을 참고했는지는? → [`web/menagerie/reference/`](../web/menagerie/reference/README.md)
 - 셀 셰이딩 랩은? → [`web/cel-lab/`](../web/cel-lab/README.md)
 - 보이드 시뮬레이션은? → [`webgl/`](../webgl/README.md)
 - 유체 시뮬레이션은? → [`interactive/`](../interactive/README.md)
