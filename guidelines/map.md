@@ -67,6 +67,8 @@ CINEVStudio 레포의 Git/LFS/브랜치 운영. 같은 용도가 실행 플랫�
 - menagerie 종족·아키타입은? → [`character/types.md`](../web/menagerie/guidelines/character/types.md)
 - menagerie 파츠 전체 목록은? → [`character/parts.md`](../web/menagerie/guidelines/character/parts.md)
 - menagerie 모션 전체 목록은? → [`motion/catalog.md`](../web/menagerie/guidelines/motion/catalog.md)
+- menagerie 파츠 하나를 눈으로 비교하려면? → 파츠 갤러리 `web/menagerie/gallery.html` ([README § 실행](../web/menagerie/README.md))
+- menagerie에서 무엇을 어떤 도구로 판단하나? → [`guidelines/README.md § 무엇으로 판단하나`](../web/menagerie/guidelines/README.md)
 - 셀 셰이딩 랩은? → [`web/cel-lab/`](../web/cel-lab/README.md)
 - 보이드 시뮬레이션은? → [`webgl/`](../webgl/README.md)
 - 유체 시뮬레이션은? → [`interactive/`](../interactive/README.md)
