@@ -6,7 +6,7 @@
 ## 어디에 있나
 
 - 타이포그래픽 마이크로 그래픽 제네레이터? → [`micro-graphic-generator/`](micro-graphic-generator/) ([README](micro-graphic-generator/README.md)) — 이 폴더에서 가장 큰 프로젝트. 테스트·dev-server 있음
-- 절차적 손그림 크리처 그리드? → [`menagerie/`](menagerie/) ([README](menagerie/README.md)) — 시드 하나로 그리드 한 판. 개체마다 숨쉬고 깜빡인다
+- 절차적 손그림 크리처 그리드? → [`menagerie/`](menagerie/) ([README](menagerie/README.md)) — 시드 하나로 그리드 한 판. 사람·고양이·개·도깨비 다섯 줄이 각자의 시계로 움직인다. 캐릭터/모션 두 축, 카탈로그·규칙 문서 있음
 - 실시간 셀 셰이딩 놀이터(밴드 라이팅, 하프톤)? → [`cel-lab/`](cel-lab/) ([README](cel-lab/README.md))
 - 모노크롬 복셀 타이포그래피? → [`monolith/`](monolith/) ([README](monolith/README.md))
 - 3D 리본 타이포그래피(밴드·뫼비우스·코일)? → [`type-tape/`](type-tape/) ([README](type-tape/README.md))
