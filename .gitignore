@@ -18,11 +18,3 @@ api-test/nz-downloader/config.js
 # Rust
 target/
 *.vrm
-
-# menagerie reference images (third-party artwork — keep local only)
-web/menagerie/reference/*.png
-web/menagerie/reference/*.jpg
-web/menagerie/reference/*.jpeg
-web/menagerie/reference/*.webp
-web/menagerie/reference/*.mp4
-web/menagerie/reference/*.mov

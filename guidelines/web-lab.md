@@ -49,7 +49,6 @@ three.js는 번들하지 않고 importmap으로 받는다. **버전을 고정한
 | --- | --- |
 | micro-graphic-generator | 7100 |
 | cel-lab | 7200 |
-| menagerie | 7300 |
 | monolith | 7400 |
 | type-tape | 7500 |
 
@@ -70,8 +69,7 @@ node web/<lab-name>/serve.mjs
 파일을 고쳤는데 브라우저에 반영되지 않으면 **먼저 이걸 의심한다.**
 
 `Cache-Control: no-store`만으로는 브라우저의 ES module map이 비워지지 않는다. 서버가 상대 경로
-import 지정자에 `?v=` 를 붙여 URL 자체를 바꿔야 확실하다. `micro-graphic-generator/dev-server.mjs`와
-`menagerie/serve.mjs`가 이 방식을 쓴다. 새 랩의 `serve.mjs`는 이 둘 중 하나를 복사한다.
+import 지정자에 `?v=` 를 붙여 URL 자체를 바꿔야 확실하다. `micro-graphic-generator/dev-server.mjs`가 이 방식을 쓴다. 새 랩의 `serve.mjs`는 그것을 복사한다.
 
 importmap의 bare specifier(`three`)에는 붙이지 않는다. 상대 경로(`./`, `../`)만 대상이다.
 
